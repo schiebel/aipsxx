@@ -1,0 +1,109 @@
+\documentclass[11pt]{article}
+\usepackage{html,alltt}
+\include{ahrecipe}
+\begin{document}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+\begin{ahrecipe}
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals</font>
+\end{rawhtml}
+{Time the imager}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{imager, pgplotter}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume:</font>
+\end{rawhtml}
+{You wish to investigate the speed of \emph{imager} at making dirty
+images. In particular, you wish to see if some composite numbers
+(factored by 2, 3 and 5) speed the processing. You are patient
+enough to try all composite image sizes between 64 and 2048.}
+
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script:</font>
+\end{rawhtml}
+\htmladdnormallink{timeimager.g}{../timeimager.g.txt}
+
+\begin{arexample}
+\arline{include 'imager.g'}{Include the \emph{imager} script.}
+\arline{include 'pgplotter.g'}{Include the \emph{pgplotter} script.}
+
+% Expanded the \arline command since verbatim's not allowed in
+% redefined newcommands.
+
+\begin{tabular}{>{\ttfamily}p{2in}}
+\begin{verbatim}
+const composite := function (lo=64, hi=2048) {
+  i:=1;
+  comp:=array(0, 1);
+  for (i2 in 0:12) {
+    for (i3 in 0:8) {
+      for (i5 in 0:6) {
+        candidate:=2^i2 * 3^i3 * 5^i5;
+        if(candidate>(lo-1)&&candidate<(hi+1)) {
+          comp[i]:=2^i2 * 3^i3 * 5^i5
+          i+:=1;
+         }
+      }
+    }
+  }
+  return sort(comp);
+}
+\end{verbatim}
+\end{tabular} &  \begin{tabular}{>{\normalfont}p{2.5in}}
+Define a function to find all the composite numbers between 64 and 4096.
+\end{tabular}\\
+\\
+\arline{comp:=composite();}{Fill in an actual array}
+\arline{dowait:=T}{Tell the Object system to wait for a method to finish}
+\arline{myimager:=imagertester();}{Make an imagertester once only}
+
+\arline{timeimager:=function(n) \{}
+{Function to time making a dirty image for a given number of pixels}
+\arline{  global myimager;}{Use the globally named imager}
+\arline{  myimager.setimage(nx=n, ny=n);}{Set up the image size}
+\arline{  myimager.setoptions(cache=n*n);}{Set up the cache size}
+\arline{  start:=time();}{Start time in seconds}
+\arline{  myimager.image('observed', 'scratch');}{Make the dirty image}
+\arline{  tabledelete('scratchimage')}{Delete the scratch image}
+\arline{  deltat:=time()-start;}{Determine the elapsed real time}
+\arline{  print n, deltat;}{Print it out}
+\arline{  return deltat;}{Return the value}
+\arline{ \} }{End of the function}
+
+\arline{times:=array(0.0, length(comp));}{Define an empty array to fill into}
+\arline{j:=1;for (i in comp) \{times[j]:=timeimager(i);j+:=1\}}{Fill in the array: this could take some time!}
+\arline{pp:=pgplotter();}{Make a \emph{pgplotter}}
+\arline{pp.plotxy(comp*comp, times, T, T, 'Total number of pixels',
+          'Elapsed time (s)', 'Time to make dirty image')}
+{Plot the results: time versus the total number of pixels}
+\end{arexample}
+
+%\arconclusion
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Conclusion:</font>
+\end{rawhtml}{The curve plotted shows a mild non-linear behavior for
+large number of pixels but mostly the linear nature of the curve
+indicates that disk i/o rather than FFT time dominates. For further
+information on imaging, see the \emph{imager} module.}
+\end{ahrecipe}
+
+\end{document}

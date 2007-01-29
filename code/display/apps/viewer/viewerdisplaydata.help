@@ -1,0 +1,1653 @@
+%% viewerdisplaydata.help: help file for viewerdisplaydata tool
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: viewerdisplaydata.help,v 19.9 2005/06/15 18:10:58 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{viewerdisplaydata}{Tool for managing the drawing of \aipspp\ data}
+
+\ahinclude{viewerdisplaydata.g}
+
+\ahkeyword{displaydata}{}
+\ahkeyword{raster}{}
+\ahkeyword{contour}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This \tool\ is a fundamental component of the \lkVT.  It bundles up
+some piece of \aipspp\ data together with functionality to draw that
+data, into a self-contained object which can be shuffled around by a
+\VT, and manipulated by the user and/or programmer.  For example,
+a specific \VdisplaydataT\ may be a \tool\ that knows how to draw a
+contour map (hereafter a 'contour') of a \glish\ array, or it may be a
+\tool\ that can draw a false color image (hereafter a 'raster') of an
+\aipspp\ \image.
+
+The \VdisplaydataT\ carries around instructions on how to draw itself,
+but it doesn't carry around a "canvas" on which to draw itself.  Thus,
+to become visible to the user, a \VdisplaydataT\ must be registered
+with one or more \lkVdisplaypanelTs.  However, a \VdisplaydataT\ may
+be created, manipulated and destroyed without ever being registered
+(and therefore displayed on-screen); why exactly anyone would like to
+do this is beyond me though!  A \VdisplaydataT\ is constructed from
+some \aipspp\ data source, and a string defining the type of drawing,
+that is, 'raster' or 'contour'.
+
+A \VdisplaydataT\ is totally self-contained, and has "state".  Its
+state consists of various attributes, some of which will not change
+during the lifetime of the \tool, and many others which probably will.
+Examples of unchangeable state include the dimensionality of the
+\aipspp\ \image\ or \glish\ array, and the type of drawing
+requested---a raster or a contour.  Examples of changeable state
+include the many attributes which describe how the data should be
+translated into the requested drawing, such as the colormap to use for
+a raster, or the contour levels to use for a contour \VdisplaydataT.
+The state of a \VdisplaydataT\ can be modified from the command-line,
+or from a \guilong.
+
+Normally, \VdisplaydataTs\ should be created with an appropriate call
+to a \VT; many \VdisplaydataTs\ can be created and managed by a
+single \VT.
+
+\end{ahdescription}
+
+\subsubsection*{Events}
+\label{viewer:vddevents}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{viewerdisplaydata}{Create a \VdisplaydataT}
+\begin{ahargs}
+  \ahaddarg{viewer}{the \VT\ which will manage this \tool}{}{\VT}
+  \ahaddarg{name}{a unique name for this \VdisplaydataT}{}{string}
+  \ahaddarg{displaytype}{a string describing the type of drawing}{}{'raster', 'contour', 'simpleaxes' or 'skycatalog'}
+  \ahaddarg{data}{The data source to draw, either an \aipspp\ \image\ name, or a \glish\ array}{}{string or array}
+\end{ahargs}
+\ahreturns{\VdisplaydataT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VdisplaydataTs.  It constructs (creates)
+a \VdisplaydataT\ which can subsequently be registered on (and hence 
+displayed on) \VdisplaypanelTs.
+
+The {\tt displaytype} argument can be:
+\begin{itemize}
+\item{{\tt 'raster'}, for which {\tt data} can be a (float or double) 
+\glish\ array having two or more dimensions, or a string giving the
+name of an \aipspp\ \image\ on disk.}
+\item{{\tt 'contour'}, for which {\tt data} can be a (float or double)
+\glish\ array having two or more dimensions, or a string giving the
+name of an \aipspp\ \image\ on disk.}
+\item{{\tt 'simpleaxes'}, for which {\tt data} must be {tt '<none>'}.}
+\item{{\tt 'skycatalog'}, for which {\tt data} must be a string giving
+the name of an \aipspp\ \atable\ on disk.}
+\end{itemize}
+
+{\bf This constructor should not be called by users:} it is called by
+the \ahlink{loaddata}{viewer:viewer.loaddata} function of the \lkVT, which
+returns a \VdisplaydataT.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{addtouserchoicelist}{Add a new possibility to an option which is of type 'userchoice'}
+\begin{ahargs}
+  \ahaddarg{vl}{record with fields 'param' which is the string identifier of the option, and 'newitem' which is the new option to add to the list.}{}{record}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+This function is used to add a possibility to a choice list for
+display options which are of type 'userchoice'.
+
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{classtype}{Return the class type of this \VdisplaydataT}
+\ahreturns{integer}
+\begin{ahdescription}
+
+This function returns an integer indicating the class type of this
+\VdisplaydataT.  The possible return values are: {\tt Display::Raster},
+{\tt Display::Vector}, {\tt Display::Annotation}, and {\tt
+Display::CanvasAnnotation}.  The return value is used by the \VT\ to
+decide whether position tracks should be shown for this \VdisplaydataT. 
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{ddd}{Return the drawingdisplaydata agent}
+\ahreturns{agent}
+\begin{ahdescription}
+This function retruns a DrawingDisplayData agent. This for example is
+used to draw the beam if it is defined.
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{ddproxy}{Return the true displaydata agent}
+\ahreturns{agent}
+\begin{ahdescription}
+
+This function returns a handle to the true displaydata agent
+underlying this \VdisplaydataT.  {\bf This function is for gurus
+only.}
+
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{displaytype}{Return the displaytype}
+\ahreturns{'raster', 'contour', 'vector', 'marker', or 'skycatalog'}
+\begin{ahdescription}
+
+This function returns the displaytype chosen to construct this
+\VdisplaydataT.
+
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close down (destroy) this \VdisplaydataT}
+\ahreturns{T}
+\begin{ahdescription}
+
+If you no longer need to use this \VdisplaydataT, calling this
+function will free up its resources.  Any \VdisplaypanelTs\ on which
+this \VdisplaydataT\ is registered will automatically unregister this
+\tool\ and refresh their displays.  Any \guilongs associated
+with this \tool\ will be removed from the screen.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{filename}{Return a handle to the underlying image/array}
+\ahreturns{string or array}
+\begin{ahdescription}
+
+This function returns the hadle to the underlying data structure which
+can be the filename of the underlying image/table or an array.
+\VdisplaydataT.
+
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getoptions}{Return a record describing the state of this \tool}
+\ahreturns{record}
+\begin{ahdescription}
+
+This function returns a record which describes the internal state of
+this \VdisplaydataT.  The record has a format that is compatible with
+the format used by the \ahlink{\autoguiT}{widgets:autogui}, and indeed
+is used to build an \autoguiT\ in the {\tt newdisplaydatagui} function
+of this \tool. The record is also described in a bit more detail and
+from an \autoguiT\ point of view \ahlink{here}{viewer:vddoptions}.
+
+These options on the type of the \VdisplaydataT. The record for
+examplee is slightly different for 'raster' and 'contour'
+\VdisplaydataT.  A brief description of the fields which {\em may}\/
+exist in the returned record follows:
+
+\begin{itemize} 
+
+\item {\tt xaxis}: the axis name in the data to map to the X
+(horizontal) direction.
+
+\item {\tt yaxis}: the axis name in the data to map to the Y
+(vertical) direction.
+
+\item {\tt zaxis}: the axis name in the data to map to the Z
+(in-to-the-screen) direction.  This axis is the "movie" axis.
+
+\item {\tt haxisN}: the position along the Nth axis in arrays or
+\images\ having more than three axes.
+
+\item {\tt aspect}: rule on how to control the aspect ratio of data
+pixels when they are mapped to display device pixels.
+
+\item {\tt pixeltreatment}: whether pixels should be aligned with
+the edge of the canvas at their centres or edges.
+
+\item {\tt axislabelswitch}: global switch to turn axis labelling
+on or off for this \VdisplaydataT.  Note that axis labels will 
+only ever be drawn for the {\em first}\/ registered \VdisplaydataT\
+for any given \VdisplaypanelT.
+
+\item {\tt titletext}: title text if axis labels are drawn.
+
+\item {\tt titletextcolor}: color of the title text.
+
+\item {\tt xaxistext}: label to appear along X axis.
+
+\item {\tt xaxistextcolor}: color of X axis label text.
+
+\item {\tt yaxistext}: label to appear along Y axis.
+
+\item {\tt yaxistextcolor}: color of Y axis label text.
+
+\item {\tt xgridtype}: rule for how to draw tickmarks or gridlines
+along the X axis.
+
+\item {\tt xgridcolor}: color of X axis tickmarks and gridlines.
+
+\item {\tt ygridtype}: rule for how to draw tickmarks or gridlines
+along the Y axis.
+
+\item {\tt ygridcolor}: color of Y axis tickmarks and gridlines.
+
+\item {\tt ticklength}: length of tickmarks (in mm?).
+
+\item {\tt plotoutline}: draw a border around the plot?
+
+\item {\tt plotoutlinecolor}: color of plot border.
+
+\item {\tt labelcharsize}: size of characters for axis labelling.
+
+\item {\tt labelposition}: the position of the world axes labels.
+
+\item {\tt labelcharfont}: font for axis labelling.
+
+\item {\tt labellinewidth}: line width for axis labelling.
+
+\item {\tt axislabelpixelworld}: use pixel or world axis labels
+
+\item {\tt axislabelabsrel}: relative or absolute coordinate labels
+
+\item {\tt axislabeldirectionsystem}: the direction reference frame
+(e.g. J2000)
+
+\item {\tt axislabeldirectionunit}: the unit to label the direction
+coordinate axes with
+
+\item {\tt axislabelspectralunit}: the unit to label the spectral axis with
+
+\item {\tt axislabelvelocitytype}: the velocity refernce frame (e.g. radio)
+
+\item {\tt resample}: how to resample data pixels to screen pixels.
+
+\item {\tt region}: the region (subimage) to display.
+
+\item {\tt datamin}: the minimum data value to map to the colormap.
+
+\item {\tt datamax}: the maximum data value to map to the colormap.
+
+\item {\tt power}: scaling power for mapping data values to colors.
+
+\item {\tt colormap}: which colormap to use.
+	
+\item {\tt wedge:} display a color wedge.
+
+\item {\tt wedgeyaxistext}: the wedge axis label text, unset uses
+brighntes unit.
+
+\item {\tt wedgeyaxistextcolor}: the wedge axis label text color.
+
+\item {\tt wedgelabelcharfont}: font for wedge axis labelling.
+
+\item {\tt wedgelabelcharsize}: size of characters for wedge axis labelling.
+
+\item {\tt beam:} display the restoring beam.
+
+\item {\tt beamcolor:} set the color of the beam.
+
+\item {\tt beampos:} position the beam 
+
+\item {\tt beamlinewidth:} the linewidth for the beam
+
+\item {\tt beamoutline:} draw the beam as an outline or filled
+
+\item {\tt levels}: contour levels.
+
+\item {\tt scale}: scale factor for the contour levels.
+
+\item {\tt type}: whether the contour levels are absolute (in data
+units) or fractional (in range 0.0 to 1.0).
+
+\item {\tt line}: linewidth of contours.
+
+\item {\tt dashpos}: whether to dash negative-valued contours.
+
+\item {\tt dashneg}: whether to dash positive-valued contours.
+
+\item {\tt color}: contour color.
+
+\item {\tt complexmode}: how to produce real data for display from a
+complex source.
+
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahexample}
+The best way to see the structure of the options record is to get hold
+of one and view it with the {\tt recordbrowserwidget}. Alternatively,
+using the CLI only the \ahlink{misc}{misc} module provides a function
+\ahlink{listfields}{misc:listfields.function}
+\begin{verbatim}
+- include 'viewer.g';
+- include 'recordbrowserwidget.g';
+- mv := viewer();
+- ar := array(1:137, 13, 17);
+- mdd := mv.loaddata(ar, 'raster');
+- opts := mdd.getoptions();
+- mrb := recordbrowserwidget(therecord=opts);
+# or
+- dm.listnames(opts,F)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{hasbeam}{has this \VdisplaydataT a restoring beam defined}
+\ahreturns{T or F}
+\begin{ahdescription}
+
+This function indicates if the underlying image has a restoring beam.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{name}{Return the (unique) name of this \tool}
+\ahreturns{string}
+\begin{ahdescription}
+
+This function simply returns the (unique) name of this \tool\ that 
+was a construction argument.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newdisplaydatagui}{Create a new \guilong\ for this \tool}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame for \guishort}{F}{agent or F}
+  \ahaddarg{uneditable}{parameters which should not be editable}{``''}{vector of strings}
+  \ahaddarg{show}{map the \guishort\ to the screen immediately?}{T}{Boolean}
+  \ahaddarg{hasdismiss}{place a 'Dismiss' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{hasdone}{place a 'Done' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use for the \guishort}{dws}{\widgetserverT}
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+Calling this function will create and return a new \guishort\ which
+can be used to adjust the state of this \VdisplaydataT.  By judicious
+use of the function arguments, the \guilong\ can optionally be placed
+within existing frames, and left off-screen for later use.  The
+interface of the return value conforms to the \VstandardGI.
+
+The {\tt uneditable} argument should be a vector of strings listing
+the internal names of the parameters which should not be editable by
+the user in the \guilong.  eg. {\tt uneditable=''xaxis yaxis
+colormap''} would prevent the user from modifying the displayed X and
+Y axes and the colormap of this \VdisplaydataT\ in the \guishort: they
+could still modify these parameters from the command-line via the 
+\ahlink{setoptions}{viewer:viewerdisplaydata.setoptions} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{pixeltype}{Return the data type of the pixels}
+\ahreturns{float or complex}
+\begin{ahdescription}
+
+This function simply returns the data type of the pixels in the
+data. At the moment this can be complex or float.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{restoreoptions}{Restore a previously saved state of this \tool}
+\begin{ahargs}
+  \ahaddarg{setname}{name of state to retrieve}{}{string}
+\end{ahargs}
+\ahreturns{T (success) or F (failure)}
+\begin{ahdescription}
+
+This function tries to retrieve a previously saved state (options) of
+the given name, and if successful, applies them to this
+\VdisplaydataT.  It is perfectly acceptable to save options from a
+contour \tool\ and sooner or later apply them to a raster \tool: only
+the options relevant to a raster will be used.  The {\tt setname}
+argument must correspond to a previously saved set of options.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{saveoptions}{Save the state of this \tool}
+\begin{ahargs}
+  \ahaddarg{setname}{name under which to store this state}{}{string}
+\end{ahargs}
+\ahreturns{T (success) or F (failure)}
+\begin{ahdescription}
+
+This function saves the current state (options) of this
+\VdisplaydataT\ in the \aipspp\ {\tt Inputs Table}.  The options are
+stored as inputs for the \VdisplaydataT, with the "method name" set to 
+the {\tt setname} argument given in the call to this function.
+
+\end{ahdescription}
+\begin{ahexample}
+An example should show how this can be used:
+\begin{verbatim}
+- mv := viewer();
+- mdd := mv.loaddata('myimage', 'raster');
+- mdd.setoptions([power=1.6, aspect='flexible']);
+- mdd.saveoptions('trial options');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setoptions}{Set the state of this \tool}
+\begin{ahargs}
+  \ahaddarg{newopts}{options record describing requested state}{}{record}
+  \ahaddarg{emit}{emit the options that have been installed}{T}{Boolean}
+  \ahaddarg{id}{option request identification tag}{-1}{Numeric}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function should be used to set the internal state of a
+\VdisplaydataT.  The format of the {\tt newopts} record is a short
+form of the record returned by the {\tt getoptions} function, and 
+simply consists of one or more top-level fields, whose values are the
+values that should be set for each option.  The {\tt emit} argument
+should rarely be anything other than {\tt T}, since this is how other
+interested parties can find out when the \VdisplaydataT\ has been
+adjusted.  The {\tt id} argument is reserved for internal use, and 
+should {\em never}\/ be explicitly listed in a call to this function,
+other than from calls from within the \VT\ which manages this
+\tool.
+
+Installing new options in a \VdisplaydataT\ will generally cause the
+refresh (that is, a total re-drawing) of any \VdisplaypanelTs\ on
+which this \tool\ is registered.  This is because modifying the
+options will modify the appearance of the drawing of this data.
+Furthermore, there are some options (for example, {\tt region} and
+{\tt complexmode}) which, when adjusted, will cause {\em internal}\/
+changes to other options, normally {\tt datamin} and {\tt datamax} for
+raster \tools.
+
+\end{ahdescription}
+\begin{ahexample}
+A simple example will help clarify things:
+\begin{verbatim}
+- mv := viewer();
+- mdd := mv.loaddata('myimage', 'raster');
+- mdd.setoptions([power=1.6, aspect='flexible']);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{type}{Return the type of this \tool}
+\ahreturns{'viewerdisplaydata'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'viewerdisplaydata'},
+which can be used to identify this \tool\ as a \VdisplaydataT.  It is
+generally reserved for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{wedgedd}{Return the Wedge displaydata agent}
+\ahreturns{proxy agent}
+\begin{ahdescription}
+{\bf This function is for gurus only. So there won't be anby description.}
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{viewer}{Return the \VT\ which manages this \tool}
+\ahreturns{\VT}
+\begin{ahdescription}
+
+This function simply returns the \VT\ which manages this
+\VdisplaydataT, and probably constructed it.  It is generally reserved
+for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{zlength}{Return the length of the movie axes}
+\ahreturns{Integer}
+\begin{ahdescription}
+
+This function simply returns the length of the movie (third) axis on
+this \VdisplaydataT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection*{Option records}
+\label{viewer:vddoptions}
+
+Here is a detailed description of the option record elements. This is
+based on how they appear in the {\gif Adjust..} GUI sorted by context.
+
+These are the options available to {\em raster}, {\em contour} and
+{\em vector} \ndds.
+Jump to display type specific options:
+\begin{itemize}
+\item \ahlink{raster}{viewer:vddoptionsrst}
+\item \ahlink{contour}{viewer:vddoptionscnt}
+\item \ahlink{vector}{viewer:vddoptionsvec}
+\item \ahlink{marker}{viewer:vddoptionsmkr}
+\item \ahlink{skycatalog}{viewer:vddoptionssct}
+\item \ahlink{measurement set}{viewer:vddoptionsms}
+\end{itemize}
+
+\begin{itemize}
+\item {\gif Display axes}
+
+In this roll-up, adjustments can be made to select how the data is
+sliced for display, i.e. which axes of the data are mapped to X and Y
+on the screen.  As well, a third axis (where appropriate) can be
+assigned to the Z (or movie) axis, which is the data axis along
+which progressive frames will be shown when a \vdp\ is playing a
+sequence of frames.  The new selection will not take place until the
+{\gif Apply} button at the bottom of the adjustment window is pressed.
+If you have accidentally selected the same axis for more than one
+display axis, then this will be indicated by red crosses, and you
+should correct your error, and press {\gif Apply} again.
+
+\item {\gif Hidden axes}
+
+This roll-up is only present when the image or array has more than
+three axes, and is used to set the location in the data along all of
+the axes which are not mapped to either X, Y or Z (movie) axes in the
+{\gif Display axes} roll-up.  Simply sliding any of the scales should
+result in immediate updates to any \ndp\ on which this \vdd\
+is registered.
+
+Note: For measurement sets, these sliders are incorporated into the
+{\gif Display axes} rollup.
+
+\item {\gif Position tracking}
+
+In this roll-up, adjustments can be made to how the coordinates
+under the pointer (mouse cursor) are displayed.  
+
+By default, position tracking is enabled, so that as your move the
+pointer over the display, the data value and coordinate are shown in the
+status line beneath the display.  This information will be displayed on
+any \ndp\ on which this \ndd\  is registered. 
+
+You can turn position tracking off with the switch called 
+{\gif Position Tracking?} at the bottom of the rollup.
+
+Position tracking can also be turned on for all \ndds\
+registered on a single \ndp\ by pressing the {\ssf t} key,
+and turned off by pressing {\ssf Shift-t}, while the pointer is
+hovering over the particular \ndp.
+
+
+Other options in this rollup are
+
+\begin{itemize}
+
+\item {\gif Position tracking - Absolute or relative}
+
+You may display absolute or relative (to the reference pixel)
+coordinates.  This switch toggles between the two.
+
+\item {\gif Position tracking - World or pixel coordinates}
+
+You may display world or pixel coordinates.  This switch
+toggles between the two.    
+
+\item {\gif Position tracking - Fractional or integral pixel coordinates}
+
+A data lattice is discrete, but each pixel can be considered to extend
+over the range $i \pm 0.5$.  E.g.  pixel [20,30] in a 2D images
+covers the range [19.5,29.5] to [20.5,30.5].   By default
+pixel coordinates are presented integrally.  If you like, this
+optional allows you to have them presented fractionally.
+
+\item {\gif Position tracking - Spectral unit}
+
+If the data contain a spectral axis, this menu will be included.  It
+allows you to select the units for the presentation of the spectral
+coordinates (e.g.  km/s or Hz etc).  Conversion to km/s is only
+possible if the Spectral coordinate contains the rest frequency.
+In its absence, no conversion to km/s will be offered.  You
+can set the rest frequency with the 
+\htmlref{coordsys.setrestfrequency}{images:coordsys.setrestfrequency}
+function.
+
+\item {\gif Position tracking - Velocity type}
+
+If the data contain a spectral axis, this menu will be included.  If you
+ask to see the spectral coordinate as a velocity, then this allows you
+to select the type of velocity definition (e.g.  optical, radio etc.). 
+
+\end{itemize}
+
+\item {\gif Axis labels}
+
+The parameters in this roll-up offer basic control over the axis labels
+(which by default are not visible).  To turn them on, select
+True for {\gif Axis labelling \& annotation}.  The other
+parameters in this roll-up are pretty much self explanatory, and
+include text entries for the axis labels ({\tt unset} will give
+reasonable defaults in most cases), and control of whether tick marks
+or grid lines are drawn.
+
+\item {\gif Axis label properties}
+
+In this roll-up, finer control over the axis label properties is
+provided.  
+
+Here you have control over whether the axis labels are shown as world
+coordinates or image pixel coordinates (1-relative).  You may select
+whether the labels are relative (to the reference pixel)
+or absolute.  
+
+For Direction coordinates, you may select the units of the labels if
+they are relative.  For Spectral coordinates you may select the units of
+the labels, and the velocity type.  For other Coordinate types, you
+don't yet have further control over the units. 
+
+You can also choose the Direction coordinate reference type of the
+following J2000, B1950, GALACTIC, ECLIPTIC and SUPERGAL. Your
+coordinate grid will reflect these types.
+
+You can also choose where to place your axis labels. The default {\ssf
+Auto} is usually sufficient, but other placements are available.
+
+Colors can be selected for various elements of the labelling, and the
+character font and size can be chosen.  It is generally recommended to
+first select character font and size, and then pop on over to the
+{\gif Canvas Manager} (available under the {\gif File} menu of the \vdp)
+to finely tune the positioning of the displayed image on the \vdp.  In a
+future release of \aipspp, this geometry adjustment will be automatic. 
+
+\item {\gif Basic Settings}
+This roll-up is rolled down by default!  It has the parameters that
+most dramatically alter the generation of the raster map itself from
+the image or array data.  The elements of this roll-up are:
+
+\begin{itemize}
+
+\item {\gif Basic Settings - Aspect ratio}
+
+This option controls the dimensions with which data pixels are drawn
+to the screen.  {\gif Fixed lattice} means data pixels will be mapped
+to square pixels on the screen, in as much as the screen pixels
+themselves are square.  {\gif Fixed world} means that the aspect ratio
+of the pixels according to the coordinate system of the image will
+be honoured.  Finally, selecting {\gif flexible} will allow the raster
+map to stretch independently in each direction to fill as much of the
+\vdp\ as possible.  The default setting is {\gif fixed world}.
+
+\item {\gif Basic Settings - Pixel treatment}
+
+This option controls how individual data pixels are drawn to the
+screen.  Selecting {\gif center}  means that pixels at the
+edge of the display will be drawn only from the centres inwards.  That
+is, down the left hand border of the raster map, only the right-hand
+half of the pixels will be visible, and along the bottom of the raster
+map, only the upper half of the pixels will be visible.  So for
+{\gif center}, the raster map is drawn from the center of the bottom
+left pixel in the selected data to the center of the top right pixel
+in the selected data.
+
+Selecting {\gif edge} (the default) will change this behaviour such
+that all data pixels will be drawn fully on the screen.  This would be
+useful for cases where only one of the display axes only has length
+one pixel.
+
+
+\item {\gif Basic Settings - Resampling mode}
+
+This setting controls how the data are resampled to the resolution of
+the screen.  The default, {\gif nearest}, means nearest
+neighbour resampling, whereby each pixel on the screen is colored
+according to the intensity of the nearest corresponding data pixel.
+The alternative, {\gif bilinear}, applies a bilinear interpolation to
+produce smooth-looking images independent of the screen pixel
+dimensions of the data pixels.  While {\gif bilinear} resampling
+normally produces a better looking image, it can be significantly
+slower than nearest neighbour resampling, so be aware of this.
+
+\item {\gif Basic Settings - Complex mode}
+
+If the data source (image or array) is Complex, then this menu allows
+you to select whether you wish to see the magnitude, phase, real or
+imaginary part. 
+
+
+\item {\gif Basic Settings - Image region}
+
+This region entry is only available for raster maps of images, and
+allows the selection of a particular part of the image for display.
+A {\stf region} can be placed in the region entry, and the easiest way
+to do this is to bring up the Regionmanager using the
+{\gif spanner} menu to the right of the entry.  Simply create a 
+{\stf region} with the Regionmanager, and send it to this control by
+pressing {\gif Send} or {\gif Send \& dismiss} in the 
+Regionmanager.
+
+\item {\gif Basic Settings - Mask expression}
+
+This entry is only available for raster maps of images, and
+allows you to specify a Boolean expression mask which
+is applied On-The-Fly (OTF).  Thus you can apply an extra
+mask to the image in addition to its current persistent default
+mask.
+
+The syntax is that of the Lattice Expression Language and use  of the
+mask expression entry widget is equivalent to use of the {\gcf mask}
+keyword that is available in many Image \tool\ functions and provides an
+OTF mask capability.   See \htmladdnormallink{note
+223}{../../notes/223/223.html} for details on LEL.  Also see the
+\htmlref{Image}{images:image} tool and the Image Analysis chapter of
+this document for extra information.
+
+For example, let us say you have an image on disk called {\sff 3c273.im} and
+you have made a raster display of it with the Viewer.  You then decide
+to mask the image as bad where all pixels are negative.  You could do
+this with the Image tool function
+\htmlref{calcmask}{images:image.calcmask} which would calculate and
+store a new mask for you.  But perhaps you want to try several different
+masks before making one persistent.  In this case, in the entry widget,
+you would enter the same expression that you would have provided to
+\htmlref{calcmask}{images:image.calcmask}.
+
+\begin{verbatim}
+'3c273.im' > 0
+\end{verbatim}
+
+and the display would be updated so that all non-negative pixels
+are good and all negative pixels are bad (masked). Thus,
+where the expression is True, the pixels are displayed.
+{\gif (Note: use the image filename, rather than the name of any
+image tool you have created, in these expressions).}
+
+When you use the Mask expression in combination with an Image
+region, the mask expression is applied first, and then the region.
+This means the shape of the mask expression must match that of the
+image being displayed.
+
+Also note that if the image you are displaying has an underlying
+pixel mask (see the \htmlref{Images}{images} module), then the
+final mask that is applied is the union of that mask and 
+the mask expression.
+
+Finally, There is one important difference between using the expression
+mask entry widget and the {\gcf mask} keyword in Image \tool\ functions. 
+With the Image tool, you can embed Image \tool\ names in your expressions. 
+However, when you use the mask expression entry widget in the adjustment
+GUI, you must {\bf always} refer to the image disk file name.  You
+cannot use the Image \tool\ name. 
+
+
+\end{itemize}
+
+
+Now to the {\em raster} specific options.
+\label{viewer:vddoptionsrst}
+
+\begin{itemize}
+
+\item {\gif Color Wedge - Color Wedge}
+
+Display a color wedge (bar). {\bf Note: In RGB mode the wedge isn't
+supported yet.}  The wedge will align itself to the image only if you
+set {\gif Basic Settings - Aspect Ratio} to {\ssf flexible}, or the
+displaypanel is resized to fir the  new aspect. The orientation of the
+wedge can be changed in the {\tt viewercanvasmanager}.
+
+\item {\gif Color Wedge - Y axis label}
+
+The axis label to show on the wedge. The default {\ssf unset} shows
+the brightness unit if available.  
+
+\item {\gif Color Wedge - Y axis label color}
+
+Color of the axis label text.
+
+\item {\gif Color Wedge - Character size}
+
+Size of the axis label text in terms of pgplot character height.
+
+\item {\gif Color Wedge - Character font}
+
+The (pgplot) font to use for the label.
+
+
+\item {\gif Basic settings - Color mode}
+
+This option is specific to raster maps, and controls whether the pixel
+intensities for this \vdd\ are mapped to colors selected from a colormap
+(chosen elsewhere in the adjustment panel), or are instead mapped to one
+of the following color channels: red, green, blue, hue (color),
+saturation (color strength) or value (brightness).  Use of any color
+mode requires that the \vdd\ be registered on a suitable \vdp.  That is,
+color mode {\ssf colormap} rasters must be registered on an {\ssf Index} \ndps,
+color mode {\ssf red, green} or {\ssf blue} rasters will only draw when
+registered on {\ssf RGB} \ndps, and color mode {\ssf hue, saturation}
+and {\ssf value} rasters will only draw when registered on {\ssf HSV} 
+\ndps.
+
+\item {\gif Basic Settings - Data Range}
+
+You can use the type in entry box provided to set the minimum and or
+maximum data values being mapped to the colormap. Additionally, the
+limits can be set graphically by using the
+\htmlref{histogramgui}{viewer:histgui} window. This can be opened by
+selecting 'Histogram' from the spanner menu. For very high dynamic
+range images, you will need to type in a number much less than the
+maximum to see the low-level brightness pixels.
+
+
+\item {\gif Basic settings - Histogram equalisation}
+
+The default value for this option is False.  When enabled for raster
+maps, some internal optimisation of colors from the colormap (or color
+channel) is made.  The number of colors allocated to a given range of
+data is proportional to the fraction of pixels whose pixel intensities
+lie in that range.  Thus color cells are allocated where they are
+needed most.
+
+\item {\gif Basic settings - Scaling power cycles}
+
+This option offers further control over the mapping of data values to
+color cells from the colormap.  The overall process in selecting a
+color for a particular pixel is as follows: the data value of the
+pixel is clipped lie between the data minimum and maximum as specified
+elsewhere in this {\gif Basic settings} roll-up.  Then, according to
+this option which is described below, this clipped pixel intensity is
+mapped to an index between 0 and the number of colors available in the
+selected colormap.  The color which is in the colormap at this
+position, which itself is controlled by the current stretch, shift,
+contrast, brightness and invert settings of the colormap, is then
+drawn for this particular pixel.
+
+So, the {\gif scaling power cycles} option controls the mapping of
+clipped pixel intensities to color look-up values.  When this is set
+to zero, a straight line connects {\gcf (domainMin, rangeMin)} and {\gcf
+(domainMax, rangeMax)} on a plot where the domain is the input data
+values constrained to the range given by the data min and max sliders,
+and the range runs from 1 to number of colors in the selected
+colormap.  See \mbox{Figure~\ref{fig:scalingpower}} for sample curves.
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=scalingpower.eps,width=3.6in}
+\caption{Example curves for scaling power cycles.}
+\label{fig:scalingpower}
+\end{center}
+\end{figure}
+
+As the scaling power decreases from zero, the curve deviates from the
+straight line, rising {\em above} it, such that an increasing
+fraction of the available colormap is used for data values
+close to the data minimum.  This curve is calculated using a log
+function.
+
+As the scaling power increases from zero, the curve deviates from this
+straight line, falling {\em below} it, such that an increasing
+fraction of the available colormap is used for data values closer to
+the maximum.  The curve is calculated using an exponential
+function.
+\footnote{The actual functions are computed as follows:
+
+For negative scaling values (say -p), the data is scaled linearly
+from the range (dataMin -- dataMax) to the range (1 -- $10^{p}$).
+Then the program takes the log (base 10) of that value (arriving at
+a number from 0 to p) and scales that linearly to the number of
+available colors.  Thus the data is treated as if it had p decades
+of range, with an equal number of colors assigned to each decade.
+
+For positive scaling values, the inverse (exponential) functions are used.
+If p is the (positive) value chosen,  The data value is scaled linearly to
+lie between 0 and p, and 10 is raised to this power, yielding a value in the
+range (1 -- $10^{p}$).  Finally, that value is scaled linearly to the number
+of available colors.}
+
+
+\item {\gif Basic settings - Colormap}
+
+You can select a range of different colormaps here.  Selections here
+only take effect if the color mode option is set to {\ssf colormap}.
+
+\item {\gif Basic settings - Colorbar}
+
+You can choose to have a color bar (wedge) displayed next to your
+data. At the moment the wedge can be placed to the right-hand
+side of the image. {\bf Note: In RGB mode the wedge isn't supported yet.}
+The wedge will align itself to the image only if you set {\gif
+Aspect Ratio} to {\ssf flexible}.
+
+\end{itemize}
+
+
+
+Following are the {\em contour} specific options.
+\label{viewer:vddoptionscnt}
+\begin{itemize}
+\item {\gif Basic settings - Contour levels}
+
+This option is simply where you enter the levels at which you would
+like contours to be drawn.  There are two main ways to enter contour
+levels:
+
+\begin{enumerate}
+
+\item{Simply place an integer vector in {\gif Contour levels}, eg.  {\gcf
+1:9}, set {\gif Level type} to {\gif frac}, and then {\gif Contour scale
+factor} to $0.1$.  This way, contours are drawn at 10, 20, \ldots,
+90 per cent, where 0 per cent corresponds to the lowest pixel
+intensity in the data, and 100 per cent to the highest.}
+
+\item{Set {\gif Level type} to {\gif abs}, {\gif Contour scale factor} to
+1, and then enter the absolute levels in the natural units of the data
+in {\gif Contour levels}, separated by commas.}
+
+\end{enumerate}
+
+\item {\gif Basic settings - Contour scale factor}
+
+The contour levels given will be multiplied by the factor entered in 
+this option before being drawn.
+
+\item {\gif Basic settings - Level type}
+
+This option indicates whether the vector of contour levels, specified
+in the {\gif Contour levels} box, multiplied by the scale factor, are 
+absolute levels (that is, in the native units of the image), or
+are instead fractional levels, where 0 is mapped to the lowest
+pixel intensity in the image, and 1 is mapped to the highest.
+
+\item {\gif Basic settings - Line width}
+
+This option controls the thickness of the contour lines.  While only
+integer values will show any effect on-screen, PostScript output will
+be affected by the fractional part of the line width.
+
+\item {\gif Basic settings - Dash negative contours?}
+
+Set this option to True if you would like contours of negative
+values in your data to be dashed rather than solid lines.
+
+\item {\gif Basic settings - Dash positive contours?}
+
+Set this option to True if you would like contours of positive 
+values in your data to be dashed rather than solid lines.
+
+\item {\gif Basic settings - Line color}
+
+Select a color for the contours.
+\end{itemize}
+
+
+
+Now to the {\em vector} specific options
+\label{viewer:vddoptionsvec}
+
+Vector map adjustments are based on those Basic settings.
+The following options are not available: {\gif resampling mode},
+{\gif complex mode} and {\gif data minimum \& maximum}.  In their
+place, the following options are added in the {\gif Basic settings}
+section:
+
+\begin{itemize}
+
+\item {\gif Basic settings - Phase Type}
+
+If the data source is Complex ($z=R + iI$) this option is available.  It
+is a menu with two values: values {\gif normal} and {\gif polarimetric}
+mean the phase (position angle) is computed from $atan2(I,R)$ and
+$atan2(I,R) / 2$, respectively.  The latter is appropriate when
+the Complex data holds, say, the Complex linear polarization $z=Q+iU$
+which has a two-fold symmetry.  The default is {\gif polarimetric}.
+
+\item {\gif Basic settings - Constant amplitude ?}
+
+If the data source is Complex, this option allows you to discard
+the amplitude information and show all vectors with equal length.
+
+\item {\gif Basic settings - Debias amplitude ?}
+
+If the data source is Complex ($z = R + iI$) this option is available.  
+The default is no debiasing.  The amplitude is computed from
+$\sqrt{(R^2+ I^2)}$.  Now if the real and imaginary parts are
+drawn from independent gaussian variables (as is the case for the
+Complex polarization $z = Q+iU$), then even in the absence of
+signal, the mean amplitide is positive.  This is noise bias.  This
+option attempts to remove it to first order via 
+$amp = \sqrt{(R^2 + I^2 - variance)}$.  
+
+To do this, you need the variance of the noise (assumed the same
+for real and imaginary).  See the next option.
+
+\item {\gif Basic settings - Variance for debiasing}
+
+If the data source is Complex, this option is available.  It is only
+used if the {\gif debias} option is selected (see above).  The debiasing
+is accomplished  via $amp = \sqrt{(R^2+ I^2 - variance)}$.  By
+default, the variance is worked out for you from the image (the real and
+imaginary 10-sigma clipped variances are worked out separately and
+averaged).  However, even though a clipping algorithm is used, the
+variance may not be accurate.  If you know the variance of the noise
+accurately, enter it here.
+
+\item {\gif Basic settings - Amplitude scale factor}
+
+By default, the amplitudes of the vectors are scaled so that
+the longest vector is of length 5\% the length of the smallest
+display window dimension.  This is an extra scale factor that you
+can apply to all the vectors to make them longer or shorter.
+
+\item {\gif Basic settings - X and Y increment}
+
+By default, vectors are displayed for every third pixel in x and y.
+You can change that with these options.
+
+\item {\gif Basic settings - Extra rotation}
+
+You can add an extra rotation (degrees) to the position
+angles here (e.g.  to show a magnetic field position angle
+from electric field vectors).
+
+\item {\gif Basic settings - Show arrow heads ?}
+
+This option allows you to put arrow heads on the vectors.  However, if
+the {\gif Phase type} is {\gif Polarimetric} arrow heads are not displayed
+(two-fold symmetry makes them meaningless).
+
+\item {\gif Basic settings - Arrow head shape}
+
+This option allows you to change the arrow head shape
+from a triangular head (value 0) to an open head.  In
+between, you get 'barbed' shaped heads.
+
+\item {\gif Basic settings - Line width}
+
+This option controls the thickness of the vector lines.  While only
+integer values will show any effect on-screen, PostScript output will
+be affected by the fractional part of the line width.
+
+\item {\gif Basic settings - Line color}
+
+Select a color for the vectors.
+
+\end{itemize}
+
+
+
+
+Now to the {\em marker} specific options
+\label{viewer:vddoptionsmkr}
+
+Marker map adjustments are based on those Basic settings.
+The following options are not available: {\gif resampling mode},
+{\gif complex mode} and {\gif data minimum \& maximum}.  In their
+place, the following options are added in the {\gif Basic settings}
+section:
+
+\begin{itemize}
+
+\item {\gif Basic settings - Marker Shape}
+
+By default, the marker shape is a square.  At present,
+this is the only marker shape available.
+
+\item {\gif Basic settings - Scale factor}
+
+By default, the amplitudes of the shapes are scaled so that
+the width of the shape 5\% the length of the smallest
+display window dimension.  This is an extra scale factor that you
+can apply to all the shapes to make them bigger or smaller.
+
+\item {\gif Basic settings - X and Y increment}
+
+By default, markers are displayed for every third pixel in x and y.
+You can change that with these options.
+
+\item {\gif Basic settings - Line width}
+
+This option controls the thickness of the marker outline.  While only
+integer values will show any effect on-screen, PostScript output will
+be affected by the fractional part of the line width.
+
+\item {\gif Basic settings - Line color}
+
+Select a color for the marker.
+
+
+\end{itemize}
+\end{itemize}
+
+
+
+{\bf Skycatalog \ndds\ } are different from the others since they don't
+carry a coordinate system. Therefore the option record looks quite
+different.
+\label{viewer:vddoptionssct}
+\begin{itemize}
+
+\item {\gif Advanced}
+At the moment this roll-up only contains cache size control.
+\begin{itemize}
+
+\item {\gif Advanced - Cache size}
+
+This option should rarely need to be adjusted, especially for catalog
+overlay \ndds.  The value of this option specifies how many
+different views of the catalog overlay are stored in a cache,
+and can therefore be redrawn quickly on demand.  A different view is
+generated when one or more options are altered.
+
+\end{itemize}
+
+\item {\gif Label properties}
+
+
+This roll-up provides options for selecting which column is used to
+label the sources, and for setting the properties of the labels
+themselves.
+
+\begin{itemize}
+
+\item {\gif Label properties - Column listing names}
+
+This option must be changed from {\tt <none>} if you want labels to
+appear next to the source markers.  Select the column which contains
+the names; the options offered are {\em only} the columns which
+contain strings.
+
+\item {\gif Label properties - Line width}
+
+Select the line width for the text labels; this effectively controls
+how bold the labels appear.
+
+\item {\gif Label properties - Character font}
+
+This option offers the choice of font for the labels.
+
+\item {\gif Label properties - Character size}
+
+Adjust the size of the text labels.
+
+\item {\gif Label properties - Character color}
+
+This option enables the user to select a color for the labels, which
+can of course be different to the color of the markers themselves.
+
+\item {\gif Label properties - Label angle}
+
+The labels can be drawn at any rotation, so this option allows the
+setting of that angle in integer degrees.
+
+\item {\gif Label properties - Label X offset (char units)} \& {\gif
+Label properties - Label Y offset (char units)}
+
+Labels can be offset vertically and horizontally from the markers.
+Careful use of these options and the label angle can be used to avoid
+most conflicts between labels and markers.
+
+\end{itemize}
+
+\item {\gif Marker properties}
+
+This roll-up provides options for controlling the appearance of the
+markers used to mark the positions of the sources.
+
+\begin{itemize}
+
+\item {\gif Marker properties - Marker type}
+
+This option is a poor but functional way to choose a marker for your
+sources from the catalog.
+
+\item {\gif Marker properties - Marker size}
+
+This option controls the size of the markers.
+
+\item {\gif Marker properties - Marker color}
+
+Markers can be drawn in any of the available colors selected from this
+menu.
+
+\end{itemize}
+
+\item {\gif Basic settings}
+
+In this roll-up, some general properties of the catalog overlay can be
+set.
+
+\begin{itemize}
+
+\item {\gif Basic settings - "Where" query}
+The catalog in use can be ``pruned'' by using this option.  A valid
+table query language (TaQL - see AIPS++ Note 199) {\bf WHERE} clause
+must be provided.  The default value is {\tt unset} so that all
+sources in the catalog are plotted.
+For example, you want to plot all sources in the Longitude range 0 < long
+< 1 degrees and the longitude column in the table is named ``Long'', 
+the line to enter would be:
+\begin{verbatim}
+Long > 0 && Long < 1
+\end{verbatim}
+Two nice features of TaQL are:
+\begin{itemize}
+\item{\bf Pattern matching} say all Galaxies which start with NGC. Specify
+the column name (here: ``Name'') and the pattern:
+\begin{verbatim}
+Name == pattern('NGC*')
+\end{verbatim}
+\item{\bf regular expressions} for the same example:
+\begin{verbatim}
+Name == regex('^NGC.+')
+\end{verbatim}
+\end{itemize}
+\end{itemize}
+
+\end{itemize}%%scat
+
+
+\label{viewer:vddoptionsms}
+
+
+{\bf Raster measurement set \ndds\ } have some inputs similar to those
+for raster image display, with some additional interface for selecting
+and editing (flagging) the MS data.
+
+\begin{figure}[h]
+\begin{center}
+%\epsfig{file=msaropts.eps,height=8.5in}
+\epsfig{file=msaropts.eps,width=5.2in,height=8.5in}
+%\epsfig{file=msaropts.eps,width=5.1in}
+\caption{Options Adjustment Panel for Measurement Sets}
+\label{fig:vddmsadj}
+\end{center}
+\end{figure}
+
+\begin{itemize}
+
+\item {\gif MS and Visibility selection}
+
+\begin{itemize}
+
+\item {\gif Visibility Type}
+
+\item {\gif Visibility Component}
+
+\item {\gif Moving Average Size}
+
+\end{itemize}
+
+This roll-up provides choice boxes for Visibility Type
+(Observed, Corrected, Model, Residual) and Component (Amplitude,
+Phase, Real, or Imaginary).  
+
+Changes to Visibility Type or Component (changing from Phase to
+Amplitude, for example) require the data to be retrieved again
+from the disk into memory, which can be a lengthy process.  When a
+large MS is first selected for viewing, the user must
+trigger this retrieval manually by pressing the 'Apply' button, after
+selecting the data to be viewed ({\em Field IDs} and
+{\em Spectral Windows}, below).
+
+Changing visibility type between 'Observed' and 'Corrected' can also be
+used to assure that data and flags are reloaded from disk.  You should
+do this if you're using another flagging tool simultaneously (such as 
+autoflag or msplot), so that the viewer sees the other tool's new edits
+and doesn't overwrite them with obsolete flags.  The 'Apply' button 
+alone won't reload unless something within the viewer itself requires
+it; in the future, a button will be provided to reload flags from the disk
+unconditionally.  
+
+You can also choose to view the difference from a running mean or the
+local RMS deviation of either Phase or Amplitude (this will not
+require a disk reload).  There is a slider for choosing the nominal
+number of time slots in the 'local neighborhood' for these displays.
+
+(Note: {\bf Insufficient Data} is shown in the tracking area during
+these displays when there is no other unflagged data in the
+local neighborhood to compare to the point in question.  The
+moving time windows will not extend across changes in either field ID
+or scan number, so you may see this message if your scan
+numbers change with every time stamp.  An option will be added soon
+to ignore scan boundaries).
+
+\begin{itemize}
+
+\item {\gif Field IDs}
+
+\item {\gif Spectral Windows}
+
+\end{itemize}
+
+You can retrieve and edit a selected portion of the MS data
+by entering the desired Spectral Window and Field ID numbers into
+these boxes.  Especially with large MSs, it makes sense to edit 
+only one or two fields at a time, and to select spectral windows 
+which all have the same number of channels.  Doing this will also
+greatly reduce data retrieval times and memory requirements.
+
+You can separate the ID numbers with spaces or commas; you do not need to
+enter enclosing brackets.  Changes to either entry box will normally cause
+the selected MS data to be
+reloaded immediately from disk.  If you wish, you can turn off 'autoapply', 
+in order to change {\em both} spectral window and field selections, without 
+reloading data after each change.  In that case, press 'Apply' after 
+entering all your selections.
+
+If you select, say, spectral windows 7, 8, 23, and 24, the animator, slice
+position sliders, and axis labelling will show 
+these as 1, 2, 3, and 4 (the 'slice positions' or 'pixel coordinates' of the
+chosen spectral windows).  Looking at the position tracking display is the best
+way to avoid confusion in such cases.  It will show something like: 
+{\bf Sp Win 23 (s 3)} when you are viewing spectral window 23, the third 
+selected spectral window.
+
+Changes to MS selections will not be allowed until you have saved
+(or discarded) any previous edits you have made (see {\em Flagging Options 
+-- Save Edits}, below).
+
+Initially, all fields and spectral windows are selected.  To revert to
+this 'unselected' state, choose 'Original' under the wrench
+icons next to the entry boxes.
+
+\item {\gif Display Axes}
+
+This rollup is very similar to that for images: it allows the user to
+choose which axes (from Time, Baseline, Polarization, Channel, and
+Spectral Window) are are on the display and the animator.  There are
+also sliders here for choosing positions on the remaining axes.
+
+Changing the choice of axis on one control will automatically swap
+axes, maintaining different axes on each control.  Changing axes
+or slider/animator positions does not normally require pressing
+'Apply'--the new slice is shown immediately.  However, the display may be 
+partially or completely grey in areas where the required data is not
+currently in memory, either because no data has been loaded yet, or
+because not all the selected data will fit into the allowed memory
+(see {\em Max. Visibility Memory}, below).  When the
+cursor is over such an area, the following message shows in the position
+tracking area:
+
+{\bf press 'Apply' on Adjust panel to load data}
+
+Pressing 'Apply' will reload the memory buffer so that it includes
+the slice you are trying to view.
+
+The message {\bf No Data} has a different meaning; in that
+case, there simply {\em is} no data in the selected MS at the
+indicated position.
+
+For large measurement sets, loading visibility data into memory is the
+most time-consuming step.  At present it is not possible to show the
+usual progress meter window, but similar feedback is provided in the
+console window.  Again, careful selection of the data to be viewed can
+greatly speed up retrieval.
+
+\item {\gif Flagging Options}
+
+These options allow you to edit (flag or unflag) MS data.
+The crosshair and rectangle region
+\ahlink{mouse controls}{viewer:vdpguicbox} are used on the display
+to pick the data region to edit; the options
+below determine how the edits will be applied.
+
+\begin{itemize}
+
+\item {\gif Flagging Options - Show Flagged Regions...}
+
+You have the option to display flagged regions in the background
+color (as in msplot or TVFLG) or to highlight them with color.
+In the former case, flagged regions look just like regions of no
+data.  With the color option, flags are shown in shades of blue:
+darker blue for flags already saved to disk, lighter blue for
+new flags not yet saved; regions with no data will be shown in black.
+
+\item {\gif Flagging Options - Flag or Unflag}
+
+This setting determines whether selected regions will be flagged or
+unflagged.  In contrast to msplot, this does {\em not} affect previous
+edits; it only determines the effect which later edits
+will have.  Both flagging and unflagging edits can be accumulated
+and then saved in one pass through the MS.
+
+\item {\gif Flagging Options - Flag/Unflag All...}
+
+These flagging extent checkboxes have a similar operation to those
+in msplot.  They allow you to extend your edit over any of the
+five data axes.  For example, to flag {\em all} the data in a given
+time range, you would check all the axes {\em except} Time, and then
+select the desired time range with the region mouse control.  Such edits
+will extend along the corresponding axes over the entire selected MS
+(whether loaded into memory or not) and optionally over unselected 
+portions of the MS as well ({\em Use Entire MS}, below).  Use care in
+selecting edit extents to assure that you're editing all
+the data you wish to edit.
+
+\item {\gif Flagging Options - Flag/Unflag Entire Antenna?}
+
+This control can be used to extend subsequent edits to all baselines
+which include the desired antenna[s].  For example, if you set this item
+to 'Yes' and then click the crosshair on a visibility point with
+baseline 3-19, the edit would extend over baselines 1-3, 2-3, 3-3, 3-4,
+3-5, 3-6, ... 3-<nAntennas>.  Note that the second antenna of the selection
+(19) is irrelevant here--you can click anywhere on the display where the
+first antenna number is 3, to select all baselines which include antenna 3.
+
+This item controls the edit extent only along the baseline axis.  If you
+wish to flag {\em all} the data for a given antenna, you must still check
+the boxes to flag all Times, Channels, Polarizations and Spectral Windows.
+There would be no point, however, in activating {\em both} this item and
+the 'Flag All Baselines' checkbox.  You can flag an antenna in a limited
+range of times, etc., by using the appropriate checkboxes and selecting
+a rectangular region of visibilities with the mouse.
+
+\item {\gif Flagging Options - Undo Last Edit}
+
+\item {\gif Flagging Options - Undo All Edits}
+
+The 'Undo' buttons do the expected thing: completely undo the effect of
+the last edit (or all unsaved edits).  Please note,
+however, that only unsaved edits can be undone.  In contrast to msplot,
+there is no ability to revert to the flagging state at the start of the
+session, once flags have been saved to disk.
+
+\item {\gif Flagging Options - Use Entire MS When Saving Edits?}
+
+"Yes" means that saving the edits will flag/unflag over the entire MS,
+{\em including} fields (and possibly spectral windows) which are not 
+currently selected for viewing.  Specifically, data within time range[s]
+you swept out with the mouse (even for unselected fields) will be edited.
+
+In addition, if "Flag/Unflag All..." boxes were checked, such edits will
+extend throughout the MS.  Note that only
+unselected {\em times} (fields) can be edited {\em without} checking
+extent boxes for the edits as well.  Unselected spectral windows, e.g.,
+will {\em not} be edited unless the edit also has "Flag/Unflag All
+Spectral Windows" checked.  
+
+Warning: Beware of checking "All Spectral Windows" unless you have also 
+checked "All Channels" or turned "Entire MS" off; channel edits appropriate 
+to the selected spectral windows may not be appropriate to unselected
+ones.  Set "Use Entire MS" to"No" if your edits need to apply only to the
+portion of the MS you have selected for viewing.  {\em Edits can often be
+saved significantly faster this way as well}.
+
+Also note that checkboxes apply to individual edits, and must be checked
+before making the edit with the mouse.  "Use Entire MS", on the other hand,
+applies to all the edits saved at one time, and must be set as desired
+before pressing "Save Edits".
+
+\item {\gif Flagging Options - Save Edits}
+
+The measurement set \ndd\ works like a text editor in that
+you see all of your edits immediately, but nothing is committed to disk
+until you press 'Save Edits'.  Feel free to experiment with all the other
+controls; nothing but 'Save Edits' will alter your MS on disk. 
+As mentioned previously, however, there is no way to undo your edits once
+they are saved, except by manually entering the reverse edits.
+
+Also, {\em you must save} (or discard) {\em your edits before changing the 
+MS selections}.  If edits are pending, the selection change will not be 
+allowed, and a warning will appear on the console.  
+
+If you close the 
+tool, {\em unsaved edits are simply discarded}, without prior warning.  
+It's important, therefore, to remember to save them yourself.  You 
+can distinguish unsaved flags (when using the 'Flags In Color' option), 
+because they are in a lighter shade of blue.
+
+The program must make a pass through the MS on disk to save the edits.
+This can take a little time; progress is shown in the console window.
+
+\end{itemize}
+
+\item {\gif Axis Drawing and Labels}
+
+\item {\gif Position tracking}
+
+\item {\gif Color Wedge}
+
+\item {\gif Basic settings}
+
+These four rollups contain entries similar to those for image \ndds.
+Some of those entries were unnecessary and were omitted for simplicity
+here; others will be added in the future.
+
+Together with the brightness/contrast and colormap adjustment
+\ahlink{mouse controls}{viewer:vdpguicbox} on the \vdp,
+the following Basic settings are especially important for adjusting
+the color display of your data:
+
+\begin{itemize}
+
+\item {\gif Basic settings - Data minimum/maximum}
+
+At present, these are only sliders, without the histogram capabilities
+of the image \ndds.  Lowering the data maximum will help brighten
+weaker data values.
+
+\item {\gif Basic settings - Scaling power cycles}
+
+This has exactly the same usage as for image \ndds.  Again, lowering
+this value often helps make weaker data visible.  If you want to view
+several fields with very different amplitudes simultaneously, this is
+probably the first adjustment you should make.
+
+\item {\gif Basic settings - Colormap}
+
+Greyscale or Hot Metal colormaps are generally good choices for MS
+data.
+
+\end{itemize}
+
+Adding a Color Wedge to the right of your display helps to show the
+effect of your other color scale adjustments.  Its displayed scale
+and units are not always up-to-date at present (a known problem, to be
+fixed soon).  In the meantime, moving the slider for Data minimum
+or maximum will cause the correct scale to be displayed.
+
+\item {\gif Advanced}
+
+These settings can help optimize your memory usage, especially for
+large MSs, if you feel comfortable tweaking such things.  A rule of thumb
+is that they can be increased until response becomes sluggish, when
+they should be backed down again.
+
+You can run the unix 'top' program and hit 'M' in it (to sort by memory
+usage) in order to examine the effects of these settings.  Look at the
+amount of RSS (main memory) and SWAP used by the X server and 'glishtk'
+processes.  If that sounds familiar and easy, then fiddling with these
+settings is for you.  Otherwise, the default settings should provide
+reasonable performance in most cases.
+
+\begin{itemize}
+
+\item {\gif Advanced - Cache size}
+
+As with the Skycatalog, the value of this option specifies the maximum
+number of different views of the data to save so that they
+can be redrawn quickly.  If you run an animation or scroll around
+zoomed data, you will notice that the data displays noticably faster
+the second time through because of this feature.  Often, setting this
+value to the number of animation frames is ideal  Note, however, that
+on multi-panel displays, each panel counts as one cached image.
+
+Large images naturally take more room than small ones.  The memory used
+for these images will show up in the X server process.  If you need more
+Visibility Memory (below) for a really large ms, it is usually better to
+forgo caching a large number of views.
+
+\item {\gif Advanced - Max. Visibility Memory}
+
+This option specifies how many megabytes of memory may be used to store
+visibility data from the measurement set internally.  Even if you do not
+adjust this entry, it is useful to look at it to see how many megabytes
+are required to store your entire (selected) MS in memory.  If the slider
+setting is above this, the whole selected MS will fit into the memory
+buffer.  Otherwise, some data planes will be 'greyed out', and the selected 
+data will have to be viewed one buffer at a time, which is somewhat less 
+convenient.  The largest process called 'glishtk' contains this buffer 
+memory; it actually contains the entire display library, but the 
+memory buffer can dominate its size.
+
+\end{itemize}
+
+\end{itemize}%%msar
+
+\end{ahobject}
+\end{document}

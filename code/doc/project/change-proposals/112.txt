@@ -1,0 +1,101 @@
+Title:                  Cleanup of ifdef growth
+Person responsible:     Ger van Diepen (diepen@nfra.nl)
+Originator of proposal: Wim.Brouw@csiro.au / Ger van Diepen 
+(diepen@nfra.nl)
+Exploders targeted:     aips2-lib, aips2-workers
+Time table:
+        Date of issue:          1999 September 24       Done
+        Comments due:           1999 September 29
+        Revised proposal:       1999 October 27
+        Final comments due:     1999 October 28
+        Decision date:          1999 October 29
+
+Statement of goals:
+
+To cleanup the wide-spread wild growth of #ifdef statements in C++ code.
+
+
+Proposed changes:
+
+Background
+----------
+
+The standard computer system has three parts:
+- language -- with its compiler
+- OS
+- hardware
+
+All three have idiosyncrasies that have to be catered for. Not all parts are
+obeying some standard (C++, POSIX. IEEE, etc).
+
+The original goal of the aips++ code tree was to isolate the user from these
+problems by providing proper definitions when necessary in aips.h; or provide
+an interface to the appropriate part of the OS in the OS module.
+
+When moving from compiler to compiler; and with the increasing standard
+adherence of some parts of the system, it was an easy way out (given the
+presence of screen text editors), to have #ifdef statements to quickly solve
+problems. Some of these are appropriate (although it would have been better if
+they had been centralised); some were maybe correct at the time of insertion,
+but forgotten when a new version of whatever part caused the problem
+appeared.
+
+Examples of what worked: the catch macros; what did not work: simple
+dependence on __GNUC__; or on __sgi when probably __irix__ (or whatever they
+call it) and some version was meant.
+
+Proposal
+-------
+
+- to unify the many different ifdef names used (you will find e.g. sgi, __sgi
+  and __sgi__ in the system. Use a set of names that are defined by the
+  system for its hardware, OS and compiler. If more than one is defined in
+  different parts, use a generic type one (like __hard__).
+- to isolate the usage of OS and hardware dependent interfaces to special
+  classes in the operating system and hardware related modules OS and IO.
+- to have more general needed compiler (and maybe occasionally OS/hardware)
+  differences catered for by either:
+  - simple macro that normally do not add code in aips.h. Example could be
+  the way imported is handled or the undoing of 'namespace' in old systems
+  - an include file named aips/xxx.h defining a macro; e.g. a way to choose
+  between including iostream or iosfwd (aips/iosfwd.h).
+  - special (global) methods ()e.g. the at_c() cast methods
+- the previous proposal necessitates the creation of an aips module. It is
+  proposed to move the test module to be a part of the aips/test, and either
+  make aips.h a module header, or move it to aips/aips.h
+- to have an overview of the different ifdef's necessary and allowed and the
+  way to include them in your program if necessary. The list to be
+  accessible through the template for .h files. Example: AIPS_DEBUG, which
+  should, with current optimisations, be used as:
+  if (debug()) { ... };
+- let the QAG police the usage
+- some problematic use of ifdef (e.g. the use of AIPS_DEBUG around include
+  files) will be removed: suggestions are welcomed
+
+--  Notes:
+- exception of the rules are, of course, necessary for some included files
+  (e.g. malloc.h -- which is in OS anyway), and String and Complex till they
+  will be based on the standard string and complex classes.
+- stand-alone programs to be used outside the aips++ environment, although
+  encouraged to use aips++ rules when possible, should be able to work in
+  additional environments (glish, aipsview)
+
+Expected Impact:
+
+The positive impact will be that if an extension of the choice is necessary
+(e.g. because a new compiler or OS is added to the system), changes have to
+be made only in one central place. Also, if a diversification is no longer
+necessary, an easy automatic procedure can get rid of it (and hence allow new
+features easily accepted).
+
+The negative impact will be the amount of work to get rid of the bad practice
+that has grown over the last few years. At the last count there were 225
+macros (excluding glish and obvious guards -- glish had 218), used throughout 
+the system.
+
+Proposed documentation changes:
+
+- add to template for .h files the gist of this proposal, plus a pointer to a
+  simple table of ifdef's provided; their use; and how to use them.
+- update the Programmer's manual (but probably too much work by now -- who
+  knows about the 'offsetof' macro?).

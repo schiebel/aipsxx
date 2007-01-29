@@ -1,0 +1,96 @@
+
+Title:                  improve STL-iterator interface for arrays and
+other
+                        aips++ containers
+Person responsible:     Joe McMullin (jmcmulli@nrao.edu)
+Originator of proposal: Wim Brouw (wim.brouw@csiro.au)
+Exploders targeted:     aips2-developers
+Time table:
+        Date of issue:          2004 june 25
+        Comments due:           2004 june 30         
+        Revised proposal:       2004 july 3         
+        Final comments due:     2004 july 5
+        Decision date:          2004 july 10
+
+	  implementation:         2004 july 15
+
+Statement of goals:
+-------------------
+
+o To improve the interface between e.g. STL algoritms and aips++
+containers;
+o To better enable the re-use of aips++ code for any or any combination
+of carrays; aips++ arrays; blocks, lattices and other aips++ containers
+o To use the STL algorithms for the notorious objcpy and objmv methods;
+especially across containers
+
+Background:
+-----------
+o most of the aips++ applications work on data containers. for speed
+reasons, often special extraction to carrays is done. this necessitates
+in some cases a variety of interfaces, and new, i.i. different,
+interfacing routines if e.g. you want to fit a spectra along an image
+axis, rather than from a carray vector. my recent experience in
+re-vamping some of the least-squares interfaces was very positive.
+o implementation of c++ standards is advanced in free gnu compilers.
+using standards as proposed can make use of internal optimisation, and
+coding speed through templates and, sometimes, specialisations. 
+o adjusting to full standard coding will be easier. gcc3.4 will already
+need, i think, careful corrections of coding errors; and analysis of
+test cases in some cases. in addition, non-heeded warnings will produce
+errors in gcc3.4
+
+
+Proposed changes:
+-----------------
+
+1. upgrade the already existing Array<>::iterator from a bi-directional
+into a random-access iterator; make Array<>.begin() and end() proper
+iterator values and clean-up any other loose ends (e.g. differentiate
+++i and i++). note that in general use of operator[] on an n-dim array
+will be slow. however, in general operator[] is not used very often.
+but, not making the iterator random-access would limit its use in those
+cases where maybe a quick try-out would be advantageous.
+2. move existing external VectorSTLIterator<> to an internal
+Vector<>::iterator, and clean up any loose ends (like adding operator->)
+3. split ArrayAccessor<> into two parts: an ArrayAxisAccessor<> (which
+implements begin() and end(), i.e. the access information for an axis),
+and an internal AAA<>::iterator, and cloes off any loose ends (and
+probably replace VectorIterator<>)
+4. make a Block<>::iterator (random-access)
+5. rewrite objcpy/mv in terms of iterator algorithms (if advantageous:
+ca use internal compiler library routines that way))
+6. remove sampledfunctional
+7. create LatticeAxisAccessot<> and LAA<>::iterator
+8. create Lattice<>::iterator (notre separate Lattice iterators could
+mayb in some cases go through data in advantageous ways (if one-operand
+algorithm, or 2-operand in special cases)
+9. wrap all 'old' containers (maps, lists, stack, queue) around standard
+STL containers
+
+
+Expected Impact:
+----------------
+o better symmetry between aips++ containers, and between aips++
+containers and STL containers.
+o automatic usage of internal, optrimised compiler library routines
+(e.g. for POD structures move/copy)
+
+Implementation:
+---------------
+1. gvd, 0.5d
+2-3. wnb, 1d
+4. wnb 1d
+5-6. wnb 2d
+7-8. gvd 4d
+9. wnb 5d
+
+this assumes that the UPchange and UPmove scripts can be used; which
+implies a cvs rai (and preferably rai) and amv
+
+
+
+Proposed documentation changes:
+-------------------------------
+changes in module and file documentation; changes in test programs will
+take the same amount of time as for the implementation.

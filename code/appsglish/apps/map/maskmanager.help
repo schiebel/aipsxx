@@ -1,0 +1,258 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: maskmanager.help,v 19.1 2004/08/25 01:25:26 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+
+\begin{document}
+
+\begin{ahobject}{maskmanager}{Data manager for mask items}
+
+\ahinclude{maskmanager.g}
+\ahcategory{aips}
+
+\ahcategory{map}
+
+   %
+   %ahkeyword registers module keywords
+   %
+\ahkeyword{map}{}
+\ahkeyword{mask}{}
+
+\ahmethods{}
+
+%
+%
+
+%%\medskip
+%%\noindent{\bf Summary}
+
+\bigskip
+{\bf Overview of {\tt maskmanager} tool functions}
+
+A mask data item is an item container representing different forms of
+masks.  It represents also the different ways masks can be made or addressed. The mask data manager allows the creation of mask
+data items of the following types:
+
+\begin{itemize}
+
+\item \ahlink{boxmask}{map:maskmanager.boxmask} - a mask data item for
+a mask created from a specified box described by its blc and trc.
+
+\item \ahlink{exprmask}{map:maskmanager.expr} - a mask data item
+representing a mask which represent regions expressed by a LEL
+expression.
+
+\item \ahlink{fromimage}{map:maskmanager.fromimage} - a mask data item
+created interactively by the user using a viewer display of a given
+image and mask image.
+
+\item \ahlink{mask}{map:maskmanager.mask} - a mask data item created
+from an existing mask image.
+
+\item \ahlink{mask}{map:maskmanager.regionmask} - a mask data item
+represented by a region, as created by a regionmanager tool
+
+\item \ahlink{threshold}{map:maskmanager.thresholdmask} - a mask data item
+represented by thresholding a given image
+\end{itemize}
+
+
+\begin{ahconstructor}{maskmanager}{Create a mask data manager}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{{\tt maskmanager tool} or fail}
+\begin{ahdescription}
+
+Constructs a mask data manager, which can be used to create mask
+data items of the enumerated types. The default mask data manager is
+called {\tt dmk}, and is created when the the file {\tt
+maskmanager.g} is included.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+mymm := maskmanager()
+\end{verbatim}
+
+This creates a mask manager called {\tt mymm}.
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+%%% Functions
+
+\begin{ahfunction}{boxmask}{Create a mask data item from a pixel box}
+\begin{ahargs}
+  \ahaddarg{blc}{Bottom left corner of box}{[]}{Vector of 2 integers}
+  \ahaddarg{trc}{top right corner of box}{[]}{Vector of 2 integers}
+  \ahaddarg{value}{value of the mask in box}{1.0}{Float}
+%%%  \ahaddarg{return}{name of data item which is created}{}{}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+
+\begin{ahdescription}
+
+This function creates a mask data item which represent a mask over 
+a pixel box as described by its blc and trc.
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item1:= mymm.image(blc=[10, 20], trc=[40, 50], value=1.0);
+\end{verbatim}
+
+Create a mask data item {\tt item1} from the blc and trc specified
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{exprmask}{Create a mask data item from a LEL expression}
+\begin{ahargs}
+  \ahaddarg{expr}{LEL expression}{}{LEL expression}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+\begin{ahdescription}
+
+This function creates a mask data item which represents a mask region 
+as defined by the LEL expression
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item2 := mymm.exprmask(expr='"3C273XC1.clean">0.5')
+\end{verbatim}
+
+Create a mask data item {\tt item2} which represents the region where
+3C273XC1.clean is greater than 0.5Jy.  
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fromimage}{Create a mask data item by defining mask interactively from a viewer}
+\begin{ahargs}
+  \ahaddarg{image}{name of image to be used in viewer}{''}{String}
+  \ahaddarg{maskimage}{name of  maskimage}{''}{String}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+\begin{ahdescription}
+
+This function creates a mask data item from an interactive definition
+of mask regions on the viewer by the user. This function will bring
+the viewer with the reference image (calling
+\ahlink{interactivemask}{map:interactivemask} tool). The user should
+click on the left hand menu on the region button of choice (last 2
+buttons on left hand menu), then draw the region of choice and double
+click inside. This box or polygon region can be dragged around by
+using the left mouse and double clicked any place where its to be
+selected. The user can click on the 'refresh' button to see what mask
+region has been defined. The user can 'add' or 'remove' regions till
+the 'Done with masking' button is pressed. If the maskimage is the
+name of an existing mask image then the user can update that mask.
+ 
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item3 := mymm.fromimage(image='3C273XC1.clean', maskimage='3C273XC1.clean.mask');
+\end{verbatim}
+
+Create a mask data item {\tt item3} from regions interactively defined on a 
+viewer.
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{mask}{Create a mask data item as defined in a mask image}
+\begin{ahargs}
+  \ahaddarg{mask}{name of mask image}{''}{String}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+\begin{ahdescription}
+
+This function creates a mask data item from a mask image
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item4 := mymm.fromimage(mask='3C273XC1.clean.mask');
+\end{verbatim}
+
+Create a mask data item {\tt item4} from a mask image. 
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{regionmask}{Create a mask data item as defined by a region}
+\begin{ahargs}
+  \ahaddarg{region}{name of a region}{unset}{any valid region}
+  \ahaddarg{value}{value to set mask to}{1.0}{float}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+\begin{ahdescription}
+
+This function creates a mask data item from a region
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item5 := mymm.regionmask(region=drm.quarter());
+\end{verbatim}
+
+Create a mask data item {\tt item5} from the inner quarter region created by the default region manager. 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{thresholdmask}{Create a mask data item as defined by  regions from thresholding an image}
+\begin{ahargs}
+  \ahaddarg{image}{name of image}{''}{String}
+  \ahaddarg{threshold}{value above which to mask}{0.0}{float}
+\end{ahargs}
+\ahreturns{{\tt mask data item} or fail}
+\begin{ahdescription}
+
+This function creates a mask data item from regions of an image which lies above a threshold
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mymm:= maskmanager();
+item6 := mymm.thresholdmask(image='3C273XC1.clean', threshold='2');
+\end{verbatim}
+
+Create a mask data item {\tt item5} which represents regions which have flux densities larger than 2 Jy. 
+
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}
+

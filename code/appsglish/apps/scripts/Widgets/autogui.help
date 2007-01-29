@@ -1,0 +1,523 @@
+%% Copyright (C) 1999,2000,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: autogui.help,v 19.2 2004/08/25 02:11:40 cvsmgr Exp $
+\begin{ahobject}{autogui}{Tool to build and operate a graphical form interface}
+
+\ahinclude{autogui.g}
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+\begin{ahdescription}
+
+This \tool\ is an extremely useful one which builds a ``form-like''
+graphical user interface (GUI) from a simple record whose fields
+describe individual parameters which the user may be allowed to edit.
+The GUI is displayed with the various parameters arranged vertically.
+Some of the parameters may be stored in
+\ahlink{rollup widgets}{widgets:rollup}.  Each parameter is displayed
+with a text label, a widget (from the \ahlink{widgets}{widgets}
+module) to display the current value and optionally allow the user to
+edit it, a ``spanner'' menu (see \ahlink{guientry}{widgets:guientry}),
+and optionally an ``auto-apply'' check-button.
+
+Generally, an autogui \tool\ will be used to show the state of some
+``parent'' \tool\ to the user, and/or allow them to edit the state.
+Consequently, the autogui \tool\ is a {\em subsequence}, allowing the
+\tool\ to emit events, and catch inbound events.  These events can be
+used to ensure that the GUI and any parent \tool\ remain synchronised
+as the user modifies widgets in the GUI.  Furthermore, if the autogui
+is used in this way, multiple (duplicate) autogui \tools\ can be used 
+to control one and the same underlying parent.  This is done, for
+example, in the \ahlink{viewerdisplaydata}{viewer:viewerdisplaydata}
+\tool.  An obvious use of this capability would be to display
+identical autogui \tools\ on separate desktops (or even screens!) for
+a given \tool.
+
+In addition to the event interface, the autogui \tool\ provides a
+small number of functions to control its behaviour.
+
+\end{ahdescription}
+
+\bigskip \noindent {\bf Parameter description} \medskip
+
+Most transactions of the autogui \tool\ involve a ``parameter
+record.''  This is a \glish\ record containing one or more top-level
+fields.  In {\em full}\/ form, each top-level field contains a \glish\
+record which completely describes a particular parameter in terms of
+its name, parameter type, default value, current value, its possible
+values (for 'choice' or 'range' parameters), whether it can be
+'unset', whether it can be 'auto-apply' and whether it is editable by
+the user.  In {\em short}\/ form, each top-level field simply contains
+the value for its parameter.
+
+The standard fields in a (full) single parameter record are:
+\begin{itemize}
+\item{\tt dlformat:} a string giving the name of the field of the
+parameter record in which this particular parameter is found.
+\item{\tt listname:} a string giving the name of this parameter which
+should be displayed in the GUI to identify it.
+\item{\tt ptype:} a string giving the type of the widget to be used
+for this parameter. If this field is not included, no widget will be
+created. Leaving this field blank will create a default entry box.
+\item{\tt value:} the present value of this parameter.
+\item{\tt default:} the default value of this parameter.
+\end{itemize}
+
+The optional fields in a (full) single parameter record are:
+\begin{itemize}
+\item{\tt context:} if present, this parameter will be placed in a 
+\ahlink{rollup widget}{widgets:rollup} having as its name the string
+contained in this field of the record.
+\item{\tt autoapply:} if the autogui \tool\ was constructed with 
+{\tt autoapply=T} [default], then a 
+check-button will be placed next to this parameter.  When this button is
+checked, any modification to this parameter will be immediately
+emitted from the autogui \tool\ in a {\tt setoptions} event (see
+below).  This optional field, if present, indicates the initial state
+of this auto-apply button.
+\item{\tt dir:} if present, and is {\tt 'out'}, then this parameter is
+considered to be output-only, so the user will be unable to edit it.
+\item{\tt allowunset:} if present, and is {\tt T}, then the
+constructed widget will allow this parameter to be 'unset'.
+\item{\tt dependency\_group:} if present, this specifies a tag which
+identifies this as a parameter which has a dependency on other
+parameters with the same tag.  At present, all this means is that
+parameters with the same {\tt dependency\_group} tag must be mutually
+exclusive. 
+\end{itemize}
+
+We now list the available parameter types ({\tt ptype}), and their
+additional required record fields:
+
+\begin{itemize}
+
+\item{\tt boolean:} a \ahlink{boolean guientry widget}
+{widgets:guientry.boolean} is provided with two choices: {\tt T} or
+{\tt F}.  No additional required fields.
+
+\item{\tt choice:} a \ahlink{choice guientry widget}
+{widgets:guientry.choice} is provided for selection from a set list of
+items.  Additional required record fields are:
+\begin{itemize}
+\item{\tt popt:} a vector of strings which are the valid options.
+\end{itemize}
+
+\item{\tt directory:} a \ahlink{file guientry widget}{widgets:guientry.file}
+is provided for selecting a directory.  No additional required fields.
+
+\item{\tt file:} a \ahlink{file guientry widget}{widgets:guientry.file}
+is provided for selecting a file.  No additional required fields.
+
+\item{\tt floatrange:} a \ahlink{range guientry widget}{widgets:guientry.range}
+is provided for selecting a single float or double from a range.
+Additional required record fields are:
+\begin{itemize}
+\item{\tt pmin:} minimum allowed real value
+\item{\tt pmax:} maximum allowed real value
+\item{\tt presolution:} resolution of provided scale widget
+\end{itemize}
+Additional optional record fields are:
+\begin{itemize}
+\item{\tt provideentry:} if present, and is {\tt T}, then an entry
+widget will be provided alongside the scale widget to allow the user
+to type a specific value.  In this case, the scale will be
+``extendable'' so that values outside the initial acceptable range
+will cause the scale to resize itself, and the allowed minimum and
+maximum to expand to accomodate the new specific value.
+\end{itemize}
+
+\item{\tt intrange:} a \ahlink{range guientry
+widget}{widgets:guientry.range} widget is provided for selecting a
+single integer from a given range.  Additional required record fields
+are:
+\begin{itemize}
+\item{\tt pmin:} minimum allowed integer value
+\item{\tt pmax:} maximum allowed integer value
+\end{itemize}
+Additional optional record fields are:
+\begin{itemize}
+\item{\tt provideentry:} if present, and is {\tt T}, then an entry
+widget will be provided alongside the scale widget to allow the user
+to type a specific value.  In this case, the scale will be
+``extendable'' so that values outside the initial acceptable range
+will cause the scale to resize itself, and the allowed minimum and
+maximum to expand to accomodate the new specific value.
+\end{itemize}
+
+\item{\tt measure:} a measure widget
+is provided for selecting an \aipspp\ \ahlink{measure}{measures}.  No
+additional required options.
+
+\item{\tt quantity:} a \ahlink{quantity guientry
+widget}{widgets:guientry.quantity} widget
+is provided for selecting an \aipspp\ \ahlink{quantity}{quanta}.  No
+additional required fields.
+
+\item{\tt region:} a \ahlink{region guientry widget}{widgets:guientry.region}
+is provided for selection an \aipspp\ \ahlink{region}{images}.  No
+additional required fields.
+
+\item{\tt scalar:} a \ahlink{scalar guientry
+widget}{widgets:guientry.scalar} is provided for entering a scalar
+(integer, double, or complex).  No additional required fields.
+
+\item{\tt table:} a \ahlink{file guientry widget}{widgets:guientry.file}
+is provided for selecting an \aipspp\ table.  No additional required
+fields.
+
+\item{\tt userchoice:} an \ahlink{extendoptionmenu}{widgets:extendoptionmenu} 
+is used for selection from a user-extendable list of items.
+Additional required record fields are:
+\begin{itemize}
+\item{\tt popt:} a vector of strings which are the initial valid options.
+\end{itemize}
+
+\item{\tt minmaxhist:} a \ahlink{minmaxhist guientry
+widget}{widgets:guientry.minmaxhist} is provided for selection of
+minimum and maximum in a graphical way.
+Additional required record fields are:
+\begin{itemize}
+\item{\tt minvalue} The lower limit of the range.
+\item{\tt maxvalue} The upper limit of the range.
+\end{itemize} 
+Additional optional record fields are:
+\begin{itemize}
+\item{\tt default} The default range.
+\item{\tt histarray} The array containing a histogram to draw.
+\item{\tt imageunits} The brightness units used as labels.
+\end{itemize}
+
+\end{itemize}
+
+\bigskip \noindent {\bf Event description} \medskip
+
+Two important events are emitted by the autogui \tool, to which
+well-written \glish\ code will respond!  The {\tt setoptions} event is
+emitted whenever an ``auto-apply'' parameter is modified in the GUI.
+Its {\tt \$value} is a short-form parameter record, where the
+top-level fields simply contain the values of each parameter.  It is
+also emitted when the action button is pressed, if the autogui \tool\
+was constructed without a parent frame ({\tt parent=F}), and the {\tt
+actionlabel} argument was a valid string.
+
+The {\tt newuserchoicelist} event is emitted whenever the
+extendoptionmenu widget for a parameter of {\tt ptype='userchoice'}
+was extended by the user.  This simply allows the programmer to detect 
+when this happens, and modify their own local copy of the parameter
+set accordingly.  This might be useful, for example, when they will
+create another autogui \tool\ later on, and would like it to contain
+the additions the user made to any extendoptionmenus.  The {\tt
+\$value} of this event has two fields:
+\begin{itemize}
+\item{\tt param:} the internal name of the parameter which whose 
+option list was extended (ie. {\tt dlformat})
+\item{\tt newvalue:} the new value added to the choice list
+\end{itemize}
+
+\begin{ahexample}
+In the example below, we build a simple autogui \tool\ with three
+parameters.  
+
+\begin{verbatim}
+include 'autogui.g'
+
+# we will put a "parameter set" into "parameters":
+parameters := [=];
+
+# an example of the floatrange parameter type.  Its auto-apply 
+# button will be unchecked, and this parameter cannot be 'unset':
+parameters.power := [=];
+parameters.power.dlformat    := 'power';
+parameters.power.listname    := 'Scaling power';
+parameters.power.ptype       := 'floatrange';
+parameters.power.pmin        := -5.0;
+parameters.power.pmax        := +5.0;
+parameters.power.presolution := 0.1;
+parameters.power.default     := 0.0;
+parameters.power.value       := 1.5;
+parameters.power.autoapply   := F;
+parameters.power.allowunset  := F;
+
+# an example of the userchoice parameter type.  Its auto-apply
+# button will be checked, and it also cannot be 'unset':
+parameters.color := [=];
+parameters.color.dlformat   := 'color';
+parameters.color.listname   := 'Line color';
+parameters.color.ptype      := 'userchoice';
+parameters.color.popt       := "black white red yellow green";
+parameters.color.default    := 'black';
+parameters.color.value      := 'black';
+parameters.color.autoapply  := T;
+parameters.color.allowunset := F;
+
+# an example of the region parameter type.  Its auto-apply 
+# button will be checked, and it CAN be 'unset':
+parameters.region := [=];
+parameters.region.dlformat   := 'region';
+parameters.region.listname   := 'Displayed region';
+parameters.region.ptype      := 'region';
+parameters.region.default    := unset;
+parameters.region.value      := unset;
+parameters.region.autoapply  := T;
+parameters.region.allowunset := T;
+
+# construct an autogui.  We will put auto-apply=T since some of 
+# our parameters are auto-apply, and ask for a button with label
+# 'Go!'.
+
+myautogui := autogui(parameters, 'Demo autogui', actionlabel='Go!',
+                     autoapply=T);
+
+# and respond to the events it emits:
+whenever myautogui->setoptions do {
+  # do something more interesting than this though!
+  print "New options for ", field_names($value), "emitted ...";
+}
+\end{verbatim}
+
+If you run this code, you should see a GUI like that shown in
+\ref{fig:agintro}.  Modifying either the 'Displayed region' or 
+'Line color' widgets should result in information being printed
+at the command line by the {\tt whenever} statement at the end of the
+example.  Likewise, pressing the 'Go!' button will emit {\em all}\/ 
+parameters.
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=agintro.ps,width=3.6in}
+\caption{A simple autogui \tool}
+\label{fig:agintro}
+\end{center}
+\end{figure}
+
+\end{ahexample}
+
+\begin{ahconstructor}{autogui}{Create an autogui \tool}
+\begin{ahargs}
+  \ahaddarg{params}{Record to define the autogui}{}{Record}
+  \ahaddarg{title}{title string if top-level frame constructed internally}{'autogui'}{String}
+  \ahaddarg{toplevel}{top-level parent frame}{F}{frame or boolean}
+  \ahaddarg{map}{map the GUI to the screen immediately?}{T}{boolean}
+  \ahaddarg{actionlabel}{label for action button}{F}{string or boolean}
+  \ahaddarg{autoapply}{Show auto-apply buttons}{T}{boolean}
+  \ahaddarg{expand}{Expand policy}{'none'}{'x'|'y'|'both'|'none'}
+  \ahaddarg{widgetset}{widgetserver \tool\ to use to build the GUI}{dws}{widgetserver \tool}
+\end{ahargs}
+
+\ahreturns{subsequence}
+
+\begin{ahdescription}
+
+This is the only constructor for the autogui \tool.  The first
+argument, {\tt params}, contains the various parameters which will be
+used to generate the GUI.  If a parent frame is not given in the
+{\tt toplevel} argument, a top-level frame will be created with title as
+given in the {\tt title} argument.  If the {\tt actionlabel} argument
+is given as a string, then a button will be placed at the bottom of
+the GUI with that string as its label.  Pressing this button will
+cause the autogui \tool\ to emit all parameters and their values via a
+{\tt setoptions} event.  If the {\tt map} argument is {\tt F}, then
+the GUI will be constructed but not shown to the user immediately, but
+can be shown via a call to autogui.map.  The same effect can be
+controlled more carefully if a presently unmapped parent frame is
+given to {\tt toplevel}.  The final two arguments just provide some
+future flexibility with respect to widgetserver and guientry \tools.
+
+\end{ahdescription}
+
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{buttonbar}{Return the frame in which buttons are placed}
+\ahreturns{frame}
+\begin{ahdescription}
+
+This function returns a handle to the frame in which the autogui
+\tool\ places any buttons, such as the action button and the dismiss
+button.  This is provided so that programmers can add their own
+buttons in a simple way.  A more flexible way to do this is to provide
+a parent frame to the autogui \tool\ constructor, and build your own
+GUI in the same frame.  {\em Note that this function is only available 
+if a top-level frame was {\em not}\/ given during construction.}
+
+\end{ahdescription}
+\begin{ahexample}
+
+Assuming you have already created an autogui \tool\ in the variable 
+{\bf myautogui}, perhaps as per the above example, you may do
+something like this to place a ``Free Beer!'' button near the 
+``Go!'' button:
+\begin{verbatim}
+# ...
+myf := myautogui.buttonbar();
+myb := dws.button(myf, 'Free Beer!', type='action');
+whenever myb->press do {
+  # ...
+}
+# ...
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{get}{Read the GUI and return the current settings}
+\ahreturns{short-form parameter record}
+\begin{ahdescription}
+
+This function reads the GUI, extracting {\em all}\/ parameter values,
+and returns the result in a {\em short-form}\/ parameter record.  In
+this form, the top-level fields simply contain the values
+corresponding to the parameters having the top-level field names as
+their {\tt dlformat} parameter bit.  When this function is called, a
+{\tt setoptions} event is also emitted.  This assists in keeping
+multiple clients aware of the state of the autogui \tool.
+
+\end{ahdescription}
+\begin{ahexample}
+
+Assuming you have already created an autogui \tool\ in the variable 
+{\bf myautogui}, perhaps as per the above example, you may do
+something like this to read the current values into a record:
+\begin{verbatim}
+# ...
+currvalues := myautogui.get();
+# ...
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{map}{Map the GUI to the screen}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function is only useful if at construction, the {\tt map} 
+argument was forced to be {\tt F}.  In this case, you can use this
+function to map the GUI to the screen at some later stage.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Finish using this autogui \tool}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function should be used when you have finished using a 
+particular autogui \tool.  It unmaps the GUI from the screen, 
+stops it emitting and responding to events, and releases any
+resources being used by the autogui.
+
+\end{ahdescription}
+\begin{ahexample}
+
+Assuming you have already created an autogui \tool\ in the variable 
+{\bf myautogui}, perhaps as per the above example, you may finish
+using it by doing:
+\begin{verbatim}
+# ...
+myautogui.done();
+# ...
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{fillgui}{Fill the autogui \tool\ with updated values}
+\begin{ahargs}
+  \ahaddarg{wparams}{new parameter values}{}{full-form parameter record}
+  \ahaddarg{what}{which sub-field to extract new values from}{'value'}{'value' or 'default'}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function is mostly used internally to construct and fill the
+GUI.  However, it can be used externally to refresh the GUI to a new
+set of parameters.
+
+\end{ahdescription}
+\begin{ahexample}
+
+For example, suppose you want to add a ``Restore defaults'' button to
+your autogui.  When the user presses it, then the autogui \tool\ will
+be told to re-fill the GUI with {\tt what='default'}.  
+\begin{verbatim}
+# ... myautogui setup already ...
+myf := myautogui.buttonbar();
+myb := dws.button(myf, 'Restore defaults');
+whenever myb->press do {
+  myautogui.fillgui(parameters, 'default');
+}
+# ...
+\end{verbatim}
+Of course, we should also update the {\tt value} fields of the
+parameters to be the same as the {\tt default} fields, but that is
+left to the reader...
+
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{modifygui}{Modify the GUI parameter set}
+\begin{ahargs}
+  \ahaddarg{wparams}{new parameters}{}{full-form parameter record}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+{\em This function is not completely implemented yet.}  It is provided 
+so that an existing autogui \tool\ can be modified in terms of the
+names of its parameters, and the parameter types etc.  Presently, only
+fields of {\tt ptype} 'intrange', 'floatrange' and 'minmaxhist'  are noticed by this
+function. Their labels are updated according to the {\tt listname} 
+subfield, their ranges according to the {\tt pmin} and {\tt pmax}
+subfields, and in the case of 'minmaxhist', the data being displayed
+can be changed via the {\tt histarray} subfield.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahfunction}{autoguitest}{Test the autogui}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function provides a simple test of all widgets. A frame is
+contructed with all possible entry widgets. The frame has button for
+emitting the current values (Apply), Enabling and Disabling the
+widgets, and Clearing the values. If a new widget is introduced into
+autogui, it should be represented here in the test.
+
+\end{ahdescription}
+\end{ahfunction}
+
+

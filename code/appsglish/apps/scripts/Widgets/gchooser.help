@@ -1,0 +1,186 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: gchooser.help,v 19.2 2004/08/25 02:13:58 cvsmgr Exp $
+\begin{ahobject}{gchooser}{Tool for generating widgets for choosing
+items interactively}
+
+\ahinclude{gchooser.g}
+
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This tool generates a Tk widget for choosing items interactively.  The
+items must be associated with x, y coordinates, and a label. The items
+are plotted using the \ahlink{pgplotter}{plotter:pgplotter}, and the user is
+allowed to select items by left-clicking or to deselect items by
+right-clicking. The plot frame may also be printed as a postscript
+file or saved as an AIPS++ plot file.
+
+An example of the use of gchooser is given in figure 
+\ref{fig:gchoosertest}.
+
+The constructor returns a subsequence with functions:
+
+\begin{description}
+\item[self.done] Delete this widget
+\item[self.get] Get a record containing information on the
+choices
+\item[self.insert] Insert a set of choices as a vector of the
+selected indices.
+\end{description}
+
+The events are:
+
+\begin{description}
+\item[self->select] Returns index selected
+\item[self->deselect] Returns index deselected
+\item[self->values] A set of values was accepted. The returned record
+contains information about the choices.
+\end{description}
+
+The selection works as follows:
+
+\begin{description}
+\item[To select a region] Click mouse button 1 (usually the left hand
+button) and drag over the region that you wish to select. All elements
+in the region delineated are selected, and the items selected are
+plotted in green.
+\item[To select a given element] Click mouse button 2 (usually the middle
+button) near a label. The item selected in plotted in green.
+\item[To deselect a given element] Click mouse button 3 (usually the
+right hand button) near a label. The item deselected in plotted in
+red.
+\item[To select all items] Click the All button in the bottom left
+hand corner. All items will be plotted in green.
+\item[To dselect all items] Click the None button in the bottom left
+hand corner. All items will be plotted in red.
+\end{description}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+<img src="gchoosertest.gif"><BR>
+An example of a graphical chooser. Selected items are in green.
+</center>
+\end{rawhtml}
+\label{fig:gchoosertest}
+\end{htmlonly}
+
+\begin{latexonly}
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=gchoosertest.ps,width=6in}
+\caption{An example of a graphical chooser. Selected items are
+in green.}
+\label{fig:gchoosertest}
+\end{center}
+\end{figure}
+\end{latexonly}
+
+If the argument axes is set to 'sky', then the axes are
+labelled according to interpretation as Right Ascension (x)
+and Declination (y).
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'gchooser.g'   
+include 'table.g'   
+t:=table('3C273XC1.ms/ANTENNA');
+position := t.getcol('POSITION');
+labels := t.getcol('NAME');
+indices := t.getcol('ANTENNA_ID')+1;
+t.done();
+x := position[2,];
+y := -position[1,];
+
+gc := gchooser(labels=labels, indices=indices, x=x, y=y, autoref=T,
+	 plottitle='Antenna locations',
+	 width=500, height=500);
+whenever gc->values do {
+  print "Values are ", $value;
+}
+whenever gc->select do {
+  print "Selected ", $value
+}
+whenever gc->deselect do {
+  print "Deselected ", $value
+}
+-
+Selected 4
+Selected 28
+Selected 11
+Selected 26
+Selected 17
+Selected 15
+Selected 18
+Selected 24
+Values are [selection=[4 11 15 17 18 24 26 28] , labels=VLA:W6 VLA:OUT
+VLA:N2 VLA:N4 VLA:E4 VLA:E6 VLA:E2 VLA:W2, x=[-207.86 37.1272 32.3322
+25.3736 170.777 304.882 77.7937 0] , y=[-78.7424 14.7828 44.846
+89.6066 -20.8221 -55.868 3.48509 0] ]
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{gchooser}{Make a gchooser tool}
+\begin{ahargs}
+\ahaddarg{parent}{Parent frame: optional}{F}{frame agent}
+\ahaddarg{labels}{List of labels}{''}{Vector of strings}
+\ahaddarg{x}{X positions}{[]}{Numeric vector}
+\ahaddarg{y}{Y positions}{[]}{Numeric vector}
+\ahaddarg{xref}{X reference}{unset}{Numeric}
+\ahaddarg{yref}{Y reference}{unset}{Numeric}
+\ahaddarg{autoref}{Determine reference position automatically}{F}{Boolean}
+\ahaddarg{title}{Title of widget}{'Graphical chooser (AIPS++)'}{String}
+\ahaddarg{xlabel}{X axis label}{'X'}{String}
+\ahaddarg{ylabel}{Y axis label}{'Y'}{String}
+\ahaddarg{axes}{Type of axis}{''|'sky'}{String}
+\ahaddarg{plottitle}{Plot title}{''}{String}
+\ahaddarg{width}{Width of plot frame (pixels)}{500}{Integer}
+\ahaddarg{height}{Height of plot frame (pixels)}{500}{Integer}
+\ahaddarg{pad}{Padding around plot (fraction of axis length)}{0.15}{Float}
+\ahaddarg{widgetset}{Widget server to use}{dws}{A widgetserver closure tool}
+\end{ahargs}
+\ahreturns{gchooser widget}
+\begin{ahdescription}
+Constructs a gchooser according to the specified construction
+arguments, and returns a ref to the tool. 
+\end{ahdescription}
+\end{ahconstructor}
+ 
+\end{ahobject}
+
+\begin{ahfunction}{gchoosertest}{Test the gchooser widgets}
+\ahreturns{Boolean}
+\begin{ahdescription}
+This demonstrates the use of the gchooser widget on field
+positions from a measurement set.
+\end{ahdescription}
+\end{ahfunction}

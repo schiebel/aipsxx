@@ -1,0 +1,764 @@
+In the following we document the publically available commands from the
+main tool level and at the operations, results manager and plotter
+levels.
+
+The scripter is intended as both a tutorial and a means of constructing
+batch command scripts. It is invoked from the AIPS++ command line as:
+\begin{verbatim}
+- ds.gui()
+F
+\end{verbatim}
+
+The Options menu "Write Script commands" must then be selected. Subsequent
+commands will then be written to the scripter. See other info on scripter.
+NOTE: The submit button on the scripter will not work since this command
+executes the script as a shell client which doesn't know about the tool
+you've created. Instead to run a stored script (default name is
+aips++.script.g), simply include it (include "aips++.script.g").
+
+\subsection{dish functions}
+
+\subsubsection{addop}
+
+A means of adding new operations formally to the DISH tool (see Operation 
+template). 
+\begin{verbatim}
+mydish.addop(include_file, operation_name);
+\end{verbatim}
+
+\subsubsection{busy}
+
+A developer tool to yield a busy cursor.
+\begin{verbatim}
+mydish.busy(T or F);
+\end{verbatim}
+
+\subsubsection{dologging}
+
+A toggle switch which determines whether commands from the GUI will be 
+logged to the scripter.
+\begin{verbatim}
+mydish.dologging(T or F);
+\end{verbatim}
+
+\subsubsection{doselect}
+
+A toggle switch which determines whether commands operations will operate
+on the last viewed (the default behavior) or upon the selected item in
+the results manager. This gives the ability of performing bulk processing
+on SDIterators. Selecting will also change the GUI state of the Option
+'select from rm (for SDITs)'.
+
+\begin{verbatim}
+mydish.doselect(T or F);
+\end{verbatim}
+
+\subsubsection{done}
+
+Exits and destroys the current Dish tool.
+
+\subsubsection{gui}
+
+\subsubsection{history}
+
+Returns a history line. It takes two
+arguments: 1) a string of the command executed , 2) a record of the inputs
+to that command. This line can then be appended to the history of an
+SDRecord or SDIterator.
+\begin{verbatim}
+- mydish.history('dish.ops().smooth.settype',[type='HANNING']);
+ok := mydish.ops().smooth.settype(type="HANNING" ) 
+\end{verbatim}
+
+\subsubsection{logcommand}
+
+Writes a command to the scripter. logcommand uses the same syntax as history
+but the information is logged to the scripted rather than to the record's
+history.
+
+\subsubsection{message}
+
+Writes a command to the DISH GUI message entry.
+
+\subsubsection{open}
+
+Opens date (MeasurementSet or Flat Table) for use in DISH (it is loaded into
+the results manager and can be manipulated).
+
+\subsubsection{ops}
+
+Access all of the operations and their functions (see dish operation
+functions).
+
+\subsubsection{plotter}
+
+Access the plotter and its functions (see dish plotter functions).
+
+\subsubsection{restorestate}
+\subsubsection{rm}
+
+Access the results manager and its functions (see dish results manager
+functions).
+
+\subsubsection{savestate}
+
+Saves the state of the GUIs and plotter to a file. The default file is
+in the home aips++/dishstate directory called default. This may be altered
+with the statefile function.
+
+\subsubsection{statefile}
+
+Changes the location that the state of Dish's GUIs and plotter will be
+saved to. The full pathname is required.
+
+\begin{verbatim}
+mydish.statefile('mydefaultstate');
+mydish.savestate();			# saves to mydefaultstate in the
+					# current directory
+\end{verbatim}
+
+\subsubsection{type}
+
+A mandatory function required by the toolmanager. The type of any dish tool
+is 'dish'.
+
+\subsection{dish plotter functions -- dish.plotter()}
+
+
+\subsubsection{destroy\_plotter}
+
+Dismisses the plotter.
+
+\subsubsection{clear\_plotter}
+
+Clears plotter.
+
+\subsubsection{get\_data\_vector}
+
+Retrieves either the x or y data vectors for a viewed SDRecord.
+\begin{verbatim}
+mydish.plotter().get_data_vector('x');
+mydish.plotter().get_data_vector('y');
+\end{verbatim}
+
+\subsubsection{compute\_statistics}
+
+An internal tool for calculation of the statistics. It can also be used
+easily by the user. The inputs are the x-vector, y-vector, x-inital, and
+x-final. For example, to get the statistics on the channels 1-25 on the
+currently displayed data at the command line.
+\begin{verbatim}
+- myx:=mydish.plotter().get_data_vector('x');
+- myy:=mydish.plotter().get_data_vector('y');
+- mydish.plotter().compute_statistics(myx,myy,myx[1],myx[25]);
+[mean=0.0554615276, stddev=0.104077502, x1=221122.843, x2=270078.864] 
+\end{verbatim}
+
+\subsubsection{redraw}
+
+Redraws the screen.
+
+\subsubsection{plotrec}
+
+Plots an SDRecord to the plotter. The inputs are:
+\begin{verbatim}
+mydish.plotter().plotrec(xvector,yvector,name,object,xlabel,ylabel,overlay=T
+	or F,refocus=T or F,startChan,endChan)
+For example, to manually plot an SDRecord from the results manager called 
+myrec:
+
+- mydish.plotter().plotrec(myrec.data.desc.chan_freq.value,myrec.data.arr,'dumb','Title','my x','my y')
+T 
+
+\end{verbatim}
+
+\subsubsection{plotter\_command}
+
+Gives the full range of PGPLOT commands within DISH for augmenting plots.
+Any command can be duplicated (NOTE: only 9 arguments are currently 
+accepted):
+\begin{verbatim}
+- mydish.plotter().plotter_command('sci',5);                          
+- mydish.plotter().plotter_command('mtxt','t',2.0,0,0,'Hello Reno!');
+- # this will write a light blue message of Hello Reno, 2 characters above
+- # the top line of the plotter window.
+\end{verbatim}
+\subsubsection{create}
+
+Creates a plotter frame if one doesn't already exist.
+
+\subsubsection{Developer tools:}
+\par{cursor\_agent}
+\par{register\_range}
+\par{clear\_entry}
+\par{data\_exists}
+\par{set\_button\_state}
+\par{is\_active}
+\par{not\_active}
+\par{assert\_range\_cursor}
+\par{deassert\_range\_cursor}
+\par{prod\_statistics}
+\par{set\_range\_notify}
+\par{cursorpos}
+\par{b3cursorcall}
+\par{compute\_statistics}
+\par{brief\_header}
+\par{full\_header}
+\par{view\_sdrec}
+
+\subsection{dish results manager functions -- dish.rm()}
+
+\subsubsection{add}
+
+Add an SDRecord to the Results Manager. The syntax is:
+\begin{verbatim}
+mydish.rm().add(name,description,value,type,decorate)
+For example, using myrec:
+mydish.rm().add('myrec','something I did', myrec, type='SDRECORD');
+\end{verbatim}
+\subsubsection{getstate}
+Returns the state vector (all of the information on the results manager,
+the SDIterators/SDRecords that it contains, etc).
+\subsubsection{setstate}
+Allows changing the state of the results manager. This command is invoked
+when a restore state operation is selected from the DISH file menu.
+\subsubsection{delete}
+Deletes the item in the results manager based on it's index.
+\subsubsection{size}
+Gives the number of items in the results manager.
+\subsubsection{selectionsize}
+Gives the number of items currently selected (highlighted) in the results 
+manager.
+\subsubsection{getselectionnames}
+Returns the names of the items in the results manager that have been selected
+(highlighted) in the GUI.
+\subsubsection{getselectionvalues}
+Gets the values of all selected items in the Results Manager.
+\subsubsection{getselectiondescriptions}
+Gets the descriptions of all selected items in the Results Manager.
+\subsubsection{getnames}
+For a specified index value, it returns the name of the item in the
+results manager:
+\begin{verbatim}
+- mydish.rm().getnames(9)
+myrec1 
+\end{verbatim}
+\subsubsection{getdescriptions}
+For a specified index value, it returns the description of the item in the
+results manager.
+\subsubsection{setdescription}
+For a specified index value, it will set the description to a specified 
+string:
+\begin{verbatim}
+mydish.rm().setdescription(9,'my description is now different');
+\end{verbatim}
+\subsubsection{copy}
+
+Copies currently viewed to the clipboard.
+
+\subsubsection{paste}
+
+Pastes from the clipboard into the results manager.
+
+\subsubsection{getvalues}
+For a specified index value, it returns the values of the item in the
+Results Manager.
+
+\subsubsection{select}
+For a specified index value, it will select (and consequently display)
+the item in the Results Manager.
+
+\subsubsection{selectbyname}
+Selects the item in the Results Manager by name.
+\subsubsection{getlastviewed}
+
+Returns the SDRecord of the last viewed item in the plotter.
+
+\subsubsection{setlastviewed}
+
+For a specified index value in the results manager, it will set this
+as the last viewed item.
+
+\subsubsection{gui}
+Opens the GUI for the Results Manager if it isn't already viewed.
+\subsubsection{nogui}
+
+Specifies whether the GUI for the Results Manager should be viewed.
+\subsubsection{done}
+
+Deletes and closes down the Results Manager Tool (not recommended).
+
+\subsubsection{Developer Tools:}
+\par{wscombobox}
+
+\subsection{dish operation functions -- dish.ops()}
+
+\subsubsection{dish universal operation functions}
+Most public
+functions of an operation either set variables or execute obvious actions.
+Table 1 summarizes the public functions of the available operations.
+
+{\tiny
+\begin{longtable}{cccccccccc}
+average & function & gaussian & regrid & save & select&smooth&statistics&write\\
+setweighting&getfn&setheight&setboxwidth&setws&cws&setboxwidth&setstart&setof \\
+setalignment&setfn&setcenter&setdecimate&-&newworkingset&setdecimate&setstop&-\\
+doselection&-&setwidth&setgausswidth&-&setcriteria&setgausswidth&-&-\\
+dorestshift&-&fixheight&setgridfact&-&setws&settype&-&-\\
+-&-&fixcenter&settype&-&-&-&-&-\\
+-&-&fixwidth&-&-&-&-&-&-\\
+\end{longtable}
+}
+
+
+\subsubsection{apply}
+
+Perform the relevant operation. See Bulk Processing for more details.
+
+\subsubsection{done}
+
+This closes down access to the operation's functions. Generally this should
+*not* be done by the user.
+
+\subsubsection{getstate}
+\begin{verbatim}
+- mydish.ops().average.getstate()
+[selection=T, alignment=NONE, restshift=F, weighting=NONE] 
+\end{verbatim}
+
+\subsection{average}
+
+\subsubsection{setweighting}
+The accepted weighting schemes are: NONE, RMS, and TSYS.
+\begin{verbatim}
+- mydish.ops().average.setweighting("RMS")
+T 
+\end{verbatim}
+
+\subsubsection{setalignment}
+The accepted alignment options are: NONE, VELOCITY, and XAXIS.
+\begin{verbatim}
+- mydish.ops().average.setalignment("VELOCITY")
+T 
+\end{verbatim}
+
+\subsubsection{dorestshift}
+This option is enabled only when the alignment has been set to VELOCITY.
+This option will shift spectra to match the first in the average.
+\begin{verbatim}
+- mydish.ops().average.dorestshift(T)
+T 
+\end{verbatim}
+
+\subsubsection{doselection}
+This option determines if an active selection (from the select operation)
+should be used prior to the average.
+\begin{verbatim}
+- mydish.ops().average.doselection(T) 
+T 
+\end{verbatim}
+
+If the GUI is enabled, these functions will also check the relevant button 
+on the average GUI.
+
+An example scripter session looks as follows:
+
+\begin{verbatim}
+ok := mydish.ops().average.setalignment(alignment="NONE" )
+ok := mydish.ops().average.setweighting(weighting="NONE" )
+ok := mydish.ops().average.apply()
+\end{verbatim}
+
+\subsection{baseline}
+\subsubsection{settype}
+The accepted types are: sinusoid and polynomial.
+\begin{verbatim}
+- mydish.ops().baseline.settype("sinusoid")
+T 
+\end{verbatim}
+
+\subsubsection{setaction}
+The accepted types are: show and subtract.
+\begin{verbatim}
+- mydish.ops().baseline.setaction("show")
+T 
+\end{verbatim}
+
+\subsubsection{getaction}
+Retrieves status of the action parameter.
+\begin{verbatim}
+- mydish.ops().baseline.getaction()
+show 
+\end{verbatim}
+
+\subsubsection{setunits}
+The acceptable types are: channels and xaxis.
+\begin{verbatim}
+- mydish.ops().baseline.setunits("channels")
+T 
+\end{verbatim}
+
+\subsubsection{setorder}
+If the type of fit is polynomial, this sets the order.
+\begin{verbatim}
+- mydish.ops().baseline.setorder(3)
+T 
+\end{verbatim}
+
+\subsubsection{recalculate}
+The fit is recalculated if this state is true when apply is done.
+\begin{verbatim}
+- mydish.ops().baseline.recalculate(T)
+T 
+\end{verbatim}
+
+\subsubsection{setamplitude}
+This and the following four functions apply in cases of a sinusoid fit. 
+This sets the amplitude of the sinusoid.
+\begin{verbatim}
+- mydish.ops().baseline.setamplitude(2.)    
+T 
+\end{verbatim}
+\subsubsection{setperiod}
+Sets the period of a sinusoid fit.
+\subsubsection{setx0}
+Sets the X0 of a sinusoid fit.
+\subsubsection{setmaxiter}
+Sets the maximum number of iterations for the fit of a sinusoid.
+\subsubsection{setcriteria}
+Sets the convergence criteria for a sinusoid fit.
+
+\subsubsection{setrange}
+\subsubsection{getrange}
+This function retrieves the range for the baseline.
+\begin{verbatim}
+- mydish.ops().baseline.getrange()
+[[1:2,]
+    85.861813
+    119.882504] 
+\end{verbatim}
+
+The following functions are used mainly internally but are provided as
+public functions as well: setrangestring, convertunits, polynomial, sinusoidal.
+
+If the GUI is enabled, these functions will also check the relevant button
+on the average GUI.
+
+An example script follows. It fits a second order polynomial over the
+specified range, first to see it ("show") and then to apply it ("subtract"):
+\begin{verbatim}
+ok := mydish.ops().baseline.setorder(order=2)
+ok := mydish.ops().baseline.setrange(newrange=[-70603.3518, -53031.125] ,
+	units="xaxis" ,changeunits=F)
+ok := mydish.ops().baseline.setaction(action="show" )
+ok := mydish.ops().baseline.setrange(newrange=[119.882504,85.861813] ,
+	units="channels" )
+ok := mydish.ops().baseline.apply()
+ok := mydish.ops().baseline.setaction(action="subtract" )
+ok := mydish.ops().baseline.setrange(newrange=[119.882504:85.861813] ,
+	units="channels" )
+ok := mydish.ops().baseline.apply()
+\end{verbatim}
+
+\subsection{calculator}
+
+The calculator functions are all accessible from the command line already
+so no special interface has been provided within DISH.
+
+\subsection{function}
+
+This operation will perform some function on the data array of the selected
+SDRecord or SDIterator. The data array is accessed directly through the 
+variable ARR.
+
+\subsubsection{getfn}
+This function retrieves the function which has been set either through the
+CLI or the GUI.
+\begin{verbatim}
+- mydish.ops().function.getfn()
+3*ARR 
+\end{verbatim}
+
+\subsubsection{setfn}
+This function sets the function to be used. If the GUI is active, this will
+also be reflected in the GUI entry field.
+\begin{verbatim}
+- mydish.ops().function.setfn("4*ARR")
+T 
+\end{verbatim}
+
+An example scripter session looks as follows:
+
+\begin{verbatim}
+ok := mydish.ops().function.setfn(fn="3*ARR" )
+ok := mydish.ops().function.apply()
+\end{verbatim}
+
+\subsection{gaussfit}
+This operation allows gaussian fitting of an SDRecord(s).
+
+\subsubsection{setheight}
+Sets the initial guess for the height.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setcenter}
+Sets the initial guess for the center.
+
+\subsubsection{setwidth}
+Sets the initial guess for the width.
+
+\subsubsection{fixheight}
+Determines whether it will hold the height fixed (T or F).
+
+\subsubsection{fixcenter}
+Determines whether it will hold the center fixed (T or F).
+
+\subsubsection{fixwidth}
+Determines whether it will hold the center fixed (T or F).
+
+\begin{verbatim}
+ok := mydish.ops().gaussfit.setnumber(numgauss=1)
+ok := mydish.ops().gaussfit.setheight(heights="37.149597" ,fixed=F)
+ok := mydish.ops().gaussfit.setcenters(centers="8980.08289" ,fixed=F)
+ok := mydish.ops().gaussfit.setwidth(widths="18358.5081" ,fixed=F)
+ok := mydish.ops().gaussfit.apply()
+\end{verbatim}
+
+\subsection{regrid}
+This operation allows for more general regridding of data in an SDRecord.
+It allows all of the options in smooth in addition to a spline interpolation
+and a Fourier Transform interpolation.
+
+The following are identical to the smooth operation: setboxwidth, setdecimate,
+setgausswidth. 
+
+\subsubsection{setgridfact}
+Sets the Grid Factor for interpolations (Spline or FFT).
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{settype}
+Additional types are splineint and ftint.
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{save}
+
+This operation will store results (i.e. SDRecords) to a specified SDIterator
+or working set. The working set must already exist (create through the File
+menu, New command).
+
+\subsubsection{setws}
+
+An example session would look like:
+\begin{verbatim}
+- mydish.ops().save.setws('tempsave') # Note name must be a string
+T 
+- mydish.ops().save.apply()
+T 
+- The currently viewed SDRecord has been appended to the selected working set
+\end{verbatim}
+
+\subsection{select}
+This operation allows selection through various criteria for forming subsets
+of SDRecords. Note: Selection on MSv2 is limited to just row-based selection
+for AIPS++ V1.4. For full selection capabilities, flat-tables (fits2table)
+should be used.
+
+\subsubsection{cws}
+This function returns the current working set.
+
+\subsubsection{newworkingset}
+
+\subsubsection{setcriteria}
+\begin{verbatim}
+Object Name Selection
+---------------------
+- mydish.ops().select.setws('dishparkes')                                   
+T 
+- mydish.ops().select.setcriteria(critrec=[header=[source\_name='ngc1808']]) 
+T
+- mydish.ops().select.apply(F)	# Note (F designates that this is not from
+				# the GUI
+T
+Record Selection
+----------------
+single values,e.g., rows 1,2,4:
+- mydish.ops().select.setcriteria(critrec=[row=array([1,1,2,2,4,4],2,3)]);
+ranges,e.g., rows 1-4:
+- mydish.ops().select.setcriteria(critrec=[row=array([1,4],2,1)]);
+
+Scan Selection
+--------------
+single values,e.g., scans 2,20:
+mydish.ops().select.setcriteria(critrec=[header=[scan_number=array([2,2,20,20],2,2)]]);
+
+ranges,e.g., scans 14-16:
+- mydish.ops().select.setcriteria(critrec=[header=[scan_number=array([14,16],2,1)]]);     
+
+Date Selection
+--------------
+mydish.ops().select.setws('working_set1');
+mydish.ops().select.setcriteria(critrec=[header=[date='1997-04-14']]);
+mydish.ops().select.apply(F);
+
+UTC Selection - in seconds since date
+-------------
+mydish.ops().select.setws('dishparkes1');
+mydish.ops().select.setcriteria(critrec=[header=[ut=array([310.5],2,1)]]);
+mydish.ops().select.apply(F);
+
+Rest Freq. (Hz) Selection
+--------------------------
+mydish.ops().select.setws('dishparkes1');
+mydish.ops().select.setcriteria(critrec=[data=[desc=[restfrequency=array([1.102014e11,1.102015e11],2,1)]]]);
+mydish.ops().select.apply(F); # the F designates that it is not from the GUI
+
+\end{verbatim}
+
+\subsubsection{setws}
+Sets the working set (SDIterator) to use in the selection.
+
+\subsection{smooth}
+This operation allows smoothing of SDRecords using hanning, boxcar or gaussian
+functions.
+
+\subsubsection{setboxwidth}
+This sets the width of a boxcar smooth.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setdecimate}
+This determines whether decimation will be used (T or F).
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setgausswidth}
+This sets the width (FWHM) of a gaussian smooth.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{settype}
+This determines the type of smooth: HANNING, BOXCAR, GAUSSIAN.
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{statistics}
+This operation allows determination of statistics over an interval of an
+SDRecord.
+
+\subsubsection{setstart}
+This sets the start channel of the interval.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setstop}
+This sets the stop channel of the interval.
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{write}
+
+This operation will write the abscissa and ordinate of an SDRecord
+to a specified ASCII file.
+
+\subsubsection{setof}
+Specifies the output file for the spectrum.
+\begin{verbatim}
+- mydish.ops().write.setof('myspectrum')
+T 
+\end{verbatim}
+
+An example script looks as follows:
+\begin{verbatim}
+ok := mydish.ops().write.setof(ofname="myspectrum" )
+ok := mydish.ops().write.apply()
+\end{verbatim}
+
+\bigskip
+\section{Bulk Processing of data in new DISH}
+
+Bulk processing is currently enabled for most functions in DISH. From the CLI,
+if an SDITERATOR is specified, it will step through the collection of scans
+and perform the relevant operation. 
+
+From the GUI, the 'select from rm' in the Options menu must be enabled; this
+over-rides the default DISH behavior of using the last plotted spectrum. The
+operation will then take the highlighted item from the results manager, which,
+if it is an SDITERATOR, will be treated accordingly.
+
+\section{Operation template}
+
+\begin{verbatim}
+
+1) If the operation should be automatically added, add the following line to 
+	dish.g (to the function private.defaultops):
+	public.addop('filename.g','filename') where filename is the ctor.
+   If want to add the operation after creation of the new DISH tool, it can be 
+	added as above by calling your toolname's addop function.
+2) Write the following:
+
+filename.g                              filenamegui.g
+include 'filenamegui.g'                 include 'widgetserver.g'
+const filename := function(ref itsdish) const filenamegui:=subsequence(parent,
+                                          itsop, logcommand, widgetserver=dws)
+{                                       { 
+                                           widgetset.tk_hold();
+        public := [=];
+        private:= [=];                     private := [=];
+                                           private.op := itsop;
+                                           private.logcommand := logcommand
+
+                                           private.outerFrame := 
+                                                   widgetset.frame(parent,
+                                                   side='top',relief='ridge');
+                                           private.labelFrame :=
+                                                   dws.frame(private.outerframe,
+                                                   expand='x');
+                                           private.mainLabel := 
+                                                   dws.label(private.labelframe,
+                                                   'main label text');
+                                           private.combo := 
+                                                dws.combobox(private.outerframe,
+                                                'Title',autoinsertorder='head',
+                                                canclearpopup=T,help='help');
+                                           # more GUI construction
+                                           private.bottomFrame:=
+                                           private.leftPad:=
+                                           private.applyFrame:=
+                                           private.applyButton:=
+                                           private.rightPad:=
+                                           private.dismissButton:=
+                                           etc...
+                                           # handlers for buttons
+                                           whenever private.dismissbutton->press
+                                           whenever private.applyButton->press
+					  
+#       def: start w/o GUI
+        private.gui := F;
+        private.dish := itsdish;
+        ...other initial declarations...
+
+        ...other private functions...
+
+        public.apply:=function(){}	  
+*       public.dismissgui:=function(){}
+*       public.done:=function(){}          self.done:=function(){
+*       public.getstate:=function(){}           wider private,self;
+*       public.gui:=function(){}                self->done();
+*       public.opmenuname:=function(){}	   }
+*       public.opfuncname:=function(){}	   self.outerframe:=function(){
+*       public.setstate:=function(){}           wider private;
+        public.debug:=function(){               return private.outerFrame;
+                wider private;             }
+                return private;}           ...other functions to do things...
+
+                                           junk:=dws.tk_release();
+
+        return public;                     #self auto returned
+}                                          }
+
+* indicates must be present (to pass verifyOp)
+	
+\end{verbatim}

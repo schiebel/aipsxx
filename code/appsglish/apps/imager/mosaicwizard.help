@@ -1,0 +1,145 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: mosaicwizard.help,v 19.1 2004/08/25 01:20:55 cvsmgr Exp $
+\begin{ahfunction}{mosaicwizard}{Wizard for multi-field synthesis imaging}
+\ahinclude{mosaicwizard.g}
+
+\begin{ahdescription} 
+
+{\tt mosaicwizard} provides a GUI for making a deconvolved image from a
+multi-field Measurement Set or FITS file with the minimum of user intervention.  It is based on
+\ahlink{table}{table}, \ahlink{imager}{imager}, \ahlink{ms}{ms},
+and wizard.  Display is performed using the
+\ahlink{viewer}{viewer:viewer}.
+
+In mosaicwizard, the user is walked through a number of steps
+using a simple GUI to create first a low resolution image, and
+then higher resolution images until the full resolution is achieved.
+At each step of increasing resolution, the previous low resolution image
+is regridded and used as a starting model, so only incremental changes
+from this model are solved for.  This technique is not very effective
+for dealing with point sources, but it is excellent at imaging extended
+structure.  The steps which the mosaicwizard lead you through include:
+
+\begin{itemize}
+\item Either a MeasurementSet or a FITS file can be specified.
+If the latter, it is converted to a MeasurementSet using 
+the \ahlink{fitstoms}{ms:ms.fitstoms} constructor of the
+\ahlink{ms}{ms:ms} tool.
+\item The user can provide an optional initial model.
+\item The spectral windows are listed and the user asked to
+select one for imaging.
+\item The positions of the fields are plotted, and the user
+is asked to select several for imaging.  The extent of the image
+mosaicwizard makes is initially set by the fields selected and the
+calculated extent of the primary beam.
+
+\item The main imaging loop is described below: 
+\begin{itemize} 
+\item
+The user is asked to select the deconvolution algorithm and the values
+for certain control parameters.  The most important of these is the
+$(u,v)$ scaling parameter (which controls the maximum baseline used as
+a fraction of the maximum baseline present in the data, hence
+determining the resolution of the mosaic image).
+Some deconvolution algorithms, such as MEM and Multi-Scale
+Clean, require additional specialized parameters.  Note that the image
+size and cell size are not directly under user control.  However, they
+are indirectly controlled by the region size (see below) and the
+$(u,v)$ scaling parameter.
+\item 
+A low resolution deconvolved mosaic of all selected fields is made.  In this
+stage, the data are weighted as determined by the weighting parameter,
+plus an additional Gaussian taper if the image is not at full
+resolution.  The Gaussian taper will reduce PSF sidelobes caused by
+the sharp cutoff in the Fourier plane coverage when the $(u,v)$
+scaling parameter is less than 1.  If you set the displayprogreess
+parameter to be true, you will get a real time display showing the residuals
+and the cleaned flux as a function of iteration number.  This progress
+display can be very helpful in understanding what is happening in the
+deconvolution, and in analizing any failures which may occur.
+\item 
+The resulting image is
+displayed and the user asked to zoom the region of interest.  Either a
+rectangular or a polygonal region can be selected.  The region will
+have two effects on the imaging: first, the angular size of the next
+iteration's image will be smaller, matched to this region (plus an
+appropriate guard band as required by the PSF; note that mosaics with
+many pointings don't need the traditional factor of 2 PSF guard band); 
+second, the region of interest will also be turned into a mask image which will
+be used like a CLEAN box in the next iteration's deconvolution, precluding deconvolved
+emission from the region outside the mask.  Note that the details of the mask
+generation are not included in the generated script, as they require interactive
+user input.  Making a good
+tight mask can be very important in some mosaics, especially if you
+lack total power.  For example, in order to get a good image out of
+the test Cas A MeasurementSet, you need to supply a good mask early on in the
+process.  
+\item
+The imaging loop is automatically repeated, with the $(u,v)$ scaling
+parameter increasing by a factor of 2 by default, though the user may
+wish to change this.  The imaging loop stops when the scaling
+parameter is greater or equal to 1, or when full resolution has been
+reached.  The model image generated from the iteration of the loop
+we just completed will be regridded to the next iteration's resolution,
+clipped at zero, and used as the initial model for the next iteration.
+\end{itemize} 
+\end{itemize}
+
+Typically, mosaicwizard works well for a quick look at the mosaic
+data, but you may want to use \ahlink{imager}{imager:imager} directly for the
+final image if you find that mosaicwizard does not give you enough
+control over the imaging process.
+
+During the deconvolution stage, many of the relevant Glish commands for
+\ahlink{imager}{imager:imager} and the other tools are displayed. Note 
+that these are slightly more verbose than you would type but should be
+executable. Not all commands are displayed, obviously. In particular,
+we have not shown those related to the operation of mosaicwizard or those
+related to the generation of the mask (which requires interactive user 
+input).
+Hence all the commands you see are ones that you might plausibly
+use during data reduction.  The commands are written to a file
+called 'scripter.log\_*' in the current directory.  A more complete
+listing of the commands will be forthcoming in the next release.
+
+Note that if you don't have a data set, then the function
+\ahlink{imagermaketestmfms()}{imager:imagermaketestmfms} can be used to
+make a copy of the standard mosaicing test MeasurementSet XCAS.ms, a
+seven pointing VLA X band D array data set on Cas A.
+If you leave the MeasurementSet parameter unset in step 1 of the
+mosaicwizard, the mosaicwizard will create a MeasurementSet called
+mosaicwizard.ms from the Cas A data.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'mosaicwizard.g'
+mosaicwizard()			# To start the GUI
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+

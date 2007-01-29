@@ -1,0 +1,150 @@
+\clearpage
+\section{ModelImage.h}
+
+\subsection*{HEADER FILE DESCRIPTION}
+ aips++ header
+  
+\subsection*{ENVIRONMENT}
+\begin{verbatim}
+#define A_MODELIMAGE_H
+
+#include <assert.h>
+#include <iostream.h>
+#include "Image.h"
+
+typedef float (*pFunc)(float *,ImPixelCoord);
+\end{verbatim}
+
+\subsection*{CLASS DESCRIPTION}
+   Class: ModelImage
+  
+   Image with pixel values defined by an analytical function.
+  
+   An example of how to use ModelImages follows:
+  
+   If one wished to have a 128 x 128 ModelImage of a Gaussian function 
+   centered on ImPixel coordinates (64,64) and having width paramters
+   (5,5) and unity amplitude, the following is the procedure.
+  
+\begin{verbatim}
+      float Gaussian(float   parms, ImPixelCoord imp);
+          {
+              float xim = imp.GetImPixCoord(1);
+              float yim = imp.GetImPixCoord(2);
+              float dx = (xim - parms[1])/parms[3];
+              float dy = (yim - parms[2])/parms[4];
+              double val = parms[0]*exp(-dx*dx - dy*dy);
+              return (float)val;
+           }
+  
+       float gparms[5] = {1,64,64,5,5};
+  
+  
+       ModelImage mim(128,128);
+       // Attach a coordinate system here!
+       mim.SetFunction(Gaussian);
+       mim.SetParmList(gparms);
+               etc.
+\end{verbatim}  
+   NOTE: If one wished to have the Gaussian centred at given Pixel coordinates,
+   one must (before any image operation) set gparms[1:2] to the ImPixel
+   coordinates corresponding to the Pixel coordinates. This requires a call to 
+   the Image method that makes this conversion.
+  
+\subsection*{CLASS SUMMARY}
+\begin{verbatim}
+class ModelImage  : public Image
+{
+public:
+   ModelImage ( int m = 0, int n = 0, pFunc f = 0, float *p = 0,
+                float sc = 1.0);
+   ModelImage(const ModelImage& src);
+   ModelImage &operator=(const ModelImage& src);
+   int GetNumEl() const;
+   void SetParmList(float * pp);
+   void SetFunction(pFunc fp);
+   void Scale(float scl);
+   void Fill(float);
+   int Extrema(Pixel &maxpix, Pixel &minpix) const;
+   void SetPixel(PixelCoord, float);
+   float GetPixel(PixelCoord) const;
+   int GetImPixelVal(const ImPixelCoord&, float&) const;
+   int UCombine (float, const Image&, float, const Image&, float);
+   int ScaledAdd(float, const Image&);
+   int XCombine(float, const Image&, float, const Image&, float);
+ friend ostream& operator << (ostream&, ModelImage&);
+   ~ModelImage();
+};
+\end{verbatim}
+
+\subsection*{MEMBER FUNCTIONS}
+
+      Make a ModelImage.
+\begin{verbatim}
+   ModelImage ( int m = 0, int n = 0, pFunc f = 0, float *p = 0, 
+        float sc = 1.0);
+\end{verbatim}
+
+      Copy constructor
+\begin{verbatim}
+   ModelImage(const ModelImage& src);
+\end{verbatim}
+
+      Asignment operator
+\begin{verbatim}
+   ModelImage &operator=(const ModelImage& src);
+\end{verbatim}
+
+      Accessors
+\begin{verbatim}
+   int GetNumEl() const;
+   void SetParmList(float * pp);
+   void SetFunction(pFunc fp);
+\end{verbatim}
+
+      Data operations.
+\begin{verbatim}
+   void Scale(float scl);
+   void Fill(float);
+\end{verbatim}
+
+      Find extrema. Returns FALSE if empty image.
+\begin{verbatim}
+   int Extrema(Pixel &maxpix, Pixel &minpix) const;
+   void SetPixel(PixelCoord, float);
+\end{verbatim}
+
+      Return "pixel" value. It will return a model image value, even for
+      non-integral values of PixelCoord.
+\begin{verbatim}
+   float GetPixel(PixelCoord) const;
+\end{verbatim}
+
+      Get pixel value, given ImPixel coordinates. Returns FALSE if the 
+      resulting PixelCoord is non-integral.
+\begin{verbatim}
+   int GetImPixelVal(const ImPixelCoord&, float&) const;
+\end{verbatim}
+
+      Union image operator.
+\begin{verbatim}
+   int UCombine (float, const Image&, float, const Image&, float);
+\end{verbatim}
+
+      Scaled Add and Intersection image operator.
+\begin{verbatim}
+   int ScaledAdd(float, const Image&);
+   int XCombine(float, const Image&, float, const Image&, float);
+\end{verbatim}
+
+      Output a ModelImage object. Note that a CoordSys must be defined!
+\begin{verbatim}
+friend ostream& operator << (ostream&, ModelImage&);
+\end{verbatim}
+
+      Destructor.
+\begin{verbatim}
+   ~ModelImage();
+\end{verbatim}
+
+

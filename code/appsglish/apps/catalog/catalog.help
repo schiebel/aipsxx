@@ -1,0 +1,835 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: catalog.help,v 19.1 2004/08/25 01:05:29 cvsmgr Exp $
+%
+
+\begin{ahmodule}{catalog}{Module for file operations}
+
+\begin{ahdescription} 
+
+The  catalog module displays a list of disk files on your command line 
+interface or in a GUI, depending
+upon how you set up your {\it .aipsrc} file.  
+
+Display the list of files in a File Catalog GUI by adding
+the following line to your {\it .aipsrc} file:\\
+
+{\tt catalog.default:  gui}\\
+
+or\\
+
+Display the list of files on your screen by adding
+the following line to your {\it .aipsrc} file:\\
+
+{\tt catalog.default:  screen}\\
+
+
+File operations possible are: copying, renaming, deletion,
+viewing, selecting, {\em etc.}.
+
+A catalog {\tt tool} is created by the global constructor function
+{\tt catalog}. A default catalog tool called {\bf defaultcatalog} is
+automatically created by typing {\tt include catalog.g} in your glish
+command line window. You can use {\bf dc} as
+a shortcut name for {\bf defaultcatalog}.
+
+Double-clicking on a directory will cause a show to that directory
+or will cause a selected file name to be sent back (if the
+select(anddismiss) option is enabled).
+
+\end{ahdescription}
+
+
+\begin{ahaipsrc}
+\ahaddarg{catalog.default}{'gui' starts GUI when catalog is started}{''}{String}
+\ahaddarg{catalog.confirm}{Confirm file deletion/copy/move?}{yes}{yes, directory, no}
+\ahaddarg{catalog.tablesizeoption}{How to show table sizes}{no}{no, shape, bytes}
+\ahaddarg{catalog.alwaysshowdir}{Always show directories in file listing?}{T}{Bool}
+\ahaddarg{catalog.sortbytype}{Sort file listing by file type?}{F}{Bool}
+\ahaddarg{catalog.vscrollbar}{Where to place vertical scrollbar}{right}{left, right}
+\ahaddarg{catalog.view.PostScript}{Viewer for PostScript files}{ghostview}{String}
+\ahaddarg{catalog.view.Graphics}{Viewer for Graphics files}{xv}{String}
+\ahaddarg{catalog.view.image}{Viewer for image files}{imageview}{imageview, aipsview, defaultviewer}
+\ahaddarg{catalog.edit.ascii}{Editor for ascii files ('' = default editor)}{''}{String}
+\ahaddarg{catalog.edit.Glish}{Editor for Glish files ('' =  default editor)}{catalog.edit.ascii}{String}
+\ahaddarg{catalog.view.ascii}{Viewer for ascii files ('' = default editor)}{catalog.edit.ascii}{String ('text' is in glish window)}
+\ahaddarg{catalog.view.Glish}{Viewer for Glish files ('' = default editor)}{catalog.edit.Glish}{String ('text' is in glish window)}
+\end{ahaipsrc}
+
+
+\ahobjs{}
+\ahfuncs{}
+
+
+\begin{ahobject}{catalog}{File operations}
+\ahcategory{utility}
+\ahkeyword{catalog}{}
+
+\ahfuncs{}
+
+
+\begin{ahconstructor}{catalog}{File operations}
+\ahreturns{tool}
+\end{ahconstructor}
+
+\begin{ahfunction}{gui}{Use the GUI}
+\begin{ahdescription}
+An alternate method of specifying the display of catalog messages is
+via the aipsrc mechanism: add the following to your .aipsrc file
+\begin{verbatim}
+catalog.default:	gui
+\end{verbatim}
+The default side where the vertical scrollbar is placed is determined
+by an aipsrc variable as shown below. Default is 'right'.
+\begin{verbatim}
+catalog.vscrollbar:	left
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{refresh}{Refresh the contents (in case GUI is already active)}{F}{Bool}
+\ahaddarg[in]{show\_types}{File types to show}{unset}{Vector of strings}
+\ahaddarg[in]{vscrollbarright}{Vertical scrollbar on right side? (otherwise
+on left)}{unset}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{screen}{Use the screen for catalog messages}
+\begin{ahdescription}
+An alternate method of specifying the display of catalog messages is
+via the aipsrc mechanism: add the following to your .aipsrc file
+\begin{verbatim}
+catalog.default:	screen
+\end{verbatim}
+Actually, anything besides ``gui'' will send log messages to the screen.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{cli}{Use the screen for catalog messages}
+\begin{ahdescription}
+Synonym for function \texttt{screen}.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{availabletypes}{Return vector of possible file types}
+\begin{ahdescription}
+Return a vector of string containing the possible files types.
+Some types are given below. More types can be added in the future.
+These are:
+\begin{verbatim}
+ Image                   a table containing an image
+ Measurement Set         a table holding a MeasurementSet
+ Calibration             a calibration table
+ Log message             a log table
+ Other Table             a table with an unknown type
+ FITS                    a FITS file
+ Postscript
+ Graphics                gif, tif, jpg, ppm, xpm, bmp, xbm
+ Glish                   an ascii file holding a glish script
+ ascii                   an ascii file
+ Regular File            any other regular file
+ Directory
+\end{verbatim}
+Note that symlinks are normally resolved. If the file linked
+to does not exist, the type 'not existing' is shown.
+\end{ahdescription}
+\ahreturns{Vector of strings}
+\end{ahfunction}
+
+\begin{ahfunction}{whatis}{Determine what a particular file is}
+\begin{ahdescription}
+Analyzes the file characteristics to determine what it contains:
+\begin{itemize}
+\item Tables are easily recognized and the type ({\em e.g.}
+Measurement Set, Image, Calibration) determined,
+\item Directories, Postscript, Graphics, Glish, and FITS files are recognized,
+\item Other files may give mixed results, either showing up as
+Regular File or ascii.
+\end{itemize}
+Note that symlinks are normally resolved, so only if the file linked
+to does not exist, the type will be 'symbolic link'..
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{Name of file to be classified}{'.'}{Any string}
+\ahaddarg[in]{dir}{Directory of the file}{'.'}{Any string}
+\end{ahargs}
+\ahreturns{Record containing classification information}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.whatis("3C273XC1.MS")
+# [type=Measurement Set, istable=T, size=0]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{whatisfull}{Determine full characteristics of a file}
+\begin{ahdescription}
+This function is similar to function \ahlink{whatis}{catalog:catalog.whatis},
+but it also determines the date
+and if needed the size of tables. The table and image size can be
+retrieved in bytes or as the shape depending on the setting of the
+\ahlink{tablesizeoption}{catalog:catalog.tablesizeoption} variable.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{Name of the file}{'.'}{Any string}
+\ahaddarg[in]{dir}{Directory of the file}{'.'}{Any string}
+\end{ahargs}
+\ahreturns{Record containing characteristics}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.whatisfull("3C273XC1.MS")
+# [type=Measurement Set, istable=T, date=Jun 3 16:28, size=[2300,20]]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{list}{return contents of directories}
+\begin{ahdescription}
+A vector of strings is returned containing the names of the files in the given
+directory and matching the types. The possible types can be seen with
+the function \ahlink{availabletypes}{catalog:catalog.availabletypes}.
+The given path names can contain wildcards in the base name.
+Optionally the full path is returned. The default is that the full
+path is returned if the files argument contains more than 1 name.
+
+The resulting vector is made unique, so possible duplicate names are
+removed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{files}{Path name(s) to be processed}{'.'}{Vector of strings}
+\ahaddarg[in]{listtypes}{Types to be listed}{'All'}{Vector of strings}
+\ahaddarg[in]{strippath}{Strip directory from resulting names}{unset}{Bool}
+\end{ahargs}
+\ahreturns{Vector of strings}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.list("*.g c*")
+# catalog.g catalog_meta.g catalog.help synclistboces.g
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{show}{Summarize the directory on the screen or on the GUI}
+\begin{ahdescription}
+The number of files selected, the names, the types, and the subtypes
+are all displayed, either on the screen or on the GUI.
+
+The GUI can be used for various file operations such as copying,
+renaming, deletion, browsing, {\em etc.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\ahaddarg[in]{show\_types}{Types to be shown}{F}{String}
+\ahaddarg[in]{writestatus}{Write messages to status line?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.show(,'Image Calibration')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setmask}{Set the mask}
+\begin{ahdescription}
+Files can be masked by a string obeying the usual shell
+syntax. This string can be set either from the GUI or using
+this command from the command line.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{mask}{Mask string}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.mask('di*')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getmask}{Get the mask}
+\ahreturns{Mask String}
+\end{ahfunction}
+
+\begin{ahfunction}{setconfirm}{Set the confirmation option}
+\begin{ahdescription}
+Before some operations (copy, rename, delete), the user can be
+prompted for confirmation. This function sets the default for that option.
+It can also be set from the GUI or from the aipsrc file like
+\begin{verbatim}
+catalog.confirm: 	yes
+\end{verbatim}
+Possible confirm options are:
+\begin{itemize}
+\item yes means that confirmation is asked for all files.
+\item directory means that confirmation is only asked for directories.
+\item no means that confirmation is never asked.
+\end{itemize}
+For backward compatibility the boolean values T (=yes) and F (=no) are
+also possible.
+
+Note that when using \texttt{dc.setconfirm()} in a script it should
+always be done like:
+\begin{verbatim}
+cursts := dc.getconfirm();
+dc.setconfirm(F);
+dc.delete (...);
+dc.setconfirm(cursts);
+\end{verbatim}
+otherwise the default confirmation status is changed unexpectedly in
+the GUI.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{flag}{Flag}{yes}{yes, directory ,no}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.setconfirm(T)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getconfirm}{Get the default confirmation status}
+\begin{ahdescription}
+The functions \ahlink{delete}{catalog:catalog.delete},
+\ahlink{copy}{catalog:catalog.copy}, and
+\ahlink{rename}{catalog:catalog.rename}
+can ask for confirmation. By default they do so if the default
+confirmation status (as returned by this function) is true.
+It can be set (or unset) by one of the following:
+\begin{itemize}
+\item Pressing the confirm button under the options menu of the GUI
+\item The following appears in your .aipsrc file:
+\begin{verbatim}
+catalog.confirm: 	yes
+catalog.confirm: 	directory
+catalog.confirm: 	no
+\end{verbatim}
+\item You did e.g. the following at the command line:
+\begin{verbatim}
+  dc.setconfirm('yes')
+\end{verbatim}
+\end{itemize}
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{settablesizeoption}{Set the tablesize option}
+\begin{ahdescription}
+When listing a table, it can be told if and how its size is shown.
+The size can be shown in bytes (which is the total of the table and
+all its subtables).
+The size can also be shown as the shape (number of columns and rows)
+of the table. For a table containing an image, the image shape is 
+shown.
+Showing the sizes means that it takes a bit longer to show all
+the tables in the listing.
+
+This function sets this option (valid options are no, bytes and
+shape). If an invalid option is given, it is set to no.
+It can also be set from the GUI.
+
+The initial state can be set from the .aipsrc file:
+\begin{verbatim}
+catalog.tablesizeoption: 	no
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tablesizeoption}{option}{no}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{gettablesizeoption}{Get the tablesize option}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{setalwaysshowdir}{Set the alwaysshowdir flag}
+\begin{ahdescription}
+When a specific file type is shown, it is often nice to show
+subdirectories (which may also contain such files) as well.
+This function sets this option.
+It can also be set from the GUI.
+
+The initial state can be set from the .aipsrc file:
+\begin{verbatim}
+catalog.alwaysshowdir: 	T
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{flag}{Flag}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getalwaysshowdir}{Get the alwaysshowdir status}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{setsortbytype}{Set the sortbytype flag}
+\begin{ahdescription}
+A list of files can optionally be ordered on file type.
+This function sets that option.
+It can also be set from the GUI.
+
+The initial state can be set from the .aipsrc file:
+\begin{verbatim}
+catalog.sortbytype: 	F
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{flag}{Flag}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getsortbytype}{Get the sortbytype status}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{refresh}{Refresh the listing}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{lastdirectory}{Get the last directory used}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{lastshowtypes}{Get the last shown filetypes used}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{Delete}
+\begin{ahdescription}
+Delete one or more files. The argument is a list of files to
+be deleted. Wildcards may be used (except in the directory path).
+It returns the number of files deleted (or a fail in case of errors).
+Note that confirmation is asked for if the \texttt{confirm} argument
+is 'yes' (for any file) or 'directory' (for a directory).
+By default the \texttt{confirm} argument is unset meaning that
+the default confirmation option (as returned by
+\ahlink{getconfirm()}{catalog:catalog.getconfirm}) is used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{files}{Files to be deleted}{}{String}
+\ahaddarg[in]{refreshgui}{Refresh the GUI?}{T}{Bool}
+\ahaddarg[in]{confirm}{Confirmation?}{unset}{yes, directory, no}
+\end{ahargs}
+\ahreturns{Integer}
+\begin{ahexample}
+\begin{verbatim}
+  dc.delete("3C273.*model")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{copy}{Copy}
+\begin{ahdescription}
+Copy a file. 
+
+Note that if the new file name already exists
+confirmation is asked for if the \texttt{confirm} argument
+is 'yes' (for any file) or 'directory' (for a directory).
+By default the \texttt{confirm} argument is unset meaning that
+the default confirmation option (as returned by
+\ahlink{getconfirm()}{catalog:catalog.getconfirm}) is used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be copied}{}{String}
+\ahaddarg[in]{newfile}{Name of new file}{}{String}
+\ahaddarg[in]{confirm}{Confirmation?}{unset}{yes, directory, no}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.copy("3C273.restored", "3C273new/restored");
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{rename}{Rename}
+\begin{ahdescription}
+Rename a file. 
+
+Note that if the new file name already exists
+confirmation is asked for if the \texttt{confirm} argument
+is 'yes' (for any file) or 'directory' (for a directory).
+By default the \texttt{confirm} argument is unset meaning that
+the default confirmation option (as returned by
+\ahlink{getconfirm()}{catalog:catalog.getconfirm}) is used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be renamed}{}{String}
+\ahaddarg[in]{newfile}{New name of file}{}{String}
+\ahaddarg[in]{confirm}{Confirmation?}{unset}{yes, directory, no}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.rename("3C273.restored", "3C273new.restored");
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{view}{View}
+\begin{ahdescription}
+View a file using an appropriate viewer:
+\begin{itemize}
+\item The Viewer for Images (normally the
+      \ahlink{image.view}{images:image.view} function) unless told
+      differently via the aipsrc variable \texttt{catalog.view.image}.
+\item ghostview for PostScript files.
+\item xv for Graphics files.
+\item the tablebrowser for non-image tables.
+\item The Glish pager for Glish and ascii files.
+\end{itemize}
+You can change the viewer for PostScript, Graphics, image
+Glish, and ascii files via the aipsrc
+mechanism: {\em e.g.} you can add the following to your .aipsrc file
+\begin{verbatim}
+catalog.view.image: aipsview
+catalog.view.PostScript:	pageview
+catalog.view.Graphics:	/usr/local/bin/xv
+catalog.view.Glish:	xterm -e less
+catalog.view.ascii:	emacs -r
+\end{verbatim}
+It is also possible to define these variables as an empty string,
+which indicates that there is no viewer available for that file type.
+E.g. it might be possible that a site does not have xv available.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be viewed}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.view("3C273.restored")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tool}{Tool}
+\begin{ahdescription}
+Construct a Tool from a file using \ahlink{toolmanager.show}{tasking:toolmanager.show}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be processed}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.tool("3C273.restored")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{edit}{Edit}
+\begin{ahdescription}
+Edit a file using an appropriate editor. For tables, the table browser
+is used. For ASCII and Glish files, the editor used is first that
+defined in the environment variable EDITOR. If that is not
+defined, then emacs is used. This can be overridden by putting the
+appropriate string in your .aipsrc file:
+\begin{verbatim}
+catalog.edit.Glish:	xterm -e vi
+catalog.edit.ascii:	emacs
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be edited}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.edit("3C273.g")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{create}{Create}
+\begin{ahdescription}
+Create a file using the appropriate method:
+\begin{itemize}
+\item the default editor for ascii and Glish files
+\item the unix command mkdir for Directories
+\end{itemize}
+You can change the editor Glish, and ascii files via the aipsrc
+mechanism: {\em e.g.} add the following to your .aipsrc file
+\begin{verbatim}
+catalog.edit.Glish:	xterm -e vi
+catalog.edit.ascii:	emacs
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be created}{}{String}
+\ahaddarg[in]{type}{Type of file to be created}{}{ascii|Glish|Directory}
+\ahaddarg[in]{refreshgui}{Refresh the GUI?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.create("3C273.g")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{summary}{Show a summary}
+\begin{ahdescription}
+Summarize a file using the summary function of the appropriate
+tool:
+\begin{itemize}
+\item For \aipspp\ Tables: \ahlink{summary}{table:table.summary}.
+\item For \aipspp\  Images: \ahlink{summary}{images:image.summary}.
+\item For MeasurementSets: \ahlink{summary}{ms:ms.summary}.
+\end{itemize}
+The summary information is written to the log file.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be summarized}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.summary("3C273.restored")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{execute}{Execute a glish file}
+\begin{ahdescription}
+Execute a glish script.
+Other file types cannot be executed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{File to be executed}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dc.execute("test.g")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{canonicalize}{Return a file name in canonical form}
+\begin{ahdescription}
+It returns the name in canonical form by removing possible . and ..
+parts in the string and by adding the working directory if a relative
+name is given.
+\\If an illegal file name is given, a . is returned as file name.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{file}{Name of file to be canonicalized}{'.'}{Any string}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.canonicalize("3C273XC1.MS/..")
+# /aips++2/gvandiep/data
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\begin{ahdescription}
+It returns the type of this tool (catalog).
+\end{ahdescription}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  dc.type()
+# catalog
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{dismiss}{Dismiss the gui}
+\begin{ahdescription}
+Dismiss the gui (if used).
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Stop this catalog tool}
+\begin{ahdescription}
+The catalog tool is stopped after its possible gui is dismissed
+and possible outstanding viewers are dismissed.
+Note that it is not a good idea to stop the default catalog tool,
+because it can be used by other scripts.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{setselectcallback}{Set the selectcallback function}
+\begin{ahdescription}
+Set the callback function used when the send or sendandddismiss
+button is pressed in the gui. It also activates those buttons.
+The callback function gets one argument which is a string containing
+the full name of the selected file. If no file is selected, the
+directory is returned.
+\\When the break button is pressed in the gui, the selectcallback
+function is called with the argument unset(). Thereafter the
+the selectcallback is unset.
+\\If the argument given to setselectcallback is not a function, the
+selectcallback is unset.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  include "catalog.g";
+  aa := function (f) { if (!is_unset(f)) print f}
+  dc.setselectcallback(aa)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{selectcallback}{Get the selectcallback function}
+\begin{ahdescription}
+Get the callback function set by setselectcallback.
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+
+
+\end{ahobject}
+
+\begin{ahfunction}{cat}{Show all files}
+\begin{ahdescription}
+cat(dir) is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir)
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{icat}{Show images only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'Image')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{ccat}{Show calibration tables only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'Calibration')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{mscat}{Show measurement sets only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'Measurement Set')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{fcat}{Show FITS files only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'FITS')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{gcat}{Show Glish files only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'Glish')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tcat}{Show all tables only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'<Any Table>')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{dcat}{Show directories only}
+\begin{ahdescription}
+This is a convenient shorthand for:
+\begin{verbatim}
+  dc.show(dir,'Directory')
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dir}{Directory to be processed}{'.'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\end{ahmodule}

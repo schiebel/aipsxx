@@ -1,0 +1,201 @@
+Title:                  Proposal for a GUI for AIPS++
+Person responsible:     Paul Shannon (pshannon@nrao.edu)
+Originator of proposal: Paul Shannon (pshannon@nrao.edu)
+Exploders targeted:     aips2-lib, aips2-gbt, aips2-ui
+Time table:
+        Date of issue:          1996 February 4         Done
+        Comments due:           1996 February 9         Done
+        Revised proposal:       1996 February 12        Done (Feb. 14) 
+        Final comments due:     1996 February 16        Done
+        Decision date:          1996 February 21        Done (Feb. 22)
+
+Statement of goals
+------------------
+Specify a first version of the AIPS++ GUI, which will be sufficient
+for the GBT tests this spring and summer, and which can be enhanced and
+extended for later use throughout the project.
+
+Discussion
+----------
+
+This proposal had its origin in a discussion in Green Bank on December
+12th 1995, which included Brian Glendenning, Bob Garwood, Darrell
+Schiebel, Harvey Liszt, Rick Fisher and Paul Shannon.  The proposal is
+intentionally unspecific when it comes to particular data reduction
+applications: the purpose of this proposal is to identify strategies
+and components from which actual applications will be built.
+
+The standard approach to GUI design in aips++ is to identify
+middle-weight 'components' (vector plotter, table browser, for
+example) which are both useful in isolation, and yet written with
+enough generality that they may be used in different contexts.  There
+are at least three crucial contexts in which they may be used:
+
+    1. standalone from the unix shell
+    2. as part of a loosely-coupled collection of glish scripts
+       and clients
+    3. embedded in a 'heavy-weight' application of tightly-coupled
+       components
+
+We propose here four new components which we believe will provide the
+basis of a full-fledged GUI for aips++.  Due to the component
+approach, however, they can be developed, tested, and used
+independently.  The component approach also means that we need not
+specify, or even foresee, the final form of the GUI at this early
+point.  We predict that these pieces will be needed for any one of
+several plausible GUI's.  The four components are described below.
+
+
+1. Data Chooser
+
+This component is an embellishment of the 'File Chooser Dialog Box'
+found in many windowing systems (Motif, MSWindows, MacOS).  There 
+are typically two subwindows -- one for the parent directory and
+its siblings, and one for the contents of the current directory --
+and a collection of buttons -- OK, Cancel, Filter, Help.  By
+clicking on entries in either of the subwindows, one can navigate
+up and down a directory tree until the proper file is found.
+
+We propose three extensions to this standard approach. 
+
+  1. The data chooser will be able to recognize and distinctly portray 
+     a variety of common aips++ file types: Images, Measurement Sets,
+     Jones Matrices, Tables, etc.  These special types will appear in a 
+     characteristic font, color, or icon, to help make navigation easier.
+     Recognition will be based on some combination of three techniques:
+        a. an index file in each relevant directory which tells the 
+           type of each file in the directory
+        b. standard file extensions ('.img', '.ms')
+        c. actual examination of the internals of each (or some) files.
+     The first two techniques are subject to corruption or subversion;
+     the last is expensive.  Experience will be our guide in choosing
+     among these three.
+
+  2. The chooser will search for only specifed types of file if the user
+     wishes, narrowing the search.
+
+  3. The search can be optionally extended to include more than the
+     user's directory.   For example, at a particular telescope site
+     or research institution certain read-only data may be
+     community property and can become part of an astronomer's project
+     even though it is located 'out on the network'.
+
+If the data chooser is used at the behest of an application program,
+the chosen file will be returned to the application.  If the user
+is operating in the GUI workspace (see item 4 below), then it is
+likely that the chosen file will be symbolically 'placed' --
+along with other files and tasks -- on the workspace surface, for
+subsequent operations.
+
+(At a more fine-grained level -- for instance, that of individual
+spectra -- data choosing will be done by manipulating rows and columns
+of the tablebrowser.  The data chooser described above is at the level
+of files, which will usually be aips++ tables.)
+
+
+
+2. Task Chooser
+
+The task chooser will behave much like the data chooser, and probably
+have a somewhat similar appearance -- though tasks, being executable
+programs, will probably be concentrated in fewer directories, and
+thus require less navigation.  One can imagine 'directories' which
+are actually logcial categories, and which group related tasks together --
+this could be an alternative depiction of tasks, and is in contrast
+to a directory-tree depiction which actually starts with a collection of 
+'/aips++/<package>/bin/' directories.
+
+The logical-category view is very similar to the  arrangement 
+of tasks into hierarchical menus, and we expect that the underlying
+(non-gui) code that implements the data chooser can be used equally
+well by a 'chooser' and a menu presentation of the options.
+
+In a narrowly focused application program (i.e, SDCalc), a 
+reduced number of tasks would be presented by the task chooser ('few' when 
+compared to the full set of tasks within aips++).  This is a natural place
+to use hierarchical menus, and the non-gui chooser object would return the
+selected task to the application program.  If operating in the general
+GUI worksapce, then as with the data chooser, the chosen task can be
+placed symbolically on the workspace surface for subsequent use.
+
+
+
+3. Parameter Database and Editor
+
+A parameter database will be available in the runtime environment for
+storing parameters. Loosely, a parameter is a named value, for example
+"polynomial order for fitting." Of course the values need not be
+merely simple scalars, they can also be arrays or hierarchical
+records.
+
+One use of a parameter database is to for the user to store default
+values she does not wish to enter repetitively. Another use is as a
+clipboard in which software entities can register there
+"selections". For example, if a user selects a table column, or an
+image blc,trc, it would be registered in the clipboard where it would
+automatically be retrieved by other objects.
+
+The GUI component corresponding to the database is the parameter editor.
+It will communicate with the application, the database, and the user.
+for example:  when a task is selected, the parameter editor will 
+appear, query the task for all of its parameter information, including
+things like default values, range, examples, and help.  The user
+will be able to specify (and possibly validate) any or all parameters,
+as well as save and restore previous parameters sets.
+
+4. Workspace
+
+The aips++ model is loosely 'data-centric', but the GUI workspace
+component supports a 'task-centric' view as well.  As mentioned above,
+the user can select tasks and data, and place them symbolically on the
+workspace surface.  This surface may eventually support some visual
+programming semantics: line-drawing to indicate data flow is a
+plausible direction (though it may raise some thorny issues...)  At
+the beginning, however, the workspace surface is intended to function
+mostly as a 'project bulletin board', to which the astronomer can
+attach data, tasks, notes, documents, and graphics.  Some
+drag-and-drop capability could be provided early on, allowing the
+astronomer to run a task on selected data, including the entry of task
+parameters through the Parameter Editor GUI component.
+
+Some uncollected comments
+-------------------------
+We propose that these components be written in Glish/Tk.
+
+Whenever possible, operations performed in a GUI context
+(drag-and-drop, menu selection, pressing an 'execute task' button,
+etc) should be available to the user as glish code, for study, or for
+inclusion in a glish script.
+
+Another possible GUI component is a text edit window, in which glish
+code may be composed and edited, and either selectively or entirely
+sent to glish to be interpreted (send a selection, or send the entire
+contents).  It may be make sense to allow for the graphical connection
+of data inputs (icons on the workspace surface) to functions in the
+text edit window, and for output data (function results) to likewise
+appear on the workspace.
+
+Viewers: when possible, we want the right viewer to be invoked on data
+when asked.  So if a vector appears on the workspace surface as an
+icon, and gets a double-click event, the vector plotter should pop up
+and display the vector.  Similarly for aipsview (with FITS files and
+Images), and the tablebrowser.  The user will be able to specify her
+default viewers, and to choose non-default viewers whenever they choose.
+
+'Pad++' a collaborative work of the University of New Mexico, NYU
+Media Research Laboratory, and Bellcore, and supported in part by
+ARPA, is a very interesting elaboration of the Tk Canvas widget.  It
+provides an infinitely-zoomable workspace with rich semantics.  It may
+become, at somepoint in the not-too-distant future, a very pleasing
+way in which to implement the workspace described in item 4 above.
+See http://www.cs.unm.edu/pad%2b%2b.
+
+Expected Impact: 
+--------------- 
+
+The AIPS++ GUI will likely become the first point of contact that most
+users will have with AIPS++, and for many it will be the dominant
+point of contact.  It will be difficult to get it right, but it is
+essential that we do so.  
+
+

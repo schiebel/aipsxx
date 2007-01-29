@@ -1,0 +1,412 @@
+\documentstyle[10pt]{article}
+\begin{document}
+
+\newcommand{\aipspp}{{\sc aips++}}
+
+\title{Note 120: AIPS++ Mosaicing Requirements}
+\author{M.H. Holdaway (NRAO) \\R.J. Sault (ATNF) \\T.J. Cornwell (NRAO)\\
+M. P. Rupen (NRAO)}
+\date{Dec 5, 1997}
+\maketitle
+
+
+\section{Introduction}
+
+The document gives the requirements for mosaicing processing
+in \aipspp. We have no attempt to translate terminology
+into that used in AIPS++.
+
+\section{Issues to consider}
+
+\begin{itemize}
+
+\item       Primary Beam
+
+\item       Coordinate Systems
+
+\item       Observing Modes
+
+\item       Mosaicing Algorithms
+
+\item       Other Mosaic Processing
+
+\item       Mosaic Data Handling and Organization
+
+\item       Mosaic Scheduling
+
+\item       Flux Units
+
+\item       Solar System Objects
+
+\end{itemize}
+
+
+\section{Primary Beam}
+
+The primary beam should be easily specified, using a default primary
+beam model determined by the TELESCOP and the FREQ.  However,
+nonstandard primary beams should be easily specified.  For example,
+someone might want to simulate changing the illumination of a dish,
+and would want to simulate data with the different primary beams.
+This would require a data array underlying the primary beam, rather
+than an analytical expression which would suffice for many primary
+beams.
+
+In addition, \aipspp should cope with the possibility that a telescope
+can have multiple different versions of primary beam
+model. e.g. Different dynamic ranges require a primary beam model of
+different complexity and extent. As the extent of the primary beam
+model grows, so does the complexity of the mosaicing
+process. e.g. Miriad supports three different analytic forms for the
+ATCA primary beam at 20cm, each differing in extent and
+accuracy. Analytic models of a primary beam can come in many shapes
+and forms, so we obviously want something more general than AIPS'
+reciprocal polynomials (but then this is a classic example of where OO
+works well).
+
+The primary beam's rotation on the sky must be considered.
+Most people would like to think the PB is rotationally symmetric, but we
+must also deal with 2-D beams for:
+\begin{itemize}
+        \item simulation purposes (surface error simulations)
+        \item scattered radiation correction
+        \item wide field polarization mapping with off-axis telescopes
+        \item very high dynamic range mapping, even with nominally
+axially-symmetric antennas
+\end{itemize}
+
+The 2D primary beam is tied to the antenna mount.  We need to get
+the orientation of the PB for a specific time/sky position (ie, parallactic
+angle for ALT-AZ mounts).
+
+We should be able to deal with primary beams made from dishes of two different
+sizes (this broke all the assumptions of code which dealt with the primary
+beams in SDE, though it did not break any of the mosaicing code assumptions).
+
+This raises the question ... do you define a primary beam as an
+antenna characteristic (voltage pattern) or as a baseline
+characteristic (power pattern). We think the former is preferrable.
+
+\section{Coordinate Systems}
+
+
+An appendix of the paper Sault, Staveley-Smith and Brouw, (1996)
+gives a description of how to handle coordinates for east-west and
+non-coplanar arrays. It did not discuss snapshots with a planar
+array (e.g. NVSS at the VLA) which should also be be thought
+through.
+
+\section{Observing Modes}
+
+\begin{itemize}
+
+\item Single Pointing Interferometery with primary beam correction
+
+\item Total Power Imaging
+
+\item Should deal with both ``stop and point'' mosaics and
+  ``On-The-Fly'' mosaics, both in single dish and synthesis.
+  With 0.01 s integration times, the MMA
+  will be able to achieve useful sensitivity levels; however, on
+  the order of 1 s is lost for switching pointings discretely.
+  The only way to realize the potential gains in the size of the
+  mosaiced area is to move to ``On-The-Fly'' mosaicing.
+\end{itemize}
+
+
+\section{Mosaicing Algorithms}
+
+
+\begin{itemize}
+
+\item Correction and application of primary beam to single images.
+
+\item Linear Mosaicing of previously deconvolved fields
+  Linear Mosaicing of dirty images
+
+\item Non-linear joint deconvolution: Cornwell Algorithm, Sault Algorithm,
+Cornwell Algorithm with minimum FFT size
+
+\item imerge (ie, blending two images by taking different parts of their 
+Fourier planes)
+
+\item self-consistent point source removal prior to mosaicing, point source
+reinsertion after mosaicing
+
+\item Linear deconvolution of a dirty linear mosaic, removing the effects of
+        an average point spread function
+
+\item Non-linear joint deconvolution mosaic algorithm with non-coplanar 
+        baseline imaging combined
+
+\item Generate the "effective u,v coverage" image.
+
+\item A case that Miriad poorly serves for users who are really interested
+in imaging a large region of sky, for example their interest is in
+source count statistics where there are plenty of point sources in a field.
+In this case, CLEAN is the deconvolver of choice. In these sorts of
+experiments, the forming single pointing images, one can find, and
+successfully CLEAN sources far beyond where the primary beam model
+cuts off. Conventional mosaicing algorithms do not cope with this
+situation. They cannot remove the effect of sources beyond the extent
+of the primary beam model. In this case the users are forces back to
+a CLEANing single fields and piecing them together afterwards. This is 
+too cumbersome. Forming a mosaic of an arbitrary number
+of pointings (hundreds or thousands) should not be much more
+bothersome than forming a single pointing image. All the book-keeping
+should be handled automatically and largely invisibly.
+
+\item Consistent and effective weighting of the single dish and synthesis 
+data is often very difficult and often takes much experimentation.
+Tools for such experimentation should be provided. For example:
+
+\begin{itemize}
+\item different weights depending not only on position and "neighbors" in
+      the uv-plane, but also on which instrument was used
+\item instrumental weights which may change during the deconvolution, to
+      ensure that the highest-weight data (which may only come from one 
+      instrument, covering only a special portion of the uv-plane) don't 
+      lead one to ignore the lower-weight but independent data from other
+      instruments.
+\item instrumental weights which are solved for during the imaging process --
+      often the a priori instrumental weights are only internally
+      consistent, with unknown overall scaling.
+\item given a desired synthesized beam, automatic weighting of all the data
+      in each pointing to give the best match to that beam.
+\item some general tools to figure out what different weightings do to the
+      resulting sensitivity and beam shape.  
+\end{itemize}
+\end{itemize}
+
+
+
+\section{Simulation Code}
+
+
+\begin{itemize}
+
+\item Simulate a mosaicing observation
+
+\item Simulate a mosaicing observation with pointing errors for each dish
+
+\item Simulate a mosaicing observation with different primary beam errors
+        for each dish
+
+\item Simulate mosaicing observation with non-coplanar baseline problems
+
+\item Simulate single dish data
+
+\end{itemize}
+
+\section{Other Mosaicing Processing}
+
+\begin{itemize}
+
+\item Antenna Gain Self-cal: treat the case where the solution interval is
+much longer than the time per mosaic pointing; here, the gain
+solution is built up by an average of the Data Vis divided by
+the Model Vis, weighted by 1/sig$^2$
+
+\item Editing and clipping, as per single pointing interferometry, automated
+for multi-pointing datasets
+
+\item At high frequencies opacity may be quite important, and one can 
+easily imagine a mosaic where each individual pointing doesn't cover a
+wide range in elevation, while the data set as a whole does.  With
+good a priori calibration this would not be a problem, but one might
+easily wish to solve for the opacity based on the best (mosaiced)
+model.  Similarly an excellent data set taken with one instrument may
+help significantly in finding the phase/amp. gains of another, perhaps
+taken under less good conditions.
+
+
+\end{itemize}
+
+Because we can conceive of these, \aipspp should not do anything which
+precludes their implementation, however we regard them as lower
+priority.
+
+\begin{itemize}
+
+\item Primary Beam Self-calibration: from the multi-pointing data and
+        a model image, solve for the primary beam
+        (1-D symmetric or 2-D)
+
+\item Pointing Error Self-calibration: from a model image and images from
+        multiple fields (or from a model image and the visibilities
+        from each field) solve for an array constant (or antenna specific)
+        pointing error(s) as a function of time.  
+
+\item Given an array constant pointing error time series, make a mosaic image       
+
+\item Given different pointing errors for each antenna as a function of time,
+        solve for an image which agrees optimally with the multi-pointing
+        data.
+
+\item Given a low resolution mosaic image, make a high resolution image from
+        data from a longer baseline array configuration (perhaps only one or a
+        few pointings).  The long baseline data will have large gaps in the
+        Fourier plane, hopefully the low resolution mosaic image and
+        algorithmic smartness will help to constrain the high resolution
+        image.
+
+\item There are still problems with mosaicing *half* of an extended source
+        (ie, stopping the pointings in the middle of something big and strong).
+        The feathering (or blending) approach should
+        also have some robustness against this -- e.g. Miriad's immerge
+        vs AIPS imerge approaches to dealing with edge effects.
+
+\item Given a list of known confusing sources, e.g. from various 
+radio surveys, and either (1) require (or bias the solution to
+"prefer") that any flux found way outside the beam correspond to these
+objects, or (2) use the known fluxes of these sources to help derive
+the far sidelobes of the primary beam.  This last is a mode in common
+use already with single-dishes.
+
+\item Removing the Galactic plane from high-latitude HI observations 
+requires the careful comparison of different single-dish data, usually
+taken at different spectral resolutions, and extremely good models for
+their primary beams out to many 10s of degrees.  This is effectively a
+mosaicing problem where the interferometric data may be confined to a
+square degree, and the high-resolution single-dish data to a 3x3degree
+area, but one must include low-resolution single-dish data covering
+most of the sky.
+
+\end{itemize}
+
+
+
+\section{Mosaic Data Handling and Organization}
+
+Philosophy: one should never have to specify WHICH pointing
+you are talking about, or exactly WHERE a certain set of vis
+were pointing.  In other words, a 1000 pointing mosaic should
+not be any more complicated than a single pointing observation,
+just more consuming of CPU time.
+
+\begin{itemize}
+
+\item Determine which pointings meet some condition:
+        within a certain distance of a given point or region of sky,
+        which have peak visibilities greater than some value,
+        which have an rms residual from a model image greater
+        than some value, which have pointing errors greater than
+        some value, which have gain solutions varying by more than
+        some radians per second, etc.
+        For selecting pointings close to some sky position: take advantage
+        of point-and-click.
+
+\item Select out an individual pointings' worth of data for special
+        processing
+
+\item Concatenate mosaic databases; consider two cases: different
+primary beams or point centers; and some data have the same primary
+beams and pointing centers (ie, the pointings themselves are
+concatenated)
+
+\item List summary information or complete information on one or more
+pointings
+
+\item Determine automatically the center of gravity RA-DEC of the 
+mosaic pointings.
+
+
+\item Sophisticated comparison tools would be a big help: e.g. the ability to 
+look at the residuals for each telescope (or type of telescope)
+separately, both in the map and in the uv or single-dish spectrum plane. 
+  
+\item Although all the data may be thrown into one big gmish for imaging
+purposes, the results should divide the final error/goodness of fit
+between the different telescopes and the different pointings.
+
+\item One should be able to click on a pixel in the map and discover how
+much data from which telescopes with what effective sensitivity went
+into that pixel.
+
+\end{itemize}
+
+\section{Mosaic Scheduling}
+
+We regard these set of requirements as eventually important but of
+lesser priority.
+
+\begin{itemize}
+
+\item We assume that there will be no programs written in
+        \aipspp to prepare observing scripts.  However, it is
+        many observing script generation programs, such as OBSERVE,
+        have the capacity to read in a list of RA-DEC to observe.
+        It is helpful in scheduling the mosaic to have a program
+        which allows the observer to specify the region of interest
+        relative to some existing image, calculates the required
+        pointing positions, and writes out the point positions in the
+        data format required by the non-\aipspp script generation program.
+        Take advantage of point-and-click.
+        
+\item For very large mosaics which require multiple days, it would help if the
+        scheduling aid looked up which pointings had already been observed
+        and then only scheduled a subset of the remaining pointing positions.
+
+\item Ultimately, one would like to redo the way observe programs handle
+        mosaics.  One would like to treat all of the pointings or subsets of
+        the pointings as a single entity within the observe program.
+
+\end{itemize}
+
+\section{Flux Units}
+
+Traditionally the header information telling whether an image
+has been primary beam corrected or not (and hence what the flux
+units of the image are) have been stored in the ultimate and
+imperfect header -- the users head. 
+
+In mosaicing Miriad usually does not fully primary beam correct out
+to the edges of a mosaic. This is largely asthetic -- you do not like to
+see large noise amplification, particularly if you have a reasonable
+guard band around your emitting region, so that there is no emission
+in the region where the noise amplification. So Miriad applies a 
+image plane weighting function (an "effective primary beam") to a
+mosaic. 
+
+We think such weighting functions are useful, and they need to be handled
+in a transparent fashion. I.e. various components of the software
+needs to understand where a model is fully primary beam corrected,
+or whether it has a primary beam still in the data (whether it be
+an real primary beam of a single pointing, or an "effective primary
+beam" as described above).
+
+Often one of the messy parts of combining data from different
+instruments (or, at high frequencies, from different days) is getting
+the cross-calibration right.  AIPS++ should provide tools to examine
+the overlap between data taken from different telescopes directly, and
+to determine at least scaling constants between the two (or more)
+using that overlap.  For instance one might want to plot
+amp. vs. uv-distance in different colours for the different
+arrays/single-dishes, and be able to interactively change the relative
+scalings by moving one set of points up and down with respect to the
+others.
+
+A more sophisticated system would solve for this scaling as part of
+the mosaicing process, as another few parameters in the fit.  This
+will be trickier than it sounds, and perhaps one will have instead to
+resort to iterative procedures like hybrid mapping.
+
+\section{Solar System Object}
+
+The planets, comets, the Sun and Moon, present some special requirements
+for mosaicing. It should be a requirement on \aipspp that the apparent
+instantaneous astronomical coordinates of solar system objects. When
+mosaicing these objects, one has two coordinates systems.  The
+mosaic coordinates of solar system objects must be specified in offsets
+from the object centre, rather than as absolute RA and DEC. 
+
+\section*{References}
+
+Cornwell, T.J., Astron. Astrophys. {\bf 202}, 316-321, 1988.
+
+Cornwell, T.J., Holdaway, M.H., and Uson, J.M., Astron. Astrophys. {\bf
+271}, 697-713, 1993.
+
+Sault, R.J., Staveley-Smith, L., and Brouw, W.N., Astron. Astrophys., 1996
+
+\end{document}

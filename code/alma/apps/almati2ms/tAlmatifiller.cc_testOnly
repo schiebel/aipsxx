@@ -1,0 +1,129 @@
+//# tAlmatifiller.cc: Simulate the glish global function, almatifiller,
+//# in almati2ms.g. 
+//# Copyright (C) 2000,2002
+//# Associated Universities, Inc. Washington DC, USA.
+//#
+//# This program is free software; you can redistribute it and/or modify it
+//# under the terms of the GNU General Public License as published by the Free
+//# Software Foundation; either version 2 of the License, or (at your option)
+//# any later version.
+//#
+//# This program is distributed in the hope that it will be useful, but WITHOUT
+//# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+//# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+//# more details.
+//#
+//# You should have received a copy of the GNU General Public License along
+//# with this program; if not, write to the Free Software Foundation, Inc.,
+//# 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+//#
+//# Correspondence concerning AIPS++ should be addressed as follows:
+//#        Internet email: aips2-request@nrao.edu.
+//#        Postal address: AIPS++ Project Office
+//#                        National Radio Astronomy Observatory
+//#                        520 Edgemont Road
+//#                        Charlottesville, VA 22903-2475 USA
+//#
+//# $Id: tAlmatifiller.cc_testOnly,v 1.1 2005/02/10 17:13:09 gli Exp $
+#include <ctime>
+#include <casa/OS/File.h>
+#include <casa/OS/RegularFile.h>
+#include <casa/OS/Directory.h>
+#include <casa/System/Aipsrc.h>
+#include <alma/MeasurementSets/AlmaTI2MS.h>
+#include <casa/Exceptions/Error.h>
+//
+//#include <alma/MeasurementSets/DOalmati2ms.h>
+#include <DOalmati2ms.h>
+//#include <appglish/apps/imager/DOimager.h>
+
+using namespace std;
+int main() {
+      // define the fits files to be processed.
+  try{
+      time_t tb = time( 0 );
+	   String filelist[3];
+		filelist[0] = String(Aipsrc::aipsRoot()+"/data/alma/test/07-feb-1997-g067-04.fits");
+		filelist[1] = String(Aipsrc::aipsRoot()+"/data/alma/test/07-feb-1997-g067-05.fits");
+		filelist[2] = String(Aipsrc::aipsRoot()+"/data/alma/test/07-feb-1997-g067-06.fits");
+		cout<< "AIPS++ Root = " << Aipsrc::aipsRoot() << endl;
+		String msfile="07feb97-g067.ms";
+				
+		Bool append = false; 
+		// Loop over all files in the filelist
+		int nfits = 1;
+      for (int i=0; i<nfits; i++) {
+         cout<< "filename= " << filelist[i] << endl;
+
+         // Create an ALMA-TI filler tool
+			time_t t1 = time( 0 );
+         almati2ms* ati2ms = new almati2ms( msfile, filelist[i], append );
+			time_t t2 = time( 0 );
+			double elapse1 = difftime( t2, t1 );
+ 	      cout <<" the constructor almati2ms() took " << elapse1 << " seconds" << endl;
+
+
+         // Set the filler tool options
+  	      Bool compress = false;
+			Bool combinebaseband = false;
+		 
+			Vector<String> obsModeB(1);				//  get all files
+		   obsModeB(0) = "CORR";
+
+         String chanzero = "TIME_AVG";          //  beginning with '07-feb-1997' 
+         //Bool dophcor= false;                 //  apply phcor corrections
+         time_t t3 = time( 0 );
+			
+			ati2ms->setOptions ( compress, combinebaseband );
+			
+			time_t t4 = time( 0 );
+			double elapse2 = difftime( t4, t3 );
+ 	      cout <<" the method setOptions() took " << elapse2 << " seconds" << endl;
+
+         ati2ms->select ( obsModeB, chanzero);
+			
+			time_t t5 = time( 0 );
+			double elapse3 = difftime( t5, t4 );
+ 	      cout <<" the method select() took " << elapse3 << " seconds" << endl;
+
+         // Fill the data
+         ati2ms->fill();
+			
+			time_t t6 = time( 0 );
+			double elapse4 = difftime( t6, t5 );
+ 	      cout <<" the method fill() took " << elapse4 << " seconds" << endl;
+      	
+			append = true;
+
+         // Close the ALMA-TI filler tool
+         delete ati2ms;
+      };
+/*
+      if(dophcor){
+	      //include 'imager.g';
+			imager myim =imager(msfile); //fill in the scratch column
+			myim.done();
+			//include 'iramcalibrater.g';
+			Bool initcal = false;
+			iramcalibrater ical = iramcalibrater(msfile , initcal );
+			Bool trial = false;
+			ical.phcor( trial );
+			ical.done();
+      }
+*/
+      time_t te = time( 0 );
+		double elapse = difftime( te, tb );
+ 	   cout <<" this program took " << elapse << " seconds" << endl;
+	}catch (AipsError x) {
+		cerr << "aipserror: error " << x.getMesg() << endl;
+		return 1;
+	}
+
+	cout << "Program run successfully." << endl;
+
+	// clean up
+	// Directory dir(outFile);
+	// dir.removeRecursive();
+
+	return 0;
+};

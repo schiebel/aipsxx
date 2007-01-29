@@ -1,0 +1,283 @@
+\chapter{Image handling}
+
+\section{Basic approach}
+
+        The development of classes for image handling for the prototype \aipspp
+exercise was based on a few basic postulates:
+
+\begin{itemize}
+\item
+image data values would be restricted to ``float", although it was
+recognized that many types of images would eventually be required (complex,
+double, int, ....).
+\item
+dimensionality would be restricted to 2, although the code was
+written so that it could, without a great deal of effort, be expanded to more
+dimensions.
+\item
+rudimentary capability for keeping track of pixel coordinates in
+an astronomical frame of reference should be built in, but not developed in
+any depth.
+\item
+rudimentary capability for keeping a history attached to an image
+should be built in, but not developed in depth.
+\item
+the prototype classes should demonstrate some capabilities of
+dynamic binding.
+\item
+some attempt should be made to assess the usefulness of the
+CIC image classes.
+\end{itemize}
+
+        In the following, the design of the set of prototype IMAGE classes 
+will be outlined, and some of the member functions for the various classes
+will be briefly described.
+
+
+\section{Types of images}
+
+        One of the first assumptions made in the image area was that the
+concept of an Image class would be restricted to sets of data values in
+which each value has coordinates that can be mapped onto a grid or n-cube,
+i.e. the coordinates can be represented by integers. Data having random
+coordinate values therefore do not fall into the class that is defined by
+``Image". Within the bounds of this definition of ``Image", it was apparent that 
+there were needed (at least) three sub-classes of ``Image": images in which 
+a full matrix of data values exist, images for which a list of pixel values and
+coordinates exist, and images that are defined by an analytical function.
+In the following, these will be referred to as ``FilledImage", ``ListImage",
+and ``ModelImage". These will be described in considerable detail after the
+generic attributes of the base ``Image" class are presented.
+
+
+
+\section{Coordinate systems}
+
+        One of the fundamental attributes of an Image is a coordinate system
+description that allows the coordinates of any given pixel to be specified 
+(in some user defined representation). For the two-dimensional case
+treated in the prototype, a basic system of grid coordinates, aligned with
+the ``rows and columns" of an image, and which can be uniquely related to
+some ``physical" system of coordinates, has been assumed. Grid positions
+in this system are called ImPixel coordinates, with a coordinate specification
+being given by an ImPixelCoord object. Coordinate values in this system
+have been treated as ``float" values, even though image pixels are located
+at integral coordinate values. (More will be said about this later).
+ImPixel coordinates are defined to increase from left to right across an
+image (first value) and from the bottom to the top of an image (second
+value). 
+
+        The class ``CoordSys" was devised to specify the relationship
+between ImPixel coordinates and some physical coordinate system, and also
+to specify the representation in which the user wishes to have image
+coordinates expressed. For example, an image may have intrinsic physical
+coordinates such as (l,m) in an interferometric image, but the user would
+like to access the image in Galactic coordinates. The coordinate system
+selected by the user is termed Image coordinates, and coordinates in this
+system are given by an ImageCoord object.
+
+        The attributes for a CoordSys objects, for this exercise, consisted
+of a set of parameters that can convert ImPixel coordinates to some intrinsic
+or ``native" physical coordinate system, assuming that the two components of 
+the native coordinates are orthogonal and separable (the standard AIPS 
+convention).  The characteristics of this native coordinate system are 
+specified in an object of the ``CoordSysType" class. For this exercise, this
+is defined by a name, an epoch, and a set of four parameters. Similarly,
+the user-specified Image coordinate system is defined by a CoordSysType
+object. Conversions between the native physical coordinate system and
+the user's Image coordinate system have not been implemented in the
+prototype, but the parameters provided in the CoordSysType objects should
+suffice for such methods.
+
+        Thus a CoordSys object allows the following coordinate conversion,
+and its inverse:
+\begin{verbatim}
+        ImPixelCoord --> ``Native Coords" --> ImageCoord  
+\end{verbatim}
+where the ``native" coordinate system is just a useful intermediary.
+
+
+        A third (as defined by separate classes) coordinate system is the
+internal coordinate system used within a given image. At first glance, it would
+seem logical to use ImPixel coordinates. However, there are reasons to 
+introduce a separate system, in order to minimize changes required to
+CoordSys objects as images are manipulated. For example, if an image is 
+defined by a ``window" which moves in ``astronomical space" and ImPixel
+coordinates are used for internal image coordinates, the parameters in the
+attached CoordSys object must be changed for each window location. Similarly,
+if a new image is created by taking a sub-image (perhaps every n'th
+pixel within a window area), the derived image must have a new CoordSys
+object different from that of the parent image. Although all of this is
+possible, it seemed simpler to introduce a third coordinate system and one
+image attribute that links this system to ImPixel coordinates. This limits
+the proliferation of CoordSys objects. The new system is referred to as
+Pixel coordinates, and a set of coordinate values is given by a PixelCoord
+object. For the prototype exercise, Pixel coordinates have their origin
+(0,0) at the top-left corner of the image and the first value increases
+from left to right, and the second from top to bottom.
+
+If a sub-image is extracted from an image by selecting every
+m'th pixel in the x direction and every n'th in the y direction, in the
+resulting image each increment in Pixel coordinates will no longer
+correspond to a unit increment in ImPixel coordinates. An image attribute
+(object of the ImPixStep class) records this relation. Conversions
+between Pixel coordinates and ImPixel coordinates are the responsibility
+of Images.
+
+
+\section{Image history}
+
+        Images must carry with them some record of processing history. For
+the prototype, a class HistFile was implemented, consisting only of a linked
+list of strings (using CIC classes). Simple methods for listing entries in
+the files, and for inserting entries, are provided. This is an area that
+would require much more development for a practical system.
+
+
+
+\section{Image base class and derived classes}
+
+        The abstract base class Image contains data members which provide
+linkages to a history file and to a coordinate system, descriptors giving
+the type of file and data units, and several parameters describing the
+relationship between internal Pixel coordinates and ImPixel coordinates.
+Regions of interest (regions within which, and only within which, certain
+image operations are to be performed) have not been incorporated in detail in
+the prototype. One region of interest has been included, but in a practical
+system, a list of regions of interest is probably required. Aside from the
+parameters that define the Pixel coordinate - ImPixel coordinate relationship,
+another useful parameter that has been introduced is the image ``center". This
+is user-definable but defaults to Pixel coordinates of (m/2, n/2-1) where the 
+dimensions are [m,n]. 
+
+
+        The major member functions in the Image class deal with the following
+functional requirements:
+
+\begin{itemize}
+\item
+setting a pixel in the image, and retrieving a given pixel from an image.
+\item
+conversions between Pixel coordinates and ImPixel (or Image) coordinates,
+and vice-versa.
+\item
+checking whether one image is ``conformant" with another, i.e. an add operation
+can be performed on them without a chance of adding ``apples and oranges".
+\item
+adding (with weighting) two images to produce a third, either in the UNION
+or INTERSECTION sense.
+\item
+scaling an image and adding it to another.
+\item
+adding entries to the image history, either individual entries or by copying the
+history file of another image.
+\item
+adjusting an image's reference (TLC) position in ImPixel coordinates so
+that the center of the image falls on a given ImPixel coordinate.
+\item
+finding the maximum and minimum pixel values in an image.
+\end{itemize}
+
+     The three derived classes of images are ``FilledImage", ``ListImage"
+and ``ModelImage". The data members of these classes are not generally of
+interest to the users of the class, so nothing more will be said of them
+here. (See the header files for details). It should be stated, however, that
+the CIC class libraries and templates have been used in the prototype to
+implement linked lists and arrays. The major member functions of these classes
+implement the following functionality (in addition to that presented by the base Image class).
+
+{\Large\it FilledImage Class}
+\begin{itemize}
+\item
+display image as a gray-scale using PGPLOT.
+\item
+provide access to the data storage for efficient mathematical operations.
+Although this violates encapsulation to some extent, it may well be required
+in any realistic system.
+\item
+allow a sub-image to be extracted from an image, creating a new image,
+where there is considerable flexibility in the selection of the sub-image,
+i.e. every i'th pixel in x and every j'th pixel in y. It is this operation 
+which demonstrates the utility of having both Pixel and ImPixel coordinates, 
+since the choice of i and j completely restructures the relationship of
+Pixel coordinates and ImPixel coordinates, but the extracted sub-image and 
+its parent can and do still have the identical CoordSys object.
+\end{itemize}
+
+
+{\Large\it ListImage Class}
+\begin{itemize}
+\item
+be able to ``clone" itself, copying all attributes but zeroing the list of
+pixels. This functionality might be required for FilledImages also but
+was only implemented as a test for ListImages.
+\item
+various methods of adding or retrieving pixels in the list (by matching
+Pixel coordinates, by serial number in the list, etc.). Special methods were
+introduced to make use of the list iterator provided by CIC.
+\item
+the ability for the ``dimensions" of a ListImage to grow as new pixels, with
+new Pixel coordinates, are added to the list.
+\item
+the ability to merge pixels in the list which may have the same Pixel
+coordinates (useful for a list of CLEAN components). In a real system, this
+might be accompanied by a sort operation.
+\end{itemize}
+
+
+{\Large\it ModelImage Class}
+\begin{itemize}
+\item
+to allow the flexible specification of an analytical model of an image.
+\item
+to provide a flexible means of updating the parameters of the model.
+\end{itemize}
+
+\section{Image operations using dynamic binding}
+
+        Some experience in applications of dynamic binding has been obtained.
+Aside from the general pixel access routines, which are implemented as virtual
+base class functions, the combined and scaled-add methods have been the best
+examples of this. A statement of the type:
+
+\begin{verbatim}
+        Image C = 5 * Image A - 7 * Image B  (logical code)
+\end{verbatim}
+
+works correctly regardless of the image types (except that C cannot be a
+ModelImage). The prototype has given some insight into the practicality
+(not always) of such methods, and the requirements for implementing them.
+
+
+\section{What has been learned from the prototype}
+
+        The prototype has provided a lot of experience in using C++ and
+C++ tools, but has also, we feel, indicated that the general framework
+adopted for image handling is probably not too different from what one would
+like for a practical system. The use of Pixel and ImPixel coordinate systems
+has raised some  questions of overhead (and possible user confusion) but has
+provided great flexibility. Part of the overhead arises because Pixel 
+coordinates have two aspects: as indexes in image data arrays (where they must
+be integers), and as computed counterparts of Image (or ImPixel) coordinates
+(where they must usually be floating numbers). A practical system may have
+to introduce a better way of meeting both these requirements, if it can be
+done with lower overhead. Certainly, several methods that now take Pixel
+coordinate arguments or return Pixel coordinates will have to be overloaded
+to also take/return ImPixel coordinates. It is possible that an ImPixel
+class (data value plus ImPixel coordinates) will have to join the current
+Pixel class. If the dual-coordinate system is to be used successfully, the
+client must be able to perform all image operations without ever bothering
+with Pixel coordinates!
+     The prototype has not been overly successful in testing the usefulness
+of the CIC image classes, but only because multi-dimensional CIC arrays
+of floating numbers, and associated display methods, are unavailable at this
+moment.
+
+
+\section{What was missing from the prototype}
+
+	The prototype lacks dimensionality greater than two, generality
+with regard to types of pixels, and no capabilities in the areas of regions
+of interest and image errror data, amongst other things. The latter of these
+needs careful analysis before the optimum implementation can be designed.
+

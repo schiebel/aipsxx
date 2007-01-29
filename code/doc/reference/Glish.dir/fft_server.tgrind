@@ -1,0 +1,47 @@
+\File{fft\_server.cc},{16:15},{Dec  7 1992}
+\L{\LB{\K{\#include} \<string.h\>}}
+\L{\LB{\K{\#include} \S{}\"Glish\/Client.h\"\SE{}}}
+\L{\LB{}}
+\L{\LB{\C{}\/\/ Computes the FFT of the first ``len\" elements of ``in\", returning}}
+\CE{}\L{\LB{\C{}\/\/ the real part in ``real\" and the imaginary part in ``imag\".}}
+\CE{}\L{\LB{\K{extern} \K{void} fft( \K{double}\* in, \K{int} len, \K{double}\* real, \K{double}\* imag );}}
+\L{\LB{}}
+\L{\LB{\Proc{main}\K{int} main( \K{int} argc, \K{char}\*\* argv )}}
+\L{\LB{}\Tab{8}{\{}}
+\L{\LB{}\Tab{8}{Client c( argc, argv );}}
+\L{\LB{}}
+\L{\LB{}\Tab{8}{GlishEvent\* e;}}
+\L{\LB{}\Tab{8}{\K{while} ( (e = c.NextEvent()) )}}
+\L{\LB{}\Tab{16}{\{}}
+\L{\LB{}\Tab{16}{\K{if} ( ! strcmp( e\-\>name, \S{}\"fft\"\SE{} ) )}}
+\L{\LB{}\Tab{24}{\{ \C{}\/\/ an ``fft\" event}}
+\CE{}\L{\LB{}\Tab{24}{Value\* val = e\-\>value;}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{\C{}\/\/ Make sure the value\'s type is ``double\".}}
+\CE{}\L{\LB{}\Tab{24}{val\-\>Polymorph( TYPE\_DOUBLE );}}
+\L{\LB{}\Tab{24}{\K{int} num = val\-\>Length();}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{\C{}\/\/ Get a pointer to the individual elements.}}
+\CE{}\L{\LB{}\Tab{24}{\K{double}\* elements = val\-\>DoublePtr();}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{\C{}\/\/ Create arrays for results.}}
+\CE{}\L{\LB{}\Tab{24}{\K{double}\* real = new \K{double}[num];}}
+\L{\LB{}\Tab{24}{\K{double}\* imag = new \K{double}[num];}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{\C{}\/\/ Compute the FFT.}}
+\CE{}\L{\LB{}\Tab{24}{fft( elements, num, real, imag );}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{\C{}\/\/ Create a record for returning the}}
+\CE{}\L{\LB{}\Tab{24}{\C{}\/\/ two arrays.}}
+\CE{}\L{\LB{}\Tab{24}{Value\* r = create\_record();}}
+\L{\LB{}\Tab{24}{r\-\>SetField( \S{}\"real\"\SE{}, real, num );}}
+\L{\LB{}\Tab{24}{r\-\>SetField( \S{}\"imag\"\SE{}, imag, num );}}
+\L{\LB{}}
+\L{\LB{}\Tab{24}{c.PostEvent( \S{}\"answer\"\SE{}, r );}}
+\L{\LB{}\Tab{24}{Unref( r );}}
+\L{\LB{}\Tab{24}{\}}}
+\L{\LB{}\Tab{16}{\K{else}}}
+\L{\LB{}\Tab{24}{c.Unrecognized();}}
+\L{\LB{}\Tab{16}{\}}}
+\L{\LB{}\Tab{8}{\K{return} 0;}}
+\L{\LB{}\Tab{8}{\}}}

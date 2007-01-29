@@ -1,0 +1,169 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\begin{document}
+\begin{ahrecipe}{Glish Matrix Operations Doing Least Squares Fitting with Error Analysis}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+Some of the advanced mathematical operations in \emph{Glish} are 
+in packages like \texttt{matrix} and \texttt{mathematics}. 
+In this recipe we show how you can read in a table of (x,y) data and do least 
+squares fitting to these data with complete 
+error analysis including not only estimation of the errors in the polynomial 
+coefficients, but also computation of the covariance matrix and correlation 
+coefficients.
+
+This is also an example of using a \texttt{matrix} object to carry out matrix 
+operations.
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals:</font>
+\end{rawhtml}
+{Read an ASCII table of (x,y) data, fit a polynomial to the data, 
+perform error analysis on the fit, and plot data and fit.}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{\emph{tablefromascii} function, Table and Matrix tools}
+
+%\arresults
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Results:</font>
+\end{rawhtml}
+{Polynomial fit parameters, their errors, related Covariance and Correlation 
+Coefficient matrices, and plots of the data and fit.}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume</font>
+\end{rawhtml}
+{You have an input file of ASCII data in columns, and a header description file. 
+In this recipe the ASCII data file named
+\begin{rawhtml}
+<a href="../begdata.text">begdata.txt</a>
+\end{rawhtml}
+has two columns of numbers. The ASCII header file describes the data columns 
+in the data file; in this case a header file 
+\begin{rawhtml}
+<a href="../begdatahdr.txt">begdatahdr.txt</a>
+\end{rawhtml}
+assigns names and data types to each 
+column, following the rules described in documentation of 
+the header files.   Both input and header files must be in the 
+directory from which you started \textsf{AIPS++}}
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script: </font>
+<a href="../polylsq.g.txt">polylsq.g</a>
+\end{rawhtml}
+
+\begin{arexample}
+
+\arline{tablefromascii('begtable','begdata.txt',
+'begdatahdr')}{Read ASCII data into a table using the 
+\emph{tablefromascii} function. For details on 
+what you can do with tables see the User's Reference Manual.
+The result of this function is an \textsf{AIPS++} table named \texttt{begtable}
+written to disk.}
+
+\arline{\texttt{xydata~:=~table('begtable')}}{Create the table tool
+named \texttt{xydata}}
+
+\arline{\texttt{xydata.getkeywords()}}{View keywords defined in the \emph{begdatahdr.txt} file.}
+
+\arline{\emph {[XDATA=Independent~Variable,
+YDATA=Dependent~Variable]}}{Result of the previous command shows the list
+of keywords.}
+
+\arline{\texttt{x~:=~xydata.getcol('XDATA')
+y~:=~xydata.getcol('YDATA')}}
+{Extract columns from the table and assign them to vectors using 
+\emph{getcol}.}
+
+\arline{\texttt{N~:=~length(y);
+PolynomialOrder~:=~2;
+M~:=~PolynomialOrder+1;
+ydata~:=~array(y,N,1);}}
+{\texttt{N} is the number of (x,y) pairs.
+Set the polynomial fit to order 2.
+\texttt{M} is an order-dependent matrix parameter.
+Set up \texttt{ydata} as an array, required for matrix input.}
+
+\arline{\texttt{mx~:=~matrix\_functions();}}{Make matrix object named 
+\texttt{mx}}
+
+\arline{\texttt{A~:=~array(0,N,M);
+A[,1]~:=~1;
+for~(i~in~1:N)
+~for~(j~in~2:M)
+~~A[i,j]~:=~x[i]$^{(j-1)}$}}
+{Create N by M matrix \texttt{A} and fill it with the correct values.}
+
+\arline{\texttt{Atran~:=~mx.transpose(A);
+G~:=~mx.mult(Atran,A);
+Ginv~:=~mx.invert(G);}}
+{Perform transpose, multiplication, and inversion matrix operations.}
+
+\arline{\texttt{Coef := mx.mult(Ginv,mx.mult(Atran,ydata))}}
+{Polynomial fit to \textit{y(x)}}
+
+\arline{\texttt{ysoln~:=~mx.mult(A,Coef);}}
+{Compute solution from fit.}
+
+\arline{\texttt{errsq := N*mx.mean((ydata-ysoln)$^2$)/(N-1);
+rms~:=~errsq$^{0.5}$;
+Cov~:=~errsq*Ginv;}}
+{Compute RMS error and Covariance matrix}
+
+
+\arline{\texttt{for~(j~in~1:M) 
+~sigma[j]~:=~Cov[j,j]$^{0.5}$;}}
+{Compute errors for each coefficient}
+
+\arline{\texttt{r~:=~Cov}}{Compute the correlation coefficient matrix \texttt{r}}
+
+\arline{\texttt{for~(j~in~1:M)
+~for~(k~in~1:M)
+~~r[j,k]~:=~Cov[j,k]/(Cov[j,j]*Cov[k,k])$^{0.5}$;}}
+{Compute the correlation coefficient matrix \texttt{r} }
+
+\arline{\texttt{Coef;~rms;~Cov;~sigma;~r;}}
+{Print out the polynomial coefficients and the various 
+error parameters}
+
+\arline{\texttt{pg~:=~pgplotter();
+red~:=~2;
+blue~:=~4;
+pg.sci(blue);
+pg.env(min(x),max(x),min(y),max(y),0,1);
+pg.lab("x","y",
+"Plot Data (Red) and Second Order Polynomial Fit to Data (Blue)");}}
+{Open a \textit{pgplotter} tool named \texttt{pg},
+set color values for the plot, set plot maxima and minima and
+label plot and axes.}
+
+\arline{\texttt{pg.line(x,ysoln)
+pg.sci(red)
+pg.pt(x,ydata,4)}}
+{Plot polynomial fit as blue line and data points with red symbols.
+The final plot is shown below.}
+\end{arexample}
+\end{ahrecipe}
+\begin{rawhtml}
+<P>
+<center><img src="../polylsq.gif"></center><br>
+</body> </html>
+\end{rawhtml}
+\end{document}

@@ -1,0 +1,957 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!--Converted with LaTeX2HTML 98.2 beta5 (July 28th, 1998)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>No Title</TITLE>
+<META NAME="description" CONTENT="No Title">
+<META NAME="keywords" CONTENT="octnews">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<LINK REL="STYLESHEET" HREF="octnews.css">
+</HEAD>
+<BODY >
+ 
+<HTML>
+<HEAD>
+<TITLE>AIPS++ November 1998 Newsletter</TITLE>
+</HEAD>
+
+<BODY background="octback1.gif" BGCOLOR="#FFFFFF" TEXT="#000000" LINK="#999999" vlink="#99ccff">
+
+<TABLE CELLPADDING=8 CELLSPACING=8 BORDER=0 WIDTH="100%">
+
+<TR><TD COLSPAN="2">
+<IMG SRC="octmast1.gif">
+</TD></TR>
+
+<TR><TD COLSPAN="2" ALIGN="RIGHT">
+<FONT FACE=HELVETICA SIZE="3" COLOR="#000099">
+<B>
+October 1998
+</B></FONT>
+</TD></TR>
+
+<TR><TD VALIGN="TOP" ALIGN="LEFT">
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++ Display<br> Library</A><P>
+<A HREF="#THIRD">Third Beta<br> Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++ Table<br>System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's<br> New in AIPS++</A><P>
+</B></FONT>
+
+</TD>
+<TD VALIGN=TOP>
+<FONT FACE=HELVETICA SIZE="+3">
+<B>
+<A NAME="DL">The AIPS++ Display Library</A>
+<BR>
+ - Part 1</B></FONT>
+<BR>
+<I>David Barnes </I>- ATNF, Epping<P>
+The <FONT FACE=HELVETICA><B>AIPS++</B></FONT> Display Library was introduced 
+in the
+http://aips2.nrao.edu/aips++/docs/newseletters/mar98/marchnews/marchnews.htmlMarch 1998 <I>AIPS++</I> Newsletter
+. Since then, a substantial amount of design and implementation
+work has been devoted to the Display Library. The purpose of the
+Display Library is twofold:
+
+<UL>
+<LI>
+to provide a <B>C++</B> library of high-level classes for the display of
+astronomical datasets, with which <B>C++</B> programmers can build stand-alone
+visualization applications, and
+
+<P>
+
+<LI>
+to provide an <B><I>interface</I></B> to this library, which brings the 
+bulk of the functionality of the <B>C++</B> library to the 
+<I><B>Glish</B></I> command line, and with which <I><B>Glish</B></I> 
+programmers can build visualization applications
+that are wholly integrated into the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> data reduction and 
+analysis environment.
+
+</UL>
+
+The purpose of this article is to outline the current status and future
+design for the <I><B>Glish</B></I> interface to the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> Display Library.
+A future article will explore the <B>C++</B> interface to the Display Library.
+
+<P>
+The <I><B>Glish</B></I> interface to the Display Library is in its infancy:
+since April, development has been in full swing and has culminated in a
+"first generation" <I><B>Glish</B></I> widget which is capable of displaying 
+different views of multi-dimensional 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> Images and in-core 
+<I><B>Glish</B></I> arrays.  Mouse controlled zooming and 
+<I><B>Glish</B></I> controlled animation
+have been demonstrated, together with the capability to use various built-in
+and user-defined colormaps.  Presently, the <I><B>Glish</B></I> interface
+to the Display Library is undergoing a proper design and specification,
+and the resultant "second generation" widget should be available, with
+substantial functionality, in the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> system in or shortly after
+November 1998. Briefly, the implementation of the interface as a
+dynamically loadable <I><B>Glish</B></I> widget means that Display Library 
+canvases can be embedded directly in graphical user interfaces developed in 
+<I><B>Glish</B></I> code, and are programmable in the normal 
+<I><B>Glish</B></I> event-oriented fashion.
+As development moves into the applications stage, general and specific
+<I><B>Glish</B></I> wrapper scripts will be generated which can be used 
+to hide the direct widget interface from the user.  In this article, code
+fragments are given which can be used to generate an interactive 
+"cgdisp"-like panelled view of a multi-dimensional dataset, as shown in 
+the figure below:
+<P>
+</TD></TR>
+<TR><TD COLSPAN="2">
+<IMG SRC="dl-jk.gif" VSPACE=12 NOSAVE BORDER=5 HEIGHT=381 WIDTH=598>  
+</TD></TR>
+<TR><TD></TD><TD>       
+<P>
+This script commences by building a frame containing one pixelcanvas
+widget and two <B>PGPLOT</B> widgets:<P>
+
+<BLOCKQUOTE>
+<PRE><FONT SIZE="1">
+     f := frame(side='left');
+     pc := pixelcanvas(f, [width=400, height=340, background='gray20']);
+     fr := frame(f, side='top');
+     pg_hist := pgplot(fr, width=180, height=170);
+     pg_shap := pgplot(fr, width=180, height=170);
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+A canvas for drawing astronomical data can be added to the pixelcanvas
+widget as follows:
+<P>
+<BLOCKQUOTE>
+<PRE><FONT SIZE="1">
+     wc[1] := worldcanvas(pc,0.2,0.2,0.5,0.5);
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+where the first parameter indicates that the worldcanvas is to be added
+to the existing pixelcanvas <TT>p</TT>, and the remaining four parameters
+comprise the (fractional) bottom left and top right corners of the canvas
+on the visual widget.  Multiple canvases can be added to a single
+widget; it is left as an exercise for the reader to write code to set up
+the panels as shown above.  Let us assume then that  the
+twelve panels in the figure above are stored in the array <TT>wc[1:12]</TT>.
+
+<P>
+The next task is to create what is known as a "DisplayData" object,
+which will be a <I><B>Glish</B></I> handle (technically a <I>proxy</I>) 
+to an instance of a <B>C++</B> class within the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> Display Library.
+We take an R.A./Dec/Frequency 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> Image, <TT>/data/testdata.im</TT>,
+and construct a DisplayData which will draw raster images of the Frequency
+planes of the dataset. 
+<P>
+<BLOCKQUOTE>
+<FONT SIZE="1"><PRE>
+     mydd := displaydata('raster', '/data/testdata.im');
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+and add this data to the 12 panels:
+<P>
+<BLOCKQUOTE>
+<FONT SIZE="1"><PRE>
+      for (i in 1:12) {
+          wc[i]->add(mydd);
+      }
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+At this point, the default colormap, <TT>heat</TT>, has  been used,
+and there are 12 identical slices of the Image displayed on the screen.
+You can modify each canvas so that it displays a different plane of the
+dataset, and use a different colormap, eg. <TT>'smooth'</TT>, using the
+following code:
+<P>
+<BLOCKQUOTE>
+<FONT SIZE="1"><PRE>
+      for (i in 1:12) {
+          wc[i]->options([element=i]);
+      }
+</FONT></PRE>
+<P>
+<FONT SIZE="1"><PRE>
+     mycm := colormap('smooth');
+     mydd->setcolormap(mycm);
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+You can now make use of the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> Images module to calculate 
+a histogram of the pixel data values in the Image, and then display 
+this histogram to using the first of our <B>PGPLOT</B> widgets. At 
+the same time,
+you "bind" to left and right mouse button click events on the <B>PGPLOT</B> widget
+to set, respectively, the minimum and maximum data values for display:
+<p>
+<BLOCKQUOTE>
+<FONT SIZE="1"><PRE>
+     include 'image.g';
+     im := image('/data/testdata.im');
+     abslimit := 0.5;
+     im.histograms(histout=myhist, nbins=30, includepix=abslimit,
+                   async=F);
+     myhist.counts := log(myhist.counts + 1);
+     t := pg_hist->env(-abslimit, abslimit, 0,
+                   as_integer(max(myhist.counts) + 1), 0, 0);
+     t := pg_hist->lab('Value', 'Counts',
+                   'Histogram - left &amp; right click');
+     t := pg_hist->bin(myhist.values, myhist.counts, T);
+     t := pg_hist->bind('&lt;Button-1>', 'left');
+     whenever pg_hist->left do {
+                   left := $value.world[1];
+                   mydd->options([datarange=[left,right]]);
+     }
+     t := pg_hist->bind('&lt;Button-3>', 'right');
+     whenever pg_hist->right do {
+                   right := $value.world[1];
+                   mydd->options([datarange=[left,right]]);
+     }
+</FONT></PRE>
+
+<FONT SIZE="1"><PRE>
+     # set the initial data range:
+     left := -0.02;
+     right := 0.02;
+     mydd->options([datarange=[left,right]]);
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+Likewise, you can use the second pgplot widget to control the shaping of
+the colormap itself, as opposed to the mapping of the data values onto
+the colormap.&nbsp; Using <TT>pg_shap</TT>, arrange to bind to left
+mouse button click and drag events, and calculate new parameters for a
+linear colormap ramp function:
+<P>
+<BLOCKQUOTE>
+<FONT SIZE="1"><PRE>
+     function shape_colormap(world) {
+          world[2] := tan((world[2] - 0.5) * pi);
+          if (world[2] == 0) {
+              world[1] := 0.5;
+     } else {
+          world[1] := world[1] + (world[1] - 0.5) / world[2];
+     }
+     mycm->options([shapecoeffs=world]);
+     }
+</FONT></PRE>
+</BLOCKQUOTE>
+<P>
+This concludes the example.  Very little code remains for the user
+to generate in order to reach the working example shown in the figure.
+I hope this article has demonstrated the relative ease with which users
+and programmers alike are able to rapidly generate simple or sophisticated
+visualization applications using only <I><B>Glish</B></I> scripts.
+
+<P>
+Present and near future work on the Display Library will be concentrating
+on the full specification of the visual widget, and its helper agents
+- canvas, colormap and lattice.&nbsp; Major tasks prior to the widget being
+made available in the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> distribution include implementation
+of these specifications, together with extensions to the Display Library
+infrastructure to support contour and vector field drawing, multiple dataset
+overlays, axis labelling, and ImageRegion display.
+
+</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++ Display
+<BR>
+Library</A><P>
+<A HREF="#THIRD">Third Beta Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++
+<BR>
+Table
+<BR>
+System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's
+<BR>
+New in AIPS++</A><P>
+</B></FONT>
+
+</TD><TD VALIGN="TOP">
+<P>
+
+<FONT FACE=HELVETICA SIZE="+3"><B>
+<A NAME="THIRD">Summary of the Third Beta Release of AIPS++</A></B>
+</FONT>
+<BR>
+<I>Tim Cornwell </I>- NRAO, Socorro
+<P>
+For newcomers, this is an overview of the contents of the third beta 
+release of <FONT FACE=HELVETICA><B>AIPS++</B></FONT>. 
+Included in this release are:<P>
+
+<UL>
+<LI>A powerful command 
+line interpreter called
+<A HREF="#Glish"><EM>Glish</EM></A>
+,the heart of <FONT FACE=HELVETICA><B>AIPS++</B></FONT>, which has both a tutorial and reference manual.
+
+<LI>Objects  allowing users to 
+to do things such as start, control, and stop objects is via the Object 
+Catalog 
+(
+<A HREF="#objectcatalog"><TT>objectcatalog</TT></A>
+), 
+whereas files are handled by the File Catalog (
+<A HREF="#catalog"><TT>catalog</TT></A>
+).
+
+<LI>Tables are how all <FONT FACE=HELVETICA><B>AIPS++</B></FONT> data are 
+stored and made accessible from inside <I><B>Glish</B></I> via the
+<A HREF="#table_object"><TT>table object</TT></A>
+.
+
+<LI>Graphical User Interfaces (GUIs) for most user-visible objects, apart 
+from the <I><B>Glish</B></I> command line interface.  These 
+represent a large investment of effort in direct response to our earlier 
+beta releases where we learned that users needed simpler interfaces.
+
+<LI>Synthesis imaging capabilities are found in the two objects 
+end{rawhtml}
+\htmlref{Imager}{Imager}
+\begin{rawhtml}  and 
+<A HREF="#Calibrater">Calibrate</A>
+, the principal objects for 
+imaging and calibration. Imager, in particular, has many features 
+not found in other packages, such as multi-field processing in user-selected 
+coordinate systems. We expect Calibrater  to evolve similarly over 
+the next few months.
+
+<LI>The
+<A HREF="#Measures">Measures</A>
+ system is, to our knowledge, unparalleled in the types  of 
+operations it allows on measured quantities with units and  coordinate 
+systems. The functionality is available via both the <I><B>Glish</B></I> 
+command line (the Measures <\tt object>), and a customized graphical 
+user interface.
+
+<LI>The single dish environment
+<A HREF="#dish"><TT>dish</TT></A> 
+ is a carefully designed  
+interactive tool for processing of single dish data, most particularly 
+spectra but other one-dimensional data formats are supported.
+
+<LI>A very capable plotting tool,
+<A HREF="#pgplotter"><TT>pgplotter</TT></A>
+, based on the 
+<B>PGPLOT</B> subroutine library, is available and is used by many other 
+tools. For example, an interactive  visibility plotting tool, 
+<A HREF="#visplot"><TT>visplot</TT></A>
+, has been built on top of <TT>pgplotter</TT>.  
+
+<LI>Numerous general purpose utilities for handling 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> data are present. For example, 
+the
+<A HREF="#tablebrowser">tablebrowser</A>
+ (available as a function <TT>browse</TT> of the 
+<TT>table</TT> object) can edit, plot, query and select data, and can 
+be configured in many ways to display data as the user desires.
+
+<LI>To demonstrate the possibilities of stream-lined processing in 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>, we have provided the 
+\end{rawthml}
+\htmlref{simpleimage}{simple image}
+\begin{rawhtml} {\tt object}. 
+
+This walks the user through straightforward 
+imaging of synthesis data, first making a tapered image at low resolution 
+and then imaging a user-specified region at full resolution. The user has 
+only to select the data to be imaged, and to delimit the full-resolution 
+region. This is an example of the type of packaging that we plan to 
+incorporate in the future.
+
+<LI>Introductory documentation has been written by early testers of 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>, and terminology established 
+for subsequent use throughout the project.
+
+<LI>Extensive reference documentation is available for all user-visible 
+objects.
+
+<LI>The system has powerful programmability at the <I><B>Glish</B></I> level.
+
+</UL>
+
+<P>
+Not (yet) included in this beta release are:</P>
+
+<UL>
+<LI>Filling of VLA or VLBA data apart from via UVFITS. Fillers for  other 
+telescopes and formats (i.e., <B> ATNF, BIMA, WSRT, UVFITS</B>) are present. 
+Currently we expect you to apply 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> to data that has been initially 
+calibrated elsewhere.
+
+<LI>Efficient processing of large synthesis continuum images 
+(e.g., <B><I>millions of pixels</I></B>) or many channel 
+(e.g., <B><I>more than 64</I></B>) spectral images. Current processing 
+is optimized towards spectral-line observations of moderate numbers of 
+channels.
+
+<LI>Sophisticated cross-calibration capabilities.
+
+<LI>Interactive flagging of visibility data.
+
+<LI>A robust way to archive the MeasurementSets to FITS. The best is 
+to use UVFITS for synthesis data (<TT>ms.tofits</TT>) and  <TT>ms2sdfits</TT> for single dish data.
+
+<LI>We do not expect people to program at the <B>C++</B> level using the 
+beta release. 
+</UL>
+
+</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++
+<BR>
+Display
+<BR>
+Library</A><P>
+<A HREF="#THIRD">Third Beta Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++
+<BR>
+Table
+<BR>
+System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's
+<BR>
+New in AIPS++</A><P>
+</B></FONT>
+
+</TD><TD VALIGN="TOP">
+<FONT FACE=HELVETICA SIZE="+3"><B>
+<A NAME="PROJECT">Project Summary</A>
+</B></FONT>
+<BR>
+<I>Tim Cornwell </I>- NRAO, Socorro
+<P>
+The <FONT FACE=HELVETICA><B>AIPS++</B></FONT> Third Beta was released on 
+October 15, 1998. This is the culmination of a year long period of 
+development, for the most part along lines we had anticipated in our 
+planning, and also partly in response to comments from testers of our 
+previous beta releases. This release sees substantial improvements in all 
+areas, most importantly in interfaces and in functionality. Details of the 
+contents of the release are given in the above  newsletter article in 
+this issue. Our beta testers are volunteers from both inside and outside 
+the project. If you would like to participate in the beta test program, 
+please contact Tim Cornwell <a href="mailto:tcornwel@nrao.edu">(tcornwel@nrao.edu</a>).
+
+<P>
+After this beta release, we will switch to a new approach to release. 
+Instead of a fully-fledged beta release, we will instead issue binaries 
+for the latest stable build. This shift reflects the stabilization of the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> infrastructure as well as an 
+increased emphasis on applications development and attracting new users. 
+We hope to be able to make stable releases at a rate of about one per month 
+to 6 weeks. Our expectation is that this will  enable beta-testers to use 
+the system more consistently, as both new features and bug fixes will be 
+made available more expeditiously.  All of the testing and continuing 
+development is aimed at a public release of 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> by March 15, 1999.
+
+<P>
+We're pleased to have selected a logo for the Project: see the top of this newsletter. You will start seeing this logo throughout our documentation.
+
+<P>
+Finally, we plan demonstrations at the ADASS meeting in Champaign-Urbana, 
+early November, and at the AAS meeting in Austin in January. 
+If you are attending either one of these conferences, please come 
+on by and see us.
+
+<P>
+</TD></TR>
+<TR><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++
+<BR>
+Display
+<BR>
+Library</A><P>
+<A HREF="#THIRD">Third Beta Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++
+<BR>
+Table
+<BR>
+System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's
+<BR>
+New
+<BR>
+in AIPS++</A><P>
+</B></FONT>
+
+</TD><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="+3"><B>
+<A NAME="TABLE">The AIPS++ Table System</A></B></FONT>
+<BR>
+<I>Ger van Diepen</I>, NFRA, Dwingeloo
+
+<P>
+In the beginning of the <FONT FACE=HELVETICA><B>AIPS++</B></FONT> project 
+it was decided that all persistent data should be stored in a common form 
+since it would make it possible to have a uniform interface to all data and 
+to develop common tools to handle data. Allen Farris (from StSci) developed 
+some of the initial ideas about a table system; it was based on relational 
+database concepts, but extended those concepts in various ways. Most of 
+Allen's ideas were used and implemented as the 
+<A HREF="/aips++/docs/aips/implement/Tables.html">AIPS++ Table System</A>. 
+Some examples of tables now being used in the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> system are: 
+<P>
+<UL>
+<LI>The measurement set is a table with a collection of sub-tables; 
+<LI>An image is a table; and 
+<LI>The log messages are saved in a table. 
+</UL>
+
+<P>
+Furthermore the <A HREF="http://www.nfra.nl/tms">Westerbork Telescope Management System</A> has adopted the <FONT FACE=HELVETICA><B>AIPS++</B></FONT> 
+Table System as the means to store data. This article will only give an 
+introduction to the table system. It is beyond its scope to explain the 
+possibilities of the Table System in all its detail. However, in the next 
+issue(s) of the Newsletter, some examples will be given how to use it from 
+<B>C++</B> or <I><B>Glish</B></I>. This article contains several links to 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> documentation explaining things 
+in more detail. 
+<P>
+<H3>Structure of a Table</H3>
+<P>
+An <FONT FACE=HELVETICA><B>AIPS++</B></FONT> table has the following 
+structure: 
+<P>
+<OL>
+
+<LI>A set of so-called table keywords contains global information about 
+the data. They can be compared to the <B>FITS</B> headers, but are not 
+limited to <B>ASCII</B> scalar values. 
+
+<LI>A set of columns and rows contains the actual data. They can be 
+compared with the <B>FITS</B> binary tables, but offer more flexibility. 
+
+<LI>Each column has its own set of so-called column keywords containing 
+information about the column (e.g. unit). Column keywords are used by the 
+<A HREF="/aips++/docs/trial/implement/TableMeasures.html">TableMeasures</A> 
+module to handle measures in tables. A keyword set is a 
+<A HREF="/aips++/docs/aips/implement/Tables/TableRecord.html">
+TableRecord</A> 
+object. It is a heterogeneous collection of names and values. 
+Each value can be a scalar or N-dimensional array of one of the basic data 
+types (<TT>char, bool, short, int, float, double, complex, double complex, 
+and string</TT>). The value can also be a <TT>TableRecord</TT> in itself 
+making it possible to define hierarchical keyword sets. Finally a value 
+can be a reference to another table making it possible to have a hierarchy 
+of tables. The latter is, for instance, used heavily in the measurement 
+sets. 
+
+<LI>Columns have the following characteristics: They can contain scalar 
+or array values. An array can be of any shape and dimensionality. 
+It is possible to force all cells in a column to have the same shape or 
+dimensionality. All basic keyword data types can be used for a column. 
+Before the end of 1998 it will also be possible to use a 
+<TT>TableRecord</TT> as the data type of a column to make it possible to 
+store heterogeneous data in a column. 
+</OL>
+
+<H3>Storing a Table</H3>
+<P>
+The Table System makes a clear distinction between the logical and physical 
+layout of the data. The logical layout is defined by creating a table 
+description. The physical layout can be defined at table creation time by 
+binding columns to so-called storage managers. The storage managers control 
+how the data are stored. By choosing the correct storage manager, you can 
+optimize in access performance and/or disk space. The following storage 
+managers are available: 
+<P>
+<OL>
+
+<LI>The simple storage manager <TT>StManAipsIO</TT>. It writes each column 
+as a series of values into the disk file. Currently this storage manager is 
+memory based, but it is planned to make it truly disk based. 
+
+<LI>The disk space saving storage manager <TT>IncrementalStMan</TT>. 
+It only writes a cell in a column when its value is different from the 
+value in the previous cell. It can save quite some disk space when the 
+values in a column are constant or vary slowly. 
+
+<LI>The array based storage manager <TT>TiledStMan</TT>. This storage 
+manager is optimized to store large arrays which must be accessed 
+efficiently along various axes. It is, for instance, used to store images 
+to make access in RA, DEC, and frequency almost equally fast. 
+It is also used to store the data in a measurement set. 
+</OL>
+
+<P>
+Apart from binding to a storage manager, a column can also be bound to 
+a so-called virtual column engine. Such an engine makes it possible to 
+calculate the data on-the-fly. An example of it is to store a float column 
+as 2-byte integers by scaling the values. 
+
+<P>
+<H3>Other functionality provided for Tables</H3>
+<P>
+It is possible to share a table amongst multiple processes. The system 
+maintains a read or write lock on the table to synchronize access to the 
+table when multiple readers and writers are active at the same time. 
+Currently synchronization is fully supported for <TT>get </TT> and 
+<TT>put</TT> operations, but not yet supported for cases where 
+the structure of the table is changed by adding or removing a column. 
+That kind of synchronization will be added soon. 
+<P>
+A table can be sorted on any combination of scalar columns. 
+It is also possible to select a 
+subset from a table using an SQL-like selection mechanism. 
+Sorting and selection result in a so-called reference table. 
+This reference 
+table contains the row indices of the original table and
+can be handled as any other table.  The user will not notice any 
+difference compared to a 'normal' table. 
+
+<P>
+A special kind of sorting/selection is offered by the table 
+<TT>iterator</TT> making it possible to iterate through a table based 
+on the contents of one or more scalar columns. Each step in the iteration 
+gives a reference table containing the rows with the values in the 
+iteration's columns. 
+<P>
+<H3>How to use the Table System</H3>
+<P>
+Tables can be created and accessed at the 
+<A HREF="/aips++/docs/aips/implement/Tables.html"><B>C++</B></A> and 
+<A HREF="/aips++/docs/user/Refman/Refman.html"><I><B>Glish</B></I></A> 
+level. The <B>C++</B> interface offers most flexibility, but 
+the functionality offered in <I><B>Glish</B></I> is quite extensive. 
+The selection/sort interface is called Table Query Languange (TaQL). It is described in <FONT FACE=HELVETICA><B>AIPS++</B></FONT> 
+<A HREF="/aips++/docs/notes/199/199.html">note 199</A>.
+
+<P>
+</TD></TR>
+<TR><TD VALIGN=TOP>
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++
+<BR>
+Display
+<BR>
+Library</A><P>
+<A HREF="#THIRD">Third Beta Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++
+<BR>
+Table
+<BR>
+System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's
+<BR>
+New
+<BR>
+in AIPS++</A><P>
+</B></FONT>
+
+</TD><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="+3"><B>
+<A NAME="SYN">Synthesis I: The Measurement Equation in AIPS++</A></B></FONT>
+<BR>
+<I>Athol Kemball </I>- NRAO, Socorro<P>
+
+<P>
+This article is the first in a series to consider issues of relevance to 
+aperture synthesis processing within 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>, and is concerned with the 
+overall role of the Measurement Equation in 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>.
+
+<P>
+All data reduction packages for radio-interferometric instruments 
+implicitly adopt a mathematical model for the instrumental effects that 
+are to be removed in the course of data reduction. In essence, they are 
+algebraic relations describing how the stored calibration information 
+is to be applied to the uncorrected uv-data to derive calibrated uv-data 
+suitable for imaging or further analysis. The adopted calibration relations 
+serves a secondary purpose also, namely in providing an assumed model for 
+the propagation of instrumental errors affecting the observed data. 
+In this sense, it is also reflecting the implicit assumptions being made 
+regarding the physics of the observing process or instrument. This model 
+is used directly, or implicitly, by the solvers that determine the 
+calibration quantities from the observed data.
+
+<P>
+In practice, data reduction systems adopt calibration models that are 
+sufficient for the instrumental systems under consideration. Instrumental 
+effects are aggregated or approximated where possible, and effects below 
+a certain threshold of significance may not be modeled. In addition to 
+deciding which instrumental effects are to be included (e.g., instrumental 
+polarization), a parametrization of each effect also needs to be adopted. 
+This includes the coordinate dependence of the effect, such as time and 
+frequency, and the model parameters characterizing the instrumental 
+correction itself. 
+
+<P>
+Important tradeoffs are involved in deciding the complexity of the 
+calibration model to be adopted, both in terms of which effects to 
+include, and their parameterization. Increasing generality allows a 
+broader range of instruments to be covered, and allows greater flexibility 
+in exploring more complete calibration models as any individual instrument 
+evolves in sensitivity and flexibility. As an example, the VLA is operating 
+at lower frequencies than previously supported, including 74 MHz. 
+This introduces new calibration requirements beyond those required at 
+centimeter wavelengths. Overly complex calibration models are, however, 
+difficult to support in software, both in correcting data and as used by 
+the calibration solvers. In addition, they are difficult for the end-user 
+to understand, and so increase the difficulty of using the software.
+
+<P>
+
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> requires a calibration formalism 
+that is sufficient to support data reduction for a generic interferometer 
+or single-dish. The framework for such a model has been laid in a series 
+of papers by Hamaker, Bregman and Sault (Hamaker, Bregman and Sault 1996; 
+Sault, Hamaker and Bregman 1996; Hamaker and Bregman 1996; and 
+Hamaker 1998). This model provides a mathematical formalism for describing 
+radio-interferometric polarimetry that offers several advantages over 
+previous considerations of the problem. The formalism traces the signal 
+path for each antenna and represents the instrumental effects as complex 
+(2x2) Jones matrices. The Jones matrices have independent representation 
+in an arbitrarily polarized basis (e.g. linear or circular), and can 
+similarly have multiple parametrizations. The impact of the instrumental 
+Jones matrices on the interferometer output for a given baseline is 
+represented by the outer product of the individual Jones matrices to 
+produce a (4x4) correction matrix. The Jones matrices act on 4-dimensional 
+coherency vectors representing the polarization properties of each signal. 
+A detailed description of each calibration component will be provided in 
+the next article in this series, including the mathematical details 
+involved. This formalism does not necessarily represent new physics, but 
+does provide a general formulation that is independent of specific 
+representations. This is a powerful advantage.
+
+<P>
+The Hamaker, Bregman, Sault formalism, as adopted by 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>, is referred to as the 
+<B>Measurement Equation</B>. Central features of this approach include 
+the use of Jones matrices to model instrumental effects, support for 
+arbitrary Jones matrix parameterizations and a sufficiently general 
+model to cover a generic interferometer. This instrumental model is used 
+applying calibration corrections and by basic calibration solvers. 
+The model includes both uv-plane and image-plane effects. This powerful 
+generality has been carefully balanced against implementation questions 
+raised in the discussion above. The objective in using this system is not 
+and end in itself, but rather to provide a robust framework for implementing 
+a powerful, and general, formalism sufficient for the 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> project's objectives. 
+Our experience in using this model in practice has borne out this 
+expectation, and it has proved to be a practical solution to the question 
+of how to support calibration of diverse radio-interferometers, 
+with adequate room for growth in both the specialization of the calibration 
+effects considered and their representation. This formalism allows new 
+science to be explored, both through the inclusion of new calibration 
+effects and parametrizations, but also the calibration of arrays with 
+mixed instrumental effects such as different polarization types. 
+The formalism can also be used for deriving and applying calibration 
+to single-dish telescopes, and work in this area is underway.
+
+<P>
+The next article will consider the details of how the Measurement 
+Equation is used in 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>, and the identification of the 
+individual Jones matrices with commonly understood calibration effects.
+<P>
+<B>References</B>
+<P>
+Hamaker, J.P., Bregman, J.D., and Sault, R.J., 1996, <I>A&amp;AS</I>, <B>117</B>, 137.
+<BR>
+Sault, R.J., Hamaker, J.P., and Bregman, J.D., 1996, <I>A&amp;AS</I>, <B>117</B>, 149.
+<BR>
+Hamaker, J.P., and Bregman, J.D., 1996, <I>A&amp;AS</I>, <B>117</B>, 161.
+<BR>
+Hamaker, J.P., 1998, <I>A&amp;AS</I>, in press.
+
+<P>
+</TD></TR>
+<TR><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="2"><B>
+<A HREF="#DL">AIPS++
+<BR>
+Display
+<BR>
+Library</A><P>
+<A HREF="#THIRD">Third Beta Release</A><P>
+<A HREF="#PROJECT">Project Summary</A><P>
+<A HREF="#TABLE">AIPS++
+<BR>
+Table
+<BR>
+System</A><P>
+<A HREF="#SYN">Synthesis I</A><P>
+<A HREF="#NEW">What's
+<BR>
+New
+<BR>
+in AIPS++</A><P>
+</B></FONT>
+
+</TD><TD VALIGN="TOP">
+
+<FONT FACE=HELVETICA SIZE="+3"><B>
+<A NAME="NEW">What's New</A></B></FONT>
+<BR>
+<I>Athol Kemball and Tim Cornwell </I>- NRAO, Socorro
+<P>
+
+<UL>
+<LI>The <FONT FACE=HELVETICA><B>AIPS++</B></FONT> Web page layout and 
+content has been revised to incorporate user comments and new features. 
+These include changes to list <I><B>Glish</B></I> information on a separate 
+page, a new page for vacant positions and substantial revisions to the 
+<B><I>Getting Started</B></I> page, including new recipes and documentation. 
+In addition, the personnel page has been updated to reflect current 
+information.
+
+<LI>The single-dish analysis package 
+<TT>dish</TT> has been significantly 
+revised in this period. Changes include a major revision of the 
+<TT>averager</TT> to support multiple Stokes, and more general 
+treatment of the x-axis velocity coordinates. Multiple Stokes support is 
+also available for baseline-fitting, smoothing and re-gridding. 
+Selection is now a true operation, and the action button has been 
+renamed as <TT>Apply</TT> throughout for uniformity. Infrastructure 
+changes include improvements to printing capabilities and the use of 
+Measures in Doppler conversion calculations.
+
+<LI>Work has proceeded on the GBT utilities in support of GBT commissioning. 
+A utility has been provided to read initial data from the GBT spectrometer 
+into 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT>. Other changes include revisions 
+relevant to RFI issues, and the application of 
+<TT>Tcal</TT>values properly to spectral processor data. 
+The script <TT>gbt.g</TT> has been added as an interface to the 
+commissioning tools.
+
+<LI>A utility has been added to convert Parkes measurement sets 
+(in multi-beam format) into <FONT FACE=HELVETICA><B>AIPS++</B></FONT> 
+images.
+
+<LI>The initial implementation of the algorithm/applicator framework 
+for parallelization has been checked-in, including the transport layer, 
+which handles parallel communications transport mechanisms (e.g., MPI). 
+A implementation of a parallel Clark CLEAN using this methodology has also 
+been added to the system.
+
+<LI>There have been various revisions to the WSRT data display tools, 
+including a new script,  <TT>msbrick.g</TT>, allowing tiled access to uv-data.
+
+<LI>The Measures system has been revised to include full support for
+ <TT>MBaseline</TT>, <TT>Muvw</TT>, and <TT>MEarthMagnetic</TT> classes in 
+the <I>Measure</I> holder system, and parameter implementations. 
+Further changes related to the split of <I>Quanta</I> from <I>Measures</I> 
+have also been made, and the <I>Measures</I> test programs have been 
+updated. In addition, code to support foreign  parameters has been added.
+
+<LI>A system for translating the VLA calibrator list into an 
+<FONT FACE=HELVETICA><B>AIPS++</B></FONT> table has been added.
+
+<LI>The data display utility, <TT>visplot.g</TT>, has been revised to 
+incorporate new features or bug fixes suggested by users. 
+These include support for <TT>u</TT> vs <TT>v</TT> in generic plots, 
+more information in the pop-up windows, and improved help information 
+and display of <TT>>z</TT>-axis values.
+
+<LI>The catalog script,  <TT>catalog.g</TT>, has been similarly revised 
+to incorporate user feedback. Changes include the ability to view text 
+files, create files, the addition of an edit button and removal of the 
+import function.
+
+<LI>The <TT><B>sky</B></TT> module has been renamed to 
+<TT><B>imager</B></TT>, and the <TT><B>cal</B></TT> module to 
+<TT><B>calibrater</B></TT>, in order to improve understanding of their 
+purpose and to remove a naming conflict with the UNIX calendar 
+utility "cal".
+
+<LI>The utilities <TT><B>polyfitter.g<</B></TT> and 
+<TT><B>sinusiodfitter.g</B></TT> have been split off from 
+<TT><B>numerics.g</B></TT>. In addition, 
+<TT><B>lsfit.g</B></TT> and <TT><B>matrix.g</B></TT> have been added to 
+<TT><B>mathematics.g</B></TT>.
+
+<LI>An updated BIMA filler has been checked-in, including a GUI and a 
+script to launch it from <I><B>Glish</I></B>.
+
+<LI>The <TT><B>RPFITS</B></TT> code has been revised to support the new 
+conventions for Y2000 date formats.
+
+<LI>A new <I><B>Glish</B></I> function <TT><B>as_evalstr()</B></TT> has been 
+added to convert values into a string that can be used with 
+<TT><B>eval()</B></TT>.
+
+<LI>New terminology has been adopted for object-oriented concepts in the
+user documentation. This will be used as widely as possible in the future, 
+and includes the use of terms object, function  for <B><TT>method</TT></B>, 
+and <B><TT>global function</TT></B>. 
+
+<LI>There is now added support for the Hierarchical Data System (HDS) data 
+format, including <B>C++</B> wrappers for the HDS library routines.
+
+<LI>A variety of minor changes have been made to support syntax requirements of the <TT><B>egcs</B></TT> (<B>C++</B>) compiler.
+
+<LI>New <FONT FACE=HELVETICA><B>AIPS++</B></FONT> notes include a revised 
+<B><I>System plan</I></B> (#220), and <B><I>How to make an 
+<FONT FACE=HELVETICA>AIPS++</FONT>  release</I></B> (#221)
+
+<LI>Capabilities supporting  region selection from images are now available 
+using the region manager (<TT><B>regionmanager.g</B></TT>), and associated GUI.
+
+<LI>The synthesis script <TT><B>simpleimage.g</B></TT> has been revised to 
+allow 
+selection by field, the display of the underlying <I><B>Glish</B></I> being 
+used, and to correct a bug in setting the phase center.
+
+<LI>An initial implementation of wide-field imaging has been added to
+ the synthesis module, <TT><B>imager.g</B></TT>. This will become available 
+as a system suitable for users in subsequent releases. 
+
+<LI>A new <FONT FACE=HELVETICA><B>AIPS++</B></FONT> logo has been adopted 
+for general use within the project:</LI></UL>
+<P>
+<CENTER><IMG SRC="logo1023.gif" WIDTH=454 HEIGHT=122>
+</CENTER>
+</TD></TR>
+</TABLE>
+</BODY>
+</HTML>
+<BR> <HR>
+
+</BODY>
+</HTML>

@@ -1,0 +1,247 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: saveregions.help,v 19.2 2004/08/25 02:19:19 cvsmgr Exp $
+
+\begin{ahobject}{saveregions}{Tk widget to save image regions to a Table}
+
+\ahinclude{saveregions.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This Tk widget enables you to save image \regions\ (or more simply, regions - see
+\ahlink{regionmanager}{images:regionmanager}) stored to an \aipspp\  Table. 
+
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=saveregions.ps, width=3.6in}
+\caption{The saveregions GUI}
+\end{center}
+\end{figure}
+
+The widget displays, in listboxes, the regions passed in.  If you select
+specific regions, then the GUI expands to enable you to rename them
+during the save.  The `Save' button saves only selected regions.  The
+`Save all' button saves all regions with no renaming option.  If you
+select `Confirm', you will be prompted for confirmation if you attempt
+to overwrite a region in the Table.  The `Dismiss' button dismisses the
+GUI.  You can recover it with the \ahlink{gui}{widgets:saveregions.gui}
+function. 
+
+Under the `File' menu, you can either dismiss the GUI or destroy the
+widget (same as invoking function \ahlink{done}{widgets:saveregions.done}). 
+
+The Table can be specified in many ways (at construction and via the
+entry box in the GUI); a \ahlink{Table}{table} \tool, an
+\ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool.  If the Table does not exist, it
+will be created.  It will have no useful structure beyond that needed to
+store the regions. 
+
+This widget emits an event called {\tt saved} (it has no value) when
+the regions have been restored.  It also emits an event called {\tt
+dismissed} (it has no value) when the dismiss button on the GUI is
+pressed. 
+
+
+\end{ahdescription}
+
+\begin{ahconstructor}{saveregions}{Construct a saveregions widget}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the widget}{F}{Widget}
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+  \ahaddarg{regions}{The regions to save, or the region names}{}{Record of regions or vector of strings}
+  \ahaddarg{changenames}{Entry boxes to enable region name changes are provided}{T}{T or F}
+  \ahaddarg{globalsave}{The regions are saved from global name space or a record}{F}{T or F}
+  \ahaddarg{widgetset}{The widget server to use}{dws}{widgetserver tool}
+\end{ahargs}
+\ahreturns{saveregions tool or fail}
+\begin{ahdescription}
+
+This is the constructor.  If {\stfaf parent=F}, then the widget will make
+its own parent frame.  The Table can be specified in many ways; a
+\ahlink{Table}{table} \tool, an \ahlink{Image}{images:image}) \tool,
+the name of a Table (a string) which might be an \aipspp\ image, or the
+name of a \glish\ symbol which is either a Table or Image \tool.  If the
+Table does not exists, a be one will be created.  It will have no useful
+structure beyond that needed to store the regions. 
+
+The regions are either provided in a record ({\stfaf globalsave=F}
+or should exist in global name space, whereupon you just
+provide their names.
+
+If {\stfaf changenames=T}, when you select regions, entry boxes
+which enable you to change the names of the regions on save
+are provided.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'saveregions.g'   
+- r1 := drm.box([10,10],[20,30]);
+- r2 := drm.quarter();
+- sr1 := saveregions(table='hcn', regions="r1 r2", globalsave=T, changenames=F);
+- r := [=];
+- r[1] := r1;
+- r[2] := r2;
+- sr2 := saveregions(table='hcn', regions=r, globalsave=F);
+\end{verbatim}
+
+In this example, two widgets are contructed with a Table called `hcn'. 
+The first shows how to save from global name space. The second
+saves from a record.
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool or fail}
+
+\begin{ahdescription}
+
+This function destroys the widget.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r := saveregions();
+- r
+ref [*agent*=<agent>, done=<function>, gui=<function>, 
+regions=<function>, setnewtable=<function>] 
+- r.done();
+T
+- r
+F
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{gui}{Restart the GUI}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+When the widget is first constructed, it brings up a GUI.  When you
+save regions, the GUI is dismissed.  This function restarts the
+GUI; it will have the same state as when it was dismissed. 
+
+
+
+\end{ahdescription}
+ 
+
+\begin{ahfunction}{setregions}{Set new regions to save}
+\begin{ahargs}
+  \ahaddarg{regions}{Regions or region names}{}{Record of regions or vector of strings}
+\end{ahargs}
+\ahreturns{Bool or fail}
+
+\begin{ahdescription}
+
+This function allows you to change the list of regions available for saving.
+If you constructed with {\stfaf globalsave=T}, then you pass in a vector
+of region names.  Otherwise, you pass in a record of regions.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'saveregions.g'   
+- r1 := drm.box([10,10],[20,30]);
+- r2 := drm.quarter();
+- sr1 := saveregions(globalsave=T);
+- sr1.setregions("r1 r2");
+- r[1] := r1;
+- r[2] := r2;
+- sr2 := saveregions(globalsave=F);
+- sr2.setregions(r);
+\end{verbatim}
+
+We show how to set regions from the global name space
+and from a record.
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{settable}{Set a (new) table}
+\begin{ahargs}  
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+\end{ahargs}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This function manually (i.e.  not via the GUI interface) sets a
+(new) Table name.  It is equivalent to doing it via the GUI.  The Table
+can be specified in many ways; a \ahlink{Table}{table} tool, an
+\ahlink{Image}{images:image}) tool, the name of a Table (a string)
+which might be an \aipspp\  image, or the name of a \glish\ symbol which is
+either a Table or Image tool. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'saveregions.g'
+- sr := saveregions();
+- im := image('hcn2');
+- t := table('hcn2');
+- sr.settable(im);
+- sr.settable('hcn2');
+- sr.settable(t);
+- sr.settable('im');
+- sr.settable('t');
+\end{verbatim}
+
+In this example, we show all the ways you can specify the 
+table.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\end{ahobject}

@@ -1,0 +1,556 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: dragon.help,v 19.1 2004/08/25 01:19:30 cvsmgr Exp $
+\begin{ahobject}{dragon}{Tool for wide-field synthesis imaging}
+
+\ahinclude{dragon.g}
+
+\begin{ahdescription} 
+
+{\tt dragon} can perform wide-field imaging as needed to overcome the
+non-coplanar baselines effect for the VLA and other non-coplanar
+arrays. It is built upon the \ahlink{imager}{imager:imager}
+and \ahlink{calibrater}{calibrater:calibrater} tools for
+imaging and calibration. The extra capability of dragon is mainly in
+providing a simple and effective interface for self-calibration.
+
+In wide-field imaging (e.g. VLA observing at 327MHz), the geometry of
+the array as seen from the source varies significantly over the field
+of view. This means that the relationship between sky brightness and
+visibility is no longer a simple 2D Fourier transform. However, the
+true relationship can be approximated by a series of tangent plane
+approximations in which a 2D Fourier transform is used over a small
+fraction of the image (usually referred to as one facet). Cleaning
+using a point spread function is limited to one facet at a time, and
+the cross-subtraction of points from one facet to another is
+accomplished by using a complete Fourier transform to the visibility
+domain.
+
+Compared to similar programs in other packages ({\em i.e.} SDE dragon
+and the AIPS IMAGR), {\tt dragon} has a number of important advantages:
+
+\begin{itemize}
+\item The conversion to a common tangent plane is performed in the
+visibility plane, and so a single output image is produced with no
+extra effort (this was first suggested by Sault, Staveley-Smith and
+Brouw, 1994).
+\item The decomposition of the image plane into facets may be changed
+during the processing, for example, starting with few facets and
+then proceeding to more facets at deeper levels of cleaning.
+\item The current clean image is displayed after each clean cycle.
+\item Self-calibration is performed as part of the imaging loop, thus
+saving time (this is also true of the SDE dragon but not of AIPS IMAGR).
+\item The image may be supplemented by
+\ahlink{componentmodels}{componentmodels}, which can be
+generated using the interactive \ahlink{imagerfitter}{images:imagefitter}.
+These {\tt componentmodels} follow a separate path through the processing,
+at high precision. 
+\item {\tt dragon} can be customized by attaching
+commands using the \aipspp\ plug-in system. See the file
+code/trial/apps/imager/dragon\_standard.gp for an example of how to 
+attach commands. 
+\item Any number of outlier fields may be specified.
+\item {\tt dragon} may be restarted and processing continued, with,
+for example, a different number of facets.
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahexample}
+The following example shows the quickest way to make a wide-field
+CLEAN image and display it. Note that this can be more easily done
+from the \ahlink{toolmanager}{tasking:toolmanager}.
+\begin{verbatim}
+include 'dragon.g'
+#
+# Wait for results before proceeding to the next step
+#
+dowait:=T
+#
+# Make an dragon tool
+#
+drag:=dragon('BF7.MS')      
+#
+# Set the dragon to produce images of cellsize 30 and 2000 by 2000 pixels
+#
+drag.setimage(nx=2000,ny=2000, cellx='30arcsec',celly='30arcsec', nfacets=4);
+#
+# Weight the data
+#
+drag.weight(mode='briggs', pixels=2000);
+#
+# Make and display a clean image
+#
+drag.clean(niter=1000, levels='1Jy 0.3Jy 0.1Jy 0.03Jy 0.010Jy', amplitudelevel='0.015Jy',
+	   model='BF7.clean.model', image='BF7.clean.image')
+#
+dd.image('BF7.clean.image')
+#
+# Fourier transform the model 
+#
+drag.ft(model='BF7.clean.model')
+#
+# Plot the visibilities
+#
+drag.plotvis()
+#
+# Write out the final MS and close the dragon tool
+#
+drag.close()
+\end{verbatim}
+\end{ahexample}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{dragon}{Construct an dragon tool}
+\begin{ahdescription}
+This is used to construct {\tt dragon} tools associated
+with a MeasurementSet. The {\tt dragon} tool may then be
+used to generate various types of images. Note that
+a new executable is started every time the constructor
+is called. 
+
+This returns a Glish variable containing the tool functions of
+dragon.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ms}{MeasurementSet to be processed}{}{Table name}
+\end{ahargs}
+\ahreturns{dragon tool}
+\begin{ahexample}
+\begin{verbatim}
+drag:=dragon('BF7.MS')      
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{setimage}{Set the image parameters for subsequent processing}
+\begin{ahdescription}
+Define the default image parameters. 
+
+Note that some parameters can be specified either in canonical units
+or via measures. To establish default values, the ids for the default
+spectral window and default field id must be given.
+
+The meaning of arguments mode, nchan, step, {\em etc.} is described in
+\ahlink{setdata}{imager:imager.setdata}. {\tt dragon} can perform multi-frequency
+synthesis over several spectral windows (mode='mfs'). To acheive this,
+you should set spwid to an array of the required spectral windows
+({\em e.g.}  {\tt spwid=1:2}).
+
+The phase center of the image defaults to that of the specified
+fieldid (the first if none is specified). Note that fieldid refers to
+the field identifier in the MeasurementSet and is not connected to the
+number of facets in any way. A phase center may be also specified in
+an argument to setimage using any valid
+\ahlink{direction}{measures:measures.direction}. If the conversion
+from the observed direction requires frame information then this
+is taken as follows:
+\begin{itemize}
+\item Direction information, including the coordinate system,
+is taken from the relevant entry in the Field table of the
+MeasurementSet.
+\item The epoch is taken from the time of observation of
+each visibility.
+\item A position is specified via the {\tt dragon} tool function \ahlink{setoptions}
+{imager:imager.setoptions}
+\end{itemize}
+
+If the specified number of facets is greater than unity then the image
+is split into facets (this number along the x and y axes) and processed.
+
+Finally, a position shift may be added using the arguments shiftx,
+shifty. This will be added to whatever the phase center was set to
+as described above. The shift is a real angle on the {\tt dragon} so that,
+in e.g. RA, DEC, the RA shift is divided by cos(DEC) before being
+added to the RA. The sense of the shift is that the position after
+addition of the shift gives the new phase center of the image. The
+shift is in the reference frame of the phase center.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{Name of output image}{dragon}{String}
+\ahaddarg{nx}{Number of spatial pixels in x}{128}{Int}
+\ahaddarg{ny}{Number of spatial pixels in y}{128}{Int}
+\ahaddarg{cellx}{Cellsize in x (e.g. '1arcsec')}{'1arcsec'}{Quantity}
+\ahaddarg{celly}{Cellsize in y (e.g. '1arcsec')}{'1arcsec'}{Quantity}
+\ahaddarg{stokes}{Stokes parameters to image (e.g. 'IQUV')}{'I'}{'I'|'IV'|'IQU'|'IQUV'}
+\ahaddarg{doshift}{Use the specified phase center? T or F}{T}{Bool}
+\ahaddarg{phasecenter}{Direction of phase center as a measure}{}{MDirection}
+\ahaddarg{shiftx}{Shift in x (e.g. '23.7arcsec')}{'0arcsec'}{Quantity}
+\ahaddarg{shifty}{Shift in y (e.g. '-54.2arcsec')}{'0arcsec'}{Quantity}
+\ahaddarg{mode}{Type of processing}{'mfs'}{'mfs'|'channel'|'velocity'}
+\ahaddarg{nchan}{Number of channels}{1}{Int}
+\ahaddarg{start}{Start channel (1-relative)}{}{Int}
+\ahaddarg{step}{Step in channel}{}{Int}
+\ahaddarg{spwid}{Spectral Window Ids (1 relative)}{1}{Vector of Ints}
+\ahaddarg{fieldid}{Field Id (1 relative)}{1}{Int}
+\ahaddarg{facets}{Number of facets}{1}{Integer}
+\ahaddarg{name}{Name of output image}{dragon}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setoutlier}{Set the image parameters for an outlier 
+field}
+\begin{ahdescription}
+Define the image parameters for an outlier field. Any number of
+outlier fields may be defined, but each must have a unique name.
+
+The phase center of the image defaults to that of the specified
+fieldid (the first if none is specified). A phase center may be 
+also specified in an argument to setimage using any valid
+\ahlink{direction}{measures:measures.direction}. If the conversion
+from the observed direction requires frame information then this
+is taken as follows:
+\begin{itemize}
+\item Direction information, including the coordinate system,
+is taken from the relevant entry in the Field table of the
+MeasurementSet.
+\item The epoch is taken from the time of observation of
+each visibility.
+\item A position is specified via the {\tt dragon} tool function \ahlink{setoptions}
+{imager:imager.setoptions}
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{Name of output image}{dragon.outlier.n}{String}
+\ahaddarg{nx}{Number of spatial pixels in x}{128}{Int}
+\ahaddarg{ny}{Number of spatial pixels in y}{128}{Int}
+\ahaddarg{cellx}{Cellsize in x (e.g. '1arcsec')}{'1arcsec'}{Quantity}
+\ahaddarg{celly}{Cellsize in y (e.g. '1arcsec')}{'1arcsec'}{Quantity}
+\ahaddarg{stokes}{Stokes parameters to image (e.g. 'IQUV')}{'I'}{'I'|'IV'|'IQU'|'IQUV'}
+\ahaddarg{doshift}{Use the specified phase center? T or F}{T}{Bool}
+\ahaddarg{phasecenter}{Direction of phase center as a measure}{}{MDirection}
+\ahaddarg{mode}{Type of processing}{'mfs'}{'mfs'|'channel'|'velocity'}
+\ahaddarg{nchan}{Number of channels}{1}{Int}
+\ahaddarg{start}{Start channel (1-relative)}{}{Int}
+\ahaddarg{step}{Step in channel}{}{Int}
+\ahaddarg{spwid}{Spectral Window Ids (1 relative)}{1}{Vector of Ints}
+\ahaddarg{fieldid}{Field Id (1 relative)}{1}{Int}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{advise}{Advise (and optionally use) parameter values}
+\begin{ahdescription}
+Advise on recommended values of certain parameters. 
+
+The calculations are performed as following:
+
+\begin{description}
+\item[cell] The maximum uv distance in wavelength is found and then half of the
+inverse is taken as the maximum cellsize allowed.
+\item[pixels] The field of view is converted to a number of pixels
+using the calculated cell size.
+\item[facets] The number of facets on an axis is calculated in two
+different ways. The first method simply requires that the peeling of 
+facets away from the celestial sphere should not cause an amplitude
+drop of more than the argument {\tt amplitudeloss}. The positions may
+be incorrect, but all the sources will be removed correctly. The
+second method requires that the source positions be accurate to the
+same fraction of the beam specified by {\tt amplitudeloss}. The 
+second calculates the second moment in w and in uv distance and
+chooses the number of facets correspondingly. The first method does
+the same but after fitting a plane to the sampling: $w = a u + b v$.
+For an approximately coplanar array, the positions may be wrong but
+the removal of sidelobes will be accurate. The number of facets
+returned is the second, usually smaller, number. The formula used
+is:
+\begin{equation}
+N_{facets} = N_{pixels} \sqrt{{{\Delta \theta}\over{\sqrt{8 \delta A}}}{w_{rms}}\over{uv_{rms}}}
+\end{equation}
+where $\Delta \theta$ is the cellsize in radians, and $\delta A$ is
+the amplitude loss. This formula can be derived from (a) the peeling
+of facets from the celestial sphere, and (b) a quadratic approximation 
+for the beam size both in the plane of the sky and along the $w$ axis.
+\end{description}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{amplitudeloss}{Maximum fractional amplitude loss due to faceting}{0.05}{Float}
+\ahaddarg{fieldofview}{Desired field of view}{'1deg'}{Quantity}
+\ahaddarg{cell}{Recommended maximum cellsize}{}{Quantity}
+\ahaddarg{facets}{Recommended number of facets on one axis}{1}{Integer}
+\ahaddarg{phasecenter}{Direction of phase center as a measure}{}{MDirection}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{weight}{Apply weighting to the visibility weights}
+\begin{ahdescription}
+Apply visibility weighting to correct for the local density of
+sampling in the uv plane. The imaging weights are written into a Table
+column called IMAGING\_WEIGHT, which may be plotted using 
+\ahlink{plotweights}{imager:imager.plotweights}. In addition this
+columns may be accessed directly using either the
+\ahlink{table}{table} or \ahlink{ms}{ms} modules.
+
+To correct for visibility sampling effects, natural, uniform (the
+default), radial, and briggs weighting are supported.  These work as
+follows. Then:
+\begin{description}
+\item[natural]: minimizes the noise in the dirty image. The weight of
+the $i$-th sample is set to the inverse variance:
+\begin{equation}
+w_i={1\over{\sigma_i^2}}
+\end{equation}
+where $\sigma_i$ is the noise of the $i$'th sample.
+\item[radial]: approximately minimizes rms sidelobes for an east-west synthesis
+array. The weight of the $i$-th sample is multiplied
+by the radial distance from the center of the $u,v$ plane:
+\begin{equation}
+w_i=w_i \sqrt{u_i^2+v_i^2}
+\end{equation}
+\item[uniform]: For briggs and uniform weighting, we first grid the inverse
+variance $w_i$ for all selected data onto a grid of size given by the
+argument npixels (default to nx) and u,v cell-size given by
+$2/$fieldofview where fieldofview is the specified field of view
+(defaults to the image field of view).  This forms the gridded weights
+$W_k$. The weight of the $i$-th sample is then changed:
+\begin{equation}
+w_i={w_i\over{W_k}}
+\end{equation}
+where $W_k$ is the gridded weight of the relevant cell.
+It may be shown that this minimizes rms sidelobes over
+the field of view. By changing the field of view, one may suppress
+the sidelobes over a region different (usually smaller) than the
+image size.
+\item[briggs: rmode='norm']: The weights are changed:
+\begin{equation}
+w_i={w_i\over{1 + W_k f^2}}
+\end{equation}
+where:
+\begin{equation}
+f^2={{(5*10^{-R})^2}\over{{\sum_k W_k^2}\over{\sum_i w_i}}}
+\end{equation}
+and $R$ is the briggs parameter. The scaling of $R$ is such that
+$R=0$ gives a good tradeoff between resolution and sensitivity.
+\item[briggs: rmode='abs']: The weights are changed:
+\begin{equation}
+w_i={w_i\over{W_k*R^2+2*\sigma_R^2}}
+\end{equation}
+where $R$ is the briggs parameter and $\sigma_R$ is the noise
+parameter. 
+\end{description}
+For more details about briggs weighting, see the \htmladdnormallink{Briggs thesis}
+{\briggsURL}.
+
+Note that this weighting is {\em not} cumulative since the imaging weights are
+calculated from the specified sigma (expected noise) per visibility
+(actually stored in the SIGMA column).
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Type of weighting}{uniform}{String: 'uniform' | 'natural' |
+'briggs' | 'radial'}
+\ahaddarg{rmode}{Mode of briggs weighting}{none}{String: 'norm' |
+'abs' | 'none' }
+\ahaddarg{noise}{Noise used in absolute briggs weighting}{'0.0Jy'}{Quantity}
+\ahaddarg{robust}{Parameter in briggs weighting}{0.0}{Double}
+\ahaddarg{fieldofview}{Field of view for uniform weighting}{'0arcsec'}{Quantity}
+\ahaddarg{npixels}{Number of pixels in the u and v directions}{0}{Int}
+\ahaddarg{async}{Run asynchronously in the background}{!dowait}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+drag.weight(type='briggs', rmode='norm', robust=0.5)
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+Applies briggs weighting.
+\end{ahcomments}
+\end{ahfunction}
+%
+\begin{ahfunction}{filter}{Apply filtering}
+\begin{ahdescription}
+Apply visibility tapering to emphasize certain scale structures.  The
+imaging tapers are applied to a Table column called IMAGING\_WEIGHT,
+which may be plotted using 
+\ahlink{plotweights}{imager:imager.plotweights}. In addition, this column
+may be accessed directly using either the \ahlink{table}{table}
+or \ahlink{ms}{ms} modules. Note that the taper is multiplicative and
+so the weights must be calculated first using
+\ahlink{weight}{imager:dragon.weight}. The points are not flagged!
+
+Note that the scale size to be emphasized is given in the image plane
+as the parameters of the correspondiong Gaussian.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{bmaj}{Major axis of filter}{'0rad'}{Quantity}
+\ahaddarg{bmin}{Minor axis of filter}{'0rad'}{Quantiy}
+\ahaddarg{bpa}{Position angle of filter}{'0deg'}{Quantity}
+\ahaddarg{async}{Run asynchronously in the background}{!dowait}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+drag.weight('uniform')
+drag.filter(type='gaussian', bmaj='2.3arcsec', bmin='1.67arcsec',
+bpa='-34.5deg')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{uvrange}{Apply uvrange to the visibility weights}
+\begin{ahdescription}
+Apply a uvrange so that only points within a given uvrange have
+non-zero weight in the IMAGING\_WEIGHT column, which may be plotted using 
+\ahlink{plotweights}{imager:imager.plotweights}. The points are not flagged!
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{uvmin}{Minimum uv distance allowed (wavelengths)}{0.0}{Float}
+\ahaddarg{uvmax}{Maximum uv distance allowed (wavelengths)}{0.0}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+drag.weight('uniform')
+drag.uvrange(0, 4000.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%
+\begin{ahfunction}{image}{Clean and self-calibrate}
+\begin{ahdescription}
+Makes a clean, self-calibrated image using the wide-field
+algorithms. 
+
+For {\bf cleaning}, the deconvolution is performed on the residual
+image calculated from the visibility data currently selected. Hence
+the first step performed in clean is to transform the current model or
+models (optionally including a componentlist) to fill in the
+MODEL\_DATA column, and then inverse transform the residual
+visibilities to get residual image for all facets. These residual
+image are then cleaned using the corresponding point spread
+function. This means that if the initial model is used as the starting
+point for the deconvolution. Thus if you want to restart a clean,
+simply set the model to the model that was previously produced by
+clean.
+
+The CLEAN deconvolution is joint in whatever Stokes parameters are
+present. Thus it searchs for peaks in either $I$ or $I+|V|$ or
+$I+\sqrt{Q^2+U^2+V^2}$, the rationale for the latter two forms being
+to be biased towards finding strongly polarized pixels first (these
+forms are also the maximum eigenvalue of the coherency matrix).  The
+PSF is constrained to be the same in all polarizations (a feature of
+this implementation, not of the Hamaker-Bregman-Sault formalism).
+
+The clean algorithm is split into minor and major cycles. In the minor
+cycles only the brightest points are cleaned, using a subset of the
+point spread function. In the major cycle, the points thus found are
+subtracted from the original visibilities.  Note that aliasing can be
+reduced by using the {\tt padding} argument in
+\ahlink{setoptions}{imager:imager.setoptions}.
+
+In the {\bf self-calibration} phase, the data are self-calibrated to
+reduce the rms difference between the current model and the observed
+data. The antenna gain model may be either phase-only via the {\em
+T-Jones} or amplitude and phase via {\em G-Jones} (see
+\ahlink{calibrater}{calibrater:calibrater} for more 
+details). 
+
+Self-calibration is invoked whenever the peak residual (in any field)
+drops below the current level (as specified in the {\tt levels} argument).
+The best strategy is usually to set {\tt levels} to initiate the
+first self-calibration when close to but above the worst calibration
+errors in the image, and thereafter down in steps of a factor of about
+3. Usually at the high flux levels, only phase self-calibration is
+required. One can switch to amplitude and phase self-calibration by
+setting the argument {\tt amplitudelevel} appropriately.
+
+Note that the processing can be restarted from the existing images.
+Note also that the number of facets may be changed on restart.
+
+There are 2 options of masking, for defining regions in which to look
+for CLEAN components, available. If the {\tt maskmodification}
+argument is set to 'auto', when the image is cleaned to the flux level of a
+calibration stage, an automatic mask is made by thresholding the
+restored image to the flux level reached.  However if  {\tt
+maskmodification} is set to 'interactive' a viewer tool is started
+prompting the user to draw the mask (See \ahlink{interactivemask}{map:interactivemask}).
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{levels}{Flux levels at which to self-calibrate e.g. 0.3Jy 0.1Jy 0.03Jy}{'0Jy'}{Vector of strings}
+\ahaddarg{amplitudelevels}{Flux level below which amplitude self-calibration is used}{'0Jy'}{Quantity}
+\ahaddarg{timescales}{Time scales for the self-calibrations e.g (60s 10s 10s)}{'10s'}{Vector of strings}
+\ahaddarg{niter}{Number of Iterations, set to zero for no CLEANing}{1000}{Int}
+\ahaddarg{gain}{Loop Gain for CLEANing}{0.1}{Double}
+\ahaddarg{threshold}{Flux level below which cleaning will stop}{'0Jy'}{Quantity}
+\ahaddarg{model}{Name of images}{}{Vector of strings}
+\ahaddarg{complist}{Name of component list}{}{String}
+\ahaddarg{image}{Names of restored images}{}{Vector of strings}
+\ahaddarg{residual}{Names of restored images}{}{Vector of strings}
+\ahaddarg{statsregion}{Region in which to calculate
+statistics}{unset}{Any valid region}
+\ahaddarg{statsout}{Statistics record}{[=]}{Record}
+\ahaddarg{algorithm}{deconvolving algorithm}{'wfclark'}{String}
+\ahaddarg{maskmodification}{Masking update at every cal cycle from
+'none', 'auto', 'interactive'}{'none'}{String}
+\end{ahargs}
+
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+drag.image(levels='0.3Jy 0.1Jy 0.03Jy 0.01Jy', amplitudelevel='0.02Jy', model='BF7.clean.model',
+image='BF7.clean.restored', niter=1000, gain=0.25)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{done}{Terminate the dragon process}
+\begin{ahdescription}
+This is used to totally stop the {\tt dragon} process. It is a good idea
+to conserve memory use on your machine by stopping the process once
+you no longer need it.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\end{ahobject}
+
+\begin{ahfunction}{dragontest}{Test dragon using a VLA 74 MHz data set}
+\begin{ahdescription}
+This runs dragon on a simulated data set formed from a standard
+VLA 74MHz data set called '3DDAT'. This data set can be obtained
+from Tim Cornwell.
+
+The steps are:
+\begin{enumerate}
+\item The FITS file is converted to a MeasurementSet
+\item A componentlist of seven components is constructed
+\item Simulated data for the components with phase errors of 0.5
+degree and 1\% amplitude errors.
+\item An image is constructed using dragon
+\item Point sources are found and compared to the input componentlist
+\end{enumerate}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{fitsfile}{Name of standard FITS file}{3DDAT}{String}
+\ahaddarg{doimage}{Do the imaging as well as the simulation?}{T}{Boolean}
+\ahaddarg{dofind}{Do the source finding as well as the imaging and simulation?}{T}{Boolean}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}

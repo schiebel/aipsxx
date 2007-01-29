@@ -1,0 +1,489 @@
+Please note that this is the first of several related change proposals in 
+preparing the existing AIPS++ codebase for use in a new framework. We 
+anticipate that several other change proposals will follow shortly 
+relating to:
+	o namespace use in AIPS++
+	o documentation system changes (migration to doxygen)
+	o isolation of glish as a standalone package
+	o reimplementation of the DO interface
+Please stay tuned. In addition, pending acceptance of this change 
+proposal, a detailed implementation plan will follow.
+
+
+Title:                  aips++ library splitting
+Person responsible:     Joe McMullin (jmcmulli@nrao.edu)
+Originator of proposal: Ger van Diepen (diepen@astron.nl) and
+                        Wim Brouw (wim.brouw@csiro.au)
+Exploders targeted:     aips2-developers
+Time table:
+        Date of issue:          2004 June 08	Done
+        Comments due:           2004 June 15    Done 
+        Revised proposal:       2004 June 18    Done
+        Final comments due:     2004 June 25	Done
+        Decision date:          2004 June 26	Done
+
+        Implementation:         2004 July 15
+
+Statement of goals:
+-------------------
+
+o To split the aips++ libraries in a number of smaller, self-contained
+  libraries  
+o To make the aips++ code more strictly modular, and hence more easily
+  re-usable 
+
+Background:
+-----------
+The aips++ object libraries (especially libtrial and libaips) have
+become very large. Already 3 years ago it was proposed to split the
+aips++ libraries into a number of smaller, better layered libraries,
+without mutual dependencies. 
+
+In the last year we have already been preparing some of the code for a
+better layered system. Ger has been using some scripts to do trial splits
+of the libraries, and to test for remaining dependencies. The output
+of the scripts, using the proposed library split, is attached. 
+In the current proposal the Glish and Tasking (in so far it concerns
+the Parameter and Glish connectivity, but not e.g. ObjectID) modules
+will not be part of the basic aips++ library: they will only be used
+in applications. This is to ensure the easy transition and parallel
+use of different scripting and script<->c++ interfaces. 
+
+For some time several modules (e.g. Measures) have already been made
+independent of the Glish/Tasking environment by replacing GlishRecord by
+Record. However, a few other modules still use GlishRecord.
+1. The Chebyshev and Butterworth Functionals, written for and by the
+BIMA group. They are only used in newsimulator. They will be
+rewritten to use Records. 
+If necessary they can initially be moved to the Glish module.
+2. Several MeasurementSets classes (e.g. MSSelector) use GlishRecord.
+They should be converted to using Record.
+
+Other possible Tasking dependencies are:
+1. Use of ProgressMeter. This is a non-issue because this class has
+been designed well and is Tasking independent by means of registered
+callback functions. 
+2. Use of PGPlotter. By means of an abstract base class, PGPlotter has
+been made Tasking independent. However, the PGPlotter constructor
+is Tasking dependent because it creates the concrete PGPlotter object
+needed. It should be little work to change it such that it uses
+callback functions like ProgressMeter does.
+3. Use of NewFile. This class is used to ask the user if a file can be
+replaced. It is not used very often; only in Images and
+MeasurementSets. Either we have to get rid of the class or it has to
+be changed such that it can operate in any Tasking environment.
+Changing it to using callback functions is probably not much work.
+4. Use of Logging. This is a non-issue as it has already been made
+Tasking independent by means of abstract classes.
+
+Another issue is that multiple Tasking environments can be used
+(e.g. Glish and ACS). It has to be decided if the AIPS++ build system
+supports all such environments. If so, it means that:
+1. Multiple Tasking packages are needed (e.g. taskingglish and taskingacs).
+2. Multiple apps directories are needed (e.g. appsglish and appsacs).
+3. A general apps tree is needed for common scripts and applications
+   (e.g. unused, etc.)
+4. It must be possible to specify in the local makedefs which apps
+   have to be built.
+Even if it is decided that only glish tasking is supported, it must be
+possible to tell in the local makedefs file that apps should not be
+built (in case a user only wants to build some libraries).
+Another, somewhat related, issue is that it should be possible in the
+export procedure which parts of AIPS++ should be exported.
+
+
+The overall proposal looks as:
+
+A. Remove the Tasking dependencies mentioned above.
+---------------------------------------------------
+   1. remove use of GlishRecord in Chebychev/Butterworth 
+   2. remove use of GlishRecord in MeasurementSets	
+   3. let PGPlotter use a callback for creating the concrete object
+   4. let NewFile use a callback for asking the user
+
+B. split aips and trial libraries
+---------------------------------
+Split the modules in the aips and trial packages into a number of
+packages (about 20). Details are appended, but basic philosophy is to
+get a number of layers that are independent, and of a manageable
+size. Each layer is only dependent on the preceding ones and
+itself:
+ 1. - decide on the actual way the move will be done in CVS.
+    - if the whole move will be done in one big or several smaller
+      steps. By doing the move in two steps, the changes necessary in the
+      makefiles and makedefs; and the moving scripts can be tested
+      extensively before big move starts. aips and trial can act as the top
+      layers. The disadvantage is that external users are affected
+      more and that checked out code has to be changed more often.
+ 2. decide on the place of, and maybe reorganisation of, the admin
+    and install code scripts and programs.
+ 3. change the global makedefs for a changed package structure
+    The script creating the symlinks in include might have to be changed.
+ 4. Currently the libraries (libaips and/or libtrial) needed to link
+an application are known implicitly by means of the working directory.
+ 4. create the scripts to move (part of) the library files (and
+    rename dead ones if necessary.
+ 5. create script to change the path of moved files in include
+    statements in cc, h, templates files.
+ 6. notify all outside users of the aips++ library of the intending
+    change, and make the script in 5. (or a derivative) available to them
+    after each move. 
+ 7. unify and check the proposed structure for consistency and timing
+ 8. create a plan for maintaining the new structure, and create
+    procedures to test adherence.
+ 9. Create a script to change/correct the include guards in .h files.
+    It has to be decided what name to use for the guards.
+    We propose AIPS_FILENAME_H where FILENAME is the file name
+    (without extension) in uppercase.
+   
+C. templates
+------------
+Each package will have a _Repository, in which all the aips++
+templates reside. Having templates repositories speeds up the linking
+process. The current templates files need to be split which will be done
+automatically in the scripts written:
+ 1. it is proposed to keep the diy template instantiation for all
+    aips++ template definitions to keep link time at reasonable levels:
+    the work in creating the templates files when using new templates is
+    limited, and worth the effort.
+ 2. it is proposed to drop the -fno-implicit-templates switch (for
+    gcc; for other compilers similar switches) from the local makedefs.
+    This will enable the sometimes miriad STL templates to be generated
+    automatically, without automatically generating the aips++ templates,
+    and stops the necessity of the special Macros currently in the
+    templates file, and the, limited number of, STL templates can be
+    removed from the templates files.
+ 3. Ger has tested this for gcc and icc, and it works as expected for gcc
+    and icc. There was only one little problem in some Tables test
+    programs which was easily fixed.
+    It is expected that it also works for the SGI compiler and
+    SUN's native compiler (how could they use STL otherwise), but that
+    should be checked.
+ 4. It is proposed to keep the same philosophy for diy template
+    positioning as currently maintained: create template in the repository
+    at the level where it is used. Migrate towards base if templates are
+    used at lower levels. It is suggested that consortium packages follow
+    the same philosopy: creating templates for the first time in their own
+    repositories, but check for duplicates first, and migrate them towards
+    the aips++ packages. 
+ 5. It is proposed to combine some templates line in the
+    templates files to reduce compile time and library size. For instance,
+    all templates needed for an Array<X> should be combined.
+    It requires some manual tweaking of those files.
+
+D. Display
+----------
+Proposed to split it into two packages:
+ - a pure graphics one
+ - parts that do calculations etc (like coordinate axes)
+This makes changing to different display bases easier:
+  1. a proposal from the maintainers of the Display library is expected
+
+E. C files
+----------
+In the appropriate c++ package.
+
+F. Fortran files
+----------------
+In the fortran subdirectory of the appropriate package.
+Fortran files do not depend on other packages in the code tree, and
+could, for that reason, be placed in the kernel package. However, to
+enable a layered downloading of a functional sub-set of the full
+library, it is better to put the fortran files close to where they are
+used, or are logically usable.
+Fortran files should be split in:
+  - sofa module in Measures layer
+  - pim module in Ionosphere layer
+  - fft and other pure calculations like matrix handling, in Mathematics layer
+
+An alternative for Fortran files would be to put them in a
+subdirectory of the module where they are used. However, that requires
+some changes in the makefiles.
+
+G. non-consortium and external packages.
+----------------------------------------
+Non-consortium packages (bima, npoi, etc) should obey the same rules
+as the consortium packages. Maintenance to be done by scipts/programs
+provided by aips++. External users (like wsrt, jive, lofar, jcmt, etc)
+will be informed and provided with interface changing scripts if they
+register their use: 
+ 1. Notify non-consortium members of impending changes
+ 2. Set up a registration system for non-consortium members and
+    external library users; to be re-newed every year. Use this
+    registration database to notify major changes and updates; and provide
+    upgrade scripts to them.
+ 3. Decide on removal non-active packages
+ 4. Notify all external users of parts of the aips++ library (and
+    announce on aips++ main web page) the intending change, and the
+    necessity to register as a user to obtain information about major
+    changes, updates and to be provided with change scripts.
+ 
+H. applications
+---------------
+1. Currently the applications are in the apps directory under aips or
+   trial. In the new organization this is not possible anymore because
+   they are not bound to a package.
+   It is proposed to have a 'package' for each apps type discussed above
+   in which an apps directory contains the applications. In this way no
+   changes have to made to the makefiles to find all applications.
+
+2. Currently the libraries (libaips and/or libtrial) needed to link
+   an application are known implicitly by means of the working directory.
+   This is not possible anymore. Instead the applications makefile should
+   have a line like XLIBLIST (say PKGLIST) telling which packages are
+   needed. The current LINKaips-like lines in the global makedefs can
+   still be used to denote the package dependencies, so only one or a few
+   packages need to be mentioned in the PKGLIST line.
+   By specifying the required packages per application, it is assured
+   that not too many libraries are used during a link.
+   Of course, for all libraries used the programmer's versions should be
+   mentioned first (as done now).
+
+I. Megaserver
+-------------
+In principle, the megaserver is not needed anymore once the library
+split is done and proper shared libraries can be built.
+However, for the time being it can be maintained. Because all DO files
+will be moved to apps directories, the megaserver will need its own
+.cc file that can simply include the relevant DO files.
+ 1. A separate decision about the granularity of servers should be taken.
+
+J. Scripts
+----------
+All scripts (glish for now only present and some perl and sh) and help
+files will be moved from the implement directories to the appropriate
+apps or scripts subdirectory: 
+ 1. Decide if a separate script directory is necessary: we propose to
+    have an apps directory only. If other decision, decide what defines
+    the split between apps and script. 
+
+K. Module include files.
+------------------------
+Most of the module include files should be moved. A question is
+whether the module headers should have the number of include files
+they have, or should include files be separated out? There is a
+mixture of usage. The older modules define all include files in the
+module header, the newer none.
+ 1. decide if module headers should have a complete, limited or empty
+    list of include files. 
+
+L. Documentation.
+-----------------
+Some notes and other user documentation (in .help files) refer to the
+HTML output of classes. Such links need to be changed.
+Furthermore there are HTML files describing the aips and trial
+package. Such files need to be created for each new package.
+
+M. Changelog files
+------------------
+If it will be decided to keep the changelog facility (rac), as
+proposed in earlier change proposal, the changelog files in each
+module need to be moved as well: 
+
+N. Test programs
+----------------
+Currently some unit test programs depend on packages they should not
+depend on. Even worse, some use glish to do a test.
+This is not allowed anymore. Such test programs have to be changed.
+Furthermore floatcheck.sh uses a glish script. Because this file is
+used in the unit testing process, it should be changed to another
+script. There are such perl scripts available.
+
+O. Details proposed move:
+-------------------------
+It is proposed to use a script of Darrell Schiebel to move the files
+in the CVS system. This script makes it possible to keep the history,
+while the tags are preserved for the old files.
+ 
+ 1. A few new modules have to be created in order to get dependencies
+    right and clear. These are (better names are welcome):
+ System        the Tasking-independent system interface
+ LogTables     logging tables
+ BasicMath     the basic math classes
+ BasicSL       the basic classes on top of the C++ Standard Library
+ LatticeMath   math on lattices
+ MSVis         visibilities access to the MS
+
+ 2. decide on the list of files to be moved to different modules. The
+    following is the initial proposal: 
+
+aips/Mathematics/Constants.*->BasicSL
+aips/Mathematics/Complex*->BasicSL
+aips/Utilities/String.*->BasicSL
+aips/Utilities/RegexBase.*->BasicSL
+aips/Mathematics/Math.*->BasicSL
+aips/Mathematics/Random.*->BasicMath
+aips/Mathematics/ConvertScalar.*->BasicMath
+aips/Functionals/Functional.*->BasicMath
+aips/Quanta/MUString.*->Utilities
+aips/Tasking/Aipsrc*->System
+aips/Tasking/AppInfo.*->System
+aips/Tasking/ObjectID{.h,.cc,2.cc}->System
+trial/Tasking/ProgressMeter.*->aips/System
+aips/Logging/TableLogSink.*->LogTables
+aips/Logging/LogFilterTaql.*->LogTables
+aips/Logging/LogFilterExpr.*->LogTables
+trial/Logging/LoggerHolder.*->aips/LogTables
+trial/MeasurementComponents/StokesConverter.*->MeasurementSets
+trial/Fitting/LatticeFit.*->LatticeMath
+trial/Fitting/Fit2D.*->LatticeMath
+trial/MeasurementSets/SubMS.*->MSVis
+trial/MeasurementComponents/MSCalEnums.*->MSVis
+trial/MeasurementEquations/VisBuffer.*->MSVis
+trial/MeasurementEquations/VisSet.*->MSVis
+trial/MeasurementEquations/VisibilityIterator.*->MSVis
+trial/MeasurementEquations/StokesVector.*->MSVis
+trial/Functionals/Algorithm.*->Parallel
+trial/Functionals/GlishSerialHelper.*->Glish
+trial/Functionals/MarshButterworthBandpass.*->Glish
+trial/Functionals/MarshallableChebyshev.*->Glish
+trial/Functionals/FunctionMarshallable.*->Glish
+trial/Functionals/EclecticFunctionFactory.*->Glish
+trial/Tasking/PGPlotterInterface.*->Graphics
+trial/Tasking/PGPlotterLocal.*->Graphics
+trial/Tasking/PGPlotter.*->Graphics
+
+All DO files (and accompying glish scripts and help files) will be
+moved to the appropriate apps directory.
+
+ 3. decide on the number and contents of the packages. Proposal:
+    - naming should be decided. Should there be a (short) indication
+      of the type of library and how (e.g. aipsbase or abase or a_base)
+    - decide if names should be relatively short or not(e.g. akern vs. akernel)
+    - decide on layering. The following is based on:
+      a. Have all basic aips++ classes in a kernel
+         Also all .h files in aips/implement (e.g. aips.h) can be
+         moved to akern/implement.
+         However, as these files form the base, the can be moved to a
+         separate package abase (which does not need to be built).
+         It has to be decided if abase or akern is to be used for them.
+      b. Have basic aips++ mathematics in the next
+      c. Try to layer the actual work packages in a consistent way for
+         outside users 
+
+  akern="System BasicSL OS Arrays Containers Exceptions IO Inputs
+         Utilities System BasicMath Quanta Logging", 
+  amath="Deconvolution Fitting Functionals Mathematics",
+  atables="Tables LogTables",
+  measures="Measures TableMeasures",
+  fits="FITS",
+  graphics="Graphics",
+  lattices="Lattices LatticeMath",
+  coordinates="Coordinates",
+  components="ComponentModels SpectralComponents",
+  images="Images Wnbt",
+  ms="MeasurementSets",
+  msvis="MSVis",
+  calibration="CalTables",
+  ionosphere="Ionosphere",
+  flagging="Flagging",
+  tasking="Benchmarks Glish Guiutils Tasking Widgets X11",
+  synthesis="DataSampling IDL MeasurementComponents
+             MeasurementEquations Parallel",
+  simulators="Simulators",
+  dish="SDCalibration SDIterators",
+
+
+The detailed package dependencies and sizes (i.e. #lines) are:
+
+akern:  .h-lines=53748 .cc-lines=62623
+amath:  .h-lines=22562 .cc-lines=20702
+  depends on:  aipskernel
+atables:  .h-lines=44011 .cc-lines=54842
+  depends on:  aipskernel
+measures:  .h-lines=14418 .cc-lines=23916
+  depends on:  aipskernel aipsmath tables
+fits:  .h-lines=5144 .cc-lines=14778
+  depends on:  aipskernel aipsmath measures tables
+graphics:  .h-lines=2308 .cc-lines=4941
+  depends on:  aipskernel
+lattices:  .h-lines=20202 .cc-lines=34941
+  depends on:  aipskernel aipsmath graphics tables
+coordinates:  .h-lines=4875 .cc-lines=15440
+  depends on:  aipskernel aipsmath fits measures
+components:  .h-lines=5344 .cc-lines=7731
+  depends on:  aipskernel aipsmath coordinates measures tables
+images:  .h-lines=12756 .cc-lines=31200
+  depends on:  aipskernel aipsmath components coordinates fits graphics lattices measures tables
+  invalid dep: trial/Tasking
+ms:  .h-lines=20398 .cc-lines=38408
+  depends on:  aipskernel coordinates fits lattices measures tables
+  invalid dep: aips/Glish trial/Tasking
+msvis:  .h-lines=2027 .cc-lines=3771
+  depends on:  aipskernel aipsmath measures ms tables
+calibration:  .h-lines=10234 .cc-lines=13541
+  depends on:  aipskernel measures ms msvis tables
+ionosphere:  .h-lines=1122 .cc-lines=3022
+  depends on:  aipskernel aipsmath measures tables
+flagging:  .h-lines=2867 .cc-lines=6366
+  depends on:  aipskernel aipsmath graphics lattices measures ms msvis
+tasking:  .h-lines=7872 .cc-lines=11060
+  depends on:  aipskernel aipsmath components graphics images measures ms msvis tables
+synthesis:  .h-lines=19977 .cc-lines=50612
+  depends on:  aipskernel aipsmath calibration components coordinates graphics
+images lattices measures ms msvis tables tasking
+simulators:  .h-lines=4133 .cc-lines=2972
+  depends on:  aipskernel measures ms tables
+dish:  .h-lines=1725 .cc-lines=9397
+  depends on:  aipskernel fits measures ms tables
+
+This also shows the invalid dependencies of Images and MeasurementSets on
+Glish and/or Tasking (as mentioned above).
+
+This division is almost as fine as you can get. For instance, it is
+not possible to omit modules in akern, because they are dependent
+on each other.
+This division might be too fine-grained. It is possible to combine some
+of these packages (e.g. ms and msvis). The final division has to be
+decided on.
+
+P. Execution steps
+------------------
+1. Move all code.
+   It has to be decided if a new branch is created.
+2. Test move
+3. Rewrite system manual and programmer's manual chapters
+4. Change the module headers, file and paths in documentation
+5. New package html files and module owners
+6. update duplicates and other maintenance programs
+7. Notify external library users of change-over
+
+
+Expected Impact:
+----------------
+- Need to revise the System Manual, the basic Programming guide and
+  the DO guide 
+- Need to revise the module pointer list
+- Improved linking and debugging
+- Shared libraries should be used
+- External users have to change their makefiles
+- Checked out code has to be moved and changed as well.
+  It is advisable that as little code as possible is checked out during
+  the transition.
+  If a new branch is used for the reorganized source files, care has
+  to taken that checked in changes are merged in the new branch. This
+  might be forgotten if the checkin happens long after the reorganization.
+
+Implementation:
+---------------
+The following scripts have already been developed and are being tested:
+- a script generating 2 other scripts based on an input file:
+  - a script to move files to the new package/module
+  - a sed script to change include paths
+- a script to execute the sed script on all source files (h,cc,templates)
+- a glish script to determine the package dependencies and sizes
+  using a given division of the modules. It also splits the aips/trial
+  templates files into templates files for the new packages.
+  Finally it generates input files for the first script to move
+  source files to the new package directory.
+Using these scripts the entire reorganization can be done without
+tools like UP scripts; after all decisions outlined above have been taken
+
+wnb/gvd 20040602
+
+
+
+
+
+
+

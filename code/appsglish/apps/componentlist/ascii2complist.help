@@ -1,0 +1,221 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: ascii2complist.help,v 19.2 2004/08/25 01:06:09 cvsmgr Exp $
+\begin{ahfunction}{ascii2complist}{A function for creating
+componentlists from ascii files}
+
+\ahinclude{ascii2complist.g}
+
+\begin{ahdescription}
+A \ahlink{componentlist}{synthesis:componentmodels.componentlist} is a
+holder for groups of components. This function allows conversion of
+other, ascii-file-based, formats to componentlists. The formats
+currently supported are the AIPS star file format, the 
+Caltech model format, and the WENSS, FIRST, and NVSS surveys.
+  
+\begin{description}
+\item[AIPS ST file] The AIPS star file describes positions of ``stars''
+that one might wish to plot overlaid on some other display. It does
+not contain source strength information.  In the AIPS help file for
+STARS, the format of the star file is described as follows:
+\begin{verbatim}
+    The text file contains one line per star and each line has
+up to 7 logical columns containing, in order:
+   1. X position (Right Ascension 00 00 00.00)
+   2. Y position (Declination +/-00 00 00.0)
+   3. Major axis (Full width in arc seconds on sky)
+   4. Minor axis (Full width in arc seconds on sky)
+   5. Position Angle (E of N, degrees)
+   6. Star Type  (-1 to 20, integer )
+   7. Star label (up to 24 character string)
+If X and Y are not RA-DEC or DEC-RA, then the logical columns
+are also 7 actual columns and the units are in AIPS standard
+units (e.g. degrees, m/s etc. ).  In this case the position
+angle should be given as 0.0, the major axis is the width in the
+Y coordinate and the minor axis is the width in the X
+coordinate.  For RA and DEC positions, the sexagesimal notation
+is used (e.g. HH MM SS.SSS -DD MM SS.S) for the positions and
+arc seconds on the sky are used for the Deltas.
+The last 5 columns are not required.  If the last 5 columns are
+not given, a value of 1 cell is assumed for the deltas.
+If the position angle is not included, the default is 0 degrees.
+If the star type is not included, the default type is a cross.
+The default is no label string.
+There are currently 22 different types of star marks.
+ < 0: No Mark, only the star label is printed
+   0: Cross             10: Five pointed star
+   1: Ellipse           11: Star of David
+   2: Box               12: Seven pointed star
+   3: Triangle          13: Eight pointed star
+   4: Diamond           14: Nine  pointed star
+   5: Pentagon          15: Ten   pointed star
+   6: Hexagon           16: 11    pointed star
+   7: Septagon          17: 12    pointed star
+   8: Octagon           18: 13    pointed star
+   9: Nine-gon          19: 14    pointed star
+  20: Cross with gap   >20: Ellipse
+The Box (type=2) is different from the diamond in that the
+star size is the half height and width of the box dimensions.
+The Box and the Null (<0) are labeled at RA and Dec plus Delta
+RA and Delta Dec.  The other marks are labeled at the right
+edge of the of the Rotated RA axis.  The CROSS WITH GAP
+(type=20) has the inner third of the cross removed so the
+marked object is not over written.
+\end{verbatim}
+
+For more information, see the AIPS help file for
+\htmladdnormallink{STARS}{http://www.cv.nrao.edu/cgi-bin/AIPSHELP?STARS}.
+
+Caveats:
+\begin{itemize}
+\item In AIPS, the following are supported: 1: 1900; 2: B1950; 3: J2000; 4: Galactic
+5: OHLSSON Gal.; 6: VAN TULDER Galactic; 7: Super Galactic; if > 1000 then year assumed.
+Currently,  \aipspp can support 2 (refer='b1950'), 3
+(refer='j2000'), 4 (refer='gal'), 7 (refer='supergal'). If you
+need any of the others, please contact us.
+\end{itemize}
+
+\item[Caltech] The \htmladdnormallink{Caltech
+package}{http://astro.caltech.edu/\~tjp/citvlb/index.html} uses a
+format for specifying positions relative to an undefined position. In
+the documentation for {\em modelfit}, the format is described as
+follows:
+
+\begin{verbatim}
+     Model files are text files that can be typed or printed directly;
+they  can  be  modified or created using the standard text editors.  A
+model file consists of one line for each component of the model,  with
+up to 7 numbers on each line (in free format):
+
+     1.  Component flux density (Jy)
+
+     2.  Distance of center of component  from  origin  (milliarcsec),
+         "radius"
+
+     3.  Position angle of center of component  with  respect  to  the
+         origin (degrees, North through East), "theta"
+
+     4.  Major axis of component (milliarcsec), "axis"
+
+     5.  Axial ratio (minor/major, i.e.  < 1), "ratio"
+
+     6.  Position angle of major axis (degrees, North  through  East),
+         "phi"
+
+     7.  Type:
+             0 or 1:  elliptical Gaussian  (major  axis  is  FWHM)  or
+             delta-function (major axis = 0)
+             2:  uniform elliptical disk (major axis is diameter)
+             3:  optically thin spheroid or tapered disk  (major  axis
+             is diameter)
+             4:  elliptical ring (major axis is diameter)
+             5:  line (major axis is length)
+
+
+For Gaussians and  delta-functions,  the  Type  can  be  omitted;  for
+delta-functions, the major-axis, axial-ratio, position- angle and type
+can be omitted.  (Not all the  programs  understand  types  2-5.)  The
+"origin" is an arbitrary phase-reference point.  The maximum number of
+components varies from 600  to  10000,  depending  on  the  individual
+program.                                                              
+\end{verbatim}
+
+Caveats:
+\begin{itemize}
+\item In \aipspp, directions in componentlist are currently absolute
+only. Hence one must specify the reference direction.
+\end{itemize}
+
+\item[WENSS] The \htmladdnormallink{Westerbork Northern Sky Survey (WENSS)}
+{http://www.strw.leidenuniv.nl/\%7Edpf/wenss/} is a
+low-frequency radio survey that covers the whole sky north of delta=30
+degree at a wavelength of 92cm to a limiting flux density of
+approximately 18 mJy (5 sigma). This survey has a resolution of 54'' x
+54'' cosec (delta) and a positional accuracy for strong sources of
+1.5''.  The WSRT Northern Sky Survey catalog is available via a
+\htmladdnormallink{Web
+interface}{http://www.strw.leidenuniv.nl/\%7Edpf/wenss/search.html}.
+Use this interface to search for sources, choose the plain text
+output, capture the output into a file and then convert.
+
+\item[FIRST] \htmladdnormallink{Faint Images of the Radio Sky at
+Twenty-cm}{http://sundog.stsci.edu/top.html} -- is a project designed
+to produce the radio equivalent of the Palomar Observatory Sky Survey
+over 10,000 square degrees of the North and South Galactic Caps. Using
+the NRAO Very Large Array (VLA) and an automated mapping pipeline,
+they produce images with 1.8" pixels, a typical rms of 0.15 mJy, and a
+resolution of 5". At the 1 mJy source detection threshold, there are
+~90 sources per square degree, ~35\% of which have resolved structure
+on scales from 2-30". Go to the \htmladdnormallink{FIRST catalog search
+page}{http://sundog.stsci.edu/cgi-bin/searchfirst}, search for the
+sources that you want, cut out only the lines that include the
+sources, put in a file and then convert.
+
+\item[NVSS] The \htmladdnormallink{Northern VLA Sky Survey}
+{http://www.cv.nrao.edu/~jcondon/nvss.html} The NRAO VLA Sky Survey
+(NVSS) is a radio continuum survey covering the sky north of -40 deg
+declination. A detailed description appears in the 1998 May issue of
+The Astronomical Journal (Condon, J. J., Cotton, W. D., Greisen,
+E. W., Yin, Q. F., Perley, R. A., Taylor, G. B., \& Broderick,
+J. J. 1998, AJ, 115, 1693). Go to the \htmladdnormallink{NVSS catalog
+search page}{http://www.cv.nrao.edu/NVSS/NVSS.html}, search for the
+sources that you want, cut out only the lines that include the sources
+(you can leave in the alternating lines with error information), put
+in a file and then convert.
+
+Caveats:
+\begin{itemize}
+\item The catalog contains upper limits on some scale sizes. We
+have chosen to represent these as actual sizes.
+\end{itemize}
+\end{description}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{complist}{Name of output component list Table}{None}{String}
+\ahaddarg{asciifile}{Name of input ascii file}{None}{String}
+\ahaddarg{refer}{Input reference frame}{j2000}{Any valid measures
+direction reference}
+\ahaddarg{format}{Name of format (only ST supported)}{ST}{String}
+\ahaddarg{direction}{Direction measure (for relative coordinates)}{None}
+{Direction measure}
+\ahaddarg{spectrum}{Default spectrum field}{[type="Constant",
+frequency=[type="frequency" , refer="LSR" , m0=[unit="GHz" ,
+value=1.0]]}{Any valid spectrum field}
+\ahaddarg{flux}{Default flux field}{[value=[0.0, 0.0, 0.0, 0.0],
+unit='Jy', polarisation="Stokes"]}{Any valid flux field}
+\end{ahargs}
+\ahreturns{Number of components found}
+
+\begin{ahexample}
+\begin{verbatim}
+ascii2complist('sgra-stars.cl', 'sgra-stars.stfile', refer='j2000', format='ST')
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This takes an AIPS stars file in J2000 positions, and converts the
+positions into Galactic.
+\end{ahcomments}
+\end{ahfunction}

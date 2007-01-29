@@ -1,0 +1,1302 @@
+ 
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>  
+<head>
+    <title>August 2000 AIPS++ Newsletter
+(A Project of the AIPS++ Consortium)</title>
+  </head>
+    
+
+
+<BODY BACKGROUND="newsletter-sidebar.gif"  BGCOLOR="#FFFFFF" 
+TEXT="#000000" LINK="#C61C24" VLINK="#EEAC33">
+
+
+
+
+
+
+<TABLE CELLPADDING=0 CELLSPACING=0 BORDER=0 WIDTH="100%">
+
+<TR><TD>
+<TABLE WIDTH="100%" CELLPADDING=14 CELLSPACING=0 BORDER=0>
+
+
+<TR><TD COLSPAN=2>
+<FONT FACE=helvetica SIZE="+10">
+<CENTER><FONT FACE=helvetica><B>AIPS++</B></FONT> <B>Newsletter</B></CENTER>
+</FONT>
+<FONT FACE=helvetica SIZE="+6">
+<CENTER><B>August 2000<B></CENTER>
+</FONT>
+</TD></TR>
+<BR>
+<BR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<BR>
+<BR>
+
+
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="mfms">
+<FONT FACE=helvetica SIZE="+2">
+Mosaicing with Multi-Scale Clean in <B>AIPS++</B></FONT></A><BR>
+<I>Mark Holdaway </I>- NRAO/Tucson<BR>
+<I>Kumar Golap, Miller Goss, Tim Cornwell </I>- NRAO/Socorro<BR>
+
+<P>
+<FONT FACE=helvetica><B>AIPS++</B></FONT>
+is equipped with a wide array of deconvolution algorithms and
+imaging contexts which make for a power imaging environment.  In this
+article, we show a new mosaic image of the relic radio galaxy 1401-33
+generated from ATCA data with imager's Multi-Scale Clean algorithm.
+
+<P>
+<CENTER>
+<IMG SRC="1401.gif"><BR></CENTER>
+<CENTER><I><B>Figure 1:<BR>
+A mosaic image of the relic radio galaxy 1401-33 made
+with imager's Multi-Field Multi-Scale Clean algorithm in
+<FONT FACE=helvetica><B>AIPS++</B></FONT>.</B></I></CENTER>
+
+<P>
+Have you ever wondered why Clean attempts to break the sky down into a
+series of delta functions?  That assumption may have reflected our
+view of the radio sky when Clean was invented in the 1970's, but it
+doesn't match the images today's powerful radio telescopes produce.
+Cleaning with delta functions results in notable artifacts when
+imaging extended structure.  The Non-Negative Least Squares (NNLS)
+algorithm can get away from some of these artifacts by solving for all
+pixels at once, but is restricted to small image sizes whose "A"
+matrices fit into memory; furthermore, NNLS performance degrades as
+the image sizes get bigger.  So perhaps the maximum entropy method is
+better at imaging broad emission on the sky?  It is, but MEM has its
+own flaw in its positivity bias.  Maximum emptiness overcomes maximum
+entropy's positivity bias, but still it has some problems with point
+sources mixed with extended emission.
+
+<P>
+The new Multi-Scale Clean algorithm in <FONT
+FACE=helvetica><B>AIPS++</B></FONT> overcomes many of these problems.
+It simultaneously cleans delta functions and other larger components
+sizes, so you can clean extended structure both efficiently and
+without gross artifacts.  Its ability to reproduce extended emission
+surpasses maximum entropy's.  It doesn't have a positive bias, so it
+can image very noisy fields accurately.  And now, its packaged in the
+multi-field context as well as the single pointing interferometric
+context, so you can use it for mosaicing, which is exactly what Goss
+and Golap did (see Figure 1).
+
+<P>
+We all know about deconvolution algorithms -- they are basically solving
+an inverse problem.  In <FONT
+FACE=helvetica><B>AIPS++</B></FONT>, the imaging <I>context</I> refers
+to the context of this inverse problem and determines
+how the deconvolution algorithm is managed.  For example, the
+contexts which exist in <FONT FACE=helvetica><B>AIPS++</B></FONT>
+include generic single-field interferometry, multi-field or mosaicing,
+wide-field (ie, low frequency non-coplanar arrays), single-dish
+on-the-fly, and holography.  In principle, you can use most of the
+deconvolution algorithms named above in each of the imaging contexts
+enumerated here.  Not all of these context/algorithm pairs are fully
+implemented in <FONT FACE=helvetica><B>AIPS++</B></FONT> yet, but the
+essential structure is in place, and the interface will soon reflect
+the algorithm/context abstraction.
+
+<P>
+The bottom line of the algorithm/context abstraction for this article
+is that when you make a multi-field image in <FONT
+FACE=helvetica><B>AIPS++</B></FONT>, you can choose the algorithm you
+wish to do the deconvolution.  In the multi-field context, a "dirty
+mosaic" and a single approximate point spread function are generated.
+The dirty mosaic can be deconvolved with this approximate point spread
+function with any standard deconvolution algorithm (Multi-Scale Clean,
+for example), but <I>not too deeply!</I> When the deconvolution
+proceeds to the point where differences between each fields' actual
+point spread functions become important, the multi-field context stops
+the deconvolution, an exact subtraction of the modeled emission (in
+the Fourier plane, for example) is performed, and the next cycle of
+deconvolution proceeds on the residuals.  After several such multi-field
+cycles, the model image is built up and the residuals are beat down.
+
+<P>
+For this nine field ATCA observation of 1401-33 at L-band, Goss and Golap
+initially used the Clark Clean in a restricted region surrounding 
+the bright point source near the image center.  The Clark Clean component
+image was then used as a starting model, with the multi-field Multi-Scale
+Clean algorithm working on the residuals.  This worked well
+in imaging both the very low brightness large scale structure and also
+the other point sources in the image.   
+<P>
+
+<FONT FACE=helvetica><B>The Source 1401-33</B></FONT>
+<P>
+The extended radio source 1401-33 appears to be a relic radio galaxy
+with a steep spectrum (spectral index varies from -1.6 to -3.0 over
+the structure).  It is believed to be associated with a loose cluster
+of galaxies and appears to have been a head tail radio galaxy.  The
+bright point source (at RA 14:03:38 and DEC -33:58.8) is identified
+with the optical galaxy NGC 5419 and does not appear to be related to
+the relic. In fact this is one of the mysteries of this source as it
+does not have any obvious associated optical galaxy.  Another
+interesting fact is that it has lowest surface brightness of any radio
+structure associated with a cluster environment.  Collaborators on
+the Australia Telescope Compact Array observations of 1401-33 are
+R. Subrahmanyan, M. Goss, T. Beasley, R. W. Hunstead and K. Golap.
+
+
+
+<P>
+Look for more imaging innovations in the next release of 
+<FONT FACE=helvetica><B>AIPS++</B></FONT>.
+
+The details of how the multi-field cycles are controlled in the
+<TT>imager</TT> tool can be found in the multi-field chapter of 
+<A HREF="../../gettingresults/gettingresults/gettingresults.html">Getting Results</A>.
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="virt">
+<FONT FACE=helvetica SIZE="+2">
+Virtual Images in <B>AIPS++</B></FONT></A><BR>
+<I>Neil Killeen </I>- ATNF<P>
+
+
+
+<P>
+The Image tool is the basic <FONT FACE=helvetica><B>AIPS++</B></FONT> 
+tool with which you manipulate images.
+It has a capability unique to <FONT FACE=helvetica><B>AIPS++</B></FONT>; the ability to create
+virtual images.  ``Unique but not very handy'', you are probably thinking
+at this point...
+
+<P>
+Let me explain what I mean by a virtual image.    The word virtual
+is used in a generic sense and there are a few different sorts
+of specific virtual images; temporary, reference, expression,
+and concatenation.
+
+<P>
+<FONT FACE=helvetica><B>Temporary Images</B></FONT>
+<BR>
+<P>
+We are all used to an image being stored persistently in a disk file. 
+But that's not the only way an image could be stored.  For example, it
+could be transiently stored in the computers memory.  Of course, when
+you access a traditional disk-based image, the data is transferred to
+the computers memory for processing.  But what I mean here is that the
+entire image transiently resides in the computer's memory (not just its
+pixels), but the way that you interact with it is just as if it was a
+disk-based image. 
+
+<P>
+The following <I>glish</I> fragments show an example of this.
+
+<P>
+<PRE>
+include 'image.g'
+#
+im1 := shapetoimage(outfile='z1', shape=[10,10])
+im1.summary()
+im1.stats()
+im1.done()
+#
+im2 := shapetoimage(shape=[10,10])
+im2.summary()
+im2.stats()
+im2.done()
+</PRE>
+
+<P>
+The Image <I>tool</I> <TT>im1</TT> is constructed from a shape and is
+associated with the disk file <TT>z1</TT>.  It is just a little 10 by 10
+image initialized to 0.  The two subsequent commands summarize the image
+(coordinates, shape  etc.) and evaluate some statistics (not very interesting
+since its all 0).  Now, the Image <I>tool</I> <TT>im2</TT> is constructed
+similarly, except I left out the argument <TT>outfile</TT>.  This Image
+tool is associated with a memory-based, instead of a disk-based image. 
+
+<P>
+Now in fact, <TT>im2</TT> is actually what we call a ``temporary image''. 
+Depending on its size, and the resources of your computer, it will be
+either in memory or on disk.  Because the image I made above was so tiny
+I knew it would be in memory.  But the point is, it doesn't matter.  It
+behaves like other images, you interact with it via all the usual Image
+<I>tool</I> functions.  The only differences with the disk-based persistent
+images are that 1) when you exit <I>glish</I>, the temporary image is deleted
+(either from memory or disk) and 2) when you call the <TT>done</TT>
+function (which destroys the Image tool), the disk file <TT>z1</TT>
+remains behind, whereas the temporary image is destroyed. 
+
+<P>
+The temporary image is one kind of ``virtual'' image.   It's handy
+simply because you don't have the extra book-keeping of looking
+after the disk-based image.  You use it when you want a transient
+image.
+
+
+<P>
+<FONT FACE=helvetica><B>Reference Images</B></FONT>
+<BR>
+<P>
+A second kind of virtual image is one that references another.
+
+<P>
+<PRE>
+include 'image.g'
+include 'regionmanager.g'
+#
+im1 := shapetoimage(outfile='z1', shape=[10,10])
+r := drm.quarter()
+im2 := im1.subimage(outfile='z2', region=r)
+im3 := im1.subimage(region=r)
+</PRE>
+
+<P>
+Here we have three Image <I>tools</I>.  <TT>im1</TT> is associated with the disk
+file <TT>z1</TT>.  The second is associated with the disk file <TT>z2</TT>;
+it is a copy of the central quarter (by area) of the disk file
+<TT>z1</TT>.  The third is a virtual image (because I left out the
+<TT>outfile</TT> argument.  It is a ``reference image'' because it actually
+references the original file <TT>z1</TT>.  When you access the pixel
+values of Image <I>tool</I> <TT>im3</TT>, you are really accessing Image <I>tool</I>
+<TT>im1</TT> and hence disk file <TT>z1</TT>.   Note that if you attempted to
+delete the disk file <TT>z1</TT> via the command
+
+<P>
+<PRE>
+im1.delete(T)
+</PRE>
+
+<P>
+you would find this would fail.  This is because the system
+knows that somebody else <I>tool</I> <TT>im3</TT>) has referenced
+this image.  The same would be true if you attempted 
+
+<P>
+<PRE>
+im3.delete(T)
+</PRE>
+
+<P>
+The way to delete this file is to first disassociate the reference
+image  from <TT>z1</TT>.  Thus
+
+<P>
+<PRE>
+im3.done()
+im1.delete()
+</PRE>
+
+<P>
+The reference image is useful because it conserves resources
+and I/O operations - when we made <TT>im2</TT> the pixels
+were physically copied to <TT>z2</TT>.
+
+<P>
+Now, we can take this a step further. Consider
+
+<P>
+<PRE>
+include 'image.g'
+include 'regionmanager.g'
+#
+im1 := shapetoimage(shape=[10,10])
+r := drm.quarter()
+im2 := im1.subimage(region=r)
+im3 := im2.subimage('z3')
+</PRE>
+
+<P>
+In this example, the Image <I>tool</I> <TT>im1</TT> is a temporary image (and
+in memory in this case).  The Image <I>tool</I> <TT>im2</TT> is a reference
+image referencing the temporary (in memory) image !  So we have
+both eliminated book-keeping and minimized resources.
+
+<P>
+If at any point you decode that you really do want your virtual
+image to be disk-based, you can always copy it there with the
+Image <I>toolfunction</I> <TT>subimage</TT> as shown for <TT>im3</TT>.
+
+
+<P>
+<FONT FACE=helvetica><B>Expression Images</B></FONT>
+<BR>
+<P>
+Within <FONT FACE=helvetica><B>AIPS++</B></FONT> there exists something called the Lattice Expression
+Language (or LEL).  You can read all about it in the Image tool
+documentation and in <FONT FACE=helvetica><B>AIPS++</B></FONT> 
+<A HREF="../../notes/223/index.html">note 223</A> (user oriented) and 
+<A HREF="../../notes/216/index.html">note 216</A>
+(design and implementation description for hard-core C++ enthusiasts. 
+
+<P>
+LEL allows you to create mathematical expressions of Lattices
+(images are just lattices of pixels with coordinate information).
+This ability is available to the C++ programmer, as  well
+as to the <I>glish</I> user (the latter is implemented with the former
+of course) via an Image <I>tool</I>.  Here are two examples:
+
+<P>
+<PRE>
+include 'image.g'
+#
+im1 := calc(outfile='z1', expr='z2+ (z3+min(z2))')
+im2 := calc(expr='z2 + (z3+min(z2))')
+</PRE>
+
+<P>
+The expression takes two images existing on disk called
+<TT>z2</TT> and <TT>z3</TT> and evaluates, pixel by pixel,
+a simple expression.  It finds the minimum of image
+<TT>z2</TT>, adds that to <TT>z3</TT> (logically, not actually)
+and then adds that result to the image <TT>z2</TT>.  
+
+<P>
+Now the Image <I>tool</I> <TT>im1</TT> is constructed and associated with
+the disk file  <TT>z1</TT> - the result of the expression
+is used to fill that image.  However, the Image <I>tool</I>
+<TT>im2</TT> is another virtual image.  It's an ``expression
+image''.   Again this was done by leaving out the 
+argument <TT>outfile</TT>.    The expression image
+is evaluated every time it is used.  So if you 
+attempted to access some pixels:
+
+<P>
+<PRE>
+p := im2.getchunk()
+</PRE>
+
+<P>
+the expression involving the images would be evaluated and the result
+returned to you.  If you issued the same command again, the same thing
+would happen (there is no caching at this level).   This kind
+of virtual image can be useful again to conserve resources.  
+
+<P>
+Now the ``expression image'' clearly also references other image disk 
+files; in this case <TT>z2</TT> and  <TT>z3</TT>.   And indeed you
+will be unable to delete while they are so referenced.  An expression
+virtual image is really just another sort of reference virtual image,
+but sufficiently different I put it in another category.
+
+<P>
+Of course, you can make expression images from other virtual images:
+
+<P>
+<PRE>
+include 'image.g'
+#
+im1 := shapetoimage(shape=[20,30])
+im2 := calc(expr='2*$im1')
+im1.set(1)
+im2.stats()
+</PRE>
+
+<P>
+Here we make a temporary image.  Then, using the $ substitution syntax
+of LEL we make an expression image which just multiplies <TT>im1</TT> by
+2.  We then set the value of all the pixels in the temporary image to 1. 
+If we then run the statistics function on the expression image, we would
+see all the pixels have the value 2. 
+
+<P>
+Note that the expression virtual image is read-only; it makes no
+sense for it to be writable.
+
+<P>
+<FONT FACE=helvetica><B>Concatenation Images</B></FONT>
+<BR>
+<P>
+Our final type of virtual image is the ``concatenation image''.  This is
+another type of reference virtual image.  There is a constructor that
+enables you to concatenate images along a specified axis.  Viz:
+
+<P>
+<PRE>
+include 'image.g'
+#
+im1 := concat(outfile='z1', infiles="z2 z3 z4", axis=1)
+im2 := concat(infiles="z2 z3 z4", axis=1)
+</PRE>
+
+<P>
+Image <I>tool</I> <TT>im1</TT> concatenates the specified images along axis 1
+and writes the resultant to disk file <TT>z2</TT>.  
+Image <I>tool</I> <TT>im2</TT> also concatenates the specified images along axis 1.
+However, it does not write the result out to disk.  Whenever you 
+access the pixels of <TT>im2</TT>, it goes back to the original images
+and fetches the data from them.  This may save you a lot of disk space
+at some small access speed decrement.  As usual, you can't delete the
+referenced images whilst the concatenation images is in existence.
+
+<P>
+<FONT FACE=helvetica><B>Connection with Object Oriented Design</B></FONT>
+<BR>
+<P>
+This facility to create various types of images is intimately related
+to Object Oriented Design.  There is a C++ class called
+ImageInterface.  It defines the interface for Image objects.  From
+ImageInterface we derive various different classes whose behaviour is
+different but still conforms to the ImageInterface definition.  This
+is what is going on here behind the scenes.  The class TempImage
+handles temporary virtual images.  We have the class SubImage defining
+reference virtual images.  The class ImageExpr defines expression
+virtual images and so on.  ImageConcat handles concatenation images.
+This is what gives us our ability to provide these different flavours
+of image.
+
+
+<P>
+<FONT FACE=helvetica><B>Summary</B></FONT>
+<BR>
+<P>
+There are four different types of virtual image: temporary, reference,
+expression and concatenation.  These are generated by leaving the
+<TT>outfile</TT> argument unspecified.
+
+<P>
+It is also worth noting that the temporary, reference and concatenation
+virtual images are all writable.  For example, if you attempted to
+change the values of some pixels in a concatenation image (with function
+<TT>putchunk</TT>), it would actually change the values in the underlying
+images from which it was constructed. Only the expression images is not
+writable.
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+<TD VALIGN=TOP>
+<A NAME="wsrt">
+<FONT FACE=helvetica SIZE="+2">
+The Use of <B>AIPS++</B> at the WSRT</FONT></A><BR>
+<I>Jan Noordam, Ger van Diepen, and Tom Oosterloo </I>- NFRA<P>
+
+
+
+<P>
+One of the strengths of <FONT FACE=helvetica><B>AIPS++</B></FONT> is
+that it also offers a very powerful software infrastructure and
+environment for implementing instrument specific software and
+pipelines. The broad functionality of the C++ classes, combined with
+the features of Glish, allow to integrate software for very specific
+situations with the reduction and calibration capabilities of
+'standard' <FONT FACE=helvetica><B>AIPS++</B></FONT>.
+ 
+<P>
+<FONT FACE=helvetica><B>AIPS++</B></FONT> parts have been playing an
+important part in the newly upgraded WSRT for a considerable time.
+The role of <FONT FACE=helvetica><B>AIPS++</B></FONT> in the operation
+of the WSRT will increase in the next few years.  Figure 2 gives an
+overview:
+
+<P>
+<UL>
+<LI>
+<B><FONT FACE=helvetica><B>AIPS++</B></FONT> modules used by TMS.</B>
+  These include the Table module (which is the basis of the <FONT
+  FACE=helvetica><B>AIPS++</B></FONT> Measurement Set and various
+  other TMS data structures), the Measures module for coordinate
+  transformations, and Glish.
+
+<LI>
+<B>Various uv-data converters.</B> The data produced by the WSRT is
+  written in the <FONT FACE=helvetica><B>AIPS++</B></FONT> Measurement
+  Set format.  For archiving, and for transferring WSRT uv-data to
+  other reduction packages like NEWSTAR, `classic' AIPS, MIRIAD,
+  DIFMAP, IWOS and MATLAB (used by Delft University for their research
+  into RFI detection and suppression), a number of format converters
+  are available. These are all part of 
+  <FONT FACE=helvetica><B>AIPS++</B></FONT>.
+  
+<LI>
+<B>WSRT local mini-package.</B> This is currently used for data
+  inspection, and the reduction of calibrator observations for setting up the
+  instrument. It has been written in Glish, but makes use of existing C++
+  objects. Eventually, most of its functions will be taken over by functions
+  of the main <FONT FACE=helvetica><B>AIPS++</B></FONT> package.
+</UL>
+
+
+
+<P>
+At this moment, <FONT FACE=helvetica><B>AIPS++</B></FONT> is not yet
+ used very much for astronomical reduction of WSRT data. This is
+ expected to increase gradually now that the second release is out,
+ and as more of the basic uv-data processing functions become
+ available (the initial strength of 
+ <FONT FACE=helvetica><B>AIPS++</B></FONT> is in new imaging functions which
+ are not in existing packages). In the meantime, the various uv-data
+ converters will play an important role.
+
+<P>
+In the near future, a `data-inspection and calibration pipeline' will
+be built in a collaboration between NFRA and the Australia Telescope
+National Facility. In the near future, in particular with the IVC, the
+data rate of the WSRT will be so high that on-line automatic data
+inspection and quality control becomes necessary.  This pipeline will
+combine the functionality of <FONT FACE=helvetica><B>AIPS++</B></FONT>
+with locally developed modules.
+
+<P>
+NFRA will continue to contribute to <FONT FACE=helvetica><B>AIPS++</B></FONT>
+ in various ways, but the
+emphasis will gradually shift towards the LOFAR and SKA projects.
+
+
+
+
+
+<P>
+<CENTER>
+<IMG SRC="tms3.gif"><BR></CENTER>
+<CENTER><I><B>Figure 2:<BR>
+Overview of the current use of <FONT FACE=helvetica><B>AIPS++</B></FONT>
+at the upgraded WSRT.</B></I></CENTER>
+
+
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+
+<TD VALIGN=TOP>
+<A NAME="qt">
+<FONT FACE=helvetica SIZE="+2">
+<I>Glish</I> and the widget library</FONT></A><BR>
+<I>Tony Willis </I>- DRAO<P>
+
+
+
+<P>
+The ACSIS correlator project has as its goal the processing and analysis
+of spectrometer data in real or near-real time. In order to make this goal
+a practical reality we must be able to display both spectrometer data and
+telescope data as they are collected so that an observer can quickly decide if
+the incoming data is of acceptable quality. 
+
+<P>
+Tests quickly revealed that the glish (and pgplot) interpreter
+provided with <FONT FACE=helvetica><B>AIPS++</B></FONT> consumed too
+large a fraction of CPU resources while trying to keep up with the
+ACSIS data rate of up to 10 Mb / sec. Developing a c++ based glish
+client that made direct calls to pgplot improved things a bit, but now
+the client consumed CPU resources! So we had to find some other way of
+producing a display capable of handling a high data rate, while not
+consuming all the CPU resources on a machine. (Here, my remarks are
+not meant to disparage either glish or pgplot. Neither package was
+ever designed for high speed real-time displays.)
+
+<P>
+While net surfing during July 1999, I became aware of a
+two-dimensional plotting package called qwt, one of whose demo
+programs was a strip chart display similar to that required by ACSIS
+for showing telescope data as a function of time.  Some playing with
+the qwt strip chart demo revealed that it could probably keep up with
+the ACSIS data rate, but typically consumed only ten to twenty percent
+of the CPU resources of a 450 MHz PII computer.  So we decided to see
+if qwt (developed by Josef Wilgen, jwlg@mail.desy.de) could be
+successfully integrated with a glish c++ client.
+
+<P>
+Qwt uses the Qt widget library, which is copyrighted by Troll Tech AS
+<A HREF="http://www.trolltech.com">http://www.trolltech.com</A> 
+a Norwegian company. Both Qt and qwt are
+written in c++ and are free for non-commercial use. It proved quite
+easy to integrate glish events with the Qt event handler by means of a
+Qt class called QSocketNotifier. The whole process has been made
+transparent to an <FONT FACE=helvetica><B>AIPS++</B></FONT> programmer
+by means of a class called QtGlishSysEventSource, which inherits from
+both the Qt QObject class and the <FONT
+FACE=helvetica><B>AIPS++</B></FONT> GlishSysEventSource class.  The
+code for this class has been checked into the 
+<FONT FACE=helvetica><B>AIPS++</B></FONT> development system in directory
+<TT>/aips++/code/hia/implement/QtGlishEvent</TT>. Unfortunately the
+documentation for the class is rather sparse, something this note
+attempts to rectify.
+
+<P>
+The following c++ code sample demonstrates how a widget based on qwt
+and Qt that we have developed for ACSIS to display spectra can be
+integrated into a glish c++ client. Every time this client is sent a
+glish 'update_display' event, containing a beam number and a spectrum,
+the glish callback function 'update_plots' decodes the data associated
+with the glish event and forwards the spectrum to the screen display
+based on Qt/qwt.
+
+
+<TT>
+<PRE>
+/****************************************************************
+**
+** Main Program for ACSIS Qt spectrum plotting program
+**
+****************************************************************/
+
+#include < math.h >
+#include < aips/Arrays/Vector.h >
+#include < aips/Arrays/IPosition.h >
+#include < aips/Glish/GlishRecord.h >
+#include < aips/Glish/GlishArray.h >
+#include < aips/Glish/GlishValue.h > 
+
+#include < qapplication.h >
+#include < qpushbutton.h >
+#include < qscrollbar.h >
+#include < qlcdnumber.h >
+#include < qlayout.h >
+#include < qfont.h >
+
+// header file for the class Mainplt: a Qt / qwt plotter for ACSIS spectra
+#include <hia/QtPlotter/mainplt.h>
+
+// header file for the class QtGlishSysEventSource that combines glish
+// and Qt event handling 
+#include <hia/QtGlishEvent/QtGlishEvent.h>
+
+Bool First = True;
+
+QtGlishSysEventSource *glishStream = 0;
+Mainplt *plotter = 0;
+
+// standard glish callback function 
+Bool update_plots(GlishSysEvent &e, void *) 
+{
+// Extract data (beam number and spectrum) from incoming glish record
+	GlishRecord glishRec = e.val();
+	Int beam_no;
+	if (glishRec.exists("beam_no")) {
+		GlishArray tmp;
+		tmp = glishRec.get("beam_no");
+		tmp.get(beam_no);
+	}
+	
+	Vector<double> spectrum;
+	if (glishRec.exists("rtd_spectrum")) {
+		GlishArray tmp;
+		tmp = glishRec.get("rtd_spectrum");
+		tmp.get(spectrum);
+	}
+	
+// If this is the first spectrum, construct the plotter widget, 
+// from an ACSIS class imaginatively called Mainplt.
+// The Mainplt class makes use of Qt and qwt classes.
+// Note that the 'glishStream' pointer is passed into the Mainplt 
+// constructor. This makes it possible for glish events to be issued from
+// A Qt callback function in the Mainplt widget.
+	if (First) {
+		Int spec_size = spectrum.nelements();
+		plotter = new Mainplt(glishStream, spec_size,0, "mainwin" );
+	
+// get the plotter widget up on the screen
+		(*plotter).show();
+	
+		First = False;
+	}
+	
+// show the spectrum on the plotter display
+	(*plotter).updateEvent(beam_no,spectrum);
+    
+	return True;
+}
+
+int main( int argc, char **argv )
+{
+// every Qt application requires exactly one object of class
+// QApplication. This object is responsible for all event
+// handling.
+    QApplication a( argc, argv );
+    
+// get a QApplication to also handle glish events
+// by means of a QtGlishSysEventSource object. The
+// QtGlishSysEventSource class inherits from both 
+// the QObject and the GlishSysEventSource classes.
+    glishStream = new QtGlishSysEventSource (argc, argv);
+
+// define callback response to glish 'update_display' event
+    (*glishStream).addTarget(update_plots, "update_display");
+
+// enter Qt event loop
+    return a.exec();
+}
+</PRE>
+</TT>
+
+<P>
+The important thing to note from the 'main' function above, is that
+its structure looks quite similar to a standard glish c++ client, except
+that events are handled by the Qt event loop and 'glishStream' points
+to a member of the class 'QtGlishSysEventSource'.
+
+<P>
+A sample display of the ACSIS spectrum display in action is shown 
+in Figure 3.
+
+
+<P>
+<A HREF="spectrum_display.html"><CENTER><IMG SRC="spectrum_display_small.gif"></CENTER><BR></A>
+<CENTER><I><B>Figure 3:<BR>Click on figire for higher resolution.
+ACSIS spectrum display showing pseudo spectra
+from a 16 feed focal plane array being sent to the screen every
+50 millisec. The various buttons / sliders etc shown on the display
+are from the Qt widget set. The Qwt package is used to generate the actual
+plot.</B></I></CENTER>
+
+<P>
+So far <FONT FACE=helvetica><B>AIPS++</B></FONT>
+GUIs have all been written as glish scripts by using the
+Tk widget set that has been incorporated into glish by Darrell
+Schiebel.  If the <FONT FACE=helvetica><B>AIPS++</B></FONT>
+project ever does decide to use a widget set
+directly inside a glish c++ client I can certainly recommend the Qt
+widget set. It is extremely easy for inexperienced GUI programmers,
+but who have had exposure to c++, to learn to program with Qt. A
+second year undergraduate computer science student who had had two c++
+courses, programmed large fractions of the ACSIS spectrum display in a
+2.5 month work term.  There is even an O'Reilly book on Qt,
+"Programming with Qt", by Matthias Kalle Dalheimer (ISBN
+1-56592-588-2). However, the documentation, including tutorials and
+examples, that comes with the Qt distribution is so good that the book
+is not really necessary for a good understanding of Qt.  The original
+version of qwt is available from the TrollTech ftp site
+<A HREF="ftp://ftp.trolltech.com">ftp.trolltech.com</A>. 
+However qwt requires some patches to work with Qt
+V2.0 and later. A patched version is available from 
+<A HREF="ftp://ftp.drao.nrc.ca">ftp.drao.nrc.ca</A> in
+directory pub/twillis as file qwt_2.tar.gz.
+
+ 
+
+
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+<TD VALIGN=TOP>
+<A NAME="summary">
+<FONT FACE=helvetica SIZE="+2">Project News Summary</FONT></A><BR>
+<I>Tim Cornwell </I>- NRAO, Socorro
+
+<P>
+On March 16, 2000, the Jodrell Bank Observatory officially rejoined
+the <FONT FACE=helvetica><B>AIPS++</B></FONT> consortium as a
+partner. Jodrell Bank was one of the original founding partners in the
+consortium but withdrew in 1995. We are very pleased to welcome
+JBO/MERLIN back and look forward to working together.
+
+<P>
+In early May, we issued the second release, version 1.3, of <FONT
+FACE=helvetica><B>AIPS++</B></FONT>. This completes a 6 month
+development cycle that started after the first release, version 1.2,
+in October 1999. Our goal in this cycle has been towards scientific
+completeness. Version 1.3 has numerous changes in most parts of the
+package, but particularly in calibration and imaging of synthesis
+data, image manipulation and viewing.  In addition, many new tools,
+such as a general purpose fitter, have been provided. A fuller
+description of the changes is found in the release notes and
+development report for version 1.3.  We have now started on the
+development of version 1.4 which we intend to release in October
+2000. Our goal in version 1.4 is to complete the provision of
+reduction capabilities for both connected element interferometers and
+single dish radio telescopes, with special emphasis being paid to
+improving the usability of these parts of the package.  Planning for
+version 1.4 was aided by a gathering of consortium developers in
+Socorro on April 26 - April 29, 2000.  Our intention is that such
+face-to-face developers' meetings will occur every other development
+cycle.
+
+<P>
+In January 2000, we hosted in Socorro a meeting on "Pipeline reduction
+in <FONT FACE=helvetica><B>AIPS++</B></FONT>". This was a small informal workshop on the development
+of pipelined calibration and imaging systems for radio telescopes.
+Representatives of both consortium and non-consortium telescopes
+attended, and gave presentations on the experience of and needs
+for pipelines. We achieved a highly satisfactory degree of
+convergence of views during this short workshop, and internally
+we have proceeded to coordinate work on pipelines at the various
+consortium sites. It is clear that the tool-based approach used
+in <FONT FACE=helvetica><B>AIPS++</B></FONT> 
+is highly suited to the development of pipelines
+tuned to the needs of different telescopes and scientific
+questions.
+
+<P>
+
+<FONT FACE=helvetica><B>In Personnel News:</B></FONT>
+<BR>
+<P>
+<UL>
+<LI> Barry Maguire joined the JBO/MERLIN and their <FONT
+FACE=helvetica><B>AIPS++</B></FONT> group. To fulfil the contribution
+of JBO/MERLIN to the <FONT FACE=helvetica><B>AIPS++</B></FONT>
+Project, Barry will participate in the development of synthesis VLBI
+capabilities within the package. As part of learning the package,
+Barry visited both Dwingeloo and Socorro. Since he started with a firm
+background in C++, he was able to make very rapid progress. He is
+currently developing a filler for MERLIN data, and will then turn to
+more general synthesis development.
+
+<LI> The <FONT FACE=helvetica><B>AIPS++</B></FONT> Project at NRAO
+ hired Toney Minter and David King into the NRAO/<FONT
+ FACE=helvetica><B>AIPS++</B></FONT> visualization project, and hired
+ George Moellenbrock to work in synthesis development in Socorro
+ (replacing Peter Barnes who left at the end of 1999).
+
+
+<LI> Kate Weatherall left the NRAO <FONT
+ FACE=helvetica><B>AIPS++</B></FONT> group in February 2000 as part of
+ a budget-mandated reduction in force throughout the Observatory. We
+ all enjoyed working with Kate and will miss her.
+	
+<LI> David Barnes has left the ATNF/Epping 
+<FONT FACE=helvetica><B>AIPS++</B></FONT> group and has returned to
+his home town, Melbourne, to work at the Swinburne Computer Center. 
+He will remain at work half time on <FONT
+FACE=helvetica><B>AIPS++</B></FONT> until September. David has made
+tremendous contributions in the development of the Display Library in
+<FONT FACE=helvetica><B>AIPS++</B></FONT>, and to the general
+package. We'll miss him a lot, and hope that he will find a way to
+keep in touch in the future.
+
+<LI> Doug Roberts of NCSA has left to join the Hayden Planetarium 
+in Chicago. Doug has made significant contributions to many areas 
+but particularly in the parallelization effort. Doug had contributed 
+for a number of years, and we are sad to see him go. He will be replaced 
+as NCSA <FONT FACE=helvetica><B>AIPS++</B></FONT> 
+ manager by Ray Plante. His work on parallelization 
+will be picked up by Dave Mehringer.
+	
+<LI> Oleg Smirnov has joined the <FONT
+ FACE=helvetica><B>AIPS++</B></FONT> group in Dwingeloo, where he will
+ be working on general synthesis development.
+</UL>
+
+<P>
+Finally, on a personal note, on May 1 2000, I took on an additional
+role at NRAO: Associate Director for Data Management. In this new
+position, I am responsible for data management for all NRAO
+telescopes. I expect <FONT FACE=helvetica><B>AIPS++</B></FONT> to play
+a key role in this effort, and will continue as <FONT
+FACE=helvetica><B>AIPS++</B></FONT> Project Manager. The one drawback
+of these new responsibilities is that I will have less time for
+development in the package, which is something that I find very
+enjoyable and rewarding. However, I look forward to being able to use
+<FONT FACE=helvetica><B>AIPS++</B></FONT> as a resource in this new
+and demanding initiative at the NRAO.
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+</TD><TD VALIGN=TOP>
+<A NAME="new">
+<FONT FACE=helvetica SIZE="+2">What's New: April - July 2000</FONT>
+</A><BR>
+<I>Athol Kemball </I>- NRAO, Socorro
+
+<UL>
+<LI>
+In this period the <TT>table</TT> system infrastructure has been improved in
+several key areas, including enhancements in storing <TT>measures</TT>
+and <TT>quanta</TT> in <FONT FACE=helvetica><B>AIPS++</B></FONT>
+tables, and in improvements to the Table Query Language (TAQL).  TAQL
+can now be used on any memory-based data structure, rather than only
+disk-based tables. A GUI widget has also been added to help users form
+TAQL selection strings, using a query-by-example idiom. It includes
+advanced features to allow more complex query commands.
+
+<LI>
+Several new capabilities have been added in the <TT>image</TT> module,
+including functions to: i) perform an FFT on an image; ii) regrid an
+image to a specified template; iii) modify an image by a source
+component model; and, iv) support reading of Miriad and GIPSY format
+images. Additional and more uniform support has been added for virtual
+images within the image module as a whole, as described elsewhere in
+the newsletter.
+
+<LI>
+A new tool, <TT>imagepol.g</TT>, has been added to provide the capability for
+basic polarimetric image analysis. The <TT>imagefitter</TT> tool has been
+extended to support the fitting of multiple, simultaneous components,
+correct handling of Gaussian components in non-linear coordinate
+systems, and better handling of units such as Jy/beam and Jy/pixel.
+
+<LI>
+Mosaicing support has been expanded in <TT>imager</TT>, by adding new utility
+functions, specialized mosaic weighting and in a broader range of deconvolution
+algorithm support in different imaging contexts. The simulator has
+been improved in its general capabilities, and in the range of
+supported error models.
+
+<LI>
+Improvements have continued in the user interface and <TT>toolmanager</TT>, but
+substantial design changes are not planned until a larger user group
+has had the opportunity to use the system in its current form. 
+
+<LI>
+A 64-bit build has been implemented on the SGI IRIX systems to allow
+full use of the large memory model for the most computationally
+challenging projects.
+
+<LI>
+Work has continued in the <TT>calibrater</TT> tool, primarily in the area of
+testing with a range of real data. Specialized test scripts for BIMA
+data have also been developed.
+
+<LI>
+Single-dish work in <TT>dish</TT> continues, as well as in GBT commissioning
+support. New features have been added to the GBT filler in particular.
+
+<LI>
+The infrastructure of the display library module has been expanded, as
+has the viewer application.
+        
+</UL>
+
+
+
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT">
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B>Table of <BR>Contents:</B>
+<P>
+<A HREF="#mfms"><FONT COLOR="#FFFFFF">
+Mosaicing with<BR>Multi-Scale<BR>Clean</A>
+<P>
+
+<A HREF="#virt"><FONT COLOR="#FFFFFF">
+Virtual<BR>Images<BR> </A>
+<P>
+
+<A HREF="#wsrt"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT><BR>at the<BR>WSRT</A>
+<P>
+
+<A HREF="#qt"><FONT COLOR="#FFFFFF">
+<I>Glish</I><BR>and
+the<BR>Qt widget<BR>library</FONT></A><P>
+
+<A HREF="#summary"><FONT COLOR="#FFFFFF">
+Project<BR>News<BR>Summary</FONT></A>
+<P>
+
+<A HREF="#new"><FONT COLOR="#FFFFFF">
+What's<BR> New</A></FONT><P>
+<P>
+
+<A HREF="#bob"><FONT COLOR="#FFFFFF">
+Bob Hjellming:<BR>Professional<BR>Remembrance</A></FONT><P>
+</TD>
+
+
+
+
+</TD><TD VALIGN=TOP>
+<A NAME="bob">
+<FONT FACE=helvetica SIZE="+2">Bob Hjellming: A Professional Remembrance</FONT>
+</A><BR>
+<I>Tim Cornwell </I>- NRAO, Socorro
+
+<P>
+Bob Hjellming, a scientist at NRAO Socorro, died of natural causes while
+scuba diving on July 29, 2000.  Bob had been a member of the NRAO Basic
+Research staff since 1968.  Bob came to the Observatory as a theoretician
+studying H II regions and shortly thereafter recognized the opportunity to
+detect radio emission from stars, a field he and Cam Wade pioneered.  For
+the next 30 years he studied stellar emission at radio and X-ray
+wavelengths. 
+
+<P>
+Bob had many talents and interests, one of which was computing, and in
+particular astronomical computing. He was a keen fan of the computer
+languages of Niklaus Wirth, particularly Oberon, and had an ongoing
+project to write astronomical utilities in Java. With this background, it
+was natural he became associated with the <FONT FACE=helvetica><B>AIPS++</B></FONT>
+Project. Prior to the
+official start of the project, he was responsible for drawing up the
+consortium-wide user specifications for <FONT FACE=helvetica><B>AIPS++</B></FONT>. 
+He then participated in
+the first six months of intensive work in Charlottesville in early 1992.
+During this period, he formed close friendships with a number of people
+still in the project and became <FONT FACE=helvetica><B>AIPS++</B></FONT>'s
+first Project Scientist, a
+position he held until 1993.  More recently, he was an early user of
+<FONT FACE=helvetica><B>AIPS++</B></FONT>, 
+and produced the "micro-quasar" images seen on the cover of the
+release 1.3 CDROM.  He brought to all of these roles his own mixture of
+strong scientific focus, keen interest in computing technology, and belief
+in the importance of communication. Most recently he contributed to
+<FONT FACE=helvetica><B>AIPS++</B></FONT>
+by editing our newsletter since the first publication in February 1998. In
+this role, he spanned the gap between scientists and computer
+professionals, finding ways for both to talk to each other. We will miss
+him.
+
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+
+
+
+<hr>
+<address><a href="mailto:mholdawa@nrao.edu">Mark Holdaway</a></address>
+
+</TD></TR>
+
+</TABLE>
+</TD></TR>
+</TABLE>
+
+</body>
+</html>
+<

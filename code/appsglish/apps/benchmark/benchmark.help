@@ -1,0 +1,1138 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or%
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: benchmark.help,v 19.1 2004/08/25 01:04:08 cvsmgr Exp $
+\documentclass{article}
+\usepackage{aips2help, html, epsfig}
+\begin{document}
+
+\begin{ahmodule}{benchmark}{Module for standard AIPS++ performance benchmarks}
+\ahinclude{benchmark.g}
+
+\begin{ahdescription} 
+
+{\tt benchmark} provides a standard set of AIPS++ performance benchmarks.
+
+\subsubsection*{Performance benchmarks}
+
+This module defines the standard AIPS++ performance benchmarks.  The
+primary purpose of the {\tt benchmark} tool is to allow routine and
+automated performance monitoring of representative data reduction
+threads. This, in turn, allows performance problems due to unrelated
+code evolution to be identified and corrected early in development.
+
+Performance benchmarks are invariably an imperfect measure of the
+performance of any software package. They are inherently difficult to
+define for a number of reasons, including:
+
+\begin{description}
+
+\item[Coverage] Benchmarks need to cover a set of operations which
+together are representative of the average use profile of the
+system. The heterogeneous nature of large radio astronomy reduction
+packages, including AIPS++, makes this very difficult to define in any
+unique or absolute sense. This is further compounded by the broad
+range of applications for the package, including near real-time use at
+telescopes and use in off-line reduction environments. The benchmarks
+defined here attempt to address this balance by focusing on the common
+scientific reduction threads most frequently in use.
+
+\item[Scientific relevance] Benchmarks need to be cast in terms of
+their scientific relevance if they are to be useful. In a pipeline
+environment, for example, the reduction time of any given thread is
+most sensibly expressed as the fraction of the observing time of the
+data under reduction. In an interactive environment, the relevant
+time-scale is the time it takes to set input parameters for the
+operation being performed. In either case, there is a point at which
+performance improvements no longer improve scientific throughput in
+any meaningful sense. Conversely, expressing benchmarks in terms of
+their scientific relevance isolates those cases which should be and can
+be profitably improved.
+
+\item[Dependence] Benchmarks typically depend on a large number of
+parameters, including uv-data set size, image size and deconvolution
+algorithm type, amongst many others. Scientific throughput is
+therefore a scalar function over many dimensions. In addition, the
+constituent components in the overall performance function are often
+non-linear in any individual parameter (e.g. $O^n(p)$), so the overall
+performance function cannot be linearly extrapolated from one part of
+parameter space to another. Any performance benchmark is only sampling
+the overall performance function at one point in the parameter
+hyperspace. This reinforces the need for benchmarks to be
+representative of a broad range of common data reduction threads.
+
+\item[Environment] Benchmark measurements may be very sensitive to the
+immediate configuration of the local computing environment. This
+includes factors such as disk I/O protocols (SCSI versus IDE),
+background operating system I/O caching policies, operating system and
+architecture, networked (NFS) or non-networked disk access, available
+memory and memory utilization policies in the applications. All
+influence the measurement obtained for any given benchmark, and need
+to be carefully controlled for reliable benchmark measurements.
+
+\item[Inter-comparisons] Performance comparisons between different
+software systems are particularly difficult, primarily because it is
+seldom possible to inter-compare exactly the same operation in each
+package, due to differences in implementation and approach. In
+addition, great care needs to be taken in controlling the environment
+in making such comparisons. Packages which have small memory models
+are difficult to compare with packages which have large memory models,
+for example, given the substantial difference in access times for main
+memory and disk. The benchmarks defined here do however include
+scripts for comparable (or similar) operations in other packages in
+order to provide an approximate estimate of relative
+performance. However such numbers are invariably highly unreliable for
+the reasons stated here. 
+\end{description}
+%
+%===========================================================================
+%
+\subsubsection*{Overview of {\tt benchmark} tool functions:}
+
+This section contains a list of the {\tt benchmark} tool functions by
+category.
+
+\begin{description}
+\item[All benchmarks] \ahlink{all}{benchmark:benchmark.all}
+\item[Clark CLEAN single-field imaging benchmarks] 
+   \ahlink{ccsf}{benchmark:benchmark.ccsf}
+   \ahlink{ccsfvl4uc}{benchmark:benchmark.ccsfvl4uc}
+\end{description}
+
+
+\begin{ahexample}
+The following example shows how to run all benchmarks.
+
+\begin{verbatim}
+include 'benchmark.g'
+#
+# Create a benchmark tool
+#
+bench:=benchmark();
+#
+# Run all defined benchmarks
+#
+bench.all();
+#
+# Close the benchmark tool
+#
+bench.done()
+\end{verbatim}
+\end{ahexample}
+
+\subsubsection*{Description of individual benchmarks}
+
+Each benchmark is identified by a unique benchmark code. These are
+hierarchical, and specify all relevant parameters applicable to the
+benchmark. This section includes any scripts from other packages which
+perform the same reduction. Package inter-comparison is subject to the
+caveats mentioned above however.
+
+\vskip 0.25cm
+%
+%===========================================================================
+%
+\underline{\bf Clark Clean single-field imaging}
+
+This benchmark has the following code descriptor:
+\begin{center}
+CC-SF-$data-$SP$win-stokes-weight-npixel-nclean$
+\end{center}
+
+where $data$ is the input data description, further broken down as
+$data$=$[instrument][size][compression][obsmode]$. The parameters are
+specified as follows: i) $instrument$ - telescope abbreviation
+(VL=VLA); ii) $size$ - dataset size on an integer scale of 1 to 10 (4
+$\sim$ 630k UVFITS visibilities); iii) $compression$ - MS compression
+(U=uncompressed; C=compressed); iv) $obsmode$ - observing mode
+(C=continuum, L=line); v) $win$ - number of spectral windows imaged;
+vi) $stokes$ - Stokes parameters imaged (e.g. IQUV or I); vii)
+$weight$ - imaging weight (UN=uniform, NA=natural); viii) $npixel$ -
+image size in pixels; vix) $nclean$ - number of Clean components in
+deconvolution.
+
+The individual Clark Clean single-field benchmarks implemented in the
+default run of the $ccsf()$ method at present are enumerated in the
+tables below.  The common portion of benchmark code mentioned in the
+table caption.  The variable part of the code is listed in the
+``Benchmark'' column of the tables.  Full benchmark code can be
+constructed by concatenating the constant and the variable part of the
+code
+
+\vskip 0.25cm
+\begin{table}
+\begin{center}
+\caption{Table for continuum VLA 125K rows dataset benchmark.  Common part of
+the benchmark code: 'CC-SF-VLAC-U125K-SP1-'}
+\begin{tabular}{|l|r|r|r|r|r|r|r|}
+\hline
+Benchmark code & Dataset & $N_{spw}$ & Stokes & Wgt. & $N_{pixel}$&
+$N_{chan}$&$N_{clean}$ \\
+\hline
+I-UN-512-C1-1000     & vlac125K & 1 & I    & UN & 512 & 1&1000 \\ 
+IQUV-UN-C1-512-1000  & vlac125K & 1 & IQUV & UN & 512 & 1&1000 \\ 
+I-UN-1024-C1-1000    & vlac125K & 1 & I    & UN & 1024 & 1&1000 \\ 
+IQUV-UN-1024-C1-1000 & vlac125K & 1 & IQUV & UN & 1024 & 1&1000 \\ 
+I-UN-2048-C1-1000    & vlac125K & 1 & I    & UN & 2048 & 1&1000 \\ 
+IQUV-UN-2048-C1-1000 & vlac125K & 1 & IQUV & UN & 2048 & 1&1000 \\ 
+I-NA-512-C1-1000     & vlac125K & 1 & I    & NA & 512 & 1&1000 \\ 
+IQUV-NA-512-C1-1000  & vlac125K & 1 & IQUV & NA & 512 & 1&1000 \\ 
+I-NA-1024-C1-1000    & vlac125K & 1 & I    & NA & 1024 & 1&1000 \\ 
+IQUV-NA-1024-C1-1000 & vlac125K & 1 & IQUV & NA & 1024 & 1&1000 \\ 
+I-NA-2048-C1-1000    & vlac125K & 1 & I    & NA & 2048 & 1&1000 \\ 
+IQUV-NA-2048-C1-1000 & vlac125K & 1 & IQUV & NA & 2048 & 1&1000 \\ 
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Table for continuum VLA 1M rows dataset benchmark.  Common part of the benchmark code: 'CC-SF-VLAC-U1M-SP1-'}
+\begin{tabular}{|l|r|r|r|r|r|r|r|}
+\hline
+Benchmark code & Dataset & $N_{spw}$ & Stokes & Wgt. & $N_{pixel}$&
+$N_{chan}$&$N_{clean}$ \\
+\hline
+I-UN-512-C1-1000    & vlac1M & 1 & I    & UN & 512  & 1&1000 \\ 
+IQUV-UN-512-C1-1000 & vlac1M & 1 & IQUV & UN & 512  & 1&1000 \\ 
+I-UN-1024-C1-1000   & vlac1M & 1 & I    & UN & 1024 & 1&1000 \\ 
+IQUV-UN-1024-C1-1000& vlac1M & 1 & IQUV & UN & 1024 & 1&1000 \\ 
+I-UN-2048-C1-1000   & vlac1M & 1 & I    & UN & 2048 & 1&1000 \\ 
+IQUV-UN-2048-C1-1000& vlac1M & 1 & IQUV & UN & 2048 & 1&1000 \\ 
+I-NA-512-C1-1000    & vlac1M & 1 & I    & NA & 512  & 1&1000 \\ 
+IQUV-NA-512-C1-1000 & vlac1M & 1 & IQUV & NA & 512  & 1&1000 \\ 
+I-NA-1024-C1-1000   & vlac1M & 1 & I    & NA & 1024 & 1&1000 \\ 
+IQUV-NA-1024-C1-1000& vlac1M & 1 & IQUV & NA & 1024 & 1&1000 \\ 
+I-NA-2048-C1-1000   & vlac1M & 1 & I    & NA & 2048 & 1&1000 \\ 
+IQUV-NA-2048-C1-1000& vlac1M & 1 & IQUV & NA & 2048 & 1&1000 \\ 
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Table for spectral line VLA 125K rows, 64 channel dataset benchmark.  Common part of the benchmark code: 'CC-SF-VLAL-U125K-SP1-'}
+\begin{tabular}{|l|r|r|r|r|r|r|r|}
+\hline
+Benchmark code & Dataset & $N_{spw}$ & Stokes & Wgt. & $N_{pixel}$&
+$N_{chan}$&$N_{clean}$ \\
+\hline
+I-UN-512-C64-1000     & vlac125K & 1 & I    & UN & 512 & 64&1000 \\ 
+I-UN-1024-C64-1000    & vlac125K & 1 & I    & UN & 1024 & 64&1000 \\ 
+I-UN-2048-C64-1000    & vlac125K & 1 & I    & UN & 2048 & 64&1000 \\ 
+I-NA-512-C64-1000     & vlac125K & 1 & I    & NA & 512 & 64&1000 \\ 
+I-NA-1024-C64-1000    & vlac125K & 1 & I    & NA & 1024 & 64&1000 \\ 
+I-NA-2048-C64-1000    & vlac125K & 1 & I    & NA & 2048 & 64&1000 \\ 
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}
+\begin{center}
+\caption{Table for continuum BIMA 139M rows dataset benchmark.  Common part of the benchmark code: 'CC-SF-BIMAL-U139M-SP1-'}
+\begin{tabular}{|l|r|r|r|r|r|r|r|}
+\hline
+Benchmark code & Dataset & $N_{spw}$ & Stokes & Wgt. & $N_{pixel}$& $N_{chan}$&$N_{clean}$  \\ 
+\hline
+I-NA-256-C20-1000     & BIMADATA & 1 & I    & NA & 256 & 20&1000 \\ 
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+The corresponding AIPS script for these benchmarks is as follows.  The
+environment variable {\tt DATA} must be set to the point to the
+directory where the benchmark related data files are kept ({\tt
+/aips++/data/demo/benchmark} by default).  Note that since AIPS++
+datafile names have lower case letters, you will have either make a
+symbolic link (speaking for UNIX only) or copy the relevant data files
+to a files with all capital letters.  This is required since AIPS
+internally converts all letters to upper case.
+
+{\tt <FITSFILE>} in the following script is the name of the UV FITS
+file to be loaded (E.g. VLAC125K.FITS).
+
+{\tt <N>} is the AIPS catalog number
+corresponding to the UVDATA file loaded using {\tt FITLD}.  
+
+{\tt <NPIX>} is the size of the image in pixels.
+
+{\tt <STOKES>} is 'I', 'Q', 'U', or 'V'.  {\tt IMAGR} task in AIPS
+accepts a single stokes value per execution. 
+
+{\tt <WEIGHT>} is 'U' for uniform weighting or 'N' for natural
+weighting.
+
+{\tt <NITER>} is the number of Clean iterations required.
+
+\begin{verbatim}
+ TASK 'FITLD'
+ INFILE 'DATA:<FITSFILE>'
+
+ GO FITLD
+
+ TASK 'IMAGR'
+ GETN         <N>
+ INSEQ         1             
+ INDISK        1             
+ SOURCES      ' '         
+ QUAL         -1             
+ CALCODE      ' '           
+ TIMERANG      0
+ SELBAND      -1             
+ SELFREQ      -1             
+ FREQID        1             
+ SUBARRAY      0             
+ DOCALIB      -1             
+ GAINUSE       0             
+ DOPOL        -1             
+ BLVER        -1             
+ FLAGVER       0             
+ DOBAND       -1             
+ BPVER        -1             
+ SMOOTH        0           
+ STOKES     <STOKES>
+ BCHAN         1             
+ ECHAN         1             
+ CHANNEL       0             
+ NPOINTS       1             
+ CHINC         1             
+ BIF           1             
+ EIF           1             
+ OUTNAME      ' '   
+ OUTDISK       1             
+ OUTSEQ        0             
+ OUTVER        0             
+ IN2NAME      ' '   
+ IN2CLASS     ' '         
+ IN2SEQ        0             
+ IN2DISK       0             
+ CELLSIZE      5,5 
+ IMSIZE     <NPIX>, <NPIX>
+ NFIELD        1             
+ DO3DIMAG     -1             
+ FLDSIZE       0           
+ RASHIFT       0           
+ DECSHIFT      0           
+ UVTAPER       0 
+ UVRANGE       0 
+ GUARD         0 
+ ROTATE        0             
+ ZEROSP        0           
+ UVWTFN     <WEIGHT>
+ UVSIZE        0
+ ROBUST        0             
+ UVBOX         0             
+ UVBXFN        1             
+ XTYPE         5             
+ YTYPE         5             
+ XPARM         0           
+ YPARM         0           
+ NITER      <NITER>
+ BCOMP         0           
+ ALLOKAY       0             
+ NBOXES        0             
+ CLBOX         0           
+ BOXFILE      ' '         
+ OBOXFILE     ' '         
+ GAIN          0.1           
+ FLUX          0             
+ MINPATCH     51             
+ BMAJ          0             
+ BMIN          0             
+ BPA           0             
+ OVERLAP       0             
+ PHAT          0             
+ FACTOR        0             
+ CMETHOD      ' '         
+ IMAGRPRM      0           
+ NGAUSS        0             
+ WGAUSS        0           
+ FGAUSS        0           
+ MAXPIXEL      0             
+ DOTV         -1             
+
+ GO IMAGR
+\end{verbatim}
+
+The equivalent script for spectral line benchmarks would set the
+keywords {\tt BCHAN=C0}, {\tt ECHAN=C1} where {\tt C0} and {\tt C1}
+are the start and end frequency channel numbers.  This will generate a
+spectral cube.  For multi-frequency synthesis, {\tt NPOINTS} must be
+set to a value {\tt >=C1-C0+1} (this will grid all the specified
+channels on a single uv-grid).
+
+\vskip 0.25cm
+%
+%===========================================================================
+%
+\underline{\bf VLA G and D term calibration}
+
+This benchmark has the following code descriptor:
+\begin{center}
+CALVLA$COMPRESSION$-$JONES$-$NAnt$-$SNR$-$NSolInt$
+\end{center}
+
+where $COMPRESSION$ is the compression state of the input data
+(compressed or uncompressed), $JONES$ is the name of the Jones matrix
+being solved for ('G', `D', or 'B'), $NAnt$ is the total number
+of antennas in the data, $SNR$ the signal-to-noise ratio of the input
+data, and $NSolInt$ is the number of solution intervals
+involved. 
+
+The individual calibrator benchmarks implemented in the default run of
+the $calvla()$ method at present are enumerated in the
+Table~\ref{CALVLATABLE}. 
+
+\vskip 0.25cm
+\begin{table}
+\begin{center}
+\caption{Table for VLA calibrator benchmark (for 'G' and 'D' Jones).}
+\label{CALVLATABLE}
+\begin{tabular}{|l|r|r|r|r|r|r|}
+\hline
+Benchmark code         & Data               & Compressed? & Jones & NAnt & SNR & NSolInt \\
+\hline
+CALVLAU-G-27-10-100    & calvlac27s10.fits  &  Nope       & G     & 27       & 10  & 100\\
+CALVLAU-D-27-10-100    & calvlac27s10.fits  &  Nope       & D     & 27       & 10  & 100\\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+The corresponding AIPS script for these benchmarks is as follows.  The
+environment variable {\tt DATA} must be set to the point to the
+directory where the benchmark related data files are kept ({\tt
+/aips++/data/demo/benchmark} by default).  Note that since AIPS++
+datafile names have lower case letters, you will have either make a
+symbolic link (speaking for UNIX only) or copy the relevant data files
+to a files with all capital letters.  This is required since AIPS
+internally converts all letters to upper case.
+
+{\tt <FITSFILE>} in the following script is the name of the UV FITS
+file to be loaded (E.g. CALVLAU27S10.FITS).
+
+{\tt <N>} is the AIPS catalog number
+corresponding to the UVDATA file loaded using {\tt FITLD}.  
+
+Following is the script for solve for the antenna based complex gain
+terms (GJones) as a function of time.
+\begin{verbatim}
+ TASK 'FITLD'
+ INFILE 'DATA:<FITSFILE>'
+
+ GO FITLD
+\end{verbatim}
+
+This must be followed by a few, simple operations to get the UV
+database inside AIPS in proper order.  The AIPS++ generated FITS
+files, though are in Time-baseline order naturally, don't seem to
+indicate so via whatever keyword AIPS looks for.  Hence, one needs to
+run the AIPS task {\tt UVSRT} to write out a Time-baseline ({\tt TB})
+sorted UV database as follows:
+
+\begin{verbatim}
+ TASK 'UVSRT'
+ GETN        <N>
+ SORT        'TB'
+ GO
+\end{verbatim}
+
+Next, since the simulated database is a single source database, it
+does not have the equivalent of the AIPS default {\tt CL} table.  This
+is required by {\tt PCAL} later.  To generate the blank {\tt CL}
+table, one needs to convert the database into a multi-source database
+(even though it has only one source in it).  This is done by running
+the AIPS task {\tt MULTI}.
+
+\begin{verbatim}
+ TASK 'MULTI'
+
+ GETN        <N>
+ GO
+\end{verbatim}
+
+Next, run the AIPS task {\tt INDXR} as follows:
+
+\begin{verbatim}
+ TASK 'INDXR'
+
+ GETN        <N>
+ INFILE      ' '
+ PRTLEV       0
+ CPARM        0
+ BPARM        0
+ IN2FILE    ' '
+ GO
+\end{verbatim}
+
+Finally, run the task {\tt SETJY} to put the source full stokes flux
+density in the AIPS {\tt SU} tables.
+
+\begin{verbatim}
+ TASK 'INDXR'
+
+ GETN        <N>
+ SOURCES     ' '
+ QUAL         -1
+ BIF           0
+ EIF           0
+ ZEROSP       14.76,0.66,1.48,0
+ OPTYPE      ' '
+ CALCODE     ' '
+ SYSVEL        0
+ RESTFREQ      0 0
+ VELTYP      ' '
+ VELDEF      ' '
+ FREQID       -1
+ APARM         0
+ GO
+\end{verbatim}
+
+The data is now ready to run the tasks {\tt CALIB} (for the equivalent
+of GJones calibration) and {\tt PCAL} (for the equivalent of DJones
+calibration). 
+
+\begin{verbatim}
+ TASK 'CALIB'
+ GETN         <N>
+ CALSOUR      ' '
+ QUAL         -1
+ CALCODE      '    '
+ SELBAND       0  
+ SELFREQ       0  
+ FREQID        0 
+ TIMERANG      0  
+ BCHAN         64
+ ECHAN         64
+ ANTENNAS      0
+ DOFIT         0
+ ANTUSE        0
+ SUBARRAY      0  
+ UVRANGE       0  0
+ WTUV          0
+ DOCALIB      -1
+ GAINUSE       0 
+ FLAGVER       0  
+ DOBAND       -1 
+ BPVER        -1 
+ SMOOTH        0
+ IN2NAME      '     '
+ IN2CLASS     '     '
+ IN2SEQ        0 
+ IN2DISK       0
+ INVERS        0 
+ NCOMP         0
+ FLUX          0 
+ NMAPS         0
+ CMETHOD      '    '
+ CMODEL       '    ' 
+ SMODEL       0
+ OUTNAME      '    '
+ OUTCLASS     '    '
+ OUTSEQ        0   
+ OUTDISK       1
+ REFANT        0
+ SOLINT        1.16 #to get 100 solution intervals for the checked-in benchmark dataset
+ APARM         0
+ SOLTYPE      '    ' 
+ SOLMODE      'A&P'
+ SOLCON        0
+ MINAMPER      0
+ MINPHSER      0
+ CPARM         0
+ SNVER         0
+ ANTWT         0
+ GAINERR       0
+ BADDISK       0
+
+ GO CALIB
+\end{verbatim}
+
+
+Following is the script for solve for the antenna based polarization leakage term.
+\begin{verbatim}
+
+ TASK 'PCAL'
+ GETN         <N>
+ CALSOUR      ' '
+ TIMERANG      0
+ SELBAND      -1
+ SELFREQ      -1
+ FREQID       -1
+ BIF           0
+ EIF           0
+ ANTENNAS      0
+ UVRANGE       0  0
+ SUBARRAY      0
+ FLAGVER       0
+ DOCALIB       1
+ GAINUSE       0
+ IN2NAME      ' '
+ IN2CLASS     ' '
+ IN2SEQ        0
+ IN2DISK       0
+ INVERS        0
+ NCOMP         0
+ FLUX          0
+ NMAPS         0
+ PMODEL        0
+ SOLINT        0
+ SOLTYPE      'APPR'
+ PRTLEV        0
+ REFANT        0
+ BPARM         0
+ CPARM         0
+ BADDISK       0
+
+ GO PCAL
+\end{verbatim}
+
+
+\vskip 0.25cm
+%
+%===========================================================================
+%
+\underline{\bf Importing visibility data from FITS files}
+
+This benchmark has the following code descriptor:
+\begin{center}
+FUV-RD-$data$
+\end{center}
+
+where $data$ is the input data description, further broken down as
+$data$=$[instrument][size][compression][obsmode][nchan]$. The parameters are
+specified as follows: i) $instrument$ - telescope abbreviation
+ii); $size$ - dataset size on an integer scale of 1 to 10 (4
+$\sim$ 630k UVFITS visibilities); iii) $compression$ - MS compression
+(U=uncompressed; C=compressed); iv) $obsmode$ - observing mode
+(C=continuum, L=line); v) $nchan$ - number of frequency channels.
+
+The individual FITS Filler benchmarks implemented in the default run
+of the $fuvrd()$ method at present are enumerated in Table~\ref{FUVRDTABLE}.
+
+\vskip 0.25cm
+\begin{table}
+\begin{center}
+\caption{Table for FITS UV read benchmark (import visibility data into AIPS++ from FITS files).  Common part of the code is '{\tt FUV-RD-VLA}'.}
+\label{FUVRDTABLE}
+\begin{tabular}{|l|r|r|r|r|r|}
+\hline
+Benchmark code & Dataset & Mode & $N_{chans}$ & Compressed? &
+Data size \\
+\hline
+C-U125K-C1  & vlac125k.fits       & Continuum     & 1 & False & 125K \\
+C-U1M-C1    & vlac1m.fits         & Continuum     & 1 & False & 1M \\
+L-U125K-C64 & vlal125K64Chan.fits & Line          &64 & False & 125K \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+
+
+
+\ahobjs{}
+\ahfuncs{}
+%
+%===========================================================================
+%
+\begin{ahobject}{benchmark}{tool for standard \aipspp performance benchmarks}
+\begin{ahdescription}
+The {\tt benchmark} tool provides access to the standard AIPS++
+performance benchmarks. A {\tt benchmark} tool is created without
+any user-specified parameters.
+\end{ahdescription}
+
+\ahfuncs{}
+%
+%===========================================================================
+%
+\begin{ahconstructor}{benchmark}{Construct an benchmark tool}
+\begin{ahdescription}
+This is used to construct a {\tt benchmark} tool. This tool can then
+be used to run individual benchmarks or all defined benchmarks.
+
+It can be used as {\tt benchmark()} to construct the benchmark tool
+with the data repository set to the standard AIPS++ directory.  
+
+This returns a Glish variable containing the tool functions of
+{\tt benchmark}.
+%
+%===========================================================================
+%
+\end{ahdescription}
+\ahreturns{benchmark tool}
+\begin{ahargs}
+
+\ahaddarg{datarepospath}{Path for the test data repository}{'\$AIPSROOT/data/demo/benchmark'}{String}
+
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.all()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+%
+%===========================================================================
+%
+\begin{ahfunction}{all}{Run all defined benchmarks}
+\begin{ahdescription}
+Run all benchmarks currently defined.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.all()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{done}{Terminate the benchmark process}
+\begin{ahdescription}
+This is used to totally stop the {\tt benchmark} process. It is a good idea
+to conserve memory use on your machine by stopping the process once
+you no longer need it.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.all()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{ccsf}{Run all Clark Clean, single-field benchmarks}
+\begin{ahdescription}
+This function will run all Clark Clean, single-field imaging benchmarks
+which are defined.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.ccsf()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{ccsfvlacu125k}{Run the Clark Clean, single-field, VLA, 125k vis, uncompressed, continuum benchmarks}
+\begin{ahdescription}
+Run the Clark Clean, single-field imaging benchmarks defined for the
+VLA dataset of 125k uncompressed continuum visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{imsizes}{List of image sizes to be used for benchmarking}{[512,1024,2048]}{Vector of ints}
+\ahaddarg{stokes}{List of stokes parameters to be used for
+benchmarking}{['I','IQUV']}{Vector of 'I' and/or 'IQUV'}
+\ahaddarg{weight}{List of weighting schemes to be used for
+benchmarking}{['natural','uniform']}{Vector of 'uniform' and/or 'natural'}
+\ahaddarg{spwid}{List of spectral windows to be used for benchmarking}{[1]}{Vector of ints}
+\ahaddarg{niter}{The number of CLEAN iterations to be used}{1000}{Integer}
+\ahaddarg{mode}{Imaging mode}{'mfs'}{'mfs' or 'channel'}
+\ahaddarg{nchan}{Number of frequency channels to use}{1}{Integer}
+\ahaddarg{start}{Start channel number}{1}{Integer}
+\ahaddarg{step}{Step to use for stepping through channels}{1}{Integer}
+\ahaddarg{fieldid}{Field ID parameter of imager}{1}{Integer}
+\ahaddarg{facets}{Number of facets to be used for imaging}{1}{Integer}
+\ahaddarg{tile}{Tile size used internally by imager for PagedArrays}{16}{Integer}
+\ahaddarg{cache}{The cache size internally by imager for PagedArrays}{4194304 (4MB)}{Integer}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.ccsfvlacu125k()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{ccsfvlacu1m}{Run the Clark Clean, single-field, VLA, 1M vis, uncompressed, continuum benchmarks}
+\begin{ahdescription}
+Run the Clark Clean, single-field imaging benchmarks defined for the
+VLA dataset of 1M uncompressed continuum visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{imsizes}{List of image sizes to be used for benchmarking}{[512,1024,2048]}{Vector of ints}
+\ahaddarg{stokes}{List of stokes parameters to be used for
+benchmarking}{['I','IQUV']}{Vector of 'I' and/or 'IQUV'}
+\ahaddarg{weight}{List of weighting schemes to be used for
+benchmarking}{['natural','uniform']}{Vector of 'uniform' and/or 'natural'}
+\ahaddarg{spwid}{List of spectral windows to be used for benchmarking}{[1]}{Vector of ints}
+\ahaddarg{niter}{The number of CLEAN iterations to be used}{1000}{Integer}
+\ahaddarg{mode}{Imaging mode}{'mfs'}{'mfs' or 'channel'}
+\ahaddarg{nchan}{Number of frequency channels to use}{1}{Integer}
+\ahaddarg{start}{Start channel number}{1}{Integer}
+\ahaddarg{step}{Step to use for stepping through channels}{1}{Integer}
+\ahaddarg{fieldid}{Field ID parameter of imager}{1}{Integer}
+\ahaddarg{facets}{Number of facets to be used for imaging}{1}{Integer}
+\ahaddarg{tile}{Tile size used internally by imager for PagedArrays}{16}{Integer}
+\ahaddarg{cache}{The cache size internally by imager for PagedArrays}{4194304 (4MB)}{Integer}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.ccsfvlacu1m()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{ccsfvlalu125k}{Run the Clark Clean, single-field, VLA, 125K vis, 64 frequency channel, uncompressed, spectral line benchmarks}
+\begin{ahdescription}
+Run the Clark Clean, single-field imaging benchmarks defined for the
+VLA dataset of 125K uncompressed spectral line visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{imsizes}{List of image sizes to be used for benchmarking}{[512]}{Vector of ints}
+\ahaddarg{stokes}{List of stokes parameters to be used for
+benchmarking}{['I']}{Vector of 'I' and/or 'IQUV'}
+\ahaddarg{weight}{List of weighting schemes to be used for
+benchmarking}{['natural','uniform']}{Vector of 'uniform' and/or 'natural'}
+\ahaddarg{spwid}{List of spectral windows to be used for benchmarking}{[1]}{Vector of ints}
+\ahaddarg{niter}{The number of CLEAN iterations to be used}{1000}{Integer}
+\ahaddarg{mode}{Imaging mode}{'channel'}{'mfs' or 'channel'}
+\ahaddarg{nchan}{Number of frequency channels to use}{64}{Integer}
+\ahaddarg{start}{Start channel number}{1}{Integer}
+\ahaddarg{step}{Step to use for stepping through channels}{1}{Integer}
+\ahaddarg{fieldid}{Field ID parameter of imager}{1}{Integer}
+\ahaddarg{facets}{Number of facets to be used for imaging}{1}{Integer}
+\ahaddarg{tile}{Tile size used internally by imager for PagedArrays}{16}{Integer}
+\ahaddarg{cache}{The cache size internally by imager for PagedArrays}{4194304 (4MB)}{Integer}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.ccsfvlalu125k()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{ccsfbi4nl}{Run the Clark Clean, single-field, BIMA, 139M vis, uncompressed, continuum benchmarks}
+\begin{ahdescription}
+Run the Clark Clean, single-field imaging benchmarks defined for the
+BIMA dataset of 139M uncompressed continuum visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{imsizes}{List of image sizes to be used for benchmarking}{[256]}{Vector of ints}
+\ahaddarg{stokes}{List of stokes parameters to be used for
+benchmarking}{['I']}{Vector of 'I' and/or 'IQUV'}
+\ahaddarg{weight}{List of weighting schemes to be used for
+benchmarking}{['natural']}{Vector of 'uniform' and/or 'natural'}
+\ahaddarg{spwid}{List of spectral windows to be used for benchmarking}{[1]}{Vector of ints}
+\ahaddarg{niter}{The number of CLEAN iterations to be used}{1000}{Integer}
+\ahaddarg{mode}{Imaging mode}{'channel'}{'mfs' or 'channel'}
+\ahaddarg{nchan}{Number of frequency channels to use}{20}{Integer}
+\ahaddarg{start}{Start channel number}{40}{Integer}
+\ahaddarg{step}{Step to use for stepping through channels}{1}{Integer}
+\ahaddarg{fieldid}{Field ID parameter of imager}{1}{Integer}
+\ahaddarg{facets}{Number of facets to be used for imaging}{1}{Integer}
+\ahaddarg{tile}{Tile size used internally by imager for PagedArrays}{16}{Integer}
+\ahaddarg{cache}{The cache size internally by imager for PagedArrays}{4194304 (4MB)}{Integer}
+\end{ahargs}
+
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.ccsfbi4nL()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{fuvrd}{Run all FITS UV read benchmarks}
+\begin{ahdescription}
+This function will run all FITS UV read benchmarks which are defined.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.fuvrd()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{fuvrdvlacu125k}{Run the FITS Filler, VLA, 125k vis, uncompressed, continuum benchmarks}
+\begin{ahdescription}
+Run the FITS Filler benchmarks defined for the VLA dataset of 125k
+uncompressed continuum visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fitsin}{FITS file name}{vlac125k.fits}{string}
+\ahaddarg{compress}{MS compression mode}{F}{Bool}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.fuvrdvlacu125k()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{fuvrdvlacu1m}{Run FITS Filler, VLA, 1M vis, uncompressed, continuum benchmarks}
+\begin{ahdescription}
+Run FITS Filler benchmarks defined for the VLA dataset of 1M uncompressed continuum visibilities.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fitsin}{FITS file name}{vlac1M.fits}{string}
+\ahaddarg{compress}{MS compression mode}{F}{Bool}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.fuvrdvlacu1m()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{fuvrdvlalu125k}{Run the FITS Filler VLA, 125K vis, 64 frequency channel, uncompressed, spectral line benchmarks}
+\begin{ahdescription}
+Run the FITS Filler benchmarks defined for the VLA dataset of 125K
+uncompressed spectral line visibilities with 65 channels.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fitsin}{FITS file name}{vlal125K64Chan.fits}{string}
+\ahaddarg{compress}{MS compression mode}{F}{Bool}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.fuvrdvlalu125k()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{almafuvrd}{Run all ALMA-TI almati2ms FITS UV read benchmarks}
+\begin{ahdescription}
+This function will run all almati2ms ALMA-TI FITS UV read benchmarks which are defined.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()
+bench.almafuvrd()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{almatifuvrd}{Run the almati2ms FITS Filler, IRAM data, ALMA-TI format, uncompressed benchmarks}
+\begin{ahdescription}
+Run the almati2ms FITS Filler benchmarks defined for an IRAM dataset
+presented in ALMA-TI format.  Expects to find dataset
+in /aips++/data/alma/test.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fitsin}{FITS file name}{07-feb-1997-g067-04.fits}{string}
+\ahaddarg{compress}{MS compression mode}{F}{Bool}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()
+bench.almatifuvrd()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{calvla}{Run all default VLA calibrator benchmarks}
+\begin{ahdescription}
+This function will run all the default VLA calibrator benchmarks.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.calvla()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+%===========================================================================
+%
+\begin{ahfunction}{calvlau27s10}{Run the VLA calibrator benchmarks for G and D Jones}
+\begin{ahdescription}
+Run the calibrator benchmarks defined for VLA uncompressed dataset with 27 antennas
+and 128 frequency channels.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{datafile}{FITS file name}{calvlac27s10.fits}{string}
+\ahaddarg{myms}{Name of the MS.  Will bypass the fitstoms() operation}{' '}{string}
+\ahaddarg{jones}{List of Jones matrices to be solved for}{['G','D']}{array of strings}
+\ahaddarg{nsolint}{No. of solution intervals}{100}{integer}
+\ahaddarg{nchan}{No. of frequency channels to be used}{1}{integer}
+\ahaddarg{start}{The starting frequency channel number}{1}{integer}
+\ahaddarg{step}{Increment for iterating through frequency channels}{1}{integer}
+\ahaddarg{tablename}{Name of a calibration table to be applied before the solver is invoked}{''}{string}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()      
+bench.calvlac27s10()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sdall}{Run the single dish benchmark tests}
+\begin{ahdescription}
+Run the single dish benchmark tests. This uses GBT data to test the
+timings of the import, scan access, scan plotting, calibration,
+averaging and baselining.
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()
+bench.sdall()
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{sdbench}{Run the single dish benchmark tests for a
+particular data set}
+\begin{ahdescription}
+Run the single dish benchmark tests for a specific data set. The available
+codes and matching data are:
+\begin{itemize}
+\item 42256 - Spectral Processor data - [17,18] - OffOn PSWITCH
+\item 121k  - Spectral Processor data - [36,37] - Track FSWITCH
+\item 114k  - Spectrometer data       - [20,21] - OffOn PSWITCH
+\item 224k  - Spectrometer data       - [43,44] - OffOn PSWITCH
+\item 128k  - Spectrometer data       - [48,48] - Track FSWITCH
+\item 1216k - Spectrometer data       - [22,23] - OffOn PSWITCH
+\item 12125k- Spectrometer data       - [51,52] - OffOn PSWITCH
+\end{itemize}
+
+The code delineates:
+\begin{itemize}
+\item first number: number of IFs (1, 2 or 4)
+\item second number: number of polarizations (1 or 2)
+\item third number: number of channels (256, 1k, 4k, 8k, 16k, 125k)
+\end{itemize}
+\end{ahdescription}
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{code}{code for test}{none (see above)}{string}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+bench:=benchmark()
+bench.sdbench('42256')
+bench.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahmodule}
+
+\end{document}
+

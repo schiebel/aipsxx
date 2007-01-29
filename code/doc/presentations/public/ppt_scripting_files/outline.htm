@@ -1,0 +1,1689 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=PowerPoint.Slide>
+<meta name=Generator content="Microsoft PowerPoint 9">
+<link id=Main-File rel=Main-File href="../ppt_scripting.htm">
+<link rel=Preview href=preview.wmf>
+<meta name=Robots content=NoIndex>
+<script src=script.js></script><script><!--
+
+if( !(IsWin("PPTOtl")||IsWin("PPTNav")||IsWin("PPTOtlNav")) )
+{
+	obj = document.all.item("Main-File")
+	parent.location.href=obj.href
+}
+
+var gOtlHiliteClr="#FFFFFF",gOtlNormalClr="#000000",gOtlActiveClr="#FFFF00",gSelected="",gTxtState=false,gChildEntryTable=new Array()
+
+function Load()
+{
+	if( IsWin("PPTOtl" ) ){ LoadOtl(); parent.gOtlLoaded=true; return }
+	if( IsWin("PPTNav" ) ){ LoadNav("NavObj",UpdNav); parent.gNavLoaded=true; return }
+	if( IsWin("PPTOtlNav" ) ){ LoadNav("OtlNavObj",UpdOtlNav); parent.gOtlNavLoaded=true; return }
+}
+function Upd(){ if( IsWin("PPTNav") ) LoadNav("NavObj",UpdNav) }
+function LoadNav( oId,UpdFunc )
+{
+	document.ondragstart=CancelDrag
+	document.onselectstart=CancelDrag
+	document.body.style.margin=2
+	UpdFunc()
+	obj=document.all.item(oId)
+	obj.style.display="block"
+	obj.style.visibility="visible"
+	document.bgColor="threedface"
+}
+function LoadOtl()
+{
+	document.ondragstart=CancelDrag
+	document.onselectstart=CancelDrag
+	OtlObj.style.display="block"
+	OtlObj.style.visibility="visible"
+	if( gOtlActiveClr == "" ) gOtlActiveClr=document.linkColor
+	if( gOtlHiliteClr == "" ) gOtlHiliteClr=document.fgColor
+	if( gOtlNormalClr == "" )
+		gOtlNormalClr=document.bgColor
+	else
+		document.bgColor=gOtlNormalClr  
+
+	InitArray()
+
+	if( ObjExists( parent.gCurSld ) ) {
+		ChangeState( parent.gCurSld,gOtlNormalClr,gOtlHiliteClr )
+		gSelected=parent.gCurSld
+	}
+	else gSelected = -1
+
+	UpdOtl()
+}
+function UpdOtl(){ UpdIdx(parent.gCurSld) }
+function UpdIdx( idx )
+{
+	if( gSelected != idx ) {
+		if( gSelected > 0 )
+			ChangeState( gSelected,gOtlHiliteClr,gOtlNormalClr )
+
+		if( ObjExists( idx ) ) {
+			gSelected = idx
+			ChangeState( gSelected,gOtlNormalClr,gOtlHiliteClr )
+		}
+		else gSelected = -1
+	}
+
+	if( gTxtState != parent.gOtlTxtExp ) {
+		state = "block"
+		if( !parent.gOtlTxtExp )
+			state="none"
+
+		for(ii=0; ii<gChildEntryTable.length; ii++) {
+			obj=gChildEntryTable[ii];
+			if( obj.id == null ) continue;
+
+			if( obj.id.indexOf("PPTC") >= 0 )
+				obj.style.display=state;
+		} 
+		gTxtState=parent.gOtlTxtExp
+		if( ObjExists( gSelected ) )
+			ChangeState( gSelected,gOtlNormalClr,gOtlHiliteClr )
+	}
+}
+function InitArray()
+{
+	count=0
+	for(ii=0; ii<document.all.tags("DIV").length; ii++) {
+		obj=document.all.tags("DIV").item(ii)
+		if( obj.id == null ) continue
+
+		if( obj.id.indexOf("PPTC") >= 0 ) {   
+			gChildEntryTable[count++]=obj
+			obj.children.tags("TABLE").item(0).style.borderColor=gOtlNormalClr
+		}
+	}
+}
+function ChangeState( idx,fgColor,bgColor )
+{
+	obj=document.all.item("PPTL"+idx)
+	obj.style.color=fgColor
+
+	obj=document.all.item("PPTP"+idx)
+	obj.style.backgroundColor=bgColor
+
+	obj=document.all.item("PPTB"+idx)
+	if( obj )
+		obj.style.borderLeftColor=obj.style.borderBottomColor=bgColor
+}
+function ChgClr( o,clr ){ if( o.id != "PPTL"+gSelected ) o.style.color=clr }
+function Over( obj ){ ChgClr(obj,gOtlActiveClr) }
+function Out( obj ){ ChgClr(obj,gOtlHiliteClr) }
+function ObjExists( ii ) { obj=document.all("PPTP"+ii ); return( obj ) }
+function GoToSld( href ){ UpdIdx(parent.GetSldNum(href)); parent.GoToSld( href ) }
+function CancelDrag(){ window.event.cancelBubble=true;window.event.returnValue=false}
+
+function UpdNav()
+{
+	txt = "<center>";
+	if( parent.GetHrefObj( parent.gCurSld ).mOrigVis == 1 )
+		txt += "Slide " + parent.GetCurSldNum() + " of " + parent.GetNumSlds()
+	else
+		txt += "Hidden Slide"
+	txt += "</center>";
+	nav_text.innerHTML = txt;
+
+	if( !parent.HasPrevSld() )
+		gBtnArr["nb_prev"].Enabled(0)
+	else
+		gBtnArr["nb_prev"].Enabled(1)
+
+	if( !parent.HasNextSld() )
+		gBtnArr["nb_next"].Enabled(0)
+	else
+		gBtnArr["nb_next"].Enabled(1)
+	gBtnArr["nb_nts"].SetEnabled()
+	gBtnArr["nb_nts"].SetFlag( parent.gHasNts )
+
+	gBtnArr["nb_sldshw"].Enabled(1)
+	gBtnArr["nb_voice"].Enabled(1)
+}
+
+function UpdOtlNav()
+{
+	gBtnArr["nb_otl"].SetEnabled();
+
+	if( parent.gOtlOpen )
+		gBtnArr["nb_otlTxt"].Enabled( true );
+	else
+		document.all.item("nb_otlTxtBorder").style.visibility = "hidden";
+}
+
+
+
+//-->
+</script>
+<style>
+<!--.PTxt
+	{position:relative;
+	width:100%;
+	margin-top:5px;
+	padding-left:5px;
+	font-weight:bold;}
+.CTxt
+	{position:relative;
+	width:100%;
+	padding-left:10px;}
+.CBorder
+	{position:relative;
+	width:100%;
+	border-style:solid;
+	border-width:1px;
+	border-color:black;
+	padding-bottom:5px;}
+a
+	{color:white;
+	text-decoration:none;}
+.button
+	{position:absolute;
+	width:32px;
+	height:20px;
+	border-style:solid;
+	border-width:1px;
+	border-color:threedface;}
+-->
+</style>
+</head>
+
+<body onload="Load()">
+
+<div id=NavObj onload="Load()" onmouseover="BtnOnOver()"
+onmousedown="BtnOnDown()" onmouseout="BtnOnOut()" onmouseup="BtnOnUp()"
+onkeypress="_KPH()" style='display:none;visibility:hidden'>
+
+<table style='position:absolute;width:70px;visibility:hidden' align=left
+ cellpadding=0 cellspacing=0>
+ <td nowrap>
+ <div id="nb_ntsElem" align=center style='position:relative;padding:3px;
+ font-family:Arial;color:buttontext;font-size:9pt'><img src="notes_flag.gif"
+ border=0 id="notes_flag" style='display:none'><span style="mso-spacerun:
+ yes">  </span>Notes</div>
+ <div title="Show/Hide Notes" id="nb_nts" style='position:absolute;top:0%;
+ left:0%;width:100%;height:100%'></div>
+ </td>
+</table>
+
+<table style='position:relative' align=right cellpadding=0 cellspacing=0>
+ <td>
+ <div id="nb_sldshwBorder" style='position:absolute;left:-20px;width:20px;
+ height:20px'>
+ <div style='position:absolute;clip:rect(0px, 18px, 18px, 0px)'><img
+ src=buttons.gif id="nb_sldshw" title="Full Screen Slide Show"
+ style='position:relative;left:-254px'></div>
+ </div>
+ </td>
+ <td>
+ <div id="nb_voiceBorder" style='display:none;position:absolute;left:-40px;
+ width:20px;height:20px'>
+ <div style='position:absolute;clip:rect(0px, 18px, 18px, 0px)'><img
+ src=buttons.gif id="nb_voice" title="Pause/Play Narration" style='position:
+ relative;left:-290px'></div>
+ </div>
+ </td>
+</table>
+
+<table style='position:relative' align=center cellpadding=0 cellspacing=0>
+ <td nowrap>
+ <div id="nb_prevBorder" class=button style='left:-30px'>
+ <div style='position:absolute;clip:rect(0px, 30px, 18px, 0px)'><img
+ src=buttons.gif id="nb_prev" title="Previous Slide" style='position:relative;
+ left:0px'></div>
+ </div>
+ <span id="nav_text" style='position:relative;top:3px;width:100px;font-family:
+ Arial;color:buttontext;font-size:9pt'></span>
+ <div id="nb_nextBorder" class=button>
+ <div style='position:absolute;clip:rect(0px, 30px, 18px, 0px)'><img
+ src=buttons.gif id="nb_next" title="Next Slide" style='position:relative;
+ left:-90px'></div>
+ </div>
+ </td>
+</table>
+
+</div>
+
+<div id=OtlNavObj onload="Load()" onmouseover="BtnOnOver()"
+onmousedown="BtnOnDown()" onmouseout="BtnOnOut()" onmouseup="BtnOnUp()"
+onkeypress="_KPH()" style='display:none;visibility:hidden'>
+
+<table style='position:relative;width:70px' align=left cellpadding=0
+ cellspacing=0>
+ <td nowrap>
+ <div id="nb_otlElem" align=center style='position:relative;padding:3px;
+ font-family:Arial;color:buttontext;font-size:9pt'>Outline</div>
+ <div title="Show/Hide Outline" id="nb_otl" style='position:absolute;
+ top:0%;left:0%;width:100%;height:100%'></div>
+ </td>
+</table>
+
+<table style='position:relative' align=center cellpadding=0 cellspacing=0>
+ <td>
+ <div style='position:absolute;left:-18px;width:24px;height:20px;border-style:
+ solid;border-width:1px;border-color:threedface' id="nb_otlTxtBorder">
+ <div style='position:absolute;clip:rect(0px, 22px, 18px, 0px)'><img
+ src=buttons.gif id="nb_otlTxt" title="Expand/Collapse Outline"
+ style='position:relative;left:-157px'></div>
+ </div>
+ </td>
+</table>
+
+</div>
+
+<div id=OtlObj style='display:none;visibility:hidden'>
+
+<table width="100%" style='font-family:Arial;font-size:9pt'>
+ <tr>
+  <td>
+  <div id=PPTP1 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0155.htm');" onmouseover="Over(this)"
+  id=PPTL1 onmouseout="Out(this)">Scientific Scripting and Recipes</a></font></div>
+  <div id=PPTC1 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB1 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>George Moellenbrock</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>(NRAO-Soc)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP2 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0216.htm');" onmouseover="Over(this)"
+  id=PPTL2 onmouseout="Out(this)">Scientific scripting philosophy</a></font></div>
+  <div id=PPTC2 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB2 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Allow complete and general access to all data,
+    both user-defined and standard</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Provide toolkit within which data may be
+    manipulated at a variety of hierarchical levels</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>&quot;Low-level&quot; tools for generic data
+    access and manipulation---a very impressive &quot;scientific
+    calculator&quot;</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>&quot;Intermediate-&quot; and
+    &quot;High-level&quot; tools for aggregate methods and traditional
+    applications</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Custom data analysis optionally combining
+    traditional and user-developed methods</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP3 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0217.htm');" onmouseover="Over(this)"
+  id=PPTL3 onmouseout="Out(this)">Scientific scripting capabilities</a></font></div>
+  <div id=PPTC3 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB3 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Basic scripting in Glish</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Flexible Plotting via pgplotter tool</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Variety of generic (&quot;low-level&quot;)
+    analysis functions and tools available (e.g., statistics, fft, fitting)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Seamless access to the intermediate-level data
+    reduction and analysis tools (e.g., ms, imager, image)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP4 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0218.htm');" onmouseover="Over(this)"
+  id=PPTL4 onmouseout="Out(this)">Generic data analysis</a></font></div>
+  <div id=PPTC4 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB4 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>The nuts and bolts methods which underlie
+    standard data processing in aips++ are available in Glish as generic tools
+    and global functions</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Mathematics module (statistics, randomnumbers,
+    fftserver)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Functionals</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Fitting</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Quanta and Measures</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Misc (stopwatch, misc)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP5 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0219.htm');" onmouseover="Over(this)"
+  id=PPTL5 onmouseout="Out(this)">Plotting with pgplotter</a></font></div>
+  <div id=PPTC5 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB5 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Familiar PGPLOT commands</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Several new shortcut functions (plotxy, etc.)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Interactive plotter gui</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Zooming</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Printing</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Cursor methods incorporated</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    </span>as
+    Glish/Tk events</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Editor</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- include 'pgplotter.g'</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP6 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0220.htm');" onmouseover="Over(this)"
+  id=PPTL6 onmouseout="Out(this)">pgplotter</a></font></div>
+  <div id=PPTC6 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB6 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- include ‘pgplotter.g’</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- mypg:=pgplotter()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- ang:=[0:90] ; nang:=shape(ang)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- beta:=0.75+[1:9]/40 ; nbeta:=shape(beta)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- D:=array(0.0,nbeta,nang)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- for (i in 1:nbeta) {</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>gamma:=1.0/sqrt(1-beta[i]^2)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">  </span>for (j
+    in 1:nang) {</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">  
+    </span>D[i,j]:=1.0/</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">     
+    </span>(gamma*(1-beta[i]*cos(ang[j]*pi/180)))</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">  </span>}</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+ }</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- mypg.env(0.0,90.0,0.5*min(D),1.1*max(D),0,0)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- mypg.sci(3)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- for (i in 1:shape(beta)) {</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>mypg.line(ang,D[,i])</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>mypg.ptxt(ang[3],D[i,3],0,0,</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">    
+    </span>spaste('\\g=',as_string(beta[i])))</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+ }</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- mypg.lab('LOS Angle','Doppler Factor',</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">  
+    </span>'Doppler Factor vs. LOS Angle')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP7 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0221.htm');" onmouseover="Over(this)"
+  id=PPTL7 onmouseout="Out(this)">Statistics</a></font></div>
+  <div id=PPTC7 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB7 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>Given an array, standard statistical quantities
+    may be obtained via global functions</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    include 'statistics.g'<span style="mso-spacerun: yes">    </span>#
+    ('mathematics.g')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    x:=[4.7, 4.8, 4.8, 4.9, 5.0, 5.1, 5.2]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    mean(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>4.92857143</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    median(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">     </span>4.9</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    variance(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>0.0323809524</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    stddev(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>0.179947082</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    x:=[2+6i, 4-5i, 3+11i]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    mean(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">     </span>3+4i</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP8 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0222.htm');" onmouseover="Over(this)"
+  id=PPTL8 onmouseout="Out(this)">Random numbers</a></font></div>
+  <div id=PPTC8 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB8 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>Uniform, discrete uniform, binomial, Erlang,
+    geometric, hpergeometric, lognormal, negative exponential, normal, poisson,
+    Weibull deviates available from the randomnumbers tool in the mathematics
+    module:</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    include 'randomnumbers.g'<span style="mso-spacerun: yes">     </span>#
+    ('mathematics.g')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    rand:=randomnumbers()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    x:=rand(18.0,3.0,100);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print mean(x), median(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>17.9766934 18.036859</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print variance(x), stddev(x), skew(x)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>3.04668323 1.74547507 0.139351058</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP9 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0223.htm');" onmouseover="Over(this)"
+  id=PPTL9 onmouseout="Out(this)">fftserver</a></font></div>
+  <div id=PPTC9 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB9 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Given an arrays of gridded data, FFTs and
+    related operations may be performed</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Multiple-dimension FFTs, arrays of any length,
+    real or complex</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Auto- and cross-correlations</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Convolution</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- include 'fftserver.g'<span
+    style="mso-spacerun: yes">     </span>('mathematics.g')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP10 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0224.htm');" onmouseover="Over(this)"
+  id=PPTL10 onmouseout="Out(this)">fftserver – an example</a></font></div>
+  <div id=PPTC10 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB10 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- include 'fftserver.g'</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- myfft:=fftserver()</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- ang:=2*pi*[1:57]/7.0</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- y:=complex(cos(ang),sin(ang))</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- myfft.complexfft(y,-1)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- mypg.plotxy(seq(shape(y)),</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>abs(y),xtitle='bin',</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>ytitle='abs[FT(y)]’,</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>title='fftserver example')</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- smth:=gaussian1d([-25,25],1.0,0.0,10)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- ysmth:=myfft.convolve(abs(y),smth)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- ysmth:=ysmth/max(ysmth)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- mypg.plotxy(seq(shape(ysmth)),</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes"> 
+    </span>ysmth,newplot=f,linecolor=3)</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP11 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0225.htm');" onmouseover="Over(this)"
+  id=PPTL11 onmouseout="Out(this)">Fitting</a></font></div>
+  <div id=PPTC11 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB11 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>A Glish interface to the C++ Least Squares
+    Fitting routines</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Linear and non-linear</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Real and Complex</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Complete and Singular Value Decomposition</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>External Constraints optional</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>- include 'fitting.g'</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP12 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0226.htm');" onmouseover="Over(this)"
+  id=PPTL12 onmouseout="Out(this)">Fitting – an example</a></font></div>
+  <div id=PPTC12 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB12 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    include 'fitting.g'</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    x:=seq(100)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>- y:=
+    11.3 + 5.6*x + rand.normal(0.0,200.0,100)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    myfit:=fitter()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    myfit.init(n=2)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    myfit.makepoly(x,y)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    myfit.fit()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    sol:=myfit.solution();</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    err:=myfit.error()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print sol ; print err</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[12.4591765 5.60473783]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[2.21460569 0.0380726688]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    yfit:=sol[1] + sol[2]*x</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    mypg:=pgplotter()</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    mypg.plotxy(x,y,</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>+<span
+    style="mso-spacerun: yes">  </span>plotlines=F,xtitle='X',</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>+<span
+    style="mso-spacerun: yes">  </span>ytitle='Y',title='Y vs. X');</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    mypg.plotxy(x,yfit,</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>+<span
+    style="mso-spacerun: yes">  </span>plotlines=T,</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>+<span
+    style="mso-spacerun: yes">  </span>newplot=F,linecolor=3)</font></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP13 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0227.htm');" onmouseover="Over(this)"
+  id=PPTL13 onmouseout="Out(this)">Quanta</a></font></div>
+  <div id=PPTC13 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB13 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>Quanta are values with units contained in a
+    record</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>A variety of physical constants and decimal
+    prefixes are available</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>Quanta may be combined algebraically:</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    include 'quanta.g’</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    d:=25<span style="mso-spacerun: yes">      </span># the diameter of a
+    typical telescope</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print A:=dq.quantity(pi*(d^2)/4,’m2’)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[value=490.873852, unit=m2]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    eff:=0.60<span style="mso-spacerun: yes">    </span># its aperture
+    efficiency</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print k:=dq.constants('k’)<span style="mso-spacerun: yes">    </span>#
+    Boltzmann's constant</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[value=1.3806578e-23, unit=J/K]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print g:=dq.div( dq.mul(eff,A), dq.mul(2,k))</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[value=1.06660865e+25, unit=m2/(J/K)]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    print g:=dq.convert(g,’K/Jy’);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[value=0.106660865, unit=K/Jy]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    Tant:='3K’</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    S:=dq.div(Tant,g)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">   </span>-
+    dq.convert(S,’Jy’)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun: yes">    
+    </span>[28.1265297, unit=Jy]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP14 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0228.htm');" onmouseover="Over(this)"
+  id=PPTL14 onmouseout="Out(this)">Measures</a></font></div>
+  <div id=PPTC14 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB14 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Measures are quanta describing coordinates in
+    reference frames</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Positions (on earth), directions (in space),
+    epoch, frequency, radialvelocity, doppler, baseline, uvw, earthmagnetic</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Conversions between reference frames, which may
+    be combinations of measures of different types</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    include 'measures.g’</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print vlapos:=dm.observatory('VLA');</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">    
+    </span>[type=position, refer=ITRF, m2=[value=6373576.28, unit=m],</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">     
+    </span>m1=[unit=rad, value=0.591675099], m0=[unit=rad, value=-1.87829426]]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print dm.measure(vlapos,'WGS84')<span style="mso-spacerun: yes">   
+    </span># convert to geodetic</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">    
+    </span>[type=position, refer=WGS84, m2=[value=2114.89023, unit=m],</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">     
+    </span>m1=[unit=rad, value=0.5947874898], m0=[unit=rad, value=-1.87829426]]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    dm.doframe(vlapos)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print tim:=dm.epoch('utc','today') ; dm.doframe(tim)</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">    
+    </span>[type=epoch, refer=UTC, m0=[value=51948.7429, unit=d]]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print srcdir:=dm.source('0234+285')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">    
+    </span>[type=direction, refer=J2000, m1=[value=0.502698381, unit=rad],</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">     
+    </span>m0=[unit=rad, value=0.688852767]]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print 'AZ =', dq.convert( dm.getvalue( dm.measure(srcdir,'AZEL'))[1],'deg')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">     </span>AZ
+    =<span style="mso-spacerun: yes">  </span>[value=60.296389, unit=deg]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">   </span>-
+    print 'EL =', dq.convert( dm.getvalue( dm.measure(srcdir,'AZEL'))[2],'deg')</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2><span style="mso-spacerun: yes">     </span>EL
+    =<span style="mso-spacerun: yes">  </span>[value=7.64888837, unit=deg]</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP15 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0229.htm');" onmouseover="Over(this)"
+  id=PPTL15 onmouseout="Out(this)">The table system</a></font></div>
+  <div id=PPTC15 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB15 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>Aips++ stores all data in tables which consist
+    of columns of associated information</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2><font size=2>The table tool provides generic access to
+    standard aips++ and user-defined data tables</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Summary &amp; Browsing</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Get/put of cells, columns</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Selection (TaQL), iteration and sorting</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=1><font size=2>Conversion to table from ascii, FITS formats</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=2></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP16 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0230.htm');" onmouseover="Over(this)"
+  id=PPTL16 onmouseout="Out(this)">The table browser</a></font></div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP17 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0231.htm');" onmouseover="Over(this)"
+  id=PPTL17 onmouseout="Out(this)">Interface to standard radioastronomy
+  analyses</a></font></div>
+  <div id=PPTC17 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB17 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width=20 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=3><font size=2>Since the intermediate- and high-level aips++
+    tools use Glish to &quot;glue&quot; them together, these aggregate methods
+    and their constituents are conveniently available for use in a user's novel
+    applications</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=2><font size=2>Access to aips++ Measurementset data via the ms
+    tool</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=2><font size=2>Conversion of Glish arrays to aips++ images</font></td>
+   </tr>
+   <tr>
+    <td colspan=3></td>
+    <td colspan=1><font size=2>analysis in the image tool, viewer</font></td>
+   </tr>
+   <tr>
+    <td colspan=3></td>
+    <td colspan=1><font size=2>model generation for imager/calibrater</font></td>
+   </tr>
+   <tr>
+    <td colspan=2></td>
+    <td colspan=2><font size=2>Conversion of aips++ images to Glish arrays for
+    ad hoc analysis</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=3></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP18 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0240.htm');" onmouseover="Over(this)"
+  id=PPTL18 onmouseout="Out(this)">Example: Arrays as images</a></font></div>
+  <div id=PPTC18 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB18 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- include 'image.g'</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- y:=array(0,100,100);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- for (i in 1:100) {</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">   </span>for
+    (j in 1:100) {</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">    
+    </span>y[i,j]:=cos(2+2*pi*i/20 + 2*pi*j/30);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+<span style="mso-spacerun: yes">   </span>}</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>+ }</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- myim:=imagefromarray(outfile='array.im',</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun:
+    yes">                       </span>pixels=y,</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2><span style="mso-spacerun:
+    yes">                       </span>linear=T);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>- myim.fft(amp='fft.im',axes=[1,2]);</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP19 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0232.htm');" onmouseover="Over(this)"
+  id=PPTL19 onmouseout="Out(this)">Other useful scripting concepts</a></font></div>
+  <div id=PPTC19 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB19 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>scripter—maintains a record of operations
+    performed via aips++ guis.</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>logger—maintains a record of operations entered
+    at the command line; can be saved to a script file</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1><font size=2>simulator—generates simulated data in
+    Measurementset format</font></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+ <tr>
+  <td>
+  <div id=PPTP20 class=PTxt><font size=2><a
+  href="javascript:GoToSld('slide0236.htm');" onmouseover="Over(this)"
+  id=PPTL20 onmouseout="Out(this)">Recipe Repository</a></font></div>
+  <div id=PPTC20 class=CTxt style='display:none'>
+  <table style='color:white' id=PPTB20 class=CBorder>
+   <tr>
+    <td width=5 nowrap></td>
+    <td width="100%"></td>
+   </tr>
+   <tr>
+    <td colspan=1></td>
+    <td colspan=1></td>
+   </tr>
+  </table>
+  </div>
+  </td>
+ </tr>
+</table>
+
+</div>
+
+<div style='display:none'><a href="v3_document.htm"></a><a href=preview.wmf></a><a
+href="v3_next_active.gif"></a><a href="v3_next_disabled.gif"></a><a
+href="v3_prev_active.gif"></a><a href="v3_prev_disabled.gif"></a><a
+href="v3_outline_collapse.gif"></a><a href="v3_outline_expand.gif"></a><a
+href="v3_space.gif"></a><a href="v3_endshow.htm"></a><a
+href="v3_navigation_bar.htm"></a><a href="v3_outline_navigation_bar.htm"></a><a
+href="v3_outline_collapsed.htm"></a><a href="v3_outline_expanded.htm"></a><a
+href="v3_blank_notes.htm"></a><a href=master05.htm></a><a href=master05.xml></a><a
+href="master05_image001.wmz"></a><a href=master06.htm></a><a href=master06.xml></a><a
+href="master06_image002.wmz"></a><a href=master02.htm></a><a href=pres.xml></a><a
+href="v3_slide0155.htm"></a><a href="v3_master05_background.gif"></a><a
+href="v3_slide0155_image003.gif"></a><a href="v3_slide0155_image004.gif"></a><a
+href="v3_slide0155_image005.jpg"></a><a href="v3_slide0155_image006.gif"></a><a
+href="v3_slide0155_image007.gif"></a><a href="v3_slide0155_image008.gif"></a><a
+href="v3_slide0216.htm"></a><a href="v3_slide0216_image009.gif"></a><a
+href="v3_slide0216_image010.gif"></a><a href="v3_slide0217.htm"></a><a
+href="v3_slide0217_image011.gif"></a><a href="v3_slide0217_image012.gif"></a><a
+href="v3_slide0218.htm"></a><a href="v3_slide0218_image013.gif"></a><a
+href="v3_slide0218_image014.gif"></a><a href="v3_slide0219.htm"></a><a
+href="v3_slide0219_image015.gif"></a><a href="v3_slide0219_image016.gif"></a><a
+href="v3_slide0220.htm"></a><a href="v3_slide0220_image017.gif"></a><a
+href="v3_slide0220_image018.gif"></a><a href="v3_slide0220_image019.gif"></a><a
+href="v3_slide0221.htm"></a><a href="v3_slide0221_image020.gif"></a><a
+href="v3_slide0221_image021.gif"></a><a href="v3_slide0222.htm"></a><a
+href="v3_slide0222_image022.gif"></a><a href="v3_slide0222_image023.gif"></a><a
+href="v3_slide0223.htm"></a><a href="v3_slide0223_image024.gif"></a><a
+href="v3_slide0223_image025.gif"></a><a href="v3_slide0224.htm"></a><a
+href="v3_slide0224_image026.gif"></a><a href="v3_slide0224_image027.gif"></a><a
+href="v3_slide0224_image028.gif"></a><a href="v3_slide0225.htm"></a><a
+href="v3_slide0225_image029.gif"></a><a href="v3_slide0225_image030.gif"></a><a
+href="v3_slide0226.htm"></a><a href="v3_slide0226_image031.gif"></a><a
+href="v3_slide0226_image032.gif"></a><a href="v3_slide0227.htm"></a><a
+href="v3_slide0227_image033.gif"></a><a href="v3_slide0227_image034.gif"></a><a
+href="v3_slide0228.htm"></a><a href="v3_slide0228_image035.gif"></a><a
+href="v3_slide0228_image036.gif"></a><a href="v3_slide0229.htm"></a><a
+href="v3_slide0229_image037.gif"></a><a href="v3_slide0230.htm"></a><a
+href="v3_slide0230_image038.gif"></a><a href="v3_slide0230_image039.gif"></a><a
+href="v3_slide0231.htm"></a><a href="v3_slide0231_image040.gif"></a><a
+href="v3_slide0231_image041.gif"></a><a href="v3_slide0240.htm"></a><a
+href="v3_slide0240_image042.gif"></a><a href="v3_slide0240_image043.gif"></a><a
+href="v3_slide0240_image044.gif"></a><a href="v3_slide0232.htm"></a><a
+href="v3_slide0232_image045.gif"></a><a href="v3_slide0236.htm"></a><a
+href="v3_slide0236_image046.gif"></a><a href="v3_slide0236_image047.gif"></a><a
+href=slide0155.htm></a><a href="master05_background.gif"></a><a
+href="master05_image048.gif"></a><a href="master05_image049.gif"></a><a
+href="slide0155_image050.png"></a><a href="slide0155_image051.jpg"></a><a
+href="slide0155_image052.png"></a><a href="slide0155_image053.gif"></a><a
+href="slide0155_image054.png"></a><a href="slide0155_image055.gif"></a><a
+href="slide0155_image056.png"></a><a href="slide0155_image057.gif"></a><a
+href="slide0155_image058.png"></a><a href="slide0155_image059.gif"></a><a
+href=slide0216.htm></a><a href=slide0217.htm></a><a href=slide0218.htm></a><a
+href=slide0219.htm></a><a href=slide0220.htm></a><a
+href="slide0220_image060.png"></a><a href="slide0220_image061.gif"></a><a
+href=slide0221.htm></a><a href=slide0222.htm></a><a href=slide0223.htm></a><a
+href=slide0224.htm></a><a href="slide0224_image062.png"></a><a
+href="slide0224_image063.gif"></a><a href=slide0225.htm></a><a
+href=slide0226.htm></a><a href="slide0226_image064.png"></a><a
+href="slide0226_image065.gif"></a><a href=slide0227.htm></a><a
+href=slide0228.htm></a><a href=slide0229.htm></a><a href=slide0230.htm></a><a
+href="slide0230_image066.png"></a><a href="slide0230_image067.gif"></a><a
+href=slide0231.htm></a><a href=slide0240.htm></a><a
+href="slide0240_image068.png"></a><a href="slide0240_image069.gif"></a><a
+href="slide0240_image070.png"></a><a href="slide0240_image071.gif"></a><a
+href=slide0232.htm></a><a href=slide0236.htm></a><a
+href="slide0236_image072.png"></a><a href="slide0236_image073.gif"></a><a
+href="slide0236_image074.png"></a><a href="slide0236_image075.gif"></a><a
+href="slide0236_image076.png"></a><a href="slide0236_image077.gif"></a><a
+href="slide0236_image078.png"></a><a href="slide0236_image079.gif"></a><a
+href=master01.htm></a><a href="master05_stylesheet.css"></a><a href=script.js></a><a
+href="../ppt_scripting.htm"></a><a href=error.htm></a><a href=fullscreen.htm></a><a
+href=buttons.gif></a><a href=frame.htm></a><a href=outline.htm></a></div>
+
+</body>
+
+</html>

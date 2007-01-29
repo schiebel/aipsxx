@@ -1,0 +1,161 @@
+#
+# Make file for a pipeline to process continuum data
+#
+VERSION		+= continuum.0.01
+PIPESTATE	= pipelinestate
+#
+threads: threads.g
+	glish include "threads.g";
+	glish if(is_fail(threads)) fail;
+#
+# First edit of data: flag autocorrelations, and quack. 
+#
+${PIPESTATE}/firstedit: ${PIPESTATE}/fill
+	glish include 'autoflag.g';
+	glish result := T;
+	glish af := autoflag(msname);
+	glish if(is_fail(af)) fail;
+	glish result := result && af.setselect(quack=[30,10], autocorr=T);
+	glish result := result && af.run(plotscr=F);
+	glish af.done();
+	glish shell(spaste('mv flagreport.ps ', archive, '/firstedit.ps'));
+	glish if(result) shell('touch $@');
+#
+# Initialize fluxes for calibraters only
+#
+${PIPESTATE}/setjy: ${PIPESTATE}/firstedit
+	glish include "imager.g";
+	glish result := T;
+	glish img:=imager(msname);
+	glish if(is_fail(img)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()) {
+	glish     result := result && img.setdata(msselect=thread.query());
+	glish     for (fieldid in thread.fields().Gcal) {
+	glish       for (spwid in thread.spwid()) {
+	glish         result := result && img.setjy(fieldid=fieldid,
+	glish           spwid=spwid);
+	glish       }
+	glish     }
+	glish   }
+	glish }
+	glish img.done();
+	glish if(result) shell('touch $@')
+#
+# Solve for G terms
+#
+${PIPESTATE}/Gcal: ${PIPESTATE}/setjy
+	glish include "calibrater.g";
+	glish result := T;
+	glish cal:=calibrater(msname);
+	glish if(is_fail(cal)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()) {
+	glish     fields:=thread.fields().Gcal;
+	glish     if(is_fail(fields)) fail;
+	glish     msselect:=spaste('(FIELD_ID in ', as_evalstr(fields), ')');
+	glish     if(thread.query()!='') msselect:=spaste(thread.query(), ' && ', msselect);
+	glish     result := result && cal.setdata(msselect=msselect);
+	glish     Gcaltable := thread.caltable('G');
+	glish     result := result && cal.setsolve('G', table=Gcaltable, t=600);
+	glish     result := result && cal.solve();
+	glish	  thread.addhistory('Calibrated G Jones (antenna-IF gain) on ', thread.sources().Gcal);
+	glish   }
+	glish }
+	glish cal.done();
+	glish if(result) shell('touch $@')
+#
+# Get calibrater fluxes (only if there are flux calibrators defined)
+#
+${PIPESTATE}/scaledGcal: ${PIPESTATE}/Gcal
+	glish include "calibrater.g";
+	glish result := T;
+	glish cal:=calibrater(msname);
+	glish if(is_fail(cal)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()&&thread.sources.Fluxcal!='') {
+	glish     Gcaltable := thread.caltable('G');
+	glish     scaledGcaltable := thread.caltable('scaledG');
+	glish     result := result && cal.fluxscale(tablein=Gcaltable, tableout=scaledGcaltable, reference=thread.sources().Fluxcal, transfer=thread.sources().Gcal);
+	glish	  thread.addhistory('Flux scale determined from ', thread.sources().Fluxcal);
+	glish   }
+	glish }
+	glish cal.done();
+	glish if(result) shell('touch $@')
+# 
+# Apply (possibly scaled) calibration table
+#
+${PIPESTATE}/Gcalibrate:	${PIPESTATE}/scaledGcal
+	glish include "calibrater.g";
+	glish result := T;
+	glish cal:=calibrater(msname);
+	glish if(is_fail(cal)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()) {
+	glish     Gcaltable := thread.caltable('G');
+	glish     if(thread.sources.Fluxcal!='') {
+	glish       Gcaltable := thread.caltable('scaledG');
+	glish     }
+	glish     fields:=thread.fields().all;
+	glish     msselect:=spaste('(FIELD_ID in ', as_evalstr(fields), ')');
+	glish     if(thread.query()!='') msselect:=spaste(thread.query(), ' && ', msselect);
+	glish     result := result && cal.setdata(msselect=msselect);
+	glish     result := result && cal.setapply('G', table=Gcaltable);
+	glish     result := result && cal.correct();
+	glish   }
+	glish }
+	glish cal.done();
+	glish if(!is_fail(result)) shell('touch $@')
+#
+# Second edit of data: thread-independent for the moment
+#
+${PIPESTATE}/secondedit: ${PIPESTATE}/Gcalibrate
+	glish include 'autoflag.g';
+	glish result := T;
+	glish af := autoflag(msname);
+	glish if(is_fail(af)) fail;
+	glish result := result && af.setuvbin(thr=0.01, econoplot=T, column="CORR");
+	glish result := result && af.run(plotscr=F);
+	glish af.done();
+	glish shell(spaste('mv flagreport.ps ', archive, '/secondedit.ps'));
+	glish if(result) shell('touch $@')
+#
+# Make cleaned images
+#
+${PIPESTATE}/image: ${PIPESTATE}/secondedit
+	glish include "e2eimagingutils.g";
+	glish result := T;
+	glish for (thread in threads) {
+	glish   result := result && e2eimagingutils().image(thread);
+	glish   print "image result ", result
+	glish   result := result && e2eimagingutils().selfcal(thread);
+	glish   print "selfcal result ", result
+	glish }
+	glish if(is_fail(result)) fail;
+	glish if(result) shell('touch $@')
+#
+# Publish the answers
+#
+${PIPESTATE}/publish: ${PIPESTATE}/image
+	glish include "threads.g";
+	glish include 'e2epublish.g';
+	glish publish := e2epublish(pname, ptype, version='${VERSION}');
+	glish result := T;
+	glish note('Publishing results to web pages');
+	glish result := result && publish.publishwhat(threads);
+	glish publish.done();
+	glish if(result) shell('touch $@')
+#
+# Print log
+#
+log:
+	glish include 'logger.g';
+	glish dl.printtofile(filename=spaste(archive, '/', pname, '.log'));
+#
+# This target definition overrides those in previous makefiles
+#
+all:	root threads.g threads ${PIPESTATE}/publish log
+#
+# Include makefile for filling
+#
+.include "fill.gm"

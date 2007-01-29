@@ -1,0 +1,164 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: imageevaluator.help,v 19.1 2004/08/25 01:52:03 cvsmgr Exp $
+
+\begin{ahobject}{imageevaluator}{Tool for evaluating simulated images}
+  
+\ahinclude{imageevaluator.g}
+
+\begin{ahdescription} 
+
+{\tt imageevaluator} provides a set of simple tools for evaluating
+the quality of a simulated image.  Some functions, such as 
+{\tt dynamicrange}, need no truth image and can be run on images
+made from real data.  Other functions, such as {\tt fidelity},
+require a truth image and can be used to compare a reconstructed
+image to the model from which the data were simulated.
+
+\end{ahdescription}
+
+\begin{ahexample} 
+The following example shows one way to use the {\tt imageevaluator}
+tool:
+
+\begin{verbatim}
+include 'imageevaluator.g'
+#
+# construct an imageevaluator tool
+#
+ime := imageevaluator('TEST.IMAGE');
+#
+# make a region which contains off-source pixels
+#
+r := drm.box(blc="1 1 1", trc="30 30 1")
+#
+# calculate dynamic range
+#
+ime.dynamicrange(r);
+#
+#  calculate image fidelity, ignoring truth pixels below 0.01
+#
+truthmin := 0.01;
+ime.fidelity('TRUTH.IMAGE', truthmin);
+#
+ime.done();
+#
+
+\end{verbatim}
+\end{ahexample}
+
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{imageevaluator}{Construct an imageevaluator tool}
+\begin{ahdescription}
+This is used to construct an {\tt imageevaluator} tool associated
+with an Image.  The {\tt imageevaluator} tool may then be
+used to calculate various measures of the image quality.
+
+This returns a Glish variable containing the tool functions of
+imageevaluator.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{myimage}{Image to be evaluated}{}{Image name}
+\end{ahargs}
+\ahreturns{imageevaluator tool}
+\begin{ahexample}
+\begin{verbatim}
+ime:=imageevaluator('TEST.IMAGE')      
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{dynamicrange}{Calculate image dynamic range}
+\begin{ahdescription}
+The image dynamic range is defined as the peak of the image divided
+by the rms of the off-source region.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{offregion}{A region containing off-source pixels}{unset}{Region}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+ime.dynamicrange(r);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fidelity}{Calculate the median image fidelity}
+\begin{ahdescription}
+The median image fidelity is defined as the median of the
+fidelity image, defined as
+\begin{equation}
+fidelity = model \ast beam / abs( model \ast beam  - image ).
+\end{equation}
+To avoid being biased by very weak emission, there is
+a minimum clip in the model pixel brightness.  
+
+The moment fidelity is defined as the average of the fidelity
+image multiplied by the model $\ast$ beam image, clipped to
+avoid the low brightness pixels.
+
+Currently, the model image must be the same size as the image to
+calculate the fidelity.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{model}{Model or truth image}{''}{Image}
+\ahaddarg{modmin}{Minimum pixel value in the model image to be used}{0.001}{Float}
+\ahaddarg{mode}{Mode of fidelity calculation}{'median'}{'median'|'moment'}
+\ahaddarg{moment}{Exponent of model image to use for moment fidelity}{1.0}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+ime.fidelity(model='TRUTH.IMAGE', modmin=0.01, mode='median');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Finishes up the imageevaluator tool}
+\begin{ahdescription}
+Done kills off the image and frees up memory.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+ime.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahobject}
+
+
+
+
+
+
+

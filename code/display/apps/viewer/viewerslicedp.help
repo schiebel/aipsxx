@@ -1,0 +1,162 @@
+%% Copyright (C) 2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+
+\documentclass{book}
+\usepackage{aips2help,html}
+
+\begin{document}
+
+\begin{ahobject}{viewerslicedp}{Tool for providing 3D slice canvases}
+
+\ahinclude{viewerslicedp.g}
+
+\ahkeyword{slicedp}{}
+\ahkeyword{canvas}
+\ahkeyword{cube}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This \tool\ sets up a canvas with three panels on it.  These panels
+present the user with different views of the \VdisplaydataTs.  Only
+data which has more than two axes and more than one pixel on the third
+axis will be displayed on this panel.  The top left panel shows the
+``standard'' axis1 vs. axis2.  The top right panel displays axis3
+vs. axis2 and the bottom right panel shows axis1 vs. axis 3.
+
+The functions of this tool are almost identical to the
+\lkVdisplaypanelT.  This documentation only highlights functions not
+available to this tool and functions additional or different to the
+\lkVdisplaypanelT.
+
+This specialized displaypanel has no printing facility yet, although
+X11 pixmaps can be created using the the function
+\htmlref{viewerslicedp.writexpm}{viewer:viewerdisplaypanel.writexpm.function}.
+\end{ahdescription}
+
+\subsubsection*{Graphical User Interface}
+\label{viewer:vslicedpgui}
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=vslicedp.ps,width=4.4in}
+\caption{The \VslicedpT\ \guilong}
+\label{fig:vslicedp}
+\end{center}
+\end{figure}
+
+The standard \guilong\ provided by the \VslicedpT\ is shown in
+Figure~\ref{fig:vslicedp}.  Surrounding the actual display area itself
+are four \guishort\ components: the menu bar at the top, the button
+bar at the bottom, the tracking bar/s just above the buttons and the
+controlbox on the left.  The menu and the tracking bar are identical
+to the ones in the \lkVdisplaypanelT. 
+
+\medskip \noindent {\em \underline{The button bar}} \smallskip
+This \tool\ provides a {\tt Preload...} button.
+The {\tt Print...} button is currently not available.
+
+\medskip \noindent {\em \underline{The control box}} \smallskip
+The control box has one additional button, the {\tt Multi Panel
+Crosshair} tool. If this tool gets dragged across the canvas on one
+panel it ``animates'' the other two panels since the coordinates on
+those two are dependend on ths first one.
+\begin{itemize}
+\item{{\bf Multi Panel Cursor:} }
+ Press the ``Esc'' key to cancel the crosshair drawn.
+\end{itemize}
+
+All other \guishort elements inherited from the \vdp\ are described \htmlref{here}{viewer:vdpgui}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{viewerslicedp}{Create a \VslicedpT}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame for the panel}{F}{agent or F}
+  \ahaddarg{viewer}{the \VT\ which will manager this \tool}{}{\VT}
+  \ahaddarg{width}{width in pixels of the drawing area}{250}{integer}
+  \ahaddarg{height}{height in pixels of the drawing area}{250}{integer}
+  \ahaddarg{maptype}{how colors will be addressed on this \VslicedpT}{'index'}{'index' 'rgb' 'hsv'}
+  \ahaddarg{newcmap}{install a private colormap? (ignored if a parent frame is provided)}{F}{boolean}
+  \ahaddarg{mincolors}{minimum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{maxcolors}{maximum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{autoregister}{accept auto-register data on this \VslicedpT?}{F}{boolean}
+  \ahaddarg{holdsdata}{is this \VslicedpT\ going to hold data?}{T}{boolean}
+  \ahaddarg{show}{show the \VslicedpT?}{T}{boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the \guishort}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\VslicedpT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VslicedpTs.  It constructs (creates)
+a \VslicedpT\ which can subsequently be used for the display of 
+\VdisplaydataTs.  If {\tt widgetset} is left {\tt unset}, then the
+\VslicedpT\ will use the \widgetserverT\ used by its parent \VT.
+
+{\bf This constructor should not be called by users:} it is called by
+the \ahlink{newdisplaypanel}{viewer:viewer.newdisplaypanel.function}
+function of the \lkVT, which returns a \VslicedpT.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setoptions}{Set the modifiable state of this \tool}
+\begin{ahargs}
+  \ahaddarg{options}{options record describing the requested state}{}{record}
+\end{ahargs}
+\ahreturns{T}
+
+This function is distributes the options over all views of the
+\VdisplaydataT. Otherwise it is identical to \htmlref{viewerdisplaypanel.setoptions}{viewer:viewerdisplaypanel.setoptions.function}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{preload}{Cache all views in display memory}
+\ahreturns{T}
+
+This function animates over all views of the \VdisplaydataT. After
+this loop has been completed the Multipanel Crosshair tool
+will instantly cause an animation on the other panels, because there
+is no computation involved.  
+
+Note: If axis labels are enabled there won't be instant animation and
+you will notice a delay between moving your cursor and display on the
+other panels.
+
+Note: Once you have decided to execute this function you can't stop it
+until it has finished.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject} 
+\end{document}

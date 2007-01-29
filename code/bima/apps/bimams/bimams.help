@@ -1,0 +1,881 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+\documentclass{article}
+\usepackage{aips2help, html, epsfig}
+\begin{document}
+
+\begin{ahmodule}{bimams}{Module for BIMA measurement set access and manipulation}
+\ahinclude{bimams.g}
+
+\begin{ahdescription} 
+
+{\tt bimams} provides an interface to BIMA-specific measurement sets.
+It provides several convenience functions for accessing information in 
+measurement set subtables. {\tt bimams} is a vertically integrated
+tool built on top of {\tt ms} (another way of looking at it is that a
+{\tt bimams} tool contains an {\tt ms} tool).  Thus, the usefulness of 
+{\tt bimams} is that it supplies a simple interface for observers to
+access and manipulate measurement set information that may be utilized 
+more by BIMA than other telescopes.
+
+\subsubsection*{Overview of {\tt bimams} tool functions:}
+
+\begin{description}
+\item{miscellaneous} \ahlink{timerange}{bimams:bimams.timerange}
+\item{miscellaneous} \ahlink{totalintegrationtime}{bimams:bimams.totalintegrationtime}
+\ahlink{fieldids}{bimams:bimams.fieldids}
+\item[spectral window] \ahlink{chanwidths}{bimams:bimams.chanwidths},
+	\ahlink{startfreqs}{bimams:bimams.startfreqs},
+	\ahlink{endfreqs}{bimams:bimams.endfreqs},
+	\ahlink{namespw}{bimams:bimams.namespw},
+	\ahlink{nchans}{bimams:bimams.nchans},
+	\ahlink{nspw}{bimams:bimams.nspw},
+	\ahlink{reavg}{bimams:bimams.reavg},
+	\ahlink{reffreqs}{bimams:bimams.reffreqs},
+	\ahlink{spwid}{bimams:bimams.spwid},
+	\ahlink{spwidsbyname}{bimams:bimams.spwidsbyname},
+	\ahlink{spwids}{bimams:bimams.spwids},
+	\ahlink{spwnames}{bimams:bimams.spwnames},
+	\ahlink{spwnames}{bimams:bimams.spwnames}
+	\ahlink{startfreqs}{bimams:bimams.startfreqs}
+
+\item[polarization] \ahlink{polartable}{bimams:bimams.polartable},
+	\ahlink{polarids}{bimams:bimams.polarids}
+	\ahlink{stokesid}{bimams:bimams.stokesid}
+
+\item[table access] 
+            \ahlink{ddtable}{bimams:bimams.ddtable}
+            \ahlink{ddid}{bimams:bimams.ddid}
+            \ahlink{ddids}{bimams:bimams.ddids}
+            \ahlink{fieldtable}{bimams:bimams.fieldtable}
+            \ahlink{mcaddids}{bimams:bimams.mcaddids}
+            \ahlink{sourcetable}{bimams:bimams.sourcetable}
+            \ahlink{spwtable}{bimams:bimams.spwtable}
+            \ahlink{subtable}{bimams:bimams.subtable}
+
+\item[underlying tools] \ahlink{ms}{bimams:bimams.ms}
+
+\end{description}
+
+\end{ahdescription}
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{bimams}{tool for manipulating BIMA measurement sets}
+\begin{ahdescription}
+bimams is a tool which is built on top of an ms tool and provides easy 
+access to information frequently requested by BIMA users.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{bimams}{Construct a bimams tool}
+\begin{ahdescription}
+This is used to construct a {\tt bimas} tool associated
+with a measurement set. A Glish variable containing the tool functions of
+bimams is returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{msname}{Name of the measurement set on disk to associate
+with this bimams tool}{}{Disk measurement set name}
+\end{ahargs}
+\ahreturns{bimams tool}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('sgrb2n.ms');      
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{chanwidths}{Get the channel widths of the specified
+type of windows}
+\begin{ahdescription}
+Get a Glish vector containing the channel widths (in Hz) for the
+specified type of windows. The order of the values in the
+returned vector is the same as the order of the type of windows
+specified in the SPECTRAL\_WINDOWS subtable.  For the multichannel
+data, the assumption is
+made that the channel width is constant within a given spectral window 
+(note though that the measurement set specification permits varying
+channel widths within a window; in general however, channel widths
+within a spectral window are constant for BIMA data).  The actual
+values which are returned are the widths of the first channels in each
+window. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{type of spectral window}{'c'}{'s' (sibeband average), 'c' 
+(multi-channel data), or 'a' (multi-channel average)}
+\end{ahargs}
+\ahreturns{A Glish vector of doubles containing the channel widths of
+the multi-channel data spectral windows.}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the widths of the channels in the multi-channel data windows of
+# the underlying ms      
+bms.chanwidths();
+\end{verbatim}
+The result is [-48828.125 -3125000 -3125000 -48828.125 -3125000
+-3125000 48828.125 3125000 3125000 48828.125 3125000 3125000]
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ddid}{ get the DATA\_DESCRIPTION ID (row number) 
+associated with a specified  spectral window id and a polarization or
+polarization id.}
+\begin{ahdescription}
+Retrieve the (1-based) DATA\_DESCRIPTION ID (row number) based on the
+SPECTRAL\_WINDOW ID and stokes parameter or polarization id. Returns -1 if
+the specified description doesn't exist in the table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwid}{The 1-based id (row number) of the spectral window in the
+SPECTRAL\_WINDOWS subtable}{}{Integer}
+\ahaddarg{stokes}{The stokes parameter associated with the data
+description. Not used if polid is specified}{YY}{String representation
+of a valid stokes parameter.}
+\ahaddarg{polid}{The 1-based id (row number) of the desired
+polarization in the POLARIZATION subtable. If specified, stokes is
+ignored.}{}{Integer $>$ 0}
+\end{ahargs}
+\ahreturns{Integer (-1 if requested id does not exist)}
+\begin{ahexample}
+\begin{verbatim}
+# get a data description id based on a spectral window id and a stokes
+# parameter
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+#  get the data description id associated with spectral window id 10
+# a stokes parameter of YY
+bms.ddid(spwid=10,stokes='YY');
+\end{verbatim}
+The result is 10. 
+
+\begin{ahfunction}{ddids}{ get the DATA\_DESCRIPTION IDs (row numbers) 
+associated with specified  spectral window ids and 
+polarization ids. The spectral window and polarization ids are or-ed
+within themselves and then anded together.}
+\begin{ahdescription}
+Retrieve (1-based) DATA\_DESCRIPTION IDs (row numbers) based on 
+SPECTRAL\_WINDOW IDs and polarization ids.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwids}{The 1-based ids (row numbers) of the spectral
+windows in the SPECTRAL\_WINDOWS subtable}{unset (all spectral
+windows)}{Vector of integers}
+\ahaddarg{polids}{The 1-based ids (row numbers) of the desired
+polarizations in the POLARIZATION subtable.}{unset (all
+polarizations)}{Vector of integers}
+\end{ahargs}
+\ahreturns{Vector of integers (empty vector of no specified ids are found)}
+\begin{ahexample}
+\begin{verbatim}
+# get a list of data description ids 
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+#  get the data description id associated with spectral window ids 5
+# and 10 and polarizaion id 0
+bms.ddid(spwids=[5,10],polids=0);
+\end{verbatim}
+The result is [5,10].
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ddtable}{ get the DATA\_DESCRIPTION table associated with the ms}
+\begin{ahdescription}
+Retrieve the DATA\_DESCRIPTION subtable as a table tool.
+\end{ahdescription}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# browse its DATA_DESCRIPTION subtable
+bms.ddtable().browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{doptable}{ get the DOPPLER table associated with the ms}
+\begin{ahdescription}
+Retrieve the DOPPLER subtable as a table tool.
+\end{ahdescription}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# browse its DOPPLER subtable
+bms.doptable().browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{endfreqs}{ get the frequencies of the last channels 
+in the multi-channel data spectral windows.}
+\begin{ahdescription}
+Retrieve a Glish vector of doubles representing the end (last channel) 
+frequencies (in Hz) in the multi-channel spectral windows.  The order of the
+frequencies is the same as the order of the multi-channel windows in
+the SPECTRAL\_WINDOWS table.
+\end{ahdescription}
+\ahreturns{Vector of Doubles}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the end frequencies of the multi-channel spectral windows
+bms.endfreqs();
+\end{verbatim}
+The result is {\tt [9.3162917e+10 9.30201938e+10 9.29201938e+10
+9.2862413e+10 9.27202078e+10 9.26202078e+10 9.61141944e+10
+9.62569176e+10 9.63569176e+10 9.64146984e+10 9.65569036e+10
+9.66569036e+10] } 
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fieldids}{Get the 1-based field ids associated with
+the specified source}
+\begin{ahdescription}
+This function returns a vector of 1-based field ids associated with
+the specified source.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sname}{The source to which to get the field ids for}{None}
+{String}
+\end{ahargs}
+\ahreturns{Vector of Ints}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+# the the 1-based field ids for the source 1733-130
+- bms.fieldids('1733-130');
+1
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fieldtable}{Get the FIELD subtable as a
+table tool}
+\begin{ahdescription}
+Get the FIELD subtable as a table tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+- # construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+- # get the FIELD table
+- ft := bms.fieldtable();
+- # browse it
+- ft.browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{mcaddids}{Given a list of 1-based DATA DESCRIPTION
+ids which describe multi-channel data spectral windows, get a list of
+1-based  DATA DESCRIPTION ids which correspond to the multi-channel
+average windows.}
+\begin{ahdescription}
+Given a list of 1-based DATA DESCRIPTION ids which describe
+multi-channel data spectral windows, get a list of 1-based  DATA
+DESCRIPTION ids which correspond to the multi-channel average
+windows.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mcd}{vector of 1-based data description ids which refer to
+multichannel data windows.}{}{Vector of integers}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Vector of integers. If any input DATA DESCRIPTION ids do
+not have multi-channel average associations, -1 is in the
+corresponding the position in the returned vector}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# data description ids 1,3,5 are multichannel data.  1 and 3 have
+# corresponding multichannel averages, while 5 does not.
+bms.mcaddids([1,3,5);
+\end{verbatim}
+The result is [15,17,-1].
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ms}{ get the ms tool contained within this bimams tool.} 
+\begin{ahdescription}
+Retrieve the {\tt ms} tool contained within this {\tt bimams} tool
+(recall that a {\tt bimams} tool is essentially a container for an {\tt 
+ms} tool which supplies convience functions for retrieving information 
+from the underlying {\tt ms} tool).
+\end{ahdescription}
+\ahreturns{ms tool}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the contained ms 
+true_ms := bms.ms();
+true_ms.name();
+\end{verbatim}
+The result of the last command is {\tt neptune.ms}.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{namespw}{ Assign a name to a spectral window.}
+\begin{ahdescription}
+{ Assign a name to a spectral window
+(that is, insert a value into the NAME column of the specified window's row in the
+SPECTRAL\_WINDOWS table). After assigning a name, other functions can
+be used to retrieve information on spectral windows by specifying
+their names.  BIMA vertical integration tools require that
+user-specified spectral window names be unique (this is not a
+requirement of the measurement set specification, however).  Therefore, this
+function will not assign a name to a spectral window if another window 
+different from the specified one already has that name.  In this case, 
+this function will fail.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sb}{The sideband in which the window is located.}
+{}{'u' (usb) or 'l' (lsb)}
+\ahaddarg{type}{type of spectral window}{}{'s' (sibeband average), 'c' 
+(multi-channel data), or 'a' (multi-channel average)}
+\ahaddarg{mcn}{the 1-based location of this window in the
+SPECTRAL\_WINDOWS table with respect to other windows of the same type 
+and sideband (usually NOT the same as its row number in this
+table). Not used if type='s'}{1}{Integer from 1 to the number of
+spectral windows of the specified type in the specified sideband}
+\ahaddarg{name}{the name to assign to this window}{}{String}
+\end{ahargs}
+\ahreturns{Boolean: T if naming was successful.}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# name the third multichannel data window in the lower sideband HCN
+bms.namespw(sb='l', type='c', mcn=3, name='HCN');
+# The result of the previous command is T if there is no window already
+# named HCN. If there is, the function will fail.
+
+# Now get the spectral window id of the window just named by using its 
+# name
+
+bms.spwidsbyname('HCN');
+
+# the result of the previous command is the spectral window id (the
+# row number of the spectral window in the SPECTRAL_WINDOWS table. For 
+# example, 22.
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{namespwid}{ Assign a name to a spectral window by
+specifying its id}
+\begin{ahdescription}
+{ Assign a name to a spectral window
+(that is, insert a value into the NAME column of the specified window's row in the
+SPECTRAL\_WINDOWS table) by specifying the window's id (ie, row number 
+in the SPECTRAL\_WINDOWS table). After assigning a name, other functions can
+be used to retrieve information on spectral windows by specifying
+their names.  BIMA vertical integration tools require that
+user-specified spectral window names be unique (this is not a
+requirement of the measurement set specification, however).  Therefore, this
+function will not assign a name to a spectral window if another window 
+different from the specified one already has that name.  In this case, 
+this function will fail.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwid}{The 1-based id of the spectral window (ie, the row
+number of the window in the SPECTRAL\_WINDOWS table)}
+{}{Integer $>=$ 1 and $<=$ number of spectral windows}
+\ahaddarg{name}{the name to assign to this window}{}{String}
+\end{ahargs}
+\ahreturns{Boolean: T if naming was successful.}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# name window number 3 CS
+bms.namespw(spwid=3, name='CS');
+# The result of the previous command is T if there is no window already
+# named CS. If there is, the function will fail.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{nchans}{ Get the number of channels in each
+multi-channel data spectral window}
+\begin{ahdescription}
+{Get a Glish vector of integers of the number of channels in the
+multi-channel data spectral windows.  The order of the values is the
+same as that of the multi-channel data windows in the
+SPECTRAL\_WINDOWS subtable.}
+\end{ahdescription}
+\ahreturns{vector of integers of the number of channels for the
+multi-channel data spectral windows}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the number of channels in the multi-channel data spectral
+# windows of this measurement set
+bimams.nchans();
+\end{verbatim}
+The result of the last command will be something like 
+{\tt [256 32 32 256 32 32 256 32 32 256 32 32]}   
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{nspw}{ Get the number of spectral windows}
+\begin{ahdescription}
+{Get the number of spectral windows in the SPECTRAL\_WINDOWS
+subtable. This includes all tpes of spectral windows; that is, the
+returned value is simply the number of rows in this subtable}
+\end{ahdescription}
+\ahreturns{Integer: the number of rows in the SPECTRAL\_WINDOWS
+subtable} 
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the number of spectral windows in this measurement set
+bimams.nspw();
+\end{verbatim}
+The result of the last command will be something like {\tt 26}.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{polartable}{ Get the POLARIZATION subtable}
+\begin{ahdescription}
+{Get the POLARIZATION subtable associated with the underlying
+measurement set.  The returned quantity is a table tool.}
+\end{ahdescription}
+\ahreturns{Table tool containing the POLARIZATION subtable}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# browse the POLARIZATION subtable associated with the underlying
+# measurement set
+bimams.polartable().browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{polarids}{Get a list of polarization ids}
+\begin{ahdescription}
+{Get a 1-based vector of integers representing the polarization ids
+(row numbers) from the POLARIZATION
+subtable by specifying a stokes parameter. If no such polarization
+exists in the subtable, an empty vector is returned.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{stokes}{The stokes parameter associated with the
+polarization id (e.g., 'YY', 'I')}{}{String}
+\end{ahargs}
+\ahreturns{Vector of integers: the corresponding polarization ids or
+an empty vector if the specified polarization is not found}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the polarization id associated with the YY stokes parameter
+bimams.polarid('YY');
+\end{verbatim}
+The last command will return the corresponding row in the POLARIZATION 
+subtable, for example {\tt 1}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{reavg}{Recompute sideband averages and channel
+averages based on channel data flags}
+\begin{ahdescription}
+This function recomputes the sideband averages and channel averages
+based on the channel data flags.  It is currently implemented in glish
+and is rather slow.  The plan is to implement it in C++ so it will run
+faster.  In general, it should be run after channel data have been
+flagged.  It is meant to be the \aipspp\ analog of MIRIAD's {\tt
+uvwide} task.
+
+Yet to do: {\tt edge} and {\tt blankf} parameters, as in {\tt uvwide}
+which allow the user to discard edge channels when recomputing
+averages, still must be added.  Note that in {\tt uvwide}, the default
+value of {\tt blankf} is 0.033 which is why {\tt uvwide} run with this
+default will compute different averages than the current
+implementation of {\tt reavg}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{out}{the output dataset, if not specified the input dataset is
+modified and no new dataset is written}{''}{String}
+\ahaddarg{dosort}{sort the data when doing subqueries, if F, will speed up
+execution, but should only be set to F if you are sure the dataset
+is already sorted in time-data description id-baseline order (the
+order in which mirfiller writes data when filling)}{T}{Boolean}
+\ahaddarg{reset}{should all average data be recomputed? By
+default (reset=T), all averages recomputed regardless of the value of the
+existing flags, otherwise (reset=F), only averages with F flags
+are recomputed (i.e. averages flagged bad are left untouched). Note
+that setting reset=F will not increase the speed of the function.}{T}{Boolean}
+\ahaddarg{verbosity}{Controls the level of informational messages, 0 =
+run quietly, higher numbers = more messages}{1}{Integer}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+# flag some data
+- af := autoflag('neptune.ms');
+- af.setselect(clip=[expr='ABS YY',min=0.001,max=50]);
+# construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('neptune.ms');
+# recompute sideband averages and print lots of messages during execution
+- bms.reavg('neptune.ms.reavg',verbosity=3);
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{reffreqs}{Get a list of spectral window reference frequencies}
+\begin{ahdescription}
+{Get a vector of doubles representing the reference frequencies (in
+Hz) of all  the spectral windows in the SPECTRAL\_WINDOWS table in the
+order they appear in this table.}
+\end{ahdescription}
+\ahreturns{Vector of doubles: the spectral window reference
+frequencies (in Hz)} 
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the reference frequencies of the spectral windows from the
+# underlying measurement set 
+bimams.reffreqs;
+\end{verbatim}
+The last command will return the reference frequencies (in Hz), e.g.,
+[9.31753682e+10 9.31170688e+10 9.30170688e+10 9.28748642e+10
+9.28170828e+10 9.27170828e+10 9.61017432e+10 9.61600426e+10
+9.62600426e+10 9.64022472e+10 9.64600286e+10 9.65600286e+10] 
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{sourcetable}{Get the SOURCE subtable as a
+table tool}
+\begin{ahdescription}
+Get the SOURCE subtable as a table tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+- # construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+- # get the SOURCE table
+- st := bms.sourcetable();
+- # browse it
+- st.browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{spwid}{Get a spectral window id}
+\begin{ahdescription}
+{Get a 1-based spectral window id
+(row number) from the SPECTRAL\_WINDOW subtable by specifying a
+sideband, spectral window type, and the
+position of the desired spectral window relative to other windows of
+the same type in the same sideband.  If no window matching the
+specified parameters is found, -1 is returned.} 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sb}{The sideband in which the desired window is
+located}{}{String: 'l' (lsb) or 'u' (usb)} 
+\ahaddarg{type}{The type of window}{}{String: 's' (sideband average),
+'c' (multi-channel data), or 'a' (multi-channel average)} 
+\ahaddarg{mcn}{The 1-based position of the desired window with respect
+to other windows of the same type in the same sideband. Usually NOT
+the same as the row number in the SPECTRAL\_WINDOWS table}{1}
+{Integer: $>=1$ and $<=$ the total number of windows of the specified type
+in the specified sideband. Not used if type='s'}
+\end{ahargs}
+\ahreturns{Integer: the id of the specified window or -1 if not found}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the spectral window id of the the third multi-channel average
+# window in the upper sideband
+bms.spwid(sb='u',type='a',mcn=3); 
+\end{verbatim}
+The last command will return the corresponding row in the SPECTRAL\_WINDOWS
+subtable, for example {\tt 7} or {\tt -1} if the specified window does 
+not exist.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{spwidsbyname}{Get a list of spectral window ids by specifying 
+a list of spectral window names}
+\begin{ahdescription}
+{Get a 1-based vector of spectral window ids
+(row numbers) from the SPECTRAL\_WINDOW subtable by specifying a
+vector of names of the windows. A vector of integers of the same
+length as the input name vector is returned.  For names which are not
+found in the spectral window table, {\tt -1} will occupy that place in 
+the returned vector.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{names}{The names of the spectral windows}{}{Vector of strings}
+\end{ahargs}
+\ahreturns{Vector of integers: the ids (row numbers) of the specified
+windows (-1 for names which do not exist in the table)}.
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# assign spectral window number 3 the name of HCN
+bms.namespwid(id=3,name='HCN');
+# assign spectral window number 7 the name of CS
+bms.namespwid(id=7,name='CS');
+# get the spectral window ids of the window named CS, HCN, and SiO
+bms.spwidsbyname(names = ['CS','HCN','SiO']);
+\end{verbatim}
+The last command returns {\tt [7, 3, -1]} (the user has not yet named
+a window SiO, which is why the final value in the vector is {\tt -1}).
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{spwids}{Get a list of spectral window ids by specifying 
+a type of spectral window and, optionally, a sideband}
+\begin{ahdescription}
+{Get a 1-based vector of spectral window ids
+(row numbers) from the SPECTRAL\_WINDOW subtable by specifying a
+type of spectral window (sideband average, multi-channel data,
+multi-channel average) and, optionally, a sideband.  A vector of
+integers of the ids of all 
+windows of the specified type in the specified sideband is returned.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{The spectral window type}{}{String: 'A' (all types), 'a'
+(multi-channel average), 'c' (multi-channel data), or 's' (sideband
+average)}
+\ahaddarg{sb}{The sideband.  Not used if type='s'}{'b'}
+{String: 'b' (both), 'l' (lsb), 'u' (usb)}
+\end{ahargs}
+\ahreturns{Vector of integers: the ids (row numbers) of all the
+windows of the specified type.}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the a list of ids of all the multi-channel data windows in both
+# sidebands 
+bms.spwids(type='c', sb='b');
+# The previous command returns a vector of integers representing the
+# ids of all the multi-channel data windows, e.g., [4 6 8 10 12 14 16 18
+# 20 22 24 26].
+
+# get the ids for the multi-channel data windows from the upper
+# sideband only
+bms.spwids(type='c', sb='u');
+# the previous command returns [16 18 20 22 24 26]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{spwnames}{Get a list of spectral window names by
+specifying the type of spectral window}
+\begin{ahdescription}
+{Get a vector of strings representing the names of all the spectral
+windows of a specified type.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{The type of spectral window}{'all'}{String: 'all' (all 
+types), 'a' (multi-channel averages), 'c' (multi-channel data), 's'
+(sideband averages)}
+\end{ahargs}
+\ahreturns{Vector of strings: the names of the spectral windows of the 
+specified type in the order the windows appear in the
+SPECTRAL\_WINDOWS subtable}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the names of the multi-channel data windows
+bms.spwnames(type='c');
+\end{verbatim}
+The last command returns a vector of the names of the multi-channel
+data windows, e.g., {\tt none none HCN none none CS none none SiO
+none none none}.  {\tt none} is the default entry in the NAME column. 
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{spwtable}{Get the SPECTRAL$\_$WINDOW subtable as a
+table tool}
+\begin{ahdescription}
+Get the SPECTRAL$\_$WINDOW subtable as a table tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+- # construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+- # get the SPECTRAL_WINDOW table
+- spwt := bms.spwtable();
+- # browse it
+- spwt.browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{startfreqs}{Get the frequencies of the first channels 
+in the multi-channel data spectral windows.}
+\begin{ahdescription}
+Retrieve a Glish vector of doubles representing the start (first channel) 
+frequencies (in Hz) in the multi-channel spectral windows.  The order of the
+frequencies is the same as the order of the multi-channel windows in
+the SPECTRAL\_WINDOWS table.
+\end{ahdescription}
+\ahreturns{Vector of doubles of start frequencies (in Hz) for the
+multi-channel data spectral windows}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the starting frequencies of the multi-channel spectral windows
+bms.startfreqs();
+\end{verbatim}
+The result is a vector of doubles representing the start frequencies
+for the multi-channel data windows, e.g., {\tt [9.31753682e+10
+9.31170688e+10 9.30170688e+10 9.28748642e+10 9.28170828e+10
+9.27170828e+10 9.61017432e+10 9.61600426e+10 9.62600426e+10
+9.64022472e+10 9.64600286e+10 9.65600286e+10]}.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stokesid}{Get the system-defined id for the
+specified stokes parameter.}
+\begin{ahdescription}
+{Get the system-defined id for the specified stokes parameter as
+defined in {\tt aips/implement/Measures/Stokes.h}.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{stokes}{The stokes parameter (e.g., 'YY', 'I',
+etc.)}{}{String: a stokes parameter} 
+\end{ahargs}
+\ahreturns{Integer: The system defined stokes id (see {\tt
+aips/implement/Measures/Stokes.h}) or -1 if the stokes parameter is not 
+recognized}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# get the stokes id for stokes parameter YY
+bms.stokesid('YY');
+\end{verbatim}
+The last command returns {\tt 12}.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{subtable}{Get the specified subtable of the
+underlying measurement set}
+\begin{ahdescription}
+{Retrieve the specified subtable from the underlying measurement set
+as a table tool. By default, the table is opened in read-only mode,
+but it can be opened in read-write mode by setting the readonly
+parameter to F.}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tname}{name of the subtable}{}{String}
+\ahaddarg{readonly}{open the table in read-only mode (no writing
+allowed)}{T}{Boolean}
+\end{ahargs}
+\ahreturns{Table tool containing the specified subtable}
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+bms := bimams('neptune.ms');
+# browse the WEATHER table
+bms.subtable('WEATHER').browse();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{timerange}{Get the maximum and minimum times in the
+MS}
+\begin{ahdescription}
+This function returns the maximum and minimum times in the MS. The
+thing returned is a record with fields {\tt max} and {\tt min}.  Each
+field contains a quantity corresponding to the maximum and minimum
+times, respectively.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{A record containing the maximum and minimum times}.
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+# get the maximum and minimum times
+- tra := bms.timerange();
+- tra
+[max=[value=4.38575597e+09, unit=s], min=[value=4.38573665e+09, unit=s]]
+# now convert the maximum time to something meaningful to a human
+- dq.time(tra.max,form='ymd');
+1997/11/09/01:32:52.170 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{totalintegrationtime}{Get the total integration
+time of this MS}
+\begin{ahdescription}
+This function returns the total integration time in the MS.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{gaptime}{The minimum time between scans, if $<$0, 2 times
+the maximum value in the INTERVAL column is used}{-1}{Double}
+\end{ahargs}
+\ahreturns{Quantity}.
+\begin{ahexample}
+\begin{verbatim}
+# construct a bimams tool and assign it to a Glish variable named bms
+- bms := bimams('1733-130');
+# get the total integration time
+- bms.totalintegrationtime();
+[value=2044.13995, unit=s]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{document}

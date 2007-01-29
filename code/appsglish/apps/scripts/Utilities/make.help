@@ -1,0 +1,137 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: make.help,v 19.2 2004/08/25 02:09:11 cvsmgr Exp $
+\begin{ahfunction}{make}{Function for a production system}
+\ahinclude{make.g}
+
+\begin{ahdescription} 
+
+{\tt make} 
+
+{\tt make} implements a {\em production system}. A production system
+makes a product or products according to some well-specified rules. It
+is of very widespread applicability but it's best suited to automating
+a set of steps that must be carried out in sequence but with some
+variation if, for example, a given product is sometimes available and
+sometimes not. The principle is familiar to users of the Unix make
+system, on which make is built. {\tt make} keeps track of which
+files have changed and knows to remake dependent products.
+
+{\tt make} needs a {\em makefile} that specifies the production rules.
+\begin{verbatim}
+.SUFFIXES: .image .ms .fits
+
+.fits.ms :
+	glish include 'ms.g';m:=fitstoms('$@', '$<');m.done();
+
+.ms.image :
+	glish include 'imager.g';myimgr:=imager('$<');myimgr.advise(takeadvice=T,fieldofview='2arcmin');myimgr.makeimage('observed','$@');myimgr.done();
+
+clean:
+	shell rm -rf *.fits *.ms *.image
+
+data:
+	shell cp ${AIPSROOT}/data/demo/3C273XC1.fits .
+\end{verbatim}
+
+By using this makefile, make knows how to make the image,
+3C273XC1.image, from the MeasurementSet, 3C273XC1.ms, and it knows how
+to make the MeasurementSet from the original FITS file. The glish
+commands are:
+
+\begin{verbatim}
+include 'make.g';
+make('clean');
+make('data');
+make('3C273XC1.image');
+\end{verbatim}
+
+The arguments allowed are:
+
+\begin{verbatim}
+    -D <VARIABLE>
+        define <VARIABLE> to be 1
+
+    -I <DIR>
+        Specify a directory in which to search for makefiles
+        and included makefiles.
+
+    -d flags
+        Turn on debugging, and specify which portions of make are to
+        print debugging information.  Flags is one or more of the following:
+
+           A       Print all possible debugging information; equivalent to
+                   specifying all of the debugging flags.
+
+           d       Print debugging information about directory searching and
+                   caching.
+
+           g1      Print the input graph before making anything.
+
+           g2      Print the input graph after making everything, or before
+                   exiting on error.
+
+           m       Print debugging information about making targets,
+                   including modification dates.
+
+           s       Print debugging information about suffix-transformation
+                   rules.
+
+           t       Print debugging information about target list
+                   maintenance.
+
+           v       Print debugging information about variable assignment.
+
+    -e      Specify that environmental variables override macro assignments
+            within makefiles.
+\end{verbatim}
+
+If a script is specified, then {\tt make} generates the commands and
+writes these to the script file. If the argument {\tt execute} is set
+to T then the commands are also executed. If one of the command fails
+then the make is terminated at that point.
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{target}{Target to be constructed}{}{String}
+\ahaddarg{args}{Arguments}{}{String}
+\ahaddarg{makefile}{Makefile to be used}{'makefile'}{File name}
+\ahaddarg{Execute}{Execute commands}{T}{Bool}
+\ahaddarg{script}{Name of script file to be written}{}{String}
+\ahaddarg{debug}{Write debugging information?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'make.g';
+make('clean');
+make('data');
+make('3C273XC1.image');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+

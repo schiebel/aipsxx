@@ -1,0 +1,1476 @@
+Boolean%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: pgplotter.help,v 19.3 2004/08/25 02:00:24 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{pgplotwidget}{tool used in application development to embed
+a pgplot canvas into some GUI}
+
+\ahinclude{pgplotwidget.g}
+
+\ahkeyword{plot}{}
+\ahkeyword{postscript}{}
+\ahkeyword{plotting}{}
+\ahkeyword{TV}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+The pgplotwidget is a PGPLOT style widget to embed in a larger gui, such as
+\ahlink{pgplotter}{plotter:pgplotter}. It has a number of advantages over
+using a ``raw'' Glish/PGPLOT agent.
+\begin{enumerate}
+\item It can automatically resize itself when it is resized.
+\item It can save its contents in a ``plot'' file, which can be opened and
+      edited later (for example, by a User via pgplotter).
+\item It can save itself itself as postscript (colour or black and white,
+      landscape or portrait).
+\item It has a one-line ``message'' window for status reports or instructions
+      to the user.
+\item The architecture allows for ``higher level'' than PGPLOT commands to be
+      added to the widget (either directly or via plugins). At the moment, we
+      have implemented a {\tt settings} function to allow you to set many PGPLOT
+      defaults (line width, character height) at once, {\tt plotxy} to
+      allow you to conveniently plot x,y vectors with auto scaling,
+      and a number of commands to emulate an old plotter {\tt gplot1d}.
+\end{enumerate}
+
+Except for the last two items, these advantages accrue by keeping a ``display''
+list internally. That is, the commands sent to the widget are stored
+internally, and then when, e.g., the frame size is changed the list is
+replayed. This advantage comes at a cost of requiring more memory
+and slowing the display somewhat.  Nevertheless, for most applications the
+advantages probably favor this approach.
+
+One interesting capability is the ability to turn on and off the recording of
+plot commands. This allows you to ``lift'' drawings off one another. For
+example, you could interactively draw ellipses on the plot widget but not keep
+the ellipses in the display list, and then remove the ellipses by doing a
+refresh.
+
+pgplotwidget features a zoom capability through the Middle Mouse Button 
+(Button 2). Clicking on this and dragging the mouse opens up a zoom window; 
+clicking again selects this as the zoom region, and redisplays. To unzoom,
+use CNTRL-Middle Mouse Button.
+
+The \texttt{pgplotwidget} is built on top of the more generic
+\ahlink{pgplotmanager tool}{plotter:pgplotmanager}, which is in turn
+built on top of the \ahlink{Glish/PGPLOT}{pgplot} client.  Thus,
+almost all the basic drawing and inquiry commands described in the
+\ahlink{Glish/PGPLOT}{pgplot} section of the Glish manual are
+available in the \texttt{pgplotwidget}.  Calling these commands is
+different, though: instead of using the event operator, {\tt ->}, one
+uses the normal {\tt .} for accessing tool functions.  
+
+Only those functions that add functionality beyond that of the Glish
+pgplot agent are described explicitly in this reference manual
+section, specifically: 
+\begin{enumerate}
+    \item Refreshing the screen (e.g. when the frame resizes).
+    \item Saving and restoring to and from files.
+    \item Instead of registering ``whenever'' statements for interactions (e.g.,
+          button pushes) you register callback functions.
+    \item Standard PGPLOT {\tt curs()} emulation.
+    \item General manipulation of the displaylist.
+    \item A ``done'' function for cleanup.
+    \item A one line message window.
+    \item A function for changing many settings (e.g. line width) at once.
+\end{enumerate}
+
+Note that the pgplotwidget requires no \aipspp\ binaries, so that
+including it in a non-\aipspp\  Glish application is not ``expensive''
+in startup time. 
+
+The following standard PGPLOT commands are described in the
+\ahlink{Glish manual}{pgplot}: 
+\begin{description}
+\begin{latexonly}
+\itemsep 0in
+\parsep 0in
+\end{latexonly}
+\item[arro] -- draw an arrow
+\item[ask] -- control new page prompting
+\item[bbuf] -- begin batch of output (buffer)
+\item[beg] -- begin PGPLOT, open output device
+\item[bin] -- histogram of binned data
+\item[box] -- draw labeled frame around viewport
+\item[circ] -- draw a filled or outline circle
+\item[clos] -- close the selected graphics device
+\item[conb] -- contour map of a 2D data array, with blanking
+\item[conl] -- label contour map of a 2D data array
+\item[cons] -- contour map of a 2D data array (fast algorithm)
+\item[cont] -- contour map of a 2D data array (contour-following)
+\item[ctab] -- install the color table to be used by PGIMAG
+\item[draw] -- draw a line from the current pen position to a point
+\item[ebuf] -- end batch of output (buffer)
+\item[end] -- terminate PGPLOT
+\item[env] -- set window and viewport and draw labeled frame
+\item[eras] -- erase all graphics from current page
+\item[errb] -- horizontal or vertical error bar
+\item[errx] -- horizontal error bar
+\item[erry] -- vertical error bar
+\item[gray] -- gray-scale map of a 2D data array
+\item[hi2d] -- cross-sections through a 2D data array
+\item[hist] -- histogram of unbinned data
+\item[iden] -- write username, date, and time at bottom of plot
+\item[imag] -- color image from a 2D data array
+\item[lab] -- write labels for x-axis, y-axis, and top of plot
+\item[ldev] -- list available device types
+\item[len] -- find length of a string in a variety of units
+\item[line] -- draw a polyline (curve defined by line-segments)
+\item[move] -- move pen (change current pen position)
+\item[mtxt] -- write text at position relative to viewport
+\item[numb] -- convert a number into a plottable character string
+\item[open] -- open a graphics device
+\item[page] -- advance to new page
+\item[panl] -- switch to a different panel on the view surface
+\item[pap] -- change the size of the view surface
+\item[pixl] -- draw pixels
+\item[pnts] -- draw one or more graph markers, not all the same
+\item[poly] -- fill a polygonal area with shading
+\item[pt] -- draw one or more graph markers
+\item[ptxt] -- write text at arbitrary position and angle
+\item[qah] -- inquire arrow-head style
+\item[qcf] -- inquire character font
+\item[qch] -- inquire character height
+\item[qci] -- inquire color index
+\item[qcir] -- inquire color index range
+\item[qcol] -- inquire color capability
+\item[qcr] -- inquire color representation
+\item[qcs] -- inquire character height in a variety of units
+\item[qfs] -- inquire fill-area style
+\item[qhs] -- inquire hatching style
+\item[qid] -- inquire current device identifier
+\item[qinf] -- inquire PGPLOT general information
+\item[qitf] -- inquire image transfer function
+\item[qls] -- inquire line style
+\item[qlw] -- inquire line width
+\item[qpos] -- inquire current pen position
+\item[qtbg] -- inquire text background color index
+\item[qtxt] -- find bounding box of text string
+\item[qvp] -- inquire viewport size and position
+\item[qvsz] -- find the window defined by the full view surface
+\item[qwin] -- inquire window boundary coordinates
+\item[rect] -- draw a rectangle, using fill-area attributes
+\item[rnd] -- find the smallest `round' number greater than x
+\item[rnge] -- choose axis limits
+\item[sah] -- set arrow-head style
+\item[save] -- save PGPLOT attributes
+\item[unsa] -- restore PGPLOT attributes
+\item[scf] -- set character font
+\item[sch] -- set character height
+\item[sci] -- set color index
+\item[scir] -- set color index range
+\item[scr] -- set color representation
+\item[scrn] -- set color representation by name
+\item[sfs] -- set fill-area style
+\item[shls] -- set color representation using HLS system
+\item[shs] -- set hatching style
+\item[sitf] -- set image transfer function
+\item[slct] -- select an open graphics device
+\item[sls] -- set line style
+\item[slw] -- set line width
+\item[stbg] -- set text background color index
+\item[subp] -- subdivide view surface into panels
+\item[svp] -- set viewport (normalized device coordinates)
+\item[swin] -- set window
+\item[tbox] -- draw frame and write (DD) HH MM SS.S labelling
+\item[text] -- write text (horizontal, left-justified)
+\item[updt] -- update display
+\item[vect] -- vector map of a 2D data array, with blanking
+\item[vsiz] -- set viewport (inches)
+\item[vstd] -- set standard (default) viewport
+\item[wedg] -- annotate an image plot with a wedge
+\item[wnad] -- set window and adjust viewport to same aspect ratio
+\end{description}
+\end{ahdescription}
+
+\begin{ahconstructor}{pgplotwidget}{Create a pgplot widget in a supplied frame}
+\begin{ahdescription}
+This constructor creates a PGPLOT widget in a supplied frame. It either returns
+a tool, or a ``fail'' if construction isn't possible (for example,
+a ``fail'' is returned if no DISPLAY environment variable is set).
+
+The supplied frame should have been created with {\tt side='top'} to make sure
+that the message line is above the plot area.
+
+If the minimum requested number of colors {\tt mincolors} cannot be supplied,
+then a fail will be returned. In this case you may wish to ensure that {\tt
+parentframe} has a private colormap installed (set {\tt newcmap=newcmap} in
+the {\tt frame} constructor) and try again.
+
+If you want to, you can suppress the messages window by setting {\tt
+havemessages} to {\tt F}. You can still call the {\tt message()},
+function, however it has no effect.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{parentframe}{frame to attach to}{}{frame}
+\ahaddarg{size}{Size in pixels for the drawing area}{[600,450]}{integer[2]}
+\ahaddarg{foreground}{Foreground colour}{white}{string (valid colour name}
+\ahaddarg{background}{Background colour}{black}{string (valid colour name)}
+\ahaddarg{padx}{x border padding in pixels}{2}{float}
+\ahaddarg{pady}{y border padding in pixels}{2}{float}
+\ahaddarg{mincolors}{Minimum number of colors we require}{2}{integer}
+\ahaddarg{maxcolors}{Maximum number of colors we will take}{100}{integer}
+\ahaddarg{havemessages}{Display messages on the screen?}{T}{boolean}
+\ahaddarg{widgetset}{The widgetset to use}{dws}{A widgetserver tool}
+\end{ahargs}
+\ahreturns{pgplotwidget tool or fail}
+\end{ahconstructor}
+
+\begin{ahfunction}{plotxy}{Plot X,Y vectors as lines or points with auto-scaling}
+\begin{ahdescription}
+{\tt plotxy} is defined to allow you to make line or scatter plots. 
+The routine will scale and draw the axes appropriately, or you can specify
+to plot over a previous plot using the existing scaling.  Axis labels and a 
+plot title can be specified.  You can also specify a mask, if desired, to 
+blank out bad data points from the plot.  When a mask is given, the unmasked
+data are plotted in line segments.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y := x*x;
+pg.plotxy(x,y,xtitle='XX', ytitle='YY', title='TITLE');
+pg.plotxy(x+10, y, F, F);
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y := sqrt(x);
+pgmask := array(T,100)
+pgmask[20:30] := F
+pgmask[50:55] := F
+pg.plotxy(x,y,mask=pgmask);
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{x}{X values}{}{non-complex numeric array}
+\ahaddarg{y}{y values}{}{non-complex numeric array}
+\ahaddarg{plotlines}{Plot lines (T) or points (F)}{T}{boolean}
+\ahaddarg{newplot}{Start a new plot (T) or overplot (F)}{T}{boolean}
+\ahaddarg{xtitle}{x axis title (ignored if newplot is F)}{none}{string}
+\ahaddarg{ytitle}{y axis title (ignored if newplot is F)}{none}{string}
+\ahaddarg{title}{plot title (ignored if newplot is F)}{none}{string}
+\ahaddarg{linecolor}{color index for lines or points}{2}{integer}
+\ahaddarg{ptsymbol}{symbol index (used if plotlines=F)}{2}{integer}
+\ahaddarg{mask}{mask for eliminating bad data points (T for good data, 
+F for masked data)}{none}{boolean array}
+\end{ahargs}
+\ahreturns{T or fail (illegal argument)}
+\end{ahfunction}
+
+\begin{ahfunction}{maskline}{Draw line segments based on input vectors and a mask}
+
+\begin{ahdescription}
+
+{\tt maskline} is analogous to {\tt line} except that it takes a mask (an
+array of boolean elements) and draws a series of line segments with
+the masked data eliminated.  
+
+The argument {\tt decimate} is used to speed up the search for masked
+pixels.  It breaks the spectrum into {\tt decimate} segments.  It uses
+built in \glish\ functions to detect whether there are any masked pixels
+in each segment.  If there are, then those masked pixels are found, one
+by one with the \glish\ indexing operator (slow).  If you set {\tt
+decimate==1} then each pixel of the spectrum is searched for masked
+pixels with the \glish\ indexing operator (very slow).  The default 
+decimation of 10 is safe for any length spectrum (i.e. it will realize if there
+aren't enough pixels for 10 segments). 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y := sqrt(x);
+pgmask := array(T,100)
+pgmask[20:30] := F
+pgmask[50:55] := F
+pg.env(0,100,0,10,0,0)
+pg.maskline(x,y,pgmask)
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{x}{X values}{}{non-complex numeric array}
+\ahaddarg{y}{y values}{}{non-complex numeric array}
+\ahaddarg{mask}{mask for eliminating bad data points (T for good data, F for masked data)}{No mask}{boolean array}
+\ahaddarg{decimate}{Number of segments to decimate into}{10}{Integer}
+\end{ahargs}
+
+\ahreturns{T or fail}
+\end{ahfunction}
+
+\begin{ahfunction}{displaylist}{Access the displaylist plot commands are kept in}
+\begin{ahdescription}
+This function provides access to the \ahlink{displaylist}{guiutils:displaylist}
+that the recorded commands are kept in. A reference to the actual display list
+is returned, so you should be careful that you don't damage it.
+
+You could use this function to, for example, go backwards through the plot
+command to find the last data plotted, extract it, fit it, and plot the fit to
+the data.
+
+\end{ahdescription}
+
+\ahreturns{displaylist reference}
+\end{ahfunction}
+
+\begin{ahfunction}{shortnametofullname}{Get a longer description for 
+pgplotwidget commands}
+\begin{ahdescription}
+This function takes a shortened Glish/PGPLOT function name and writes out
+a longer description of the function.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'pgplotter.g'
+- f            :=frame();
+- myplotwidget := pgplotwidget(f);
+- field_names(myplotwidget);
+shortnametofullname displaylist setcallback deactivatecallback
+activatecallback record play postscript plotfile restore refresh done
+plotxy clear message settings cursor lastchange curs size addredrawfunction
+arro ask bbuf bin box circ conb conl cons cont ctab draw ebuf env eras errb
+errx erry gray hi2d hist iden imag lab ldev len line move mtxt numb page
+panl pap pixl pnts poly pt ptxt qah qcf qch qci qcir qcol qcr qcs qfs qhs
+qid qinf qitf qls qlw qpos qtbg qtxt qvp qvsz qwin rect rnd rnge sah save
+scf sch sci scir scr scrn sfs shls shs sitf sls slw stbg subp svp swin tbox
+text unsa updt vect vsiz vstd wedg wnad 
+- myplotwidget.shortnametofullname('scf');
+set character font 
+- myplotwidget.shortnametofullname('draw');
+draw a line from the current pen position to a point 
+\end{verbatim}
+\end{ahexample}
+\ahreturns{function description, if present, otherwise echoes argumentname}
+\end{ahfunction}
+
+\begin{ahfunction}{setcallback}{set a function to be called for mouse or keyboard events}
+\begin{ahdescription}
+This function allows a function of yours to be called whenever a certain event
+happens. It is a simplification of the event-binding described in the
+\ahlink{Glish/PGPLOT}{pgplot} chapter of the Glish manual.
+
+The function returns an index which you can use to deactivate the callback.
+
+At present, the events for which you may set a callback are:
+\begin{description}
+\item[motion]    Called whnenver the mouse moves in the plot area.
+\item[button]    Called whenever any button goes {\em down}.
+\item[button1]   Called whenever button 1 goes {\em down}.
+\item[button2]   Called whenever button 2 goes {\em down}.
+\item[button3]   Called whenever button 3 goes {\em down}.
+\item[buttonup]  Called whenever a button goes {\em up}.
+\item[key]       Called whenever a key is pressed on the keyboard.
+\end{description}
+
+The callback functions take a single argument, which will be a record of the
+type described in the manual. Or of course you could just pass in the callback
+function:
+\begin{verbatim}
+   callback := function(rec) {print rec;}
+\end{verbatim}
+to discover the record structure. Note that to follow a drag you merely follow
+the motion after a button down and before a button up.
+\end{ahdescription}
+\begin{ahexample}
+For example, here is how you could implement a little ``scribble'' application.
+\begin{verbatim}
+include 'pgplotwidget.g'
+f := frame();
+pg := pgplotwidget(f);
+pos := [dragging=F];
+
+# Drag starts
+downcallback := function(rec) {
+    global pos;
+    pos := [dragging=T, xlast=rec.world[1], ylast=rec.world[2]];
+}
+
+# Draw the new line segment if we are dragging
+motioncallback := function(rec) {
+    global pos;
+    if (pos.dragging) {
+        x := rec.world[1]; y := rec.world[2];
+        pg.line([pos.xlast, x], [pos.ylast, y]);
+        pos.xlast := x; pos.ylast := y;
+    }
+}
+
+# Drag ends
+upcallback := function(rec) {
+    global pos;
+    pos.dragging := F;
+}
+
+pg.env(0, 1, 0, 1, 0, -1);
+pg.setcallback('button', downcallback);
+pg.setcallback('motion', motioncallback);
+pg.setcallback('buttonup', upcallback);
+pg.message('Start scribbling! Drag the mouse with a button');
+\end{verbatim}
+The amount of code could have been reduced somewhat by having only one callback
+for both button and buttonup, and using the ``ButtonPress'' field of the record
+to distinguish up from down events.
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{name}{events for which to call supply callback}{}{motion,key,button,button[1-3],buttonup}
+\ahaddarg{callback}{function to call on event}{}{single argument function}
+\end{ahargs}
+\ahreturns{integer index (for deactivatecallback)}
+\end{ahfunction}
+
+\begin{ahfunction}{deactivatecallback}{deactivate a callback}
+\begin{ahdescription}
+This function gives you a way to deactivate a previously defined callback.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{which}{callback index to remove}{}{integer}
+\end{ahargs}
+\ahreturns{T or fail (for an invalid index)}
+\end{ahfunction}
+
+\begin{ahfunction}{activatecallback}{activate a callback}
+\begin{ahdescription}
+This function gives you a way to activate a previously defined callback.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{which}{callback index to reactivate}{}{integer}
+\end{ahargs}
+\ahreturns{T or fail (for an invalid index)}
+\end{ahfunction}
+
+
+\begin{ahfunction}{getcallbacks}{Recover callbacks}
+
+\begin{ahdescription}
+This function recovers a record with one entry per
+set callback.  Each entry holds two fields, 'index' and 'active'.
+The 'index' is the index returned for that callback
+by function setcallback.  Field 'active' says whether
+that callback is active or not.
+\end{ahdescription}
+\ahreturns{A record}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{record}{Save the drawing commands}
+\begin{ahdescription}
+This function gives you control of whether or not the plotting commands are
+saved in the internal display list or not. You might want to do this for
+efficiency concerns (e.g. the commands are coming frequently and contain a
+lot of pixels), or so that you can ``undraw'' some temporary plotting with a
+refresh.
+
+The return value is the {\em previous} state of the function to make it easy
+to get back to the previous state.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- pg.record(F); # Turn off saving plot commands
+- ... temporary ``decoration''
+- pg.refresh()  # Make the temporary stuff go away.
+- pg.record(T)  # Start recording again
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{newstate}{Record or not?}{}{boolean}
+\end{ahargs}
+\ahreturns{boolean - the former recording state}
+\end{ahfunction}
+
+\begin{ahfunction}{recording}{return whether plot commands are being saved} 
+
+\begin{ahdescription}
+The pgplotmanager tool maintains a record of plot commands that have
+been issued in the form of a \ahlink{displaylist
+tool}{guiutils:displaylist}.  This allows this tool to replay the
+commands later to, for example, refresh the screen or send a currently
+viewed plot to a PostScript file.
+
+This function simply returns whether plot commands are currently being
+saved internally for later replay.  A returned value of \texttt{T}
+indicates that recording is currently turned on and commands are being
+saved.  The recording state can be changed via the
+\ahlink{record()}{plotter:pgplotmanager.record} function.
+\end{ahdescription}
+
+\ahreturns{boolean -- the current recording state}
+
+\end{ahfunction}
+
+\begin{ahfunction}{canplay}{return whether a command can be executed}
+
+\begin{ahdescription}
+This function returns true if the given command is recognized as a
+supported plot command.  To be recognized, the \texttt{command}
+parameter must be the name of a plotting function of this tool (either
+a ``raw'' plotting command supported by the
+\ahlink{Glish/PGPLOT}{pgplot} agent or higher level command, like 
+\ahlink{settings()}{plotter:pgplotmanager.settings} or 
+\ahlink{plotxy()}{plotter:pgplotmanager.plotxy}) or a custom command
+that has been added via the
+\ahlink{addredrawfunction()}{plotter:pgplotmanager.addredrawfunction}
+function (usually as part of a plug-in).  
+\end{ahdescription}
+
+\begin{ahexample}
+Consider this session in which no custom commands have been added:
+\begin{verbatim}
+- print pg.canplay('plotxy');
+T
+- print pg.canplay('gray');
+T
+- print pg.canplay('grayscale');
+F
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{play}{Execute a series of plot commands}
+\begin{ahdescription}
+This function is used to execute a series of plot commands in this plotter. It
+is used internally (e.g. by refresh), but it can also be of use to
+programmers. For example, you could keep external ``decorations'' in a list,
+and show or don't show them by calling {\tt play}.
+
+The format of the commands is that it is either a {\tt displaylist} from a {\tt
+pgplotwidget}, or it is a record, each field of which is a plot command of the
+form, e.g.:
+\begin{verbatim}
+    [_function='line', xpts=1:10, ypts=1:10]
+\end{verbatim}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{commands}{list of plot commands to execute}{}{displaylist or record}
+\ahaddarg{record}{save commands in our internal displaylist?}{}{boolean}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+\begin{ahfunction}{postscript}{Save the plot as a PostScript file}
+\begin{ahdescription}
+This function saves the plot as a postscript file. Basically it changes the
+device to a PostScript device and then does a refresh, so any commands that
+have not been recorded will not be plotted. If the file already exists (and is
+writable), it will be overwritten without any request for confirmation.
+
+By default it writes in landscape orientation and color PostScript, but these
+can be changed to portrait and BW respectively.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{aipsplot.ps}{string}
+\ahaddarg{color}{write in color postscript?}{T}{boolean}
+\ahaddarg{landscape}{write landscape?}{T}{boolean}
+\end{ahargs}
+\ahreturns{T or fail (e.g., file not writable)}
+\end{ahfunction}
+
+\begin{ahfunction}{plotfile}{Save the plot in native format}
+\begin{ahdescription}
+This function saves the plot as an \aipspp\ Table.
+The plot can then be reopened and new commands added or old commands
+changed. Basically it saves the internal display list, so any commands that
+have not been recorded will not be saved. If the file already exists (and is
+writable), it will be overwritten without any request for confirmation.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{aips++plot.plot}{string}
+\end{ahargs}
+\ahreturns{T or fail (e.g., file not writable)}
+\end{ahfunction}
+
+\begin{ahfunction}{restore}{Retrieve a plot}
+\begin{ahdescription}
+This function retrieves a plot file that has been saved by {\tt plotfile}. The
+current plot is replaced with the plot in the file. If you want to merge two
+plot files you can use {\tt play} on the displaylist of another {\tt
+pgplotwidget}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{aips++plot.plot}{string}
+\end{ahargs}
+\ahreturns{T or fail (e.g., file not readable)}
+\end{ahfunction}
+
+\begin{ahfunction}{refresh}{replay the display list}
+\begin{ahdescription}
+This function redraws the plot. The most common use for it is to redraw the
+plot after the frame size has been changed.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- f := frame()
+- pg := pgplotwidget(f);
+- whenever f->resize do pg.refresh();
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{resetplotnumber}{Reset internal plot number counter to 0}
+\ahreturns{T}
+
+\begin{ahdescription}
+
+The pgplotwidget maintains an internal counter which is used to
+determine when to prompt the user (when function ask(T) has been
+called).  This function resets the counter to 0, which means for the
+next plot, you won't be prompted. \end{ahdescription}
+
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{size}{size in pixels of the pgplotwidget}
+\begin{ahdescription}
+Returns the size in pixels of the pgplot frame.
+\end{ahdescription}
+\ahreturns{integer[2]}
+\end{ahfunction}
+
+\begin{ahfunction}{clear}{empty the display list}
+\begin{ahdescription}
+This function empties the display list. This is unlike {\tt eras}, which merely
+clears the current page. This function erases the screen and removes all
+accumulated plot commands.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{message}{write in the message line}
+\begin{ahdescription}
+This function sends a message to the message line above the plot area. It is
+intended for messages which instruct the user in driving the application the
+widget is embedded in. For example, use it to relay what the mouse or
+keyboard events are expected.
+
+If you send a message that is more than one line long (i.e. if it has
+embedded newline characters), a button will appear to the right of the
+message. Pressing it will display the entire message in a popup
+window. You should try to arrange multi-line messages so that the
+first line contains a summary, and subsequent lines contain more
+detailed instructions. This way frequent users won't have to pop up
+a new window very often.
+
+Clear the line by sending it an empty string.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{message}{message to write}{}{string}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{settings}{Set many PGPLOT attributes at once}
+\begin{ahdescription}
+This function is used to set (possibly) many PGPLOT attributes at once. It is
+always inserted at the beginning of every plot's display list to make it easy
+to change settings in a global way. All values have their PGPLOT defaults.
+
+\begin{verbatim}
+   ask                             : page prompting
+   nxsub, nysub                    : plot panelling
+   arrowfs, arrowangle, arrowvent  : arrow style
+   font                            : text font
+   ch                              : character height
+   ci                              : color index
+   fs                              : fill style
+   hsangle, hssepn, hsphase        : hatching style
+   ls                              : line style
+   lw                              : line width
+   tbci                            : text background color
+\end{verbatim}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{cursor}{Set the cursor}
+\begin{ahdescription}
+This function is used to set the cursor's reference position, the cursor
+position and the cursor color.  See the \ahlink{Glish/PGPLOT}{pgplot}
+chapter for details on its use.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{lastchange}{Version of the last change}
+\begin{ahdescription}
+This function returns a vaule that changes every time the internal display list
+changes. It can be used, for example, to see if the plot has changed since the
+last time it was inspected.
+\end{ahdescription}
+\ahreturns{integer - changes every time the displaylist changes}
+\end{ahfunction}
+
+\begin{ahfunction}{curs}{Get a key and position}
+\begin{ahdescription}
+This function emulates the standard PGPLOT curs() event. It returns a record
+of the form:
+\begin{verbatim}
+[ok=bool, x=float, y=float, ch=string]
+\end{verbatim}
+The ``ch'' field is the key that the user struck on the keyboard.
+Note that it {\em BLOCKS} until a key is pressed on the plot area. Setting a
+callback is usually more flexible than this routine since it tolerates inaction
+on the users part better.
+
+The function may be passed a position where the programmer guesses
+that the user will want to position the cursor. It defaults to (0,0).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{x}{estimated X position}{0}{float}
+\ahaddarg{y}{estimated Y position}{0}{float}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{addredrawfunction}{Add a function to redraw a command in the displaylist}
+\begin{ahdescription}
+This function is only of interest if you want to add functions via
+\ahlink{plugins}{tasking:plugins}.
+
+Suppose you create via a plugin a high-level plot command that you
+want to show up in the displaylist as a high-level command ({\em
+i.e.}, not broken up into lower level PGPLOT commands). In this case,
+in your plugin you would enter into the displaylist a record with a
+field per argument, and a field {\tt \_function} that contains the name
+of the function.
+
+To be able to redraw the function, you would use {\tt addredrawfunction} to
+add a function which, when passed the record the plugin inserted in the
+display list, would ensure that the draw commands are executed.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{name of the draw function}{}{string}
+\ahaddarg{redrawfunction}{function to redraw a command from the displaylist}{}{function}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\end{ahfunction}
+
+
+\begin{ahseealso}
+\begin{enumerate}
+\item \ahlink{Glish/PGPLOT}{pgplot}
+\item \ahlink{pgplotter}{plotter:pgplotter}
+\item \ahlink{displaylist}{guiutils:displaylist}
+\item \ahlink{plotter}{plotter}
+\end{enumerate}
+\end{ahseealso}
+
+\begin{ahfunction}{done}{destroy the widget, release resources}
+\begin{ahdescription}
+This function destorys the widget and attempts to release all its
+resources. Note in particular that it destroys the parent frame the widget was
+created with.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahobject}{pgplotter}{stand alone pgplotter tool}
+
+\ahinclude{pgplotter.g}
+
+\ahkeyword{plot}{}
+\ahkeyword{postscript}{}
+\ahkeyword{plotting}{}
+\ahkeyword{TV}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+A ``pgplotter'' tool is used to manipulate line and raster plots. It is
+layered on top of both the Glish/PGPLOT commands and the pgplotwidget and
+so has a superset of those commands, in addition to its own functionality.
+
+Plot commands can be entered both from the Glish command line, and also from
+the GUI. The plot can be saved to either a ``plot'' file or a PostScript
+file. The advantage of the former is that at a later time you can reopen the
+file and change or add to the plot. Once a PostScript file is written, it
+cannot be changed from this tool, it can only be overwritten.
+
+The GUI consists of four graphical areas. The first 
+is the menu bar, which has the following menus:
+\begin{description}
+\item[File] From the file menu you can do the following:
+\begin{description}
+    \item[Open pgplot file] This menu item will present you with a file chooser from
+                   which you can open a new plot file. If the file already 
+                   exists the existing plot commands will be displayed on the
+                   screen. 
+    \item[Save pgplot file]    This will save the plot file to disk.
+                   The name of the plot file is shown in the lower
+                   left corner of the GUI. It will overwrite any commands that
+                   are already in the plot file.
+    \item[Save to postscript file]    This will save the plot file to disk
+                   in postscript format.
+    \item[Print]   Send a file to the printer.  It is possible to send the
+                   plot directly to ghistview for a preview, also.
+    \item[Dismiss] Exit the pgplotter GUI, but leave the tool alive.
+    \item[Done]    Exit and destroy the pgplotter tool.
+\end{description}
+\item[Tools]  This menu includes two items at present.  Additional tools can
+be added by the user via the \ahlink{addtool}{plotter:pgplotter.addtool}
+function.  That is, it is intended that users and sites might customize ({\em
+e.g.}, add an analysis facility) by adding an item to the tools menu via the
+\ahlink{plugins}{tasking:plugins} facility. The standard tools which are 
+available are:
+\begin{description}
+    \item[Cursor]       This tool can be used to change the cursor to
+                        crosshair style, which can facilitate reading data
+			values from the plot.
+    \item[Colormap]     If the plot has installed a colormap with the {\tt ctab}
+			function, you may manipulate the colormap with this 
+			tool. From the raised menu button you can choose the
+			style of colormap you like, and then in the plot surface
+			``drag'' the cursor (left-button down, and move it 
+			without releasing it) until you like the colormap.
+			Vertical movement of the cursor changes the ``contrast''
+			of the cursor (how tightly bunched the colors are),
+			and horizontal movement changes the ``brightness'' (the
+			pixel value where the colors are displayed). That is,
+			in the {\tt ctab} command, vertical motion controls the
+			{\tt contra} parameter, and horizontal motion controls
+			the {\tt bright} parameter. It is useful to have a color
+			wedge to see the effects of the cursor motion. One may
+			be inserted with the {\tt wedg} command.
+\end{description}
+\item[Edit] The Edit menu is used to add new commands to the plot, or to change
+            commands which have already been sent to the plotter. It has only
+            one menu item:
+\begin{description}
+    \item[Edit]               This command lets you change or add plot commands.
+                              For example, you might
+                              want to change a line thickness, or change the
+                              number of panels displayed per page, or change
+                              the axes to logarithmic.
+
+                              If you want to change a plot command, click on
+                              the command you want to change in the Drawlist,
+                              change the parameters in the input box, and then
+                              press Return. The change should be reflected
+                              immediately in the plot.
+
+			      To add a new pgplot drawing command, select the
+			      desired command from the functions list and then
+			      click on {\tt Add to Drawlist}.  The Clipboard
+			      is also available for adding several commands
+			      simultaneously.
+                 
+                              If you want to remove a single command from the
+			      Drawlist, use {\tt Delete}, and to clear the
+			      entire Drawlist use {\tt Clear}.
+\end{description}
+
+\item[Help] Several options are available including directing your web browser 
+to appropriate help sections, asking a question, and reporting a bug.
+\end{description}
+
+Below the menu bar is a one line ``message'' window which can be
+writtin to via the {\tt message} function. It is intended primarily
+for things like informing the user which mouse buttons to use in the
+plot window. If the message contains more than one line, a button will
+appear beside the message. Pressing it will display the entire message
+in a popup window.
+
+Next down is the plot frame, where all the plotting action happens. If there
+are enough available colors, it is possible to do color (raster and line)
+plots in this window. If some other application has grabbed all the colours,
+then only black and white plots will be possible.
+
+The bottom line has several items of interest. From left to right:
+\begin{enumerate}
+    \item The name of the plot file. If the plot has unsaved changes, then the
+          name of the plot file will be ``raised'', and you can press the button
+          to save it.
+    \item The Clear button erases the screen and removes all commands from the
+          draw history. It does not, however, empty the plot file on disk
+          (the file name will raise after clear is pressed - if you then save
+          the file to disk the plot will effectively be gone).
+    \item The central pair of numbers in a ``groove'' gives the current
+          mouse position in plot coordinates. If there are several panels on
+          the page the coordinates are relative to the last panel plotted, which
+          may not be what you expect!
+    \item If the dismiss button is pressed, the GUI and its contents will go
+          away. You will be given a chance to save unsaved changes first. This
+          is equivalent to executing the {\tt done} function.
+\end{enumerate}
+
+The pgplotter class is enabled for plugins.  This means that you can
+write your own ``plugin'' (.gp file) code and it will automatically be
+available to the plotter. For instance, you could set up a GUI to read data,
+fit a model to it, and plot the fit and residuals. this procedure will be
+documented at a later time.
+
+In general, a pgplotter is just a shell around an underlying pgplotwidget. All
+functions of pgplotwidget are available in the pgplotter. The only functions
+documented here are those that are unique to pgplotter.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'pgplotter.g'
+- pg := pgplotter()
+- pg.env(0, 2*pi, -1, 1, 0, 0)
+- x := 2*pi*[1:100]/100; y := sin(x);
+- pg.line(x,y);
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahseealso}
+\begin{enumerate}
+\item \ahlink{Glish/PGPLOT}{pgplot}
+\item \ahlink{pgplotwidget}{plotter:pgplotwidget}
+\item \ahlink{displaylist}{guiutils:displaylist}
+\item \ahlink{plotter}{plotter}
+\end{enumerate}
+\end{ahseealso}
+
+\begin{ahconstructor}{pgplotter}{Create a pgplotter tool in standalone GUI}
+\begin{ahdescription}
+This command creates a pgplotter tool with a GUI, and attaches it to a plot
+file. If the plot file is filled, the plot commands are drawn to the screen.
+If there are any plugins (at present there is one plugin for displaying
+PGPLOT demonstrations), they are attached before the tool is returned to
+the user.
+
+If it is not possible to create the tool (for example, no DISPLAY environment
+variable is set), a fail is returned.
+
+If the requested number of colors {\tt mincolors} cannot be allocated with a
+shared colormap, a private colormap will be installed. This will cause colormap
+flashing on some hardware.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{plotfile}{Name of the plot file to attach to}{aips++plot.plot}{string}
+\ahaddarg{size}{Size in pixels for the drawing area}{[600,450]}{integer[2]}
+\ahaddarg{foreground}{Foreground colour}{white}{string (valid colour name}
+\ahaddarg{background}{Background colour}{black}{string (valid colour name)}
+\ahaddarg{mincolors}{Minimum number of colors we require}{2}{integer}
+\ahaddarg{maxcolors}{Maximum number of colors we will take}{100}{integer}
+\end{ahargs}
+\ahreturns{pgplotter tool or fail}
+\end{ahconstructor}
+
+\begin{ahfunction}{commandgui}{Create the ``add commands'' GUI}
+\begin{ahdescription}
+This command starts up the ``Add commands'' GUI. It is unlikely you will call 
+this function directly.  Instead you are apt to invoke it from the ``Edit'' 
+menu of the pgplotter tool.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{editgui}{Create the ``edit commands'' GUI}
+\begin{ahdescription}
+This command starts up the ``Edit commands'' GUI. It is unlikely you will call 
+this function directly.  Instead you are apt to invoke it from the ``Edit'' 
+menu of the pgplotter tool.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{addtool}{Add a tool to the Tools menu}
+\begin{ahdescription}
+This command is only of interest if you want to customize the {\tt Tools} menu.
+
+This command creates a ``Tool'' - a custom GUI that the user can interact with 
+to perform some functionality. The tool might be used purely to manipulate the
+plot (for example the standard zoom tool), or it might be used to perform some 
+data analysis.
+
+Typically the tool will operate by finding some plot commands in the 
+displaylist, and then changing or adding to them appropriately.
+
+The tool is defined by supplying a name and two functions, one of which is
+called when the tool is invoked and the other of which is called when the
+tool is dismissed.
+
+The arguments to these {\tt start} nad {\tt suspend} functions are:
+\begin{description}
+\item[frame]  A Glish/Tk frame in which the Tool may put whatever buttons or
+              other widgets it needs.
+\item[public] The {\tt pgplotter} tool which is calling the Tool. Typically
+              the Tool will use this to go through the displaylist and add
+              additional plot commands.
+\item[state]  This is a record which the Tool can use as a ``scratchpad'' to
+              retain information between invocations. If the length of the
+              state record is zero, then the Tool has not been initialized.
+              Typically the Tool will put its GUI widgets (e.g. buttons
+              in the state record) as well as state that needs to be remembered
+              from invocation to invocation.
+\end{description}
+
+
+Typically a tool will be defined in a \ahlink{plugin}{tasking:plugins}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{name of the tool}{}{string}
+\ahaddarg{start}{function to call when the Tool GUI becomes visible}{}{function}
+\ahaddarg{suspend}{function to call with the Tool GUI is dismissed}{}{function}
+\end{ahargs}
+\ahreturns{T or fail (if the tool has already been defined)}
+\end{ahfunction}
+
+\begin{ahfunction}{tool}{Show or hide a particular Tool}
+\begin{ahdescription}
+This command is only of interest if you want to start or hide a Tool
+from the Glish command line.
+
+The tool must have already been defined with {\tt addtool}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{name of the tool}{}{string}
+\ahaddarg{show}{show or hide the tool}{T}{boolean}
+\end{ahargs}
+\ahreturns{T or fail (if the tool does not exist)}
+\end{ahfunction}
+
+
+\begin{ahfunction}{busy}{Set or unset the busy symbol to the mouse cursor}
+\begin{ahdescription}
+This changes the mouse cursor to an X 'watch' cursor to signify that the
+plotter is busy. Remember to switch it back to not busy when finished.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{isbusy}{Is the plotter busy?}{T}{boolean}
+\end{ahargs}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{demo}{Demo set for PGPLOT}
+\begin{ahdescription}
+This brings up a Glish/Tk widget holding many buttons for demonstrating
+different types of plots in PGPLOT
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Close the pgplotter tool}
+\begin{ahdescription}
+The {\tt done} command closes the pgplotter tool and removes it from memory.
+It will {\em not} ask you if you want to store any unsaved changes first.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Call back the plotter window}
+\begin{ahdescription}
+If the pgplotter is dismissed with the "Dismiss" button. It may be recalled
+with the gui function which remaps the frame onto the screen. It is the
+reverse function of "screen" which unmaps the pgplotter window (the CLI
+version of the Dismiss button).
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{screen}{Dismiss the plotter window}
+\begin{ahdescription}
+This dismisses the plotter window. It may be recalled with the "gui"
+command.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{title}{Set the pgplotter window title}
+\begin{ahargs}
+\ahaddarg{msg}{Text of the new window title}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{userframe}{Return an internal user Glish/Tk frame}
+\begin{ahdescription}
+
+This function returns one of the Pgplotter's internal frame  into which
+you can embed your own GUI elements. These elements will appear directly
+below the plotting area and above the buttons at the bottom.
+
+\end{ahdescription}
+
+\ahreturns{Glish/Tk agent}
+\end{ahfunction}
+
+
+
+
+
+The following commands are included through the plugin  file, 
+pgplotter\_gplot1d.gp. See also the Getting Results in AIPS++ section
+on "Line Plots with Pgplotter in AIPS++".
+
+\begin{ahfunction}{ploty}{Plot Y vectors with auto-scaling}
+\begin{ahargs}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors with auto-scaling.  If there is
+more than one Y vector, they should be arranged in a 2-D array with
+the first dimension being the number of vectors to plot and the
+second dimension being the length of each vector.  The X axis
+will default to an index number starting at 1.  The color of
+each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y := sqrt(x);
+pg.ploty(y,'X','Y','TITLE');
+pg.ploty(y*2,,'Y2');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotxy1}{Plot X and Y vectors with auto-scaling}
+\begin{ahargs}
+\ahaddarg{x}{An X vector}{}{float}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors with auto-scaling 
+against a single
+X vector.  If there is more than one Y vector, they should be arranged 
+in a 2-D array with the first dimension being the number of vectors 
+to plot and the second dimension being the length of each vector.  The length
+of the X axis vector must be the same as the length of each Y vector.
+The color of each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+The ylabflag determimes whether the y axis label is printed on the plot itself,
+in addition to the y axis.  For a single plot, this may sensibly be set to 
+false.  However, if plotxy1 is called repeatedly without clearing the plot,
+the successive calls will overplot the new data on the original, and having 
+this flag set to true is useful for determining which color plot corresponds
+to which data.  This function is called plotxy1 to distinguish it from the 
+standard pgplotter function, plotxy, which has some subtle differences.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y1a := sin(x/10);
+y1b := cos(x/10);
+y2 := sqrt(x);
+pg.plotxy1(x,y1a,'X Index','Sine Function','Title');
+pg.plotxy1(x,y1b,,'Cosine Function');
+pg.plotxy2(x,y2,,'SQRT Function');
+pg.ptxt(105,5.5,270,0.5,'SQRT (X)');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ploty2}{Plot Y vectors with auto-scaling using the right Y axis}
+\begin{ahargs}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors with auto-scaling using the right
+Y axis (which will have separate labels from the left Y axis).  If there is
+more than one Y vector, they should be arranged in a 2-D array with
+the first dimension being the number of vectors to plot and the
+second dimension being the length of each vector.  The X axis
+will default to an index number starting at 1.  The color of
+each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+The order of these colors is the reverse order of that used in 
+the ploty and plotxy1 function.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+pg.ploty(sqrt(x),'X','Y','TITLE');
+pg.ploty2(sin(x/3),,'Y2');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{psprint}{Print out all of the plots in the display list}
+\begin{ahdescription}
+This function will execute your display list and print out all plots to the
+printer. You should use the edit tool to examine your displaylist before
+printing.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{psprinttofile}{Print out all of the plots in the display
+list to the named file}
+\begin{ahdescription}
+This function will execute your display list and print out all plots to a
+file. You should use the edit tool to examine your displaylist before
+printing.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{filename on disk to hold the plot session}{}{string}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{plotxy2}{Plot X and Y vectors with auto-scaling using the right and upper axes.}
+\begin{ahargs}
+\ahaddarg{x}{An X vector}{}{float}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors with auto-scaling against a single
+X vector using the right and upper axes.  These axes will have separate
+labelling from the lower and left axes.  If there is more than one Y vector, 
+they should be arranged in a 2-D array with the first dimension being 
+the number of vectors to plot and the second dimension being the length of 
+each vector.  The length of the X axis vector must be the same as the 
+length of each Y vector.  The color of
+each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+The order of these colors is the reverse order of that used in 
+the ploty and plotxy1 functions.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotter.g'
+pg := pgplotter();
+x := 1:100;
+y1 := sin(x/10);
+y2 := sqrt(x);
+pg.plotxy1(x,y1,'X Index','Sine Function','Title');
+pg.plotxy2(x,y2,,'SQRT Function');
+pg.ptxt(105,5.5,270,0.5,'SQRT (X)');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{timey}{Plot Y vectors versus time with auto-scaling}
+\begin{ahargs}
+\ahaddarg{x}{A vector of times}{}{float}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors against a single
+X vector.  The X vector is assumed to be time in seconds.  If there is more 
+than one Y vector, they should be arranged 
+in a 2-D array with the first dimension being the number of vectors 
+to plot and the second dimension being the length of each vector.  The length
+of the X axis vector must be the same as the length of each Y vector.
+The color of each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{timey2}{Plot Y vectors versus time with auto-scaling against the right and upper axes.}
+\begin{ahargs}
+\ahaddarg{x}{An vector of times}{}{float}
+\ahaddarg{y}{A collection of Y vectors}{}{float}
+\ahaddarg{xlab}{A label for the X axis}{}{string}
+\ahaddarg{ylab}{A label for the Y axis}{}{string}
+\ahaddarg{tlab}{A label for the plot title}{}{string}
+\ahaddarg{plotlines}{Toggle for plotting lines or points}{T (lines)}{Boolean}
+\ahaddarg{ptsymbol}{Symbol ID}{2}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator plots a collection of Y vectors against a single
+X vector using the right and upper axes (which will have separate labels from 
+the other axes). The X vector is assumed to be time in seconds.  If there is 
+more than one Y vector, they should be arranged 
+in a 2-D array with the first dimension being the number of vectors 
+to plot and the second dimension being the length of each vector.  The length
+of the X axis vector must be the same as the length of each Y vector.
+The color of each Y vector on the plot will be different for the first 16
+plots, after that the colors will cycle through the same 16 colors.
+The order of these colors is the reverse order of that used in 
+the ploty and plotxy1 functions.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of object, in this case
+"pgplotter". This function is necessary for the toolmanager}
+\end{ahfunction}
+
+\begin{ahfunction}{setxscale}{Set the viewable X range of an already existing plot}
+\begin{ahargs}
+\ahaddarg{xmin}{The minimum X value to show}{}{float}
+\ahaddarg{xmax}{The maximum X value to show}{}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after a ploty, plotxy1, or timey has already been
+called.  It resets the viewable X range and refreshes the display.  
+This alters the displaylist in the pgplotter.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setyscale}{Set the viewable Y range of an already existing plot}
+\begin{ahargs}
+\ahaddarg{Ymin}{The minimum Y value to show}{}{float}
+\ahaddarg{Ymax}{The maximum Y value to show}{}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after ploty, plotxy1, or timey has already been 
+called.  It resets the viewable Y range and refreshes the display.  
+This alters the displaylist in the pgplotter.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{sety2scale}{Set the viewable Y range of an already existing plot using the right Y axis}
+\begin{ahargs}
+\ahaddarg{ymin}{The minimum Y value to show}{}{float}
+\ahaddarg{ymax}{The maximum Y value to show}{}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after ploty2, plotxy2, or timey2 has already been
+called.  It resets the viewable Y range and refreshes the display.  
+This alters the displaylist in the pgplotter.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setxaxisgrid}{Turn on or off the display of the X-axis grid lines}
+\begin{ahargs}
+\ahaddarg{on}{Turn the grid on?}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after ploty, plotxy, or timey has already been
+called.  It turns on or off the display of the X-axis grid lines.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setyaxisgrid}{Turn on or off the display of the Y-axis grid lines}
+\begin{ahargs}
+\ahaddarg{on}{Turn the grid on?}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after ploty, plotxy, or timey has already been
+called.  It turns on or off the display of the Y-axis grid lines.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{sety2axisgrid}{Turn on or off the display of the Y-axis grid lines for the right Y axis.}
+\begin{ahargs}
+\ahaddarg{on}{Turn the grid on?}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This {\tt gplot1d}-emulator function must be used after ploty2, plotxy2, or timey2 has already been
+called.  It turns on or off the display of the Y-axis grid lines
+for the right Y-axis.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setcolor}{Set the color of subsequent plotting elements
+(e.g. lines, points, etc).}
+\begin{ahargs}
+\ahaddarg{color}{The PGPLOT color number to draw. }{}{integer}
+\end{ahargs}
+\begin{ahdescription}
+1=white, 2=red, 3=green,
+4=blue, 5=cyan, 6=purple, 7=yellow, 8=orange, 9=light green, 10=blue-green,
+11=light blue, 12=dark purple, 13=strawberry, 14+=shades of grey
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setplottitle}{Set the title of the plot}
+\begin{ahargs}
+\ahaddarg{title}{A title to display}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setxaxislabel}{Set the x-axis label}
+\begin{ahargs}
+\ahaddarg{xlabel}{An x-axis label to display}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setyaxislabel}{Set the y-axis label}
+\begin{ahargs}
+\ahaddarg{ylabel}{An y-axis label to display}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahfunction}{pgplottertest}{Test pgplotter by drawing the examples}
+\begin{ahdescription}
+This function creates a pgplotter and runs all 13 PGPLOT example
+plots non-interactively.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{autodestruct}{Destroy the pgplotter immediately after the test}{T}{Boolean}
+\end{ahargs}
+\ahreturns{Boolean}
+\end{ahfunction}
+\end{document}

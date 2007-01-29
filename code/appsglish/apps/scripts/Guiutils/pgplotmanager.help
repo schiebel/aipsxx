@@ -1,0 +1,947 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: pgplotmanager.help,v 19.2 2004/08/25 02:00:12 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{pgplotmanager}{tool used in application development
+to send plot commands to a plot device}
+
+\ahinclude{pgplotmanager.g}
+
+\ahkeyword{plot}{}
+\ahkeyword{postscript}{}
+\ahkeyword{plotting}{}
+\ahkeyword{TV}{}
+
+\ahmethods{}
+
+\begin{ahdescription} The \texttt{pgplotmanager} is tool that is
+useful for building Glish applications that do specialized plotting.
+Many applications will prefer instead to use the
+\ahlink{pgplotwidget}{plotter:pgplotwidget} which is an extension of
+the pgplotmanager tool, specialized for plotting to a graphical
+widget.  (Interactive users will normally use the
+\ahlink{pgplotter}{plotter:pgplotter} tool.)  In contrast,
+pgplotmanager is device-independent; that is, its capabilities are
+relevent to plotting either to a widget or to a file.  As a result,
+applications can:
+\begin{itemize} 
+\item use the same code for plotting to both graphical and hardcopy
+      devices
+\item open a hardcopy device without opening a graphical widget (as is
+      necessary with the pgplotwidget tool) to do non-interactive
+      plotting. 
+\end{itemize}
+See the Example below for details on how one can accomplish this using
+\texttt{pgplotmanager} tool.
+
+pgplotmanager is built on top of the ``raw''
+\ahlink{Glish/PGPLOT}{pgplot} agent, providing access to most of its
+capabilities through its tool functions.  (That is, instead accessing
+pgplot function through the event syntax, e.g. \verb|pg->line()|, you
+access it like any tool function: \verb|pg.line()|.)  In addition, a few
+higher level functions have been added:
+\begin{itemize}
+\item {\tt settings()} --- sets many PGPLOT attributes (e.g. line
+      width, character height) all at once.
+\item {\tt plotxy()} --- a simple function for plotting a ``y'' array
+      versus an ``x'' array.
+\item {\tt maskline()} --- similar to the the ``raw'' function {\tt
+      line()}, but uses a mask array to determine with points plot.
+\end{itemize}
+
+An important added feature is pgplotmanager's maintenance of an internal
+\emph{display list}---a record of plot commands (i.e. calls made to
+the plotmanager's plotting functions) stored inside the tool that can
+be played back at any time.  This enables several useful capabilities:
+\begin{itemize}
+\item when the GUI is resized, the plot commands can be replayed to
+      refresh the plot, filling the new size.
+\item plot commands can be save to a ``plot'' file, which can be opened and
+      edited later (for example, by a user via pgplotter).
+\item plot commands sent to a GUI can be replayed to a PostScript file.
+\item recording of commands can be turned ``on'' and ``off.''  This
+      allows you to ``erase'' parts of the plot.  For example, you
+      could interactively draw ellipses on the plot widget with
+      recording turned off, and then remove the ellipses by doing a
+      replaying the commands that were recorded.
+\end{itemize}
+
+Only those functions that add functionality beyond that of the Glish
+pgplot agent are described explicitly in this reference manual
+section.  For descriptions of the ``raw'' pgplot agent functions,
+refer to the \ahlink{Glish/PGPLOT}{pgplot} description found in the
+Glish User's Manual.  Those functions are as follows:
+
+\begin{description}
+\itemsep 0in
+\parsep 0in
+\item[arro] -- draw an arrow
+\item[ask] -- control new page prompting
+\item[bbuf] -- begin batch of output (buffer)
+\item[beg] -- begin PGPLOT, open output device
+\item[bin] -- histogram of binned data
+\item[box] -- draw labeled frame around viewport
+\item[circ] -- draw a filled or outline circle
+\item[clos] -- close the selected graphics device
+\item[conb] -- contour map of a 2D data array, with blanking
+\item[conl] -- label contour map of a 2D data array
+\item[cons] -- contour map of a 2D data array (fast algorithm)
+\item[cont] -- contour map of a 2D data array (contour-following)
+\item[ctab] -- install the color table to be used by PGIMAG
+\item[draw] -- draw a line from the current pen position to a point
+\item[ebuf] -- end batch of output (buffer)
+\item[end] -- terminate PGPLOT
+\item[env] -- set window and viewport and draw labeled frame
+\item[eras] -- erase all graphics from current page
+\item[errb] -- horizontal or vertical error bar
+\item[errx] -- horizontal error bar
+\item[erry] -- vertical error bar
+\item[gray] -- gray-scale map of a 2D data array
+\item[hi2d] -- cross-sections through a 2D data array
+\item[hist] -- histogram of unbinned data
+\item[iden] -- write username, date, and time at bottom of plot
+\item[imag] -- color image from a 2D data array
+\item[lab] -- write labels for x-axis, y-axis, and top of plot
+\item[ldev] -- list available device types
+\item[len] -- find length of a string in a variety of units
+\item[line] -- draw a polyline (curve defined by line-segments)
+\item[move] -- move pen (change current pen position)
+\item[mtxt] -- write text at position relative to viewport
+\item[numb] -- convert a number into a plottable character string
+\item[open] -- open a graphics device
+\item[page] -- advance to new page
+\item[panl] -- switch to a different panel on the view surface
+\item[pap] -- change the size of the view surface
+\item[pixl] -- draw pixels
+\item[pnts] -- draw one or more graph markers, not all the same
+\item[poly] -- fill a polygonal area with shading
+\item[pt] -- draw one or more graph markers
+\item[ptxt] -- write text at arbitrary position and angle
+\item[qah] -- inquire arrow-head style
+\item[qcf] -- inquire character font
+\item[qch] -- inquire character height
+\item[qci] -- inquire color index
+\item[qcir] -- inquire color index range
+\item[qcol] -- inquire color capability
+\item[qcr] -- inquire color representation
+\item[qcs] -- inquire character height in a variety of units
+\item[qfs] -- inquire fill-area style
+\item[qhs] -- inquire hatching style
+\item[qid] -- inquire current device identifier
+\item[qinf] -- inquire PGPLOT general information
+\item[qitf] -- inquire image transfer function
+\item[qls] -- inquire line style
+\item[qlw] -- inquire line width
+\item[qpos] -- inquire current pen position
+\item[qtbg] -- inquire text background color index
+\item[qtxt] -- find bounding box of text string
+\item[qvp] -- inquire viewport size and position
+\item[qvsz] -- find the window defined by the full view surface
+\item[qwin] -- inquire window boundary coordinates
+\item[rect] -- draw a rectangle, using fill-area attributes
+\item[rnd] -- find the smallest `round' number greater than x
+\item[rnge] -- choose axis limits
+\item[sah] -- set arrow-head style
+\item[save] -- save PGPLOT attributes
+\item[unsa] -- restore PGPLOT attributes
+\item[scf] -- set character font
+\item[sch] -- set character height
+\item[sci] -- set color index
+\item[scir] -- set color index range
+\item[scr] -- set color representation
+\item[scrn] -- set color representation by name
+\item[sfs] -- set fill-area style
+\item[shls] -- set color representation using HLS system
+\item[shs] -- set hatching style
+\item[sitf] -- set image transfer function
+\item[slct] -- select an open graphics device
+\item[sls] -- set line style
+\item[slw] -- set line width
+\item[stbg] -- set text background color index
+\item[subp] -- subdivide view surface into panels
+\item[svp] -- set viewport (normalized device coordinates)
+\item[swin] -- set window
+\item[tbox] -- draw frame and write (DD) HH MM SS.S labelling
+\item[text] -- write text (horizontal, left-justified)
+\item[updt] -- update display
+\item[vect] -- vector map of a 2D data array, with blanking
+\item[vsiz] -- set viewport (inches)
+\item[vstd] -- set standard (default) viewport
+\item[wedg] -- annotate an image plot with a wedge
+\item[wnad] -- set window and adjust viewport to same aspect ratio
+\end{description}
+
+\begin{ahexample}
+This example illustrates the pattern one can use to support both
+interactive, GUI-oriented plotting and non-interactive, batch
+plotting.  
+
+\begin{verbatim}
+# In this tool, the pgplot device is either a widget or a file,
+# depending on whether the psfile argument is set.  If it is, we use
+# pgplotps() to construct our pgplot tool; otherwise, we use the 
+# pgplotwidget() constructor.  All plot commands are collected in the
+# tool function, drawplot().  This works because, in terms of its
+# interface, a pgplotwidget is a pgplotmanager.
+#
+pipelineplotter := function(psfile=unset) {
+    public := [=];
+    private := [file=psfile, topframe=F];
+
+    if (is_unset(psfile)) {
+
+        # no filename given, so create a pgplot GUI
+	include 'widgetset.g';
+	include 'pgplotwidget.g';
+	private.topframe := dws.frame();
+
+        private.pgp := pgplotwidget(private.topframe);
+
+	# do further setup of GUI as necessary; e.g. setting callbacks
+
+    }
+    else {
+
+        # record plot to a file
+	include 'pgplotwidget.g';
+
+	private.pgp := pgplotps(psfile);
+    }
+
+    # This function draws the plot to the pgplot device (be it a GUI
+    # or a file.
+    public.drawplot := function() {
+
+        # PGPLOT commands go here.  Only those functions supported by
+        # the pgplotmanager tool should be used via the tool held in the
+	# private.pgp variable.  GUI related commands should go elsewhere.
+
+	private.pgp.box('BC', 0, 0, 'BC', 0, 0);
+	# etc....
+    }
+
+    # Other functions...
+
+}
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahconstructor}{pgplotmanager}{Manage a previously created pgplot agent}
+\begin{ahdescription}
+
+This constructor creates a pgplotmanager tool that will manage an
+arbitrary pgplot agent.  This agent should have already been created
+with either a graphical widget or hardcopy device (see examples
+below).  The agent can be created either via the \ahlink{widgetserver
+tool}{widgets:widgetserver} or directly witht the Glish pgplot()
+global function (see the \ahlink{PGPLOT section of the Glish
+Manual}{pgplot} for details).  Note that for many applications, this
+constructor is not needed: the 
+\ahlink{pgplotps}{plotter:pgplotmanager.pgplotps} constructor can be
+used to attach to a file, and the
+\ahlink{pgplotwidget}{plotter:pgplotwidget.pgplotwidget} tool can be
+used to attach to a widget.
+
+It is possible to create a pgplotmanager that is attached to neither a
+widget nor real file device by passing F to this constructor's {\tt
+pgpagent} parameter.  (This actually causes the output device to be
+set to the /dev/null file.)  This allows one to use the pgplotmanager
+to record commands into its internal display-list without sending them
+to any real output device; these commands could be played back to a
+real device later.  This could be done by setting the agent later
+with the \ahlink{setagent()}{plotter:pgplotmanager.setagent} function.
+Alternatively, the display list could be save to a file via the 
+\ahlink{plotfile()}{plotter:pgplotmanager.plotfile} function and then
+reloaded later (e.g. in another session) into a new
+\texttt{pgplotmanager} or \ahlink{pgplotter}{plotter:pgplotwidget} tool.  
+
+Care should be taken by the caller of this constructor when the agent
+is attached to a graphical widget.  Widgets are destroyed only when
+all references to its agent are eliminated.  When this tool's
+\ahlink{done()}{plotter:pgplotmanager.done} function is called, the
+tool will eliminate its internal reference; however, the widget will
+not disappear if the caller of this constructor still has a
+reference.  See examples below.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{pgpagent}{the pgpagent to manage.  A pgpagent is usually
+constructed either from a widgetset tool's pgplot() function or directly
+through glish with the pgplot() global function.  Alternatively, it
+can ``borrowed'' from another pgplotmanager via its getagent()
+function (but see caveat described above).}{F -- causes the device to
+be set to a null file (/dev/null; see explanation above.)}{pgplot
+agent or F}
+\ahaddarg{interactive}{sets controls whether interactive
+prompting of the user should be allowed.  This is usually set to F if
+the PGPLOT agent is attached to a file.}{T}{boolean; T -- the pgplot
+ask() function is enabled, allowing the user to turn prompting on and 
+off; F -- prompting is not allowed and the ask() function has no
+effect.}  
+\ahaddarg{record}{sets whether recording is initially turned on}{F}{}
+\ahaddarg{playlist}{a displaylist tool to use to store plot commands.
+This allows pre-record commands to be attached to this
+pgplotmanager.}{F -- a new display list will be created internally}{} 
+\ahaddarg{ownplaylist}{if true, the displaylist tool passed by the
+playlist parameter will be shut down when this tool is shut down.
+This is only used when the playlist parameter is used.}{T}{boolean}
+\ahaddarg{askfunction}{the function to call when prompting the user to
+advance to the next plot.  This can either one of the global functions
+pgplotaskviaprompt() or pgplotaskviagui(), or it can be a user
+provided function.  The interactive parameter must be set to T for
+this function to get used.}{F -- pgplotaskviaprompt() will be used by
+default}{function}
+\ahaddarg{widgetset}{the widgetserver tool to use when creating an
+internal displaylist.  This is used only when a displaylist is not
+provided via the playlist parameter.}{dws -- the default widgetserver
+tool}{widgetserver tool}
+\end{ahargs}
+\ahreturns{pgplotmanager tool or fail}
+
+\begin{ahexample}
+In this example, note how the reference to the pgplot agent, in this
+case, attached to a GUI device, is handled.  
+\begin{verbatim}
+f := frame();
+pgpa := pgplot(f);
+pgpm := pgplotmanager(pgpa);
+pgpa := F;          # Now pgpm has the only reference to the agent
+\end{verbatim}
+
+Here, the pgplotmanager is attached to a PostScript file.  Note that
+the \ahlink{pgplotps constructor}{plotter:pgplotmanager.pgplotps} is
+the simpler way to do this.  
+\begin{verbatim}
+pgpa := pgplot('plot.ps/PS');
+pgpm := pgplotmanager(pgpa, interactive=F);
+pgpa := F;
+\end{verbatim}
+
+Here, the pgplot agent is set after the construction of the
+\texttt{pgplotmanager} tool.
+\begin{verbatim}
+pgpm := pgplotmanager(record=T);
+
+# do some plotting
+pgpm.env(0, 2 * pi, -1, 1, 0, 0);
+
+# now attach an agent and replay the plotting done thus far
+f := frame();
+pgpa := pgplot(f);
+pgpm.setagent(pgpa);
+pgpm.refresh();
+pgpa := F;          # Now pgpm has the only reference to the agent
+pgpm.done();        # widget should disappear
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahconstructor}{pgplotps}{Create a pgplotmanager attached a file}
+\begin{ahdescription}
+
+This constructor creates a pgplotmanager tool attached to an output
+PostScript file that can be sent to a printer.  Interactive prompting
+will be disabled, so the pgplot function {\tt ask()} will have
+no effect.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{psfile}{the name of output file to write plot
+to}{'pgplot.ps'}{string representing a file name}
+\ahaddarg{overwrite}{whether to allow a previously existing file with
+the same name to be overwritten}{F}{boolean; T -- if psfile already
+exists, it will be overwritten; F -- if psfile already exists, this
+constructor will return a fail value}
+\ahaddarg{color}{if true, output is color postscript; otherwise,
+colors are converted to black-and-white or greyscale}{T}{boolean}
+\ahaddarg{landscape}{if true, plot is written in landscape mode
+(i.e. with the bottom axis of the plot oriented along the long axis of
+the paper); otherwise, portrait mode is used.}{T}{boolean}
+\ahaddarg{playlist}{a displaylist tool to use to store plot commands.
+This allows pre-record commands to be attached to this
+pgplotmanager.}{F -- a new display list will be created internally}{} 
+\ahaddarg{record}{sets whether recording is initially turned on}{F}{}
+\ahaddarg{widgetset}{the widgetserver tool to use when creating an
+internal displaylist.  This is used only when a displaylist is not
+provided via the playlist parameter.}{dws -- the default widgetserver
+tool}{widgetserver tool}
+\end{ahargs}
+
+\ahreturns{pgplotmanager tool or fail}
+
+\begin{ahexample}
+\begin{verbatim}
+pgpm := pgplotps('plot.ps');
+
+# do some plotting
+pgpm.env(0, 2 * pi, -1, 1, 0, 0);
+
+pgpm.done();    # plot file is closed
+\end{verbatim}
+\end{ahexample}
+
+\end{ahconstructor}
+
+\begin{ahfunction}{getagent}{return the PGPLOT agent being managed by
+this tool}
+
+\begin{ahdescription}
+This function simply returns a reference to the PGPLOT agent currently
+being managed by this tool.  This function is rarely needed in most
+applications; however, it does allow an application to temporarily
+pass the agent to another pgplotmanager in order, for example, 
+playback its displaylist to the agent.  
+
+Care should be taken by the caller of this function, especially when
+the agent is attached to a graphical widget.  Widgets are destroyed
+only when all references to its agent are eliminated.  When this tool's
+\ahlink{done()}{plotter:pgplotmanager.done} function is called, the
+tool will eliminate its internal reference; however, the widget will
+not disappear if the caller of this function still has a
+reference.  Note in the example below how the caller takes care to
+destroy its reference to the agent when it's done with it.
+\end{ahdescription}
+
+\ahreturns{pgplot agent}
+
+\begin{ahexample}
+In this example, the pgplot agent is passed to another pgplotmanager
+tool.  This is, admittedly, a somewhat contrived example.
+\begin{verbatim}
+# this will record commands for drawing a special plot
+drawplot := pgplotmanager(record=T);
+drawplot.env(0, 2 * pi, -1, 1, 0, 0);
+
+# this will display the plot to the user
+f := frame();
+pgpm := pgplotmanager(pgplot(f));
+
+# draw plot to widget
+pgpa := pgpm.getagent();
+drawplot.setagent(pgpa);
+drawplot.refresh();
+drawplot.setagent(close=F);  # reset agent to null, but don't close widget
+pgpa := F;                   # Now pgpm has the only reference to the agent
+
+# now continue plotting
+pgpm.arro(1, -1, 5, -0.5)
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{setagent}{set the PGPLOT agent to be managed by
+this tool}
+
+\begin{ahdescription}
+This function makes it possible to switch in a new pgplot client for
+management by this tool.  This is most useful after constructing
+pgplotmanager tool that isn't attached to an output device.  
+
+Care should be taken by the caller of this function, especially when
+the new agent is attached to a graphical widget.  Widgets are destroyed
+only when all references to its agent are eliminated.  When this tool's
+\ahlink{done()}{plotter:pgplotmanager.done} function is called, the
+tool will eliminate its internal reference; however, the widget will
+not disappear if the caller of this function still has a
+reference.  Note in the example below how the caller takes care to
+destroy its reference to the agent after passing it to this function.  
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{pgpagent}{the pgpagent to manage.  A pgpagent is usually
+constructed either from a widgetset tool's pgplot() function or directly
+through glish with the pgplot() global function.  Alternatively, it
+can ``borrowed'' from another pgplotmanager via its getagent()
+function (but see caveat described above).}{F -- causes the device to
+be set to a null file (/dev/null; see explanation above.)}{pgplot
+agent or F}
+\ahaddarg{close}{if true, the previous agent will be 
+                 explicitly closed before its replacement is set.  Set
+		 this to F if agent is attached to a GUI being shared
+                 with another pgplotmanager}{T}{boolean}
+\end{ahargs}
+
+\ahreturns{T or fail if pgpagent is not an agent}
+
+\begin{ahexample}
+In this example, the pgplot agent is set after the construction of the
+\texttt{pgplotmanager} tool.
+\begin{verbatim}
+pgpm := pgplotmanager(record=T);
+
+# do some plotting
+pgpm.env(0, 2 * pi, -1, 1, 0, 0);
+
+# now attach an agent and replay the plotting done thus far
+f := frame();
+pgpa := pgplot(f);
+pgpm.setagent(pgpa);
+pgpm.refresh();
+pgpa := F;          # Now pgpm has the only reference to the agent
+pgpm.done();        # widget should disappear
+\end{verbatim}
+
+In the next example, the pgplot agent is passed to another pgplotmanager
+tool.  This is, admittedly, a somewhat contrived example.
+\begin{verbatim}
+# this will record commands for drawing a special plot
+drawplot := pgplotmanager(record=T);
+drawplot.env(0, 2 * pi, -1, 1, 0, 0);
+
+# this will display the plot to the user
+f := frame();
+pgpm := pgplotmanager(pgplot(f));
+
+# draw plot to widget
+pgpa := pgpm.getagent();
+drawplot.setagent(pgpa);
+drawplot.refresh();
+drawplot.setagent(close=F);  # reset agent to null, but don't close widget
+pgpa := F;                   # Now pgpm has the only reference to the agent
+
+# now continue plotting
+pgpm.arro(1, -1, 5, -0.5)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{resetplotnumber}{reset the internal plot number counter to 0}
+
+\begin{ahdescription}
+This function resets the internal plot number counter to 0.  The
+pgplotwidget maintains an internal counter which is used to determine
+when to prompt the user (when function \texttt{ask(T)} has been
+called).  When prompting is desired, it's usually only necessary to do
+so after the first plot has been presented.  This function resets to 0
+the counter that tracks how many plots have been presented so far;
+thus, for the next plot after calling this function, the user won't be
+prompted.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+pgpm.ask(T);
+pgpm.page();              # user may get prompted to confirm start of new plot
+pgpm.resetplotnumber();
+pgpm.page();              # user will not be prompted to confirm
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{displaylist}{return the displaylist currently in use}
+
+\begin{ahdescription}
+The pgplotmanager tool maintains a record of plot commands that have
+been issued (when recording is turned on, see
+\ahlink{record()}{plotter:pgplotmanager.record} and
+\ahlink{recording()}{plotter:pgplotmanager.recording}) in the form of
+a \ahlink{displaylist tool}{guiutils:displaylist}.  This function
+returns a reference to that tool.  Because a reference is returned,
+you should be careful that you don't damage it. 
+
+The most common use of this tool might be to temporarily pass the
+displaylist to another pgplotmanager tool.  In this case,
+\texttt{ownplaylist} parameter to the constructor should be set to
+\texttt{F} to prevent the second \texttt{pgplotmanager} tool does not
+shut it down.  (See example below.)
+
+You could also use this function to, for example, go backwards through
+the plot command to find the last data plotted, extract it, fit it, and
+plot the fit to the data.
+\end{ahdescription}
+
+\ahreturns{displaylist tool}
+
+\begin{ahexample}
+This example shows how the commands sent to a pgplot widget could be
+replayed to a file.  In practice, this can be done more
+straightforwardly with the \ahlink{pgplotwidget tool's postscript
+function}{plotter:pgplotwidget.postscript}.  
+\begin{verbatim}
+# create the widget
+f := frame();
+pgpa := pgplot(f);
+pgpw := pgplotmanager(pgpa);
+pgpa := F;
+
+# do some plotting
+pgpm.env(0, 2 * pi, -1, 1, 0, 0);
+
+# create a manager of a postscript file, passing in the displaylist
+# from the widget
+dl := pgpw.displaylist();
+pgpf := pgplotps('plot.ps', playlist=dl, ownplaylist=F);
+
+# replay plotting commands to file
+pgpf.refresh();
+pgpf.done();      # PostScript file is now closed
+
+# do some more plotting in the widget
+pgpw.arro(1, -1, 5, -0.5);
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahfunction}{record}{set whether drawing commands are saved}
+\begin{ahdescription}
+This function gives you control of whether or not the plotting commands are
+saved in the internal display list or not. You might want to do this for
+efficiency concerns (e.g. the commands are coming frequently and contain a
+lot of pixels), or so that you can ``undraw'' some temporary plotting with a
+refresh.
+
+The return value is the {\em previous} state of the function to make it easy
+to get back to the previous state.  Alternatively, the
+\ahlink{recording()}{plotter:pgplotmanager.recording} function can be
+used to determine the current state.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{newstate}{if true, recording is turned on; otherwise, it is
+turned off}{}{boolean}
+\end{ahargs}
+\ahreturns{boolean -- the former recording state}
+
+\begin{ahexample}
+\begin{verbatim}
+# Turn on saving of plot commands
+pg.record(T); 
+
+# Do "permanent" part of plot
+pg.env(0, 2 * pi, -1, 1, 0, 0);
+
+# Turn off saving of plot commands
+pg.record(F); 
+
+# Add "temporary" parts of plot
+pg.arro(1, -1, 5, -0.5);
+
+# Make the temporary stuff go away by replaying "permanent" commands
+pg.refresh();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahfunction}
+
+\begin{ahfunction}{recording}{return whether plot commands are being saved} 
+
+\begin{ahdescription}
+The pgplotmanager tool maintains a record of plot commands that have
+been issued in the form of a \ahlink{displaylist
+tool}{guiutils:displaylist}.  This allows this tool to replay the
+commands later to, for example, refresh the screen or send a currently
+viewed plot to a PostScript file.
+
+This function simply returns whether plot commands are currently being
+saved internally for later replay.  A returned value of \texttt{T}
+indicates that recording is currently turned on and commands are being
+saved.  The recording state can be changed via the
+\ahlink{record()}{plotter:pgplotmanager.record} function.
+\end{ahdescription}
+
+\ahreturns{boolean -- the current recording state}
+
+\end{ahfunction}
+
+\begin{ahfunction}{canplay}{return whether a command can be executed}
+
+\begin{ahdescription}
+This function returns true if the given command is recognized as a
+supported plot command.  To be recognized, the \texttt{command}
+parameter must be the name of a plotting function of this tool (either
+a ``raw'' plotting command supported by the
+\ahlink{Glish/PGPLOT}{pgplot} agent or higher level command, like 
+\ahlink{settings()}{plotter:pgplotmanager.settings} or 
+\ahlink{plotxy()}{plotter:pgplotmanager.plotxy}) or a custom command
+that has been added via the
+\ahlink{addredrawfunction()}{plotter:pgplotmanager.addredrawfunction}
+function (usually as part of a plug-in).  
+\end{ahdescription}
+
+\begin{ahexample}
+Consider this session in which no custom commands have been added:
+\begin{verbatim}
+- print pg.canplay('plotxy');
+T
+- print pg.canplay('gray');
+T
+- print pg.canplay('grayscale');
+F
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{play}{Execute a series of plot commands}
+\begin{ahdescription}
+This function is used to execute a series of plot commands in this plotter. It
+is used internally (e.g. by refresh), but it can also be of use to
+programmers. For example, you could keep external ``decorations'' in a list,
+and show or don't show them by calling {\tt play}.
+
+The format of the commands is that it is either a {\tt displaylist} from a {\tt
+pgplotwidget}, or it is a record, each field of which is a plot command of the
+form, e.g.:
+\begin{verbatim}
+    [_function='line', xpts=1:10, ypts=1:10]
+\end{verbatim}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{commands}{list of plot commands to execute}{}{displaylist or record}
+\ahaddarg{record}{save commands in our internal displaylist?}{}{boolean}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+\begin{ahfunction}{plotfile}{Save the plot in native format}
+\begin{ahdescription}
+This function saves the plot as an \aipspp\ Table.
+The plot can then be reopened and new commands added or old commands
+changed. Basically it saves the internal display list, so any commands that
+have not been recorded will not be saved. If the file already exists (and is
+writable), it will be overwritten without any request for confirmation.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{aips++plot.plot}{string}
+\end{ahargs}
+\ahreturns{T or fail (e.g., file not writable)}
+\end{ahfunction}
+
+\begin{ahfunction}{refresh}{replay the display list}
+\begin{ahdescription}
+This function redraws the plot. The most common use for it is to redraw the
+plot after the frame size has been changed.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- f := frame()
+- pg := pgplotmanager(pgplot(f));
+- whenever f->resize do pg.refresh();
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+\begin{ahfunction}{restore}{Retrieve a plot}
+\begin{ahdescription}
+This function retrieves a plot file that has been saved by {\tt plotfile}. The
+current plot is replaced with the plot in the file. If you want to merge two
+plot files you can use {\tt play} on the displaylist of another {\tt
+pgplotwidget}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{aips++plot.plot}{string}
+\end{ahargs}
+\ahreturns{T or fail (e.g., file not readable)}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{shutdown the manager}
+\begin{ahdescription}
+This function will shut down this \texttt{pgplotmanager} tool.  If
+the tool has the sole reference to its pgplot agent, the agent's
+device will be closed.  For widget devices, the widget will be
+destroyed.  If the device is a file, it will be closed.  
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{plotxy}{Plot X,Y vectors as lines or points with auto-scaling}
+\begin{ahdescription}
+{\tt plotxy} is defined to allow you to make line or scatter plots. 
+The routine will scale and draw the axes appropriately, or you can specify
+to plot over a previous plot using the existing scaling.  Axis labels and a 
+plot title can be specified.  You can also specify a mask, if desired, to 
+blank out bad data points from the plot.  When a mask is given, the unmasked
+data are plotted in line segments.
+\end{ahdescription}
+\begin{ahexample}
+Note that the examples below can be applied to
+\ahlink{pgplotwidget}{plotter:pgplotwidget} and
+\ahlink{pgplotter}{plotter:pgplotter} tools with greater ease since
+both support all of pgplotmanager's functions.  
+\begin{verbatim}
+include 'pgplotmanager.g'
+f := frame();
+pg := pgplotmanager(pgplot(f));
+x := 1:100;
+y := x*x;
+pg.plotxy(x,y,xtitle='XX', ytitle='YY', title='TITLE');
+pg.plotxy(x+10, y, F, F);
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotmanager.g'
+f := frame();
+pg := pgplotmanager(pgplot(f));
+x := 1:100;
+y := sqrt(x);
+pgmask := array(T,100)
+pgmask[20:30] := F
+pgmask[50:55] := F
+pg.plotxy(x,y,mask=pgmask);
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{x}{X values}{}{non-complex numeric array}
+\ahaddarg{y}{y values}{}{non-complex numeric array}
+\ahaddarg{plotlines}{Plot lines (T) or points (F)}{T}{boolean}
+\ahaddarg{newplot}{Start a new plot (T) or overplot (F)}{T}{boolean}
+\ahaddarg{xtitle}{x axis title (ignored if newplot is F)}{none}{string}
+\ahaddarg{ytitle}{y axis title (ignored if newplot is F)}{none}{string}
+\ahaddarg{title}{plot title (ignored if newplot is F)}{none}{string}
+\ahaddarg{linecolor}{color index for lines or points}{2}{integer}
+\ahaddarg{ptsymbol}{symbol index (used if plotlines=F)}{2}{integer}
+\ahaddarg{mask}{mask for eliminating bad data points (T for good data, 
+F for masked data)}{none}{boolean array}
+\end{ahargs}
+\ahreturns{T or fail (illegal argument)}
+\end{ahfunction}
+
+\begin{ahfunction}{maskline}{Draw line segments based on input vectors and a mask}
+
+\begin{ahdescription}
+
+{\tt maskline} is analogous to {\tt line} except that it takes a mask (an
+array of boolean elements) and draws a series of line segments with
+the masked data eliminated.  
+
+The argument {\tt decimate} is used to speed up the search for masked
+pixels.  It breaks the spectrum into {\tt decimate} segments.  It uses
+built in \glish\ functions to detect whether there are any masked pixels
+in each segment.  If there are, then those masked pixels are found, one
+by one with the \glish\ indexing operator (slow).  If you set {\tt
+decimate==1} then each pixel of the spectrum is searched for masked
+pixels with the \glish\ indexing operator (very slow).  The default 
+decimation of 10 is safe for any length spectrum (i.e. it will realize if there
+aren't enough pixels for 10 segments). 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'pgplotmanager.g'
+f := frame();
+pg := pgplotmanager(pgplot(f));
+x := 1:100;
+y := sqrt(x);
+pgmask := array(T,100)
+pgmask[20:30] := F
+pgmask[50:55] := F
+pg.env(0,100,0,10,0,0)
+pg.maskline(x,y,pgmask)
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{x}{X values}{}{non-complex numeric array}
+\ahaddarg{y}{y values}{}{non-complex numeric array}
+\ahaddarg{mask}{mask for eliminating bad data points (T for good data, F for masked data)}{none}{boolean array}
+\ahaddarg{decimate}{Number of segments to decimate into}{10}{Integer}
+\end{ahargs}
+
+\ahreturns{T or fail}
+\end{ahfunction}
+
+\begin{ahfunction}{clear}{empty the display list}
+\begin{ahdescription}
+This function empties the display list. This is unlike {\tt eras}, which merely
+clears the current page. This function erases the screen and removes all
+accumulated plot commands.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{settings}{Set many PGPLOT attributes at once}
+\begin{ahdescription}
+This function is used to set (possibly) many PGPLOT attributes at once. It is
+always inserted at the beginning of every plot's display list to make it easy
+to change settings in a global way. All values have their PGPLOT defaults.
+
+\begin{verbatim}
+   ask                             : page prompting
+   nxsub, nysub                    : plot panelling
+   arrowfs, arrowangle, arrowvent  : arrow style
+   font                            : text font
+   ch                              : character height
+   ci                              : color index
+   fs                              : fill style
+   hsangle, hssepn, hsphase        : hatching style
+   ls                              : line style
+   lw                              : line width
+   tbci                            : text background color
+\end{verbatim}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{lastchange}{Version of the last change}
+\begin{ahdescription}
+This function returns a vaule that changes every time the internal display list
+changes. It can be used, for example, to see if the plot has changed since the
+last time it was inspected.
+\end{ahdescription}
+\ahreturns{integer - changes every time the displaylist changes}
+\end{ahfunction}
+
+\begin{ahfunction}{addredrawfunction}{Add a function to redraw a command in the displaylist}
+\begin{ahdescription}
+This function is only of interest if you want to add functions via
+\ahlink{plugins}{tasking:plugins}.
+
+Suppose you create via a plugin a high-level plot command that you
+want to show up in the displaylist as a high-level command ({\em
+i.e.}, not broken up into lower level PGPLOT commands). In this case,
+in your plugin you would enter into the displaylist a record with a
+field per argument, and a field {\tt \_function} that contains the name
+of the function.
+
+To be able to redraw the function, you would use {\tt addredrawfunction} to
+add a function which, when passed the record the plugin inserted in the
+display list, would ensure that the draw commands are executed.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{name of the draw function}{}{string}
+\ahaddarg{redrawfunction}{function to redraw a command from the displaylist}{}{function}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\end{ahfunction}
+
+
+\end{ahobject}
+
+\end{document}

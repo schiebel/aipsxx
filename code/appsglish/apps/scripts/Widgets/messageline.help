@@ -1,0 +1,152 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: messageline.help,v 19.2 2004/08/25 02:16:39 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{messageline}{Tk widget to display and log one-line messages.}
+
+\ahinclude{messageline.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This simple Tk widget is a place for a complex GUI to display one-line 
+messages (typically on the status of the task being controlled by the
+GUI) and simultaneously log those messages to the \aipspp\ logger via
+the \ahlink{note}{misc:note} function.  
+
+The messageline widget is in many ways just like an entry widget.
+The messageline widget supports these entry widget events: background,
+bind, borderwidth, exportselection, font, foreground,
+justify, relief, view, and width.  These events are all forwarded
+directly to the underlying entry widget.
+
+In addition, the following three events control the displayed text:
+\begin{description}
+\item[post]This is what you use to display a message and send it off
+to the logger.  It takes a single argument, the message.
+\item[postnoforward]Use this to display a message which should not be logged.\
+It takes a single argument, the message.
+\item[clear]This clears the message.
+\end{description}
+
+All events emitted by the underlying entry widget are re-emitted by
+this widget.  These events will be any events due to binds set through
+the bind event plus the xscroll event.  The xscroll event, along with the 
+view event, allows a horizontal scrollbar to be associated with this widget 
+just as you would the entry widget.
+
+The widget can be destroyed using the done function.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+include 'messageline.g'   
+f := frame()
+ml := messageline(f)
+ml->post('This message is displayed and logged.')
+ml->postnoforward('This message is just displayed.')
+ml->clear() # the widget is now cleared
+# optionally add a scrollbar, if you think the messages might get long
+sb := scrollbar(f, orient='horizontal');
+whenever sb->scroll do {ml->view($value);}
+whenever ml->xscroll do {sb->view($value);}
+\end{verbatim}
+\end{ahexample}
+
+
+\begin{ahconstructor}{messageline}{Construct a messageline}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the messageline}{}{Tk frame}
+  \ahaddarg{width}{Width in characters units}{30}{Integer}
+  \ahaddarg{justify}{Justification of text}{'left'}{String from 'center', 'left', 'right'}
+  \ahaddarg{font}{Font of text }{''}{X font}
+  \ahaddarg{relief}{Edge relief}{'sunken'}{String from `flat', `ridge', 
+                                           `raised', `sunken', `groove'}
+  \ahaddarg{borderwidth}{Border width}{2}{Integer}
+  \ahaddarg{foreground}{Color of text}{`black'}{X color}
+  \ahaddarg{background}{Background color}{`lightgrey'}{X color}
+  \ahaddarg{exportselection}{export to X clipboard?}{T}{Boolean}
+  \ahaddarg{hlp}{Short popuphelp text}{No help}{String}
+  \ahaddarg{messagenote}{The note function to use}{note}{A note function}
+  \ahaddarg{widgetset}{Widget set to use}{dws}{A widgetserver closure tool}
+\end{ahargs}
+\ahreturns{messageline widget}
+\begin{ahdescription}
+Constructs a messageline according to the specified construction arguments,
+and returns a ref to the widget.
+\end{ahdescription}
+\end{ahconstructor}
+
+\begin{ahfunction}{clear}{Clear the contents of the widget}
+\begin{ahdescription}
+This is an event.  When sent to this widget the contents of the widget will
+be cleared.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{done}{Destroy the widget}
+\ahreturns{boolean}
+\begin{ahdescription}
+This function destroys the widget.  It will be unusable after this function
+has been called.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{post}{Post a message to the widget and the logger}
+\begin{ahdescription}
+This is an event.  When sent to this widget the value of this event (a string) will be
+displayed in the widget and sent to the default logger via \ahlink{note}{misc:note}.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{postnoforward}{Post a message to the widget}
+\begin{ahdescription}
+This is an event.  When sent to this widget the value of this event (a string) will be
+displayed in the widget without forwarding the message on to the logger.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\end{ahobject}
+
+

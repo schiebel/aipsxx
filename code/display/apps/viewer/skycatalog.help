@@ -1,0 +1,237 @@
+%% skycatalog.help: help file for skycatalog.g
+%% Copyright (C) 2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id:
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{skycatalog}{Tool to create and manipulate \VT\
+readable skycatalog tables}
+
+\ahinclude{skycatalog.g}
+
+\ahkeyword{viewer}{}
+\ahkeyword{display}{}
+\ahkeyword{skycatalog}{}
+\ahkeyword{skycat}{}
+\ahkeyword{table}{}
+\ahkeyword{table}{overlay}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This \tool\ allows the user to create so called skycatalog tables
+readable by the \VT. This can be done from ASCII tables or
+componentlists. It also provides a front-end to the table \tool\ to
+manipulate the structure of the skycatalog.
+
+\end{ahdescription}
+
+\begin{ahexample}
+Here is a small example on how to convert an ascii table ``my.ascii''
+to an \aipspp\ table ``my.tbl'':
+
+The ASCII file looks like this:
+\par\par
+\begin{tabular}{lllllll}
+Name &No &RA       &DEC       &NED-ID       &Max    &mom0 \\ 
+A    &A  &A        &A         &A            &R      &R    \\
+NED  &16 &19:44:47 &-14:46:51 &NGC6822ee    &24.255 &159.8\\
+NED  &22 &01:04:46 &+02:07:04 &IC1613e      &13.002 &328.1\\
+\end{tabular}
+
+\begin{verbatim}
+include 'skycatalog.g';
+sca := skycatalog('myscat1.tbl');
+sca.fromascii(asciifile='my.ascii',hasheader=T,longcol='RA',latcol='DEC');
+# cosmetics
+sca.mergecolumns("Name No");
+sca.done()
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahexample}
+An example using a componentlist:
+\begin{verbatim}
+im := imagemaketestimage()
+cl := im.findsources()
+sca := skycatalog('myscat2.tbl')
+sca.fromcomponentlist(cl)
+sca.done()
+# That's it !
+\end{verbatim}
+
+\end{ahexample}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{skycatalog}{Create a skycatalog \tool}
+\begin{ahargs}
+  \ahaddarg{filename}{Name of the skycatalog table}{unset}{String}
+\end{ahargs}
+\ahreturns{skycatalog \tool\ or fail}
+\begin{ahdescription}
+
+Construct a skycatalog \tool. The specified filename will either be
+used to associate this \tool\ wwith  skycatalog table on disk or to
+create a new skycatalog table, which can be filled from a componentlist
+or ASCII file.
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{addunit}{Add a unit to a column}
+\begin{ahargs}
+  \ahaddarg{colname}{column name}{}{String}
+  \ahaddarg{unit}{Unit to put into column}{}{String}
+\end{ahargs}
+\ahreturns{}
+\begin{ahdescription}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close this \tool}
+\begin{ahargs}
+  \ahaddarg{delete}{delete the table}{F}{Boolean}
+\end{ahargs}
+\ahreturns{}
+\begin{ahdescription}
+
+\end{ahdescription}
+\end{ahfunction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{fromascii}{Create the \tool\ from an ascii file}
+\begin{ahargs}
+  \ahaddarg{asciifile}{The source ASCII file}{unset}{String}	
+  \ahaddarg{hasheader}{Does the ASCII file include a header definition?}{F}{Boolean}	
+  \ahaddarg{longcol}{The column name or number containing the
+  Longitude component}{unset}{String or Integer (see description)}
+  \ahaddarg{latcol}{The column name or number containing the
+  Latitude component}{unset}{String or Integer (see description)}
+  \ahaddarg{dirtype}{The direction type of the coordinate}{J2000}{String}
+  \ahaddarg{unit}{The unit of the coordinates}{deg}{String}
+\end{ahargs}
+\ahreturns{T or F}
+\begin{ahdescription}
+
+This functions converts an ASCII table into an \aipspp\ skycatalog
+table. These tables can be read by the \VT\ and displayed as a
+skycatalog overlay.  Whitespace in the ASCII tables is interpreted as
+a column separator and the number of columns per row must be constant.
+The ASCII table can start with a description of the columns and the
+data types in that column. If this header is not specified the \tool\
+tries to determine the data type and will name the columns
+Column1..ColumnN. In that case the columns containing the coordinate
+can be given as integer indices.
+
+The argument dirtype indicates what direction coordinate reference
+type your coordinate has. At the moment only J2000, B1950, GALACTIC
+and SUPERGAL are valid types.
+
+The unit is assumed to be the same for long and lat and only has to be
+specified if the coordinate is given decimals.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{fromcomponentlist}{Create the \tool\ from a
+componentlist}
+\begin{ahargs}
+  \ahaddarg{code}{The componentlist \tool}{unset}{componentlist \tool}
+\end{ahargs}
+\ahreturns{T or F}
+\begin{ahdescription}
+Invoke this function to fill the skycatalog table with components of a
+componentlist.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{mergecolumns}{Merge n columns into one}
+\begin{ahargs}
+  \ahaddarg{columns}{Names of the columns to merge}{}{String}
+  \ahaddarg{name}{name of the output column}{unset}{String}
+\end{ahargs}
+\ahreturns{}
+\begin{ahdescription}
+If the name argument is unset, the name of the output column is taken
+from the first column in column array. The output column will always
+be of type string.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{name}{Return the name of the table}
+\ahreturns{String}
+\begin{ahdescription}
+
+This function returns the name of the table.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{renamecolumn}{Rename a column}
+\begin{ahargs}
+  \ahaddarg{oldname}{column name}{}{String}
+  \ahaddarg{newname}{new column name}{}{String}
+\end{ahargs}
+\ahreturns{}
+\begin{ahdescription}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{table}{Return the underling table \tool}
+\ahreturns{table \tool}
+\begin{ahdescription}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{type}{Return the \tool\ type}
+\ahreturns{skycatalog}
+\begin{ahdescription}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}

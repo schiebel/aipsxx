@@ -1,0 +1,50 @@
+include 'imager.g'
+include 'pgplotter.g'
+
+dowait:=T;
+
+# Find all the composite numbers between 64 and 2048
+const composite := function (lo=64, hi=2048) {
+  i:=1;
+  comp:=array(0, 1);
+  for (i2 in 0:12) {
+    for (i3 in 0:8) {
+      for (i5 in 0:6) {
+        candidate:=2^i2 * 3^i3 * 5^i5;
+        if(candidate>(lo-1)&&candidate<(hi+1)) {
+	   comp[i]:=2^i2 * 3^i3 * 5^i5
+           i+:=1;
+        }
+      }
+    }
+  }
+  return sort(comp);
+}
+comp:=composite();
+
+# Make an imagertester once only
+myimager:=imagertester();
+
+# Time making a dirty image for a given number of pixels
+timeimager:=function(n) {
+  global myimager;
+  myimager.setimage(nx=n, ny=n);
+  myimager.setoptions(cache=n*n);
+  start:=time();
+  myimager.image('observed', 'scratchimage');
+  tabledelete('scratchimage');
+  deltat:=time()-start;
+  print n, deltat;
+  return deltat;
+}
+
+
+# Do the test for all numbers that we found
+times:=array(0.0, length(comp));
+j:=1;for (i in comp) {times[j]:=timeimager(i);j+:=1}
+
+# Make a pgplotter and plot the results: time versus the
+# total number of pixels
+pp:=pgplotter();
+pp.plotxy(comp*comp, times, T, T, 'Total number of pixels',
+          'Elapsed time (s)', 'Time to make dirty image')

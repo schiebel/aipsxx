@@ -1,0 +1,458 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/internals.tex,v 19.0 2003/07/16 04:18:49 aips2adm Exp $
+
+\chapter{Internals}
+\label{internals}
+\begin{sloppy}
+
+\index{Glish!internals|(}
+The {\em Glish} interpreter is written in C++ and consists of about
+33,000 lines.
+It presently runs on SunOS, Solaris, AIX, Irix, OSF/1, Linux, HP/UX,
+and Ultrix. This chapter discusses those internals of the {\em Glish} system
+relevant to understanding the system's strengths and weaknesses, and for
+assessing the difficulty of porting the system to another platform.
+
+\section{Encoding Event Values}
+\label{encoding-events}
+
+Communication between {\em Glish} and clients is handled by a data transport layer
+called {\em SOS}. {\em SOS} is a library that provides platform independent transport
+of binary data between different machines, e.g. data can be moved from a SPARC machine
+to an ALPHA machine transparently. Any necessary conversion is done at the receiving end
+of the communication. This avoids unnecessary conversion on some architectures. {\em SOS}
+is a reimplementation in C++ of a portion of another transport library called {\em SDS}
+(contact Chris Saltmarsh at 
+\htmladdnormallink{salty@farpoint.co.uk}{mailto:salty@farpoint.co.uk}
+for more information about {\em SDS}).
+
+The header portion of each event encodes information such as the architecture of the
+machine that sent the event, a time stamp, length of the event, etc. The interface
+to the event header is defined in the C++ header file \verb+<sos/header.h>+. The
+header is followed by the actual event data.
+
+The header information and binary values are written to and read from {\em SOS}
+{\em sinks} and {\em sources}. These are C++ objects which provide an I/O abstraction
+that allows you to read and write values from and to file descriptors, e.g. the
+pipes or sockets which connect {\em Glish} to clients. The header file \verb+<sos/io.h>+
+defines the interface for {\em SOS} sources and sinks.
+
+For the most part, {\em Glish}'s dependence on the transport layer is isolated in two
+functions \verb+send_event()+ and \verb+recv_event()+. Both are found
+in \verb+Client.cc+. These routines are parameterized with {\em SOS} source and
+sink objects. This is necessary to allow events being sent by the interpreter
+to be non-blocking. When used by the interpreter, \verb+send_event()+ sends what
+it can and the returns under the assumption that it will resume later. This
+eliminates some deadlock situations.
+
+\section{Creating and Controlling Remote Clients}
+\label{glishd}
+
+\index{clients!creating!internals|(}
+\index{clients!controlling internals|(}
+\index{{\em glishd} remote daemon|(}
+Clients on a remote host are controlled by a daemon called {\em glishd}.
+This process takes care of starting clients, checking on them as they
+run, and terminating them. It is {\em Glish}'s intermediary on the remote
+machine. An important point, though, is that while {\em glishd}
+will create clients, all event communication between those clients and the
+interpreter is still done directly, via a socket connection, and not using
+{\em glishd} as an intermediary.
+
+{\em glishd} is designed to be run either by {\em root} or by individual
+users. {\em glishd} is only started by the interpreter (on behalf of a user)
+if a {\em glishd} has not already been started by {\em root} on the remote
+machine. The behavior of {\em glishd} is different depending upon whether it
+is running as root or not.
+
+\subsection{{\em glishd} Started by Root}
+\label{glishd-as-root}
+\index{{\em glishd} remote daemon!root mode}
+
+When {\em glishd} is started by {\em root}, it handles all client
+requests for {\em all} users on a given machine. It does this by listening
+to a published port (TCP port 2833) to which interpreters connect.
+\index{socket connections!daemon port (2833)}
+\index{ports!daemon port (2833)}
+\index{{\em glishd} remote daemon!accept port (2833)}
+When an interpreter connects to this port, {\em glishd} forks a copy of
+itself. This forked copy of {\em glishd} immediately sets its userid to the
+user which connected. From that point on, the forked process handles all
+requests from that user. In general when all of that user's interpreters 
+exit, the forked process exits too. The only time when this isn't true is if
+the forked {\em glishd} started shared clients which are persistent; in this
+case, it sticks around to manage these remaining clients which will be used
+again.
+
+{\em glishd} must be started by root for the shared client capabilities
+(see \S~\ref{shared-clients}) to work properly.
+
+To identify users, {\em glishd} uses key files. Each host is assigned
+a unique key when {\em glishd} is set up. A key file is created for each
+user by {\em Glish} (if one doesn't already exist) the first time the user starts
+a client. It is assumed that the key directory is either network accessible,
+e.g. via NFS, or that the keys are distributed to all machines on which
+clients will be started. Note that if keys must be distributed {\em manually},
+keys need to be created for users as well as hosts because the keys
+automatically created by {\em Glish} won't be seen on other hosts. Key files must
+be owned by the user to whom the key belongs and only that user should have
+read/write permission. Here's an example of what the keys directory
+for {\em Glish}
+might look like:
+\begin{verbatim}
+    bash$ ls -lR keys
+    total 8
+    drwxr-xr-x   2 jdoe          512 Sep  3 10:16 hosts/
+    drwxrwxrwx   2 jdoe          512 Sep  3 10:18 users/
+
+    keys/hosts:
+    total 16
+    lrwxrwxrwx   1 jdoe           17 Sep  3 10:21 milisant -> milisant.nrao.edu
+    -rw-r--r--   1 jdoe          132 Sep  3 10:21 milisant.nrao.edu
+
+    keys/users:
+    total 8
+    -rw-------   1 jdoe          132 Sep 14 11:48 jdoe
+\end{verbatim}
+This is the directory hierarcy {\em Glish} expects to find for its keys. The important
+thing to note is that the ``hosts'' directory must be readable by all
+{\em Glish}
+users, and the ``users'' directory must be writable by all {\em Glish} users.
+
+Key files are created by running {\em glishkey} which should be built along
+with {\em Glish}. Here's an example:
+\begin{verbatim}
+    bash$ glishkey 
+    5971b940c8eb94edc374aa0389c46a409fbcf1c91eb3b27e0bae444ee0259f57 \
+    619c5f151f059ba7186c24c8031b05a8f5f94187439cff947a0a5b1499db3ea7
+    bash$ glishkey 
+    5966343f14f643ae3371e7b7fbfd183253c1834e7c386e15ee164aca8eb8b11a \
+    d2977ec140fbe3cd17a68c6be9f4e0a70f61b34d2040b68e82c940d77e84fcc7
+    bash$ glishkey > milisant.nrao.edu
+\end{verbatim}
+Each time {\em glishkey} is run it generates another key. A key file is
+created by simply piping the output of {\em glishkey} to a file.
+
+The full path to the directory containing the ``{\tt users}'' and ``{\tt hosts}''
+directory is built into {\em Glish}, but it can be changed from within
+{\em Glish}
+by setting \verb+system.path.key+
+\label{system-path-key}
+\index{{\tt system} global variable!{\tt path.key}}
+value to a specific path. The path which {\em glishd} uses can't currently
+be changed, though.
+
+If you need to kill a {\em root glishd}, you should use the {\tt HANGUP}
+signal, i.e. \verb+kill -HUP+.
+
+\subsection{{\em glishd} Started by the Interpreter }
+\index{{\em glishd} remote daemon!user mode}
+
+If the {\em Glish} interpreter fails to connect to the {\em glishd} port, it
+assumes that there is no {\em root glishd} running and starts a
+{\em glishd}. The interpreter starts {\em glishd} using
+\index{{\em rsh} command}
+the {\em rsh} command
+\index{{\em remsh} command}
+(called {\em remsh} on some systems).  Thus the user that invoked
+the interpreter must have an account on the remote host, and must
+have transparent access to that account enabled via the user's
+\index{rhosts file@{\em .rhosts} file}
+{\em .rhosts} file.  Furthermore, {\em glishd} runs with that user's
+permissions.  This {\em glishd} which was started by an interpreter
+does all of the things that the {\em root glishd} will do, but it
+only handles request from that specific interpreter. So each
+interpreter running remote clients on a given machine would have a
+{\em glishd} running. When the interpreter exits, {\em glishd} exits.
+
+\subsection{{\em glishd} Events }
+\index{{\em glishd} remote daemon!events}
+
+In addition to creating and controlling clients, {\em glishd} provides
+\index{network outages!detecting}
+a mechanism for detecting network outages.  Every five seconds the
+{\em Glish} interpreter sends a ``probe'' event to {\em glishd\/}.  If it
+receives no response within the next five seconds, the interpreter
+deems network connectivity lost, generates a warning message to this
+effect, and creates a ``{\tt connection\_lost}'' event for the
+{\tt system} agent (\xref{system-var}).  If {\em glishd} subsequently
+responds to another probe then the interpreter deems connectivity
+regained, reports this fact, and generates a ``{\tt connection\_restored}''
+event for {\tt system}.  If {\em glishd} exits for any reason (e.g. 
+it crashes or is killed), then the interpreter generates a
+``{\tt daemon\_terminated}'' event for {\tt system}.
+
+{\em glishd} is itself a {\em Glish} client and responds to the following events:
+\begin{list}{}{}
+
+\item[{\tt setwd}] specifies
+\index{{\tt setwd} event sent to {\em glishd}}
+the working directory {\em glishd} should use when executing programs
+on the interpreter's behalf.
+
+\item[{\tt setbinpath}] specifies
+\index{{\tt setbinpath} event sent to {\em glishd}}
+the path {\em glishd} should search for starting clients.
+
+\item[{\tt setldpath}] specifies
+\index{{\tt setldpath} event sent to {\em glishd}}
+the dynamic loader library path {\em glishd} should use when starting clients.
+
+\item[{\tt client}] creates
+\index{{\tt client} event sent to {\em glishd}}
+a new client.  The event has a single
+{\tt string} value, the first part of which gives an internal
+identifier for later use in manipulating the client, the remainder a
+full argument list (i.e., including executable name) for invoking the
+client.  {\em glishd} searches for the executable using whatever
+{\tt \$PATH} environment variable it inherited via being invoked
+by {\em rsh\/}.  If it cannot invoke the client it presently just
+generates an error message to {\em stderr} and continues.  It probably
+should generate an event instead.
+
+\item[{\tt client-up}] checks to see 
+\index{{\tt client} event sent to {\em glishd}}
+if a particular client or {\em Glish} script is already up and running, i.e.
+shared.
+
+\item[{\tt kill}] terminates
+\index{{\tt kill} event sent to {\em glishd}}
+a client by sending it a {\em SIGTERM}
+signal.  The {\tt string} value of the {\tt kill} event identifies
+the client to kill.
+
+\item[{\tt ping}] pings
+\index{{\tt ping} event sent to {\em glishd}}
+a client by sending it a {\em SIGIO}
+signal.  The {\tt string} value of the {\tt ping} event identifies
+the client to kill.  {\tt ping} supports the {\tt ping=} argument
+of the {\tt client} function.  (See \xref{client-func-long}.)
+
+\item[{\tt shell}] executes
+\index{{\tt shell} event sent to {\em glishd}}
+a synchronous shell command and returns
+the resulting output.  The value of the {\tt shell} event is a 
+record containing at least a {\tt command} field giving the command
+to execute, and possibly a {\tt input} field giving the input to
+be used (see the {\tt input=} argument of the {\tt shell} function,
+\xref{shell-func}).
+
+\index{shell function!running on remote hosts}
+If {\em glishd} is unable to run the shell command it generates a
+{\tt fail} event with a value of {\tt F}.  If successful then it
+first generates an {\tt okay} event with a value of {\tt T}, then
+\index{{\tt shell\_out} event sent by {\em glishd}}
+a {\tt shell\_out} event for each line of output generated by
+the shell command (it would be better to buffer all of the output lines
+together into a single event),
+and finally a {\tt status} event containing the exit status of the
+shell command.  All of these events are handled directly by the
+{\em Glish} interpreter; they are not ``visible" in a {\em Glish} script.
+
+\item[{\tt probe}] requests
+\index{{\tt probe} event sent to {\em glishd}}
+that {\em glishd} acknowledge that it is still receiving messages
+from the interpreter (i.e., that network connectivity holds).  Ordinarily
+{\em glishd} immediately responds with a {\tt probe-reply} event.
+
+\item[{\tt *terminate-daemon*}] tells
+\index{terminate-daemon event@{\tt *terminate-daemon*} event sent to {\em glishd}}
+{\em glishd} to exit. This cannot be used to force a {\em root glishd} to exit.
+If you need to kill a {\em root glishd}, you should use the {\tt HANGUP}
+signal, i.e. \verb+kill -HUP+.
+
+\end{list}
+
+\index{{\em glishd} remote daemon|)}
+\index{clients!controlling internals|)}
+\index{clients!creating!internals|)}
+
+\section{Transmitting Events}
+
+\index{interprocess communication}
+{\em Glish} uses three different forms of interprocess communication (IPC) for
+transmitting events.  When the {\em Glish} interpreter creates a client it passes it 
+special arguments telling it how to make its connection with the interpreter.
+
+\index{socket connections}
+The most general form of IPC used by {\em Glish} is a socket connection.
+In this case, the client's arguments tell it to which host and port number
+\index{socket connections!default port (2000)}
+to connect\footnote{The interpreter picks the first free port available
+on its host, starting with port 2000.}.  The client then opens a socket
+to that host and port, sends a message identifying itself, and uses the
+socket for its subsequence communication with the interpreter. This same
+mechanism is used when {\em glishd} must be started by the interpreter.
+
+\index{pipes!client connection}
+As an optimization, however, if a client is running on the same host
+as the interpreter then the interpreter will use pipes to communicate
+with the client instead.  Experience has shown that using pipes
+locally can result in a substantial improvement in performance (a
+factor of~2 on SunOS).  In this case, prior to creating the client
+the interpreter creates two pipes which the client inherits
+when the interpreter {\em exec()\/}'s it.
+
+\index{link statement!implementation}
+The {\tt link} statement requires the creation of a separate connection
+between two clients.  The interpreter sends the sending end of the link
+a special
+\index{internal event!{\tt *link-sink*}}
+\index{link-sink event@{\tt *link-sink*} event}
+{\tt *link-sink*} event.  The Client Library of the sender intercepts
+\index{sockets!Unix domain}
+\index{sockets!Internet domain}
+this event, creates either a UNIX- or Internet-domain socket endpoint
+(the former if the sender and receiving reside on the same host),
+\index{internal event!{\tt *rendezvous*}}
+\index{rendezvous event@{\tt *rendezvous*} event}
+creates a {\tt *rendezvous*}
+event describing how to connect to endpoint (i.e., which host and port),
+and returns that event to the interpreter.
+When the interpreter receives a {\tt *rendezvous*} event it sends a
+corresponding
+\index{internal event!{\tt *rendezvous-resp*}}
+\index{rendezvous-resp event@{\tt *rendezvous-resp*} event}
+{\tt *rendezvous-resp*} event
+to the link receiver, and reflects back a
+\index{internal event!{\tt *rendezvous-orig*}}
+\index{rendezvous-orig event@{\tt *rendezvous-orig*} event}
+{\tt *rendezvous-orig*} event
+to the sender (this second event isn't strictly necessary, but used to
+be necessary to avoid deadlock).  The sender and receiver then rendezvous using the
+given socket, establishing the separate connection between them.
+
+\index{unlink statement!implementation}
+The {\tt unlink} statement suspends the separate connection between two
+{\em Glish} clients.  It is implemented by sending a
+\index{internal event!{\tt *unlink-sink*}}
+\index{unlink-sink event@{\tt *unlink-sink*} event}
+{\tt *unlink-sink*} event to the sender-side of the link.  The sender
+then marks the link as inactive; it does not destroy the link, however,
+since it might later be resurrected via another {\tt link} statement.
+
+\index{shared clients!implementation}
+\label{shared-client-implementation}
+With shared clients, {\em glishd} must be started by {\em root}. This is
+because {\em glishd} maintains a lot of information about the client that
+is shared by all {\em Glish} users. If {\em glishd} were not running as root,
+it could not control the ownership of processes it creates on behalf
+of many users. A shared client starts up like any normal client, but as
+part of its initialization process it connects to the published {\em glishd}
+port and registers itself as shared. Before any client is started, the
+{\em Glish} interpreter first attempts to check with {\em glishd} to see if the
+client is already running.  {\em glishd} uses the information it collects
+as clients register themselves as shared to answer these requests. If
+the client is already running, the interpreter sends a \verb+"client"+ event
+to {\em glishd} which then forwards the event the preexisting client.
+
+\section{Suppressing Stand-Alone Client Behavior}
+\label{suppressing-standalone}
+
+\index{clients!stand-alone!suppressing}
+If a {\em Glish} client is run without
+being given the special arguments telling it how to connect to
+the {\em Glish} interpreter, and if it is given the {\tt -glish} argument,
+then it runs in a ``stand-alone" mode (as described 
+in \xref{standalone}).   
+In this mode any text appearing on {\em stdin} is interpreted as an incoming
+event, and any events generated are written in text form on {\em stdout\/}.
+
+This behavior can be annoying when the client uses {\em stdin} or {\em stdout}
+for a different purpose, or generates large events that you don't want to
+look at in text form, or is to be placed in the background (which can
+result in the client being ``stopped" by the terminal driver because
+its {\em stdin} disappears).  For this reason,
+by default ``stand-alone'' is not enabled, and the
+\index{noglish client argument@{\tt -noglish} client argument}
+{\tt -noglish} argument confirms this default.  The client will
+not see any inbound events or create any output when it generates
+events.  To enable the stand-alone reading of events from {\em stdin}
+and writing events to {\em stdout}, you must invoke the client with the
+\index{glish client argument@{\tt -glish} client argument}
+{\tt -glish} flag.
+
+\section{The ``Shell" Client}
+
+\index{asynchronous shell clients|(}
+{\em Glish} creates and manages asynchronous shell clients (i.e., created
+using the {\tt shell} function's {\tt async=T} option; see \xref{shell-func})
+\indtt{shell\_client}{}
+using a special client called {\tt shell\_client}.  {\tt shell\_client}
+is invoked with an optional {\tt -ping} argument (to implement {\tt ping=T})
+and then a list of arguments corresponding to the shell command.
+
+Prior to executing the shell command, {\tt shell\_client} attempts
+\index{pseudo-ttys}
+to create a ``pseudo tty" master/slave pair.  If successful then
+it uses the pseudo-tty for the shell command's {\em stdin} and {\em stdout\/};
+this causes the command to believe it is communicating directly with
+a user, so it will generate prompts, perhaps use terminal escape sequences
+where appropriate, and, most importantly, line-buffer its output.
+
+If {\tt shell\_client} fails to create a pseudo-tty then it uses a
+pair of pipes to communicate with the command.  In this case, the commands'
+output will be block-buffered, meaning that it may not appear at all
+until the command has either generated a lot of output, or terminates.
+This behavior makes the shell command much more difficult to use as
+a {\em Glish} client, because its output appears unpredictably.
+
+Each line of output generated by
+the shell command results in a {\tt string}-valued 
+{\tt stdout} event
+(as discussed in \xref{async-shell}.
+{\tt shell\_client} itself responds to the following events:
+\begin{list}{}{}
+
+\item[{\tt stdin}] instructs
+\indtt{stdin}{event to shell client}
+{\tt shell\_client} to make a {\tt string}
+representation of the {\tt stdin} event's value appear on the command's
+{\em stdin} input stream.
+
+\item[{\tt EOF}] causes
+\indtt{EOF}{event to shell client}
+{\tt shell\_client} to close the command's {\em stdin\/}.
+
+\item[{\tt terminate}] results
+\indtt{terminate}{event to shell client}
+in {\tt shell\_client} killing the
+shell command by sending it a {\em SIGTERM} signal.
+
+\end{list}
+\index{asynchronous shell clients|)}
+
+\section{Initializing the Interpreter}
+\label{glish-init}
+
+\index{interpreter!initialization}
+A number of the predefined functions discussed in \cxref{predefineds},
+are actually written in the {\em Glish} language rather than built into the
+{\em Glish} interpreter.  These functions are compiled into the interpreter
+from a file called
+\index{{\em glish.init} initialization file}
+{\em glish.init\/}, which resides in the {\em Glish} source directory.
+
+You can further customize your {\em Glish} run-time environment via the
+{\tt .glishrc} customization file(s) (\xref{glishrc}).
+
+\section{Installing and Porting Glish}
+\label{installation}
+
+\index{Glish!installation}
+Directions for installing {\em Glish} can be found in the file
+\indtt{README}{}
+{\em README} at the top level of the {\em Glish} distribution
+(i.e., at the some level as the {\em glish/} source directory).
+
+\index{Glish!porting requirements}
+The basic requirements for installing and/or porting {\em Glish} are a C++
+\index{socket connections}
+compiler and access to sockets as provided by the {\em socket()\/},
+{\em bind()\/}, {\em accept()\/}, and {\em connect()\/} system
+calls.  Those system dependencies of which we are aware have been
+isolated in the (C, not C++) source file {\em system.c\/}; its
+companion header file, {\em system.h\/}, provides brief documentation
+as to what each function is expected to do.
+
+\end{sloppy}
+\index{Glish!internals|)}

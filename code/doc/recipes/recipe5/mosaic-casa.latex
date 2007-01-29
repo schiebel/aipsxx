@@ -1,0 +1,115 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\begin{document}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+\begin{ahrecipe}
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals:</font>
+\end{rawhtml}
+{Make a Mosaiced CLEAN image of CAS A}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{imager}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume:</font>
+\end{rawhtml}
+{You have a VLA mosaic dataset of CAS A which you wish to image using
+CLEAN. It contains 7 pointings of which field 1 is the center
+pointing. There are two spectral windows which you wish to combine
+together into one image. You wish to use multi-scale clean to obtain
+the mosaiced image. (Note: the data file is available in the AIPS++ data
+repository as demo/XCAS-UV.fits.)}
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script:</font>
+\end{rawhtml}
+{\htmladdnormallink{mosaic-casa.g}{../mosaic-casa.g.txt}}
+
+\begin{arexample}
+\arline{include~'ms.g'}{Include the ms scripts.}
+\arline{include~'imager.g'}{Include the imager scripts.}
+
+\arline{dowait:=T}{Tell the tool system to wait for a function to finish}
+
+\arline{m:=fitstoms('xcas.ms', 'XCAS-UV.fits');}{Convert to an MS}
+\arline{m.summary(verbose=T);}{Get a summary of the MS}
+\arline{m.close();}{Close the MS}
+\arline{imgr:=imager('xcas.ms');}{Make an imager tool}
+\arline{imgr.setdata(fieldid=1:7,spwid=1:2);}{Select all fields and spectral windows}
+\arline{imgr.setimage(cellx='5arcsec', celly='5arcsec', nx=256, ny=256,
+     spwid=1:2,mode="mfs",stokes='IV',fieldid=1)}{Set image properties. Define the phase center to be that of field 1}
+\arline{imgr.make('xcas.clean');}{Make an empty image}
+\arline{imgr.make('xcas.clean.mask');}{Make an empty image for the mask}
+\arline{imgr.boxmask(mask='xcas.clean.mask', blc=[100,100,1,1],
+		 trc=[160,160,2,1])}{Set the mask to be 1 within blc, trc}
+\arline{include 'catalog.g'}{Include definition of catalog}
+\arline{dc.view('xcas.clean.mask')}{Display the clean image mask}
+\arline{imgr.setoptions(dopb=T,cutoff=0.2);}{Turn on primary beam application}
+\arline{imgr.weight('robust')}{Weight the data robustly}
+\arline{imgr.uvrange(0,~10000)}{Set a uv range of data to be used}
+\arline{imgr.setscales('uservector', uservector=[0, 3, 10])}{Set the CLEAN scales}
+\arline{imgr.clean(model='xcas.clean',mask='xcas.clean.mask',niter=300,gain=0.7,
+	   threshold='100mJy',algorithm='mfmultiscale')}{Make the clean image}
+\arline{imgr.setbeam(bmaj='15arcsec', bmin='15arcsec')}{Set required beam size}
+\arline{imgr.restore(model='xcas.clean')}{Restore it...}
+\arline{dc.view('xcas.clean.restored');}{.. and display}
+\arline{imgr.close()}{Close the imager}
+\arline{imgr.done()}{Delete the imager tool}
+\end{arexample}
+
+%\arconclusion
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Conclusion:</font>
+\end{rawhtml}
+{Note that only the setoptions() call seems to be saying anything
+about mosaicing. AIPS++ deals with mosaicing transparently. It is possible to
+run the above example without turning on the primary beam application, in
+which case all the different pointings will be added directly and cleaned with
+the aggregate point spread function.
+
+The mosaiced clean agorithm works as follows:
+
+\begin{enumerate}
+\item A first estimate image (usually zero) is used.
+\item For the current model, the predicted visibilities for
+each pointing are calculated by applying the appropriate
+primary beam and then Fourier transforming and de-gridding.
+\item The residual visibilities are calculated and then
+gridded and Fourier transformed to obtain the residual
+image for each pointing.
+\item All residual images are combined using the appropriate
+primary beam (as in a linear mosaic).
+\item An aggregate PSF is calculated by simply using all visibilities
+without weighting by the primary beam.
+\item The residual image is then cleaned using the aggregate PSF down
+to some level using the Clark Clean approach.
+\item The incremental clean components are added to the current model
+and the process is iterated from step 2 onwards.
+\item The procedure stops at some threshold in residual.
+\end{enumerate}
+
+If only one contiguous image region is to be mosaiced then imager uses
+FFT convolution to replace steps 2 and 3.  This considerably speeds
+the processing after the first iteration. If the primary beam changes
+over time, then the appropriate convolution will be done.  }
+\end{ahrecipe}
+
+\end{document}

@@ -1,0 +1,257 @@
+
+Title:                  Adopt gcc 3.1 as project compiler
+Person responsible:     Athol Kemball (akemball@nrao.edu)
+Originator of proposal: Wes Young (wyoung@nrao.edu)
+Exploders targeted:     aips2-lib
+Time table:
+Date of issue:          2002 June 04  Done
+Comments due:           2002 June 11  Done
+Revised proposal:       2002 June 28  Done
+Final comments due:     2002 July 03  Done
+Decision date:          2002 July 08  Done
+
+Change log: 
+- 2002-06-28: Added more detail to the section on staging
+  sstream changes to allow affiliated development sites more 
+  lead time in moving away from deprecated features in this area.
+
+- 2002-07-12: This change proposal is now marked as accepted. The
+  dates for switch-over (T0 and T1 as described below) will be
+  announced soon. Until then, please retain gcc 2.95.3 for your
+  development builds.
+ 
+Statement of goals:
+ 
+- Motivate for the adoption of gcc 3.1 as project compiler.
+- Provide an opportunity for comment on the proposed syntax changes
+  to support gcc 3.1, especially those concerning sstream.
+ 
+Background:
+
+The gcc-3.1 release is the latest version in the gcc compiler series.
+It has the following improvements over gcc 2.95.3, our current project
+compiler, which we adopted in November 2000:
+
+  i)   Improved ISO C++ compliance
+  ii)  An implementation of the standard C++ library
+  iii) Improved optimization
+  iv)  Support for new architectures and operating systems (including
+       Intel 64-bit Itanium and Mac OS/X).
+  v)   Is expected to be adopted by the next major release of most
+       Linux distributions.
+
+The gcc 3.* release series represents the convergence of the gcc and
+egcs development threads. This series has had two major release since
+June 2001, and several minor releases. The compiler series has been
+available for a year now, and this is a good time to consider adoption
+for AIPS++, given the advantages listed above. We do have Intel 64-bit
+systems within the consortium at present.
+
+The recent accepted change proposal for sun4sol_ntv support to act as
+our secondary compiler for the Rational tools decouples the choice of
+our project compiler from the compilers supported by Rational. This
+is described in the sun4sol_ntv compiler change proposal at:
+http://aips2.nrao.edu/mail/aips2-lib/2048.
+
+The new features in the gcc 3.1 compiler are fully described at:
+http://www.gnu.org/software/gcc/gcc.html and
+http://www.gnu.org/software/gcc/gcc-3.1/changes.html
+ 
+Summary:
+--------
+
+A two step change is proposed, with dates T0 and T1.
+ 
+At T0, we would first use the -Wno-deprecated -D_GLIBCPP_DEPRECATED
+flags to keep the current old strstream behaviour.  Modifications
+would be relatively minor: use ios::fmt_flags instead of long for some
+formatting, use "friend class" instead of just "friend", adjust some
+aips/implement/*.h files to recognize AIPS_GCC3_1, add some missing
+templates, and adjust the arguments of some String templates. (Note:
+several of the "friend class" changes have already been made, and
+SGI64 has been replaced with AIPS_64B or AIPS_SGI as appropriate.)
+Date TO will be set early in the v2.0 release cycle after discussion
+within the consortium.
+
+Second, at date T1, we will replace strstream with sstream.  This
+requires many changes through out the code tree (see below). All
+current secondary compilers (sgi and sun native) have sstream support.
+There will be a period of six weeks between T0 and T1 to allow
+affiliated development sites time to adjust their code.
+
+Expected Impact:
+----------------
+
+- Sites will need to install gcc 3.1.
+
+- gcc 3.1 will have to be tested on all consortium development 
+  architectures (Linux, Solaris, HP-UX), where this has not been done
+  already.
+
+- Explicit syntax changes will need to be checked-in to the system.
+
+  The first phase switch could likely be done in a day, with little to
+  no impact on developers.
+
+  The second phase, will require a bit more effort.  Use of strstream would
+  need to be modified to use sstream and string operations rather than
+  pointer operations on char *. We have some clumsy use of strstream
+  that would benefit from being cleaned up, especially in MSBinaryTable,
+  msarchive and several files in trial/MeasurementSets.
+ 
+Detailed log of changes - with comments
+---------------------------------------
+
+- Wes' comments with gcc-3.1 changes
+
+Using old iostreams.h
+
+Use these flags in makedefs: -Wno-deprecated -D_GLIBCPP_DEPRECATED
+
+Package aips
+
+vector.h -- needs std:: in the AIPS*AUX definitions
+stdmap.h -- needs std:: in the AIPS*AUX definitions
+
+glish
+sos/include/sos/mdep.h -- needs ia64 definitions
+sos/include/sos/longint.h -- needs friend class
+include/Glish/Queue.h -- needs friend class
+
+aipsenv.h       -- AIPS_GCC3 tweaked to set AIPS_64 if __ia64__ defined.
+math.h          -- #undef NEEDS_POWFLOATFLOAT
+OS/Conversion.h -- Use AIPS_64 instead of SGI64 and __alpha__
+Mathematics/Complex.cc -- need several templates instantiated see missing templates below.
+MeasurementSets/MSTable.cc -- need to include static member definitions for gcc3, currently only
+                              setup for gcc 2 versions > 91.
+
+Utilities/String.cc -- Tweaked templates to look like this
+
+ template Char *std::transform<Char*>(Char *, Char *, Char *, Int (*)(Int));
+ template void std::__reverse<Char*>(char *, char *, std::random_access_iterator_tag);
+ template string::iterator std::transform(string::iterator, string::iterator, string::iterator, Int (*)(Int))
+ template void std::__reverse<string::iterator>(string::iterator, string::iterator, std::random_access_iterator_tag);
+ 
+
+
+Package trial
+Images/ImageMoments.h -- needed "friend class"
+Mathematics/StatAcc.cc --  flags needed ios::fmtflags type
+
+Functionals/Gaussian3DParam  -- uncovered a compiler bug but there is a workaround
+            Gaussian3D       -- we should use const T & args rather than T args for the
+	                        constructor with nine arguments.
+
+package trialdisplay
+DisplayDatas -- several files need "friend class"  see below.
+apps/gDisplay      -- several files needed AIPS_64B, been changed
+   GTkDisplayData.cc
+   GTkPanelDisplay.cc
+   GTkSlicePD.cc
+
+Itaninum considerations
+
+Install gcc-3.1 and binutils 2.12. Note: one has to build binutils 2.12 with gcc3.1 turn off
+-g flag for compilation
+ 
+--------- Replacing strstream with sstream
+
+Package aips
+   iosstrfwd.h   replace istrstream istringstream, ostrstream with ostringstream, use sstream instead of strstream
+                 need to #define istream istringstream and #ifdef it for GCC3
+   strstream.h   as above with with strstream being replaced with stringstream
+   math.h        pow() doesn't need to be defined
+   stdmap.h      tweaked to make AIPS_MAP_AUX_TEMPLATES null for gcc3.1
+FITS/various .cc  using ostrstream.str() is a string not char * in gcc3
+     blockio.cc
+     fits.cc
+     hdu2.cc
+     fitsio.cc
+     FITS.cc
+MeasurementSets/MSTable.cc -- needs to be included too.
+Utilities/String.cc  ostrstream.str() is a string not char * in gcc3
+                     some template instantiation need to be left out.
+String templates go here...
+
+Tables/ReadAsciiTable.cc -- Need to specify String(char *, int);
+                            istrstream(String(char *, int))
+			    rather than istrstream(char *, int)
+
+
+apps/gtable/GlishTableProxy.cc -- ostream(char *, int) needs to be ostream(String(char*,int));
+
+_ReposFiller/templates -- missing templates
+template Float std::norm(const Complex&);
+template Double std::norm(const DComplex&);
+template Float std::arg(const Complex&);
+template Double std::arg(const DComplex&);
+template Float std::abs(const Complex&);
+template Double std::abs(const DComplex&);
+template Complex std::polar(const Float&, const Float&);
+template DComplex std::polar(const Double&, const Double&);
+template Complex std::sqrt(const Complex&);
+template DComplex std::sqrt(const DComplex&);
+template Complex std::conj(const Complex&);
+template DComplex std::conj(const DComplex&);
+template Complex std::pow(const Complex&, const Float&);
+template DComplex std::pow(const DComplex&, const Double&);
+template Complex std::pow(const Complex&, const Complex&);
+template DComplex std::pow(const DComplex&, const DComplex&);
+template Complex std::log(const Complex&);
+template DComplex std::log(const DComplex&);
+template Complex std::exp(const Complex&);
+template DComplex std::exp(const DComplex&);
+template Complex std::cos(const Complex&);
+template DComplex std::cos(const DComplex&);
+template Complex std::cosh(const Complex&);
+template DComplex std::cosh(const DComplex&);
+template Complex std::sin(const Complex&);
+template DComplex std::sin(const DComplex&);
+template Complex std::sinh(const Complex&);
+template DComplex std::sinh(const DComplex&);
+
+
+Package trial
+
+
+Flagging/RFChunkStats.cc -- changed a String + ostrstream.str() to String + String(ostrsteam.str())
+Functionals/FuncExprData.cc
+SDIterators/SDIterator.cc -- did the WHATEVER_STRINGPTR(ostrstream.str())
+            SDIterAxes.cc
+MeasurementSets/FitsIDItoMS.cc  -- Needed the WHATEVER_STRINGPTR and istringstream(String(char *, Int)) tricks
+                MSSimulator.cc
+		SDFeedHandler.cc
+Tasking/AppUtil.cc -- Needed ostringstream(String(char *, Int)) trick
+MeasurementComponents/GridFT.cc -- Need the WHATEVER_STRINGPTR
+                      SDGrid.cc
+Mathematics/StatAcc.cc --  flags needed ios::fmtflags type
+
+trial/apps
+
+archive2ms/MSBinaryTable.cc -- Needed istringstream(String(char *, Int) and WHATEVER_STRINGPTR
+ms2archive/MSToFITS.cc needs String(ost).length() rather than pcount
+ms2archive/NFITSFieldFillers.cc -- needs an WHATEVER_STRINGPTR
+uni2sdfits/uni2sdfits.cc -- needs an WHATEVER_STRINGPTR
+
+trialdisplay
+
+DisplayDatas/DisplayData.h            friend declaration needs friend class XXX
+             DisplayMethod.h
+	     DrawingDisplyaData.h
+	     Histogram2dDD.h
+	     LatticeAsContour.h
+	     LatticeAsMarker.h
+	     LatticeAsRaster.h
+	     LatticeAsVector.h
+	     MSAsRaster.h
+	     PrincipleAxesDD.h
+	     SkyCatOverlayDD.h
+	     TblAsCountourDD.h
+	     TblAsRasterDD.h
+	     TblAsXYDD.h
+	     WedgeDD.h
+	     MSAsRaster.cc       -- needs a WHATEVER_STRINGPTR, no ostringstream.freeze()
+Display/SimpleRGBPixelCanvasApp.cc -- ststream constructor doesn't map well to stringstream constructor
+        X11PixelCanvasApp.cc
+
+----------------------------------------------------------------------------

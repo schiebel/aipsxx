@@ -1,0 +1,118 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: sh.help,v 19.2 2004/08/25 02:04:49 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{sh}{A persistent shell client}
+
+\ahinclude{sh.g}
+
+\ahkeyword{shell}{}
+\ahkeyword{client}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+The sh class allows the user to create persistent instances of a shell
+client, so that the overhead of creating the client can be amortized
+over many different function calls.  This can result in a considerable
+time savings for functions that iterate over, say, files in a
+directory.  Unlike \ahlink{shellcmd}{misc:misc.shellcmd}, this is
+really meant for fairly low level use and there is no logging option.
+This might be fixed later, if there is demand for it.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- mysh := sh()                      # create the client
+- mysh
+[command=<function>, done=<function>] 
+- mysh.command('ls -1')             # The basic use
+                                    # output in .lines
+[lines=Glish.txt MS NUAGES_SOLARIS News Rapport.ps Refman.ps aips++ aipsvars
+ aipsviewrc.list bin catalog.g catalogsink.g displaylistbox.g foo.g foo.ps
+ gcal glish.comments ... , status=0, errlines=]
+- mysh.command('ls sfajlds')        # stderr in .errlines
+                                    # status in .status
+[lines=, status=2, errlines=sfajlds: No such file or directory] 
+- mysh.command('jasdfjls')
+[lines=, status=1, errlines=] 
+- files:=mysh.command('ls -1').lines  # typical composite use
+- length(files)
+63 
+- mysh.done()                     # must be killed explicitly
+\end{verbatim}
+\end{ahexample}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{sh}{Construct persistent shell client tool}
+
+\ahreturns{persistent shell client tool}
+
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{command}{execute command}
+
+\begin{ahdescription}
+Executes any Bourne shell command.  Remember to escape any special
+characters which have meaning to the shell.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{command}{Command line to be executed by Bourne shell}{}{}
+\ahaddarg{timeout}{Timeout interval (seconds): 0 for no timeout}{0}{Int}
+\end{ahargs}
+
+\ahreturns{execution result record}
+
+Fields in the returned record are
+\begin{description}
+\item[lines] String array of output written by command, one
+string per line of output.
+\item[status] Integer valued exit status from command execution 
+\item[errlines] Array of lines written to stderr by command
+\end{description}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{destroy the tool}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{ahobject}
+\end{document}
+
+
+

@@ -1,0 +1,186 @@
+# $Id: mkfile.in,v 19.1 2004/07/13 22:37:01 dschieb Exp $
+#
+# Makefile for regexp C libraries.
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+#IF GC
+GCFLAGS = -DENABLE_GC
+NAME = regxgc
+#ELSE
+NAME = regx
+#FI
+
+#IF SHARED
+MK_LIB = @MAKE_SLIB@
+LD_LIBS = @SLIB_LD_LIBS@ @SLIB_LD_LIBS_regx@
+CFLAGS = @CFLAGS@ @SLIB_CFLAGS@ $(GCFLAGS)
+GSUFFIX = @REGX_SLIB_SUFFIX@
+SUFFIX = @SLIB_SUFFIX@
+RANLIB = :
+LIBTGT = @SHARED_LIB@
+INSTALL_LIBTGT = INSTALL_@SHARED_LIB@
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+#IF LABEL_SLIB
+LABEL = @SLIB_LABEL@lib$(NAME)$(GSUFFIX)
+#FI
+#IF AIX
+AIXSYM = $(LIBDIR)/libregx.exp
+AIXSYM_P = $(LIBDIR_P)/libregx.exp
+AIXSLIBS = -Wl,-bI:$(LIBDIR_P)/libsos.exp
+#FI
+#ELSE
+MK_LIB = @MAKE_LIB@
+LD_LIBS = 
+CFLAGS = @CFLAGS@ $(GCFLAGS)
+GSUFFIX = @GLISH_LIB_SUFFIX@
+SUFFIX = @GLISH_LIB_SUFFIX@
+RANLIB = @RANLIB@
+LIBTGT = @STATIC_LIB@
+INSTALL_LIBTGT = INSTALL_@STATIC_LIB@
+INSTALL_LIBRARY = $(INSTALL_DATA)
+#FI
+
+CC = @CC@
+LIBS = @LIBS@
+
+D = @DOT@
+T = @TOUCH_PROXY@
+MINSPACE_RM = @MINSPACE_RM@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+RM = rm -f
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+
+SRC = ../..
+H = $(SRC)/include/regx
+INC = -I.. -I$(SRC)/include -I$(SRC) -I$(INCDIR_P)
+
+MKHIER = $(top)/config/mkhier
+
+OBJS = \
+	common.o \
+	regcomp.o \
+	regexec.o \
+	sv.o
+
+OBJS_PROXY = \
+	$(D)common.o \
+	$(D)regcomp.o \
+	$(D)regexec.o \
+	$(D)sv.o
+
+HDRS = $(INCDIR)/regx/common.h $(INCDIR)/regx/op.h $(INCDIR)/regx/regexp.h
+
+TAR_FILE = regx.tar
+
+all: $(AIXSYM_P) $(LIBTGT)
+
+install: $(AIXSYM) $(INSTALL_LIBTGT)
+
+lib_tgt: $(LIBDIR_P)/lib$(NAME)$(SUFFIX)
+
+INSTALL_lib_tgt: $(LIBDIR)/lib$(NAME)$(SUFFIX) $(INCDIR)/regx $(HDRS)
+
+lib$(NAME)$(GSUFFIX): $(OBJS_PROXY)
+	$(RM) lib$(NAME)$(GSUFFIX)
+	$(MK_LIB) lib$(NAME)$(GSUFFIX) $(LABEL) $(OBJS) $(LD_LIBS) $(AIXSLIBS)
+	$(RANLIB) lib$(NAME)$(GSUFFIX)
+	$(MINSPACE_RM) $(OBJS)
+
+$(LIBDIR_P)/lib$(NAME)$(GSUFFIX): lib$(NAME)$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) lib$(NAME)$(GSUFFIX) $(LIBDIR_P)
+	$(RANLIB) $(LIBDIR_P)/lib$(NAME)$(GSUFFIX)
+
+$(LIBDIR)/lib$(NAME)$(GSUFFIX): lib$(NAME)$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) lib$(NAME)$(GSUFFIX) $(LIBDIR)
+	$(RANLIB) $(LIBDIR)/lib$(NAME)$(GSUFFIX)
+
+#IF SLIB_SYM_LINKS
+$(LIBDIR_P)/lib$(NAME)$(SUFFIX): $(LIBDIR_P)/lib$(NAME)$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f lib$(NAME)$(SUFFIX);	\
+	ln -s lib$(NAME)$(GSUFFIX) lib$(NAME)$(SUFFIX)
+
+$(LIBDIR)/lib$(NAME)$(SUFFIX): $(LIBDIR)/lib$(NAME)$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f lib$(NAME)$(SUFFIX);	\
+	ln -s lib$(NAME)$(GSUFFIX) lib$(NAME)$(SUFFIX)
+#FI
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm -f tar-files
+
+tar-list:
+	@echo editline >&2
+	@ls README Makefile.in *.c editline.3 include/*.h
+
+rcsinfo:
+	@echo editline
+	@rlog -L -S RCS/*,v
+
+clean:
+	@rm -f errs $(OBJS_PROXY) *.o *~* $(APPS) core a.out *.a *.so ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h Makefile
+
+$(D)common.o: $(SRC)/common.c $(H)/common.h $(SRC)/sv.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/common.c $(T)
+
+$(D)regcomp.o: $(SRC)/regcomp.c $(SRC)/regcomp.h $(SRC)/sv.h $(H)/regexp.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/regcomp.c $(T)
+
+$(D)regexec.o: $(SRC)/regexec.c $(SRC)/regcomp.h $(SRC)/sv.h $(H)/regexp.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/regexec.c $(T)
+
+$(D)sv.o: $(SRC)/sv.c $(SRC)/sv.h $(SRC)/cop.h $(H)/common.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/sv.c $(T)
+
+##
+## Install headers
+##
+$(INCDIR)/regx:
+	$(MKHIER) $(INCDIR)/regx
+
+$(INCDIR)/regx/common.h: $(H)/common.h
+	@rm -f $@
+	cp $(H)/common.h $@
+
+$(INCDIR)/regx/op.h: $(H)/op.h
+	@rm -f $@
+	cp $(H)/op.h $@
+
+$(INCDIR)/regx/regexp.h: $(H)/regexp.h
+	@rm -f $@
+	cp $(H)/regexp.h $@
+
+#IF AIX
+$(LIBDIR_P)/libregx.exp: libregx$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_DATA) libregx.exp $(LIBDIR_P)
+
+$(LIBDIR)/libregx.exp: libregx$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_DATA) libregx.exp $(LIBDIR)
+#FI
+
+INSTALL_:

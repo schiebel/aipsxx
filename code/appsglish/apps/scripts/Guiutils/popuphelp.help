@@ -1,0 +1,212 @@
+%% Copyright (C) 1999,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: popuphelp.help,v 19.2 2004/08/25 02:01:09 cvsmgr Exp $
+\begin{ahfunction}{popuphelp}{add popup help to a GUI}
+\ahkeyword{help}{}
+\ahkeyword{tool tips}{}
+\ahkeyword{popup help}{}
+\ahinclude{popuphelp.g}
+\begin{ahdescription}
+{\tt popuphelp} Is a function which adds the code necessary to add
+``popup'' help to an agent. In particular, when your cursor
+``lingers'' or ``hovers'' over that agent (e.g. a button) for more than about
+half a second, the help will popup, and go away when the cursor leaves the
+agent or when a button is pushed, etc. Help text comes in two flavours: short
+and long. If only one of them is available, they will both be
+identical. Short help is displayed on one line if it is not longer
+than the specified width (60 by default), else on several lines. If no
+explicit long help is present, the shorthelp is truncated at a new
+line or at a period, and will never be longer than the specified width.
+If the longhelp differs from the shorthelp (either by truncation or
+otherwise), the shorthelp is extended with ``..'' at the end of
+the displayed short text.
+
+Short help is displayed by default when the cursors hovers above the
+agent. Long help is tied to the right mouse button by default.
+
+Popup help can, dynamically, be tied by setting the 'system.help.type' to 0
+(no popup), 1(short and long), 2(long only with MB3), 3(long only in hover).
+
+A ``popupmenu'' function is also available to add a ``?'' button to your GUI
+which let the user choose the context popup type action. If a popupmenu is
+generated, the default can be set with the aipsrc variable
+``help.popup.type'' (possible values: 'none',  'both', 'mb3long' and
+'hoverlong'), or by the programmer.
+
+For most popup help items you merely specify a text string that is the
+help text. For a listbox, you can supply a callback function that
+takes two arguments and returns a string. The two supplied arguments are:
+\begin{enumerate}
+    \item the text of the listbox item the cursor is near; and
+    \item the Y-index (0 relative!) of the cursor position in the listbox.
+\end{enumerate}
+
+It should be noted that timing errors could crash the system (or leave
+popuphelp floating around) if an agent that supports popuphelp is just zeroed
+(e.g. by frameagent :=F). A function 'popupremove(agent)' exists to do a
+proper zeroing.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{fr}{agent to which popup text should be added}{}{record or agent}
+\ahaddarg{txt}{popup text, or, for listbox, possible callback routine}{F}
+{string or function as described above}
+\ahaddarg{hlp}{optional separate short help text, or,for listbox, possible
+callback routine}{F}{string or function as described above}
+\ahaddarg{combi}{specifies if short text should precede long text}{F}{bool}
+\ahaddarg{width}{specifies maximum length of one shorthelp line}{60}{integer}
+\end{ahargs}
+\ahreturns{T (or fail)}
+\begin{ahexample}
+\begin{verbatim}
+include 'popuphelp.g';
+private := [=];
+private.f := frame(height=100);
+private.b := button(private.f);
+popupmenu(private.f);  # to add a ? menu button (if wanted)
+popuphelp(private.b, 'Press the button, and make this a long text');
+private.l := listbox(private.f);
+private.l->insert('AAA'); private.l->insert('BBB');
+private.l.helpfct := function(name, index) {
+    # Only need name here.
+    return spaste('Your cursor is near ', name);
+}
+popuphelp(private.l, private.l.helpfct); 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{popupremove}{remove popup help from a GUI}
+\ahkeyword{help}{}
+\ahkeyword{tool tips}{}
+\ahkeyword{popup help}{}
+\ahinclude{popuphelp.g}
+\begin{ahdescription}
+{\tt popupremove} Is a function which deletes any popuphelp (if present) from
+the specified agent, and sets the agent to False after having done it. Using
+it is necessary if, e.g., you want to zero the agent in a whenever: timing
+problems could crash the system if popuphelp is present and lingering
+somewhere.
+
+The function works recursively, if fields in the argument are records.
+
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ag}{agent which should be removed (possibly recursively)}{F}{agent}
+\ahaddarg{mxlevels}{max. recursion level}{8}{Int}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+include 'popuphelp.g';
+private := [=];
+private.f := frame(height=100);
+private.f.a := frame(private.f);
+private.f.a.b := button(private.f.a);
+popupmenu(private.f);  # to add a ? menu button (if wanted)
+popuphelp(private.f.a.b, 'Press the button, and make this a long text');
+private.l := listbox(private.f);
+private.l->insert('AAA'); private.l->insert('BBB');
+private.l.helpfct := function(name, index) {
+    # Only need name here.
+    return spaste('Your cursor is near ', name);
+}
+popuphelp(private.l, private.l.helpfct);
+whenever private.f.a.b->press do {
+    popupremove(private.f.a);
+} 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{popupmenu}{add a popup type selection help menu to a GUI}
+\ahkeyword{help}{}
+\ahkeyword{tool tips}{}
+\ahkeyword{popup help}{}
+\ahinclude{popuphelp.g}
+\begin{ahdescription}
+{\tt popupmenu} Is a function which adds to an agent a ``?'' button with popup
+selection options of ``none'', ``both'', ``mb3'' or ``hover''. By specifying a deflt
+argument of 0, 1, 2 or 3 you can select one of them as the default (default
+both assumed).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{agent}{agent to which menu button should be added}{}{agent}
+\ahaddarg{deflt}{default popup useage type}{F}{integer}
+\ahaddarg{relief}{button relief}{flat}{relief type string}
+\end{ahargs}
+\ahreturns{T (or fail)}
+\begin{ahexample}
+See ``popuphelp''.
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{addpopuphelp}{add popup help to a GUI}
+\ahkeyword{help}{}
+\ahkeyword{tool tips}{}
+\ahkeyword{popup help}{}
+\ahinclude{popuphelp.g}
+\begin{ahdescription}
+{\tt addpopuphelp} Is a function which recurses through a data
+structure (typically this will be the ``private'' variable of your
+closure tool, and for every agent that it finds that has a
+field named ``shorthelp'', it will add the code necessary to add
+``popup'' help to that agent.
+
+It is advised to use the ``popuphelp'' function directly in stead.
+
+Sometimes record/agent structures are set up where a subrecord is in fact
+a reference to a parent record. Since this might cause infinite recurses,
+a {\tt maxlevels} parameter is used to prevent such infinite loops. It is
+set to 4 by default, which should generally suffice, but very deep structures
+may require this number to be raised.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{agents}{structure that holds the agents}{}{record or agent}
+\ahaddarg{maxlevels}{maximum number of levels to recurse}{}{4}
+\end{ahargs}
+\ahreturns{T (or fail)}
+\begin{ahexample}
+\begin{verbatim}
+include 'popuphelp.g';
+private := [=];
+private.f := frame(height=100);
+private.b := button(private.f);
+private.b.shorthelp := 'Press the button';
+private.l := listbox(private.f);
+private.l->insert('AAA'); private.l->insert('BBB');
+private.l.shorthelp := function(name, index) {
+    # Only need name here.
+    return spaste('Your cursor is near ', name);
+}
+addpopuphelp(private);
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}

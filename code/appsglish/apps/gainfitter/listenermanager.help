@@ -1,0 +1,329 @@
+%% Copyright (C) 2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: listenermanager.help,v 19.1 2004/08/25 01:17:05 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Object template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{listenermanager}{a tool for supporting the
+listener/observer pattern}
+
+\ahinclude{listenermanager.g}
+
+\ahkeyword{listen}{}
+\ahkeyword{listener}{}
+\ahkeyword{observer}{}
+\ahkeyword{tell}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+This tool aids in building Glish applications, particularly ones that
+support both command-line and graphical interfaces, that wish to
+support the ``listener'' (also known as ``observer'') design pattern.
+A listener is an object that wishes to be notified when the state of
+another object changes.  A listener registers its desire for
+notification by providing the object of interest some form of
+``callback'' function.  Normally, when that object changes state, it
+alerts all registered listeners by calling the callback function.
+
+The \texttt{listenermanager} tool can provide an ``object of
+interest'' with the facility to manage and alert listeners.  The
+object--that is, a Glish tool--simply constructs and stores internally
+(e.g. as a private item) a \texttt{listenermanager} tool.  Normally,
+the tool also provides public functions call \texttt{addlistener()} and
+\texttt{removelistener()} which call the corresponding functions of its
+\texttt{listenermanager} tool; this allows listeners to register with
+the tool.  Finally, to enable notification, the
+tool should call its \texttt{listenermanager}'s \texttt{tell()}
+function whenever its state (that is, part or parts of interest)
+changes.  See example below for details.
+
+% EXAMPLE
+
+The \texttt{tell()} function provides listeners with the message
+describing the change in state, the most important part of that
+description being passed in its \texttt{state} parameter.  This
+parameter, in principle, is an arbitrary record describing what
+changed; however, for it to be useful to listeners, it should have a
+consistent structure in every \texttt{tell()} call.  Furthermore, you
+should document what that structure will be in the description of the
+\texttt{addlistener()} function that you add to your ``tool of
+interest''.  For example, see the \texttt{itemmanager} tool which
+will alert listeners whenever one of its items is updated.
+
+It is often useful in the listener pattern to know who (i.e. what
+tool) is responsible for the update in state.  In particular, a
+listener may be the tool that initiated the change in state.  All
+listeners will be alerted to the change so that they can take an
+appropriate action.  However, if the listener was the one to initiate
+the change, it may have already taken its action.  To prevent it from
+taking the action a second time when its callback function is called,
+the callback needs to know who initiated the change.  This, in part,
+is the role of the \texttt{who} parameter.  
+
+An example of the ``need to know who'' often comes in tools that
+support both command-line and graphical interfaces.  Imagine that the
+tool supports a state, e.g. \emph{enable flagging}, that can be
+changed either via a function---\texttt{setflagging()}---or a check-box
+button.  If the use changes the flagging state is via the function,
+then the GUI should be alerted to change the state of the button.
+This can be done by making the GUI a listener of the tool.  However,
+if the state was changed by clicking the button, the GUI's callback
+should not update the button's state because it is already correctly
+set.  
+
+The optional identification of \emph{actors}--tools that initiate state
+changes--is enabled by the \texttt{who} parameters.  First of all,
+listeners can identify themselves when they register a callback via the
+\texttt{addlistener} function; the \texttt{who} parameter takes a
+unique name for the listener.  An actor's name can be passed to
+listeners via the \texttt{tell()} function.  Determining who the actor
+is is up to tool-of-interest (the user of the
+\texttt{listenermanager} tool); this is usually done by providing a
+\texttt{who} parameter in the functions that change state.  For
+example, the \textttt{itemmanager}'s \texttt{set} function provides a
+\texttt{who} parameter.  In the example described above, the
+\texttt{setflagging()} could support the parameter as well.  It's
+helpful to make this parameter optional with a default value of an
+empty string.
+
+Finally, it is possible to automatically skip the alerting of a
+listener when its name matches that of the listener (and the name is a
+non-empty string).  This is done via the \texttt{skipwho} parameter of
+the \texttt{tell()} function.  It is often useful to expose this
+parameter in the tool-of-interest's state-changing functions along
+with the \texttt{who} parameter.  This is done in
+\texttt{itemmanager}'s \texttt{set} function.  
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahseealso}
+\ahlink{itemmanager}{misc:itemmanager}
+\end{ahseealso}
+
+   % Method declarations follow.  You could use \input.
+
+\begin{ahconstructor}{listenermanager}{manage a list of listeners}
+
+\begin{ahdescription}
+This constructor creates a \texttt{listenermanager} tool with a given
+name.  A \textttt{listenermanager} is usually used internally to
+another tool, a so-called ``tool of interest''---that is, a tool that
+wishes to support notification of state changes; thus, the
+\texttt{listenermanager} is usually stored as a private variable
+inside that tool. 
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{the name to associate with the state being monitored.
+This name is passed to listeners' callback functions via the tell()
+function.}{empty string}{string}
+\ahaddarg{unique}{if true, ensure that listeners are not overwritten
+without being explicitly removed.}{T}{boolean}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+
+\end{ahconstructor}
+
+\begin{ahfunction}{addlistener}{register a listener's interest in
+update alerts}
+
+\begin{ahdescription}
+This function adds a listener to the tool's internal list of listeners
+by accepting a \emph{callback function}---a function that will be
+called whenever this tool's \ahlink{tell()}{misc:listenermanager.tell}
+function is called.  The state change information given to the
+\texttt{tell()} function will be passed on to the callbacks.  
+
+The callback function should have the following signature:
+\begin{verbatim}
+   function(state=[=], name='', who='')
+\end{verbatim}
+where the parameters are defined as the following:
+\begin{verbatim}
+   state    a record desribing the state change
+   name     the name associated with the state; this will be the name 
+              associated with this manager set when the tool is 
+              constructed.
+   who      the name of the actor that changed the state; an empty
+              string means "unknown". 
+\begin{verbatim}
+
+Tools that wish to support listener notification using
+\texttt{listenermanager} usually support a function called
+\texttt{addlistener} with an implementation that passes its parameters
+onto this \texttt{listenermanager} function.  Such
+``tools--of--interest'' should provide in their documentation a
+description of the fields that callbacks should expect from the
+\texttt{state} parameter that they will be sent.  As an example, see
+\ahlink{itemmanager's addlistener() function}{misc:imagemanager.addlistener}.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{callback}{the function to call when the state being
+monitored is updated.  See description above for the function
+signature required for the callback}{}{function}
+\ahaddarg{who}{the name to associate with the listener.  This will
+be returned by this function.}{empty string, indicating that a unique
+name should be created automatically and returned.}{string}
+\end{ahargs}
+
+\ahreturns{string -- the name of the added listener}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{removelistener}{remove a listener}
+\begin{ahdescription}
+This function removes a listener, preventing its callback function
+from being called via \ahlink{tell()}{misc:listenermanager.tell}.  The
+callback function will be thrown away.
+
+Tools that wish to support listener notification using
+\texttt{listenermanager} usually support a function called
+\texttt{removelistener} with an implementation that passes its parameters
+onto this \texttt{listenermanager} function.  
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{who}{the name of the listener to remove.  This is the name
+returned by the addlistener() function.}{}{string}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tell}{tell listeners about a change in state}
+
+\begin{ahdescription}
+This function is used to notify listeners about a change in state by
+calling their callback functions.  A tool that uses a
+\texttt{listenermanager} (i.e. a ``tool of interest'') can alert
+its listeners by calling this function anytime the state being
+monitored changes.  
+
+The \texttt{state} parameter is a record containing a description of
+the state change.  This should have a predetermined structure,
+spelled out in the documentation for tool's \texttt{addlistener}
+function, so that listeners know what to do with the information.
+(See also \ahlink{addlistener()}{misc:listenermanager.addlistener}.)  
+
+Often, a tool-of-interest provide a public method that allows users of
+the tool to update the state--such as the \texttt{itemmanager}'s
+\ahlink{set()}{misc:itemmanager.set} function.  In such a case, it's a
+good idea to provide such functions with optional \texttt{who} and
+\texttt{skipwho} parameters.  This allows the tool to pass on this
+information to the \texttt{listenermanager}'s \texttt{tell()}
+function.  See the \ahlink{general listenermanager
+description}{misc:itemmanager} for more details.  
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{state}{a record describing the state change; this will be 
+passed to the listeners' callback functions.  See description above
+for information about the structure of this record.}{empty record}{record}
+\ahaddarg{who}{the name of the actor that effected the change; this 
+will be passed to the listeners' callback functions.}{empty string --
+actor is unknown/unspecified}{string}
+\ahaddarg{skipwho}{if true, a listener whose name matches the name
+given as ``who'' will not told about the change (to guard against
+redundant reactions).}{T}{boolean} 
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{islistening}{return true if there exists a listener
+with a given name.}
+
+\begin{ahdescription}
+This function returns true if a listener with a given name is among
+those being managed by this \text{listenermanager}.  
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{who}{the listener's name}{}{string}
+\end{ahargs}
+\ahreturns{T if the listener exists; F, otherwise}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{shut down this tool}
+
+\begin{ahdescription}
+Like all tool \texttt{done()} functions, this function shuts down this
+tool.  
+\end{ahdescription}
+
+\ahreturns{T}
+
+\begin{ahexample}
+\begin{verbatim}
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}

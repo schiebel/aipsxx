@@ -1,0 +1,321 @@
+
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: lsfit.help,v 19.3 2004/08/25 01:44:42 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+%===================================================================
+\begin{ahobject}{lsfit}{Least-squares fit by matrix inversion}
+%===================================================================
+
+\ahinclude{lsfit.g}
+
+\ahcategory{mathematics}
+
+\ahkeyword{leastsquares}{}
+\ahkeyword{simultaneous}{}
+\ahkeyword{solution}{}
+
+\ahmethods{}
+
+
+%---------------------------------------------------------------
+\begin{ahdescription}
+
+\emph{The functions in this tool have not been tested as rigorously
+as other parts of \aipspp. This tool can be considered ``alpha'' code.}
+
+{\tt lsfit} The main function of this tool is simultaneous solution
+of a set of linear equations by matrix inversion. If the matrix is
+rectangular, i.e. if there are more equations than unknowns, this
+amounts to a least-squares fit.
+
+\begin{eqnarray}
+  \vec{y}
+  &=&
+  ~A
+  ~\vec{x} \\
+  A^{*T}~\vec{y}
+  &=&
+  ~(A^{*T} A)
+  ~\vec{x} 
+\end{eqnarray}
+
+in which (*) indicates complex conjugation.  The latter expression
+represents a set of {\bf normal equations}, which can be solved by
+matrix inversion:
+
+\begin{equation}
+  ~\vec{x} 
+  ~=
+  ~(A^{*T} A)^{-1}
+  ~(A^{*T}~\vec{y})
+\end{equation}
+
+Various matrix inversion functions are supported: Gauss-Jordan, Choleski
+and Singular Value Decomposition (SVD). The latter automatically takes
+care of singular matrices, i.e. those cases where one is trying to
+solve for unknowns without supplying sufficient information. The
+default inversion function is Choleski decomposition, because of its
+efficiency.
+ 
+The procedure is as follows (see also the example below): It is
+assumed that the number of unknowns (i.e. the length of the vector
+$\vec{x}$) is known, but that the equations $\vec{y}=~A~\vec{x}$ will
+become available one by one. First, an $n\times n$ matrix $(A^{*T} A)$
+and a vector $(A^{*T}~\vec{y})$ with length $n$ are initialised with
+zeroes. Then, as each equation $i$ becomes available, its coefficients
+$a_{ij}$ and `driving' value $y_i$ are accumulated in the matrix and
+the vector. The system can be solved by matrix inversion as soon as at
+least $n$ equations have been accumulated.
+
+Since the solution does not destroy the accumulation matrix and
+vector, one may continue to accumulate more equations after a solve.
+In this way, one may get intermediate results. 
+
+If one needs more than one solution for different driving vectors
+$\vec{y}$, but the same matrix coefficients $a_{ij}$, one may use the
+same inverted matrix each time, and only re-accumulate the vector 
+$(A^{*T}~\vec{y})$. This saves time if the $n$ is large.
+
+The lsfit tool is a place-holder, until this functionality will
+be provided by a fitter DO. In the meantime, it is a good example of
+the power of prototyping in Glish, to find out what functionality and
+interface is really needed.
+
+
+\end{ahdescription}
+
+%---------------------------------------------------------------
+\begin{ahexample}
+
+NB: In view of the loop, it is recommended to make a .g script
+to try this example.
+
+\begin{verbatim}
+include "lsfit.g"
+nuk := 5;                         # nr of unknowns		
+print 'xxin=',xxin := [1:nuk];    # simulated input values 
+lsf.init(nuk);	                  # initialise matrix and vector
+print lsf.status();               # optional
+for (i in [1:(nuk-1)]) {
+    for (j in [(i+1):nuk]) {
+        aa := rep(0,nuk);         # coefficient vector
+        aa[i] := 1;
+        aa[j] := 1;	
+        y := xxin[i]*aa[i] + xxin[j]*aa[j]; # driving value
+        lsf.accumulate(aa,y);     # accumulate equation
+    }
+}
+print 'xxout=',xxout := lsf.solve(); # estimated values
+\end{verbatim}
+
+\end{ahexample}
+
+
+%---------------------------------------------------------------
+\begin{ahfunction}{init}{initialise before accumulation}
+\begin{ahargs} 
+\ahaddarg{nuk}{nr of unknowns (Input) }{}{int} 
+\ahaddarg{keep}{keep the coefficent matrix (Input) }{T}{bool} 
+\ahaddarg{mode}{inversion mode (Input) }{'chol'}{string} 
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahdescription} 
+  Initialises and zero $n\times n$ matrix, and a vector of length $n$,
+in which the information from equations $y_i~=~\sum_j~a_{ij}~x_j$ can
+be accumulated. If keep=T, the coefficients of the accumulated
+constraint equations are kept (see function solve). The various possible
+inversion modes are Choleski ('chol'), Gauss-Jordan ('gauss') and
+Singular Value Decomposition ('svd').
+\end{ahdescription} 
+\end{ahfunction}
+
+
+%---------------------------------------------------------------
+\begin{ahfunction}{accumulate}{accumulate an equation}
+\begin{ahargs}
+\ahaddarg{aa}{coefficient vector (Input) }{}{}
+\ahaddarg{y}{driving value (Input) }{}{}
+\ahaddarg{wgt}{weight (Input) }{1.0}{}
+\ahaddarg{constreq}{is constraint equation (Input) }{F}{bool}
+\ahaddarg{show}{print one-line progress message (Input) }{F}{bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahdescription}
+  Accumulates the information from an equation
+$y_i~=~\sum_j~a_{ij}~x_j$ into the internal matrix and vector (see
+example above). The weight can be used to reduce the influence of less
+reliable data on the solution. A constraint equation is one that is
+not driven by data, but provides a-priori information, e.g. to make
+the system soluble. This information allows the system to behave more
+intelligently in some cases. 
+\end{ahdescription} 
+\end{ahfunction}
+
+%---------------------------------------------------------------
+\begin{ahfunction}{solve}{solves for the unknowns (x)}
+\begin{ahargs}
+\ahaddarg{yy}{vector of new driving values (Input) }{F}{double}
+\end{ahargs}
+\ahreturns{solution vector}
+\begin{ahdescription}
+  Returns a solution vector $\vec{x}$ of values for the unknowns.
+The accumulation matrix and vector are not affected, 
+so accumulation may continue after a solve. 
+In general, the solution is for the y-values given to .accumulate().
+But it is also possible to solve the same system of equation 
+for a new vector (yy), without doing a new inversion. Obviously,
+yy must be of the same length
+as the original one, and the same weights are used. 
+For this option to work, the switch 'keep' set in init() must
+be T (default). The new vector yy replaces the internal vector.  
+\end{ahdescription}
+\end{ahfunction}
+
+%---------------------------------------------------------------
+\begin{ahexample}
+
+\begin{verbatim}
+include "lsfit.g"
+nuk := 5;                         # nr of unknowns
+print 'xxin=',xxin := [1:nuk];    # simulated input values
+lsf.init(nuk);                    # initialise matrix and vector
+print lsf.status();               # optional
+for (i in [1:(nuk-1)]) {
+    for (j in [(i+1):nuk]) {
+        aa := rep(0,nuk);         # coefficient vector
+        aa[i] := 1;
+        aa[j] := 1;
+        yy1[i] := xxin[i]*aa[i] + xxin[j]*aa[j]; # driving value
+        lsf.accumulate(aa,yy1[i]);     # accumulate equation
+    }
+}
+xx1 := lsf.solve( );   # solve for input vector yy1
+xx2 := lsf.solve(yy2); # solve for other vector yy2
+xx3 := lsf.solve(yy3); # solve for other vector yy3
+xx4 := lsf.solve(yy4); # solve for other vector yy4
+\end{verbatim}
+
+\end{ahexample}
+
+
+
+%---------------------------------------------------------------
+\begin{ahfunction}{inityonly}{initialise the vector only}
+\begin{ahdescription}
+  For large numbers of equations, it may be too expensive to keep
+the coefficients of the input equations. In this case it is still
+possible to solve for a new yy-vector without a new inversion.
+\end{ahdescription}
+\end{ahfunction}
+
+
+%---------------------------------------------------------------
+\begin{ahexample}
+
+\begin{verbatim}
+lsf.init(nuk);	                  # initialise matrix and vector
+for (i in [1:(nuk-1)]) {
+    for (j in [(i+1):nuk]) {
+        aa := rep(0,nuk);         # coefficient vector
+        aa[i] := 1;
+        aa[j] := 1;	
+        lsf.accumulate(aa,yy1[i],wgt[i]);     # accumulate equation
+    }
+}
+xx1 := lsf.solve();		# solve for input vector yy1
+
+lsf.inityonly();	                  # initialise matrix and vector
+for (i in [1:(nuk-1)]) {
+    for (j in [(i+1):nuk]) {
+        aa := rep(0,nuk);         # coefficient vector
+        aa[i] := 1;
+        aa[j] := 1;	
+        lsf.accumulate(aa,yy2[i]);     # accumulate equation
+    }
+}
+xx2 := lsf.solve();		# solve for vector yy2
+
+\end{verbatim}
+
+\end{ahexample}
+
+
+%---------------------------------------------------------------
+\begin{ahfunction}{status}{print lsfit internal status}
+\begin{ahargs}
+\ahaddarg{name}{Optional: header string (Input) }{' '}{}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+  Returns a string that describes the internal status
+of the lsf tool, which can be printed. 
+\end{ahdescription}
+\end{ahfunction}
+
+%---------------------------------------------------------------
+\begin{ahfunction}{print}{print internal matrices}
+\begin{ahargs}
+\ahaddarg{name}{name of matrix to be printed (Input) }{}{string}
+\end{ahargs}
+\begin{ahdescription}
+  ~\\lsf.print('ata') prints the accumulation matrix. 
+~\\lsf.print('inv') prints its inverse. 
+~\\lsf.print('aty') prints the accumulation vector. 
+~\\lsf.print('status') prints the internal status. 
+~\\lsf.print('self') prints the internal self record. 
+\end{ahdescription}
+\end{ahfunction}
+
+%---------------------------------------------------------------
+\begin{ahfunction}{help}{print summary of lsfit functions}
+\end{ahfunction}
+
+%---------------------------------------------------------------
+\begin{ahfunction}{test}{test of the main lsfit functions}
+\end{ahfunction}
+
+
+%===================================================================
+\end{ahobject}
+%===================================================================
+
+\end{document}
+
+
+
+
+
+

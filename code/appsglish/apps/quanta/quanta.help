@@ -1,0 +1,1877 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: quanta.help,v 19.3 2004/08/25 01:49:13 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+
+\begin{ahmodule}{quanta}{Units and quantities handling}
+
+\ahinclude{quanta.g}
+
+\ahkeyword{units}{}
+\ahkeyword{quanta}{}
+\ahkeyword{quantities}{}
+
+
+\begin{ahdescription}
+
+\bigskip
+
+{\it Introduction}
+
+A quantity is a value with a unit.  For example, '5km/s', or '20Jy/pc2'. 
+This module (the {\mf quanta} module) enables you to create and
+manipulate such quantities.  The types of functionality provided are:
+
+\begin{itemize}
+\item {\em Conversion} Conversion of quantities  to different units
+\item {\em Calculation} Calculations with quantities
+\item {\em GUI} A GUI interface is also provided
+\end{itemize}
+
+To access the {\mf quanta} module, include the the {\em quanta.g} \glish\
+script.  This will create a default Quanta \tool\ called {\stf dq}.  
+
+
+\begin{verbatim}
+- include 'quanta.g'
+- dq.type()             # Default tool created for you
+quanta
+\end{verbatim}
+
+The Quanta \tool\ has no state (it doesn't remember anything), so there
+is generally no need to create your own \tool.  Just use the default
+one.  However, if you do require one, perhaps in a script, then use the {\cf
+quanta} constructor to make one. 
+
+\begin{verbatim}
+- include 'quanta.g';
+- myqt := quanta();
+- myqt.type();  
+quanta
+\end{verbatim}
+
+The Quanta \tool\ manipulates quantities.  A quantity is stored as a
+\glish\ record with two fields.  These fields are named `value' and
+`unit'.  As well as simple scalar quantites, one can also create
+quantities as vectors or arrays.  For example, you may have a vector of
+values, which all have the same unit - there is no need to store a copy
+of the unit for each value. Access to the individual fields of a quantum
+should always be by using the {\em getvalue} and {\em getunit} methods,
+especially since the internal names can change or be not accessable at some
+stage. 
+
+
+\begin{ahexample}
+\begin{verbatim}
+- dq.quantity(5.4, 'km/s')
+[value=5.4, unit=km/s]		
+-
+- q1 := dq.quantity([8.57132661e+09, 1.71426532e+10], 'km/s')
+-
+- dq.convert(q1, 'pc/h');
+[value=[1 2] , unit=pc/h] 
+\end{verbatim}
+
+In the first example, we make a simple scalar quantity.
+You can see that the quantity (which is actually a \glish\ record)
+has fields `value' and `unit'.   
+
+In the second example, we make a vector quantity and then
+convert it from units of km/s to pc/h.
+
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+- dq.quantity('5.4km/s')          
+[value=5.4, unit=km/s] 
+- dq.quantity(dq.unit('5.4km/s')) 
+[value=5.4, unit=km/s] 
+\end{verbatim} 
+
+In the first example, the value and unit were combined into one string
+(just saves a bit of typing).  The second example shows that the
+function {\stff unit} is an alias for {\stff quantity}, and that you can
+create a quantity from another quantity. 
+
+\end{ahexample} 
+
+\begin{ahexample}
+\begin{verbatim}
+- q1 := dq.unit("5s 5.4km/s")	
+- length(q1)
+2
+- q1[1]
+[value=5, unit=s]
+- q1[2]
+[value=5.4, unit=km/s]
+\end{verbatim} 
+
+Here we make a vector quantity by using the Glish string vector (double
+quote) feature.  You can see that the resultant quantity (\glish\
+record) is of length 2 and that each field of that vector quantity is a
+scalar quantity.   So you see that {\gvf q1} itself does not
+have fields `value' and `unit', only the elements
+of {\gvf q1} have that.
+
+\end{ahexample} 
+
+\begin{ahexample}
+\begin{verbatim}
+- q1 := dq.unit('5km');
+- q2 := dq.unit('200m');
+- dq.canonical(dq.add(q1,q2))
+[value=5200, unit=m] 
+\end{verbatim} 
+
+Here we make two quantities with consistent but different units,
+add them together and then convert the result to canonical units.
+
+\end{ahexample} 
+
+
+\begin{ahexample}
+\begin{verbatim}
+- q1 := dq.quantity('6rad');
+- q2 := dq.quantity('3deg');
+- dq.compare(q1,q2)
+T
+- dq.compare(q1,dq.unit('3km'))
+F
+\end{verbatim} 
+
+Here we make compare the dimensionality of the units of two
+quantities.
+
+
+\end{ahexample} 
+
+
+\begin{ahexample}
+\begin{verbatim}
+- q1 := dq.unit(array("5s 5.4km/s", 3, 2))
+- length(q1)
+6 
+- q1[1]
+[value=5, unit=s] 
+- q1[2]
+[value=5.4, unit=km/s] 
+- q1[6]
+[value=5.4, unit=km/s] 
+- q1::
+[id=quant, shape=[3 2] ] 
+\end{verbatim}
+
+Here we fill a quantity with a 2-dimensional array.  In this case, the
+array is an array of strings.  and its shape is [3,2].  We see that the
+resultant quantity is a vector of length 6 (it does not preserve the
+array shape here).  However, we see that the shape attribute 
+of the quantity does preserve the original array shape though
+(see below for more information about attributes).
+
+\end{ahexample}
+
+
+\bigskip
+{\it Constants, time and angle formatting}
+
+If you would like to see all the possible constants known to the Quanta
+\tool\ you can issue the command {\cf dq.map('const')}.  You can get the
+value of any constant in that list with a command such as
+
+\begin{verbatim}
+- boltzmann := dq.constants('k')
+- print 'Boltzmann constant is ', boltzmann
+Boltzmann constant is  [value=1.3806578e-23, unit=J/K]
+\end{verbatim}
+
+
+There are some extra handy ways you can manipulate strings when you are
+dealing with times or angles.  The following list shows special strings
+and string formats which you can input to the {\stff quantity} function. 
+Something in square brackets is optional.  There are examples after the
+list. 
+
+\begin{itemize}
+	\item time: [+-]hh:mm:ss.t... -- This is the preferred time format (trailing fields can
+             be omitted)
+	\item time: [+-]hhHmmMss.t..[S]  -- This is an alternative time format (HMS case
+                  insensitive, trailing second fields can be omitted)
+	\item angle: [+-]dd.mm.ss.t..  -- This is the preferred angle format (trailing fields
+                  after second priod can be omitted; dd.. is valid)
+	\item angle: [+-]ddDmmMss.t...[S] -- This is an alternative angle format (DMS case
+                  insensitive, trailing fields can be omitted after M)
+
+	\item today -- The special string ``today'' gives the UTC time at the instant the command was issued. 
+	\item today/time -- The special string ``today'' plus the specified time string gives the UTC time 
+              at the specified instant
+	\item yyyy/mm/dd[/time] -- gives the UTC time at the specified instant
+	\item dd[-]mmm[-][cc]yy[/time] -- gives the UTC time at the specified instant in calendat style notation
+               (23-jun-1999)
+
+
+\end{itemize}
+
+Note that the standard unit for degrees is 'deg', and for days 'd'. 
+Formatting is done in such a way that it interprets a 'd' as degrees if
+preceded by a value without a period and if any value following it is
+terminated with an 'm'.  In other cases 'days' are assumed.  Here are
+some examples. 
+
+\begin{verbatim}
+- dq.quantity('today')
+[value=50611.2108, unit=d] 
+- dq.quantity('5jul1998')
+[value=50999, unit=d] 
+- dq.quantity('5jul1998/12:')
+[value=50999.5, unit=d] 
+- dq.quantity('-30.12.2')
+[value=-30.2005556, unit=deg] 
+- dq.quantity('2:2:10')
+[value=30.5416667, unit=deg] 
+- dq.unit('23h3m2.2s')  
+[value=345.759167, unit=deg] 
+\end{verbatim}
+
+Angles and times can often be used interchangeably.  Special functions
+({\cf dq.totime()} and {\cf dq.toangle()}) are available to make them in
+the right units for the purpose.  E.g.  {\cf dq.sin(time)} gives an
+error, whereas {\cf dq.sin(dq.toangle(time))} works ok.  See
+\ahlink{units}{quanta:quanta.gui} for more information on units and
+quantities, and the \ahlink{map}{quanta:quanta.map} function for pre-defined
+units.  
+
+\begin{verbatim}
+- print a := dq.quantity('today');        # 1
+[value=51045.9972, unit=d];
+- print b := dq.toangle(a);               # 2
+[value=320731.459, unit=rad]
+- dq.angle(dq.norm(dq.toangle(a)));       # 3
+-001.00.56.308 
+- dq.angle(dq.norm(dq.toangle(a), 0));    # 4
++358.59.03.692 
+- dq.sub('today',a);                      # 5
+[value=0.00192880747, unit=d] 
+\end{verbatim}
+
+\begin{enumerate}
+   \item Get the time now
+   \item Get the time as an angle
+   \item Get the time as a normalised angle (-pi to +pi) and show as dms
+   \item Get the time as a normalised angle (0 to 2pi) and show as dms
+   \item Get time since creation of a
+\end{enumerate}
+
+
+
+
+\bigskip
+{\it Attributes}
+
+Quantities (that is, the \glish\ record) have attributes attached to
+them.  All quantities have the attribute called `id' which has the
+string value `quant'.  This can be used to identify that a record is in
+fact a valid quantity.  When you make quantities from arrays, you will
+generally find an attribute called ``shape'' attached to the quantity
+indicating what shape the array was.  Attributes are accessed via the
+``::'' operator. 
+
+\begin{ahexample}
+\begin{verbatim}
+- q1 := dq.unit(array("5s 5.4km/s", 3, 2))
+- length(q1)
+6
+- q1::
+[id=quant, shape=[3 2] ] 
+\end{verbatim}
+\end{ahexample}
+
+
+
+\end{ahdescription}
+
+\ahfuncs{}
+\ahobjs{}
+
+
+\begin{ahfunction}{is\_quantity}{Check if quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to be tested}{}{any}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahdescription}
+Checks if the operand is a correct quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- a := dq.quantity("5Jy")		# make a quantity
+- a
+[value=5, unit=Jy] 
+- is_quantity(a)			# is it one?
+T 
+- is_quantity("5Jy")			# and this string?
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{ahfunction}{r\_array}{Create an array or vector of records}
+\begin{ahargs}
+\ahaddarg[in]{a}{initial filling value(s)}{empty record}{any or array of any}
+\ahaddarg[in]{...}{coordinate lengths for each dimension}{}{non-zero integer}
+\ahaddarg[in]{id}{optional record id}{}{string}
+\end{ahargs}
+\ahreturns{record array}
+\begin{ahdescription}
+
+r\_array creates an array of records.  Record arrays were introduced to
+be able to communicate arrays/vectors of arbitrary data types to and
+from C++ code.  Most special records (quanta, measures, skycomponents
+etc.) will have an id attribute to identify them across the system, but
+this id is not essential.  Arrays of records have always a shape
+attribute, to distinguish them from a 'scalar' record.  They are created
+in the same way as normal Glish arrays (except using r\_array).  The
+function accepts an additional, optional, argument to set an id if
+wanted.  A vector with length one is assumed to be a scalar (a
+multidimensional array with 1 element will be an array). 
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- print a := r_array(1:5, 2, 3)			# create an array
+[*3=1, *4=2, *5=3, *6=4, *7=5, *8=1]
+- a::						# show the attributes
+[shape=[2 3] ] 
+- print a := r_array(1:5, 2, 3, id='quant')	# another
+[*9=1, *10=2, *11=3, *12=4, *13=5, *14=1]
+- a::						# and its attributes
+[id=quant, shape=[2 3] ] 
+- r_array(a,1)					# a 'scalar'
+1
+- r_array(a,2,1)				# initial with record array 
+[*17=1, *18=2] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{r\_slice}{Get a slice of a record array}
+\begin{ahargs}
+\ahaddarg[in]{v}{a record array from which to extract elements}{}{record (array)}
+\ahaddarg[in]{...}{slicing dimensions}{}{integers, an index record, integer vectors}
+\end{ahargs}
+\ahreturns{record array}
+\begin{ahdescription}
+r\_slice creates an array of records as a slice from another array of
+records. Slice indexing is identical to all the normal Glish options
+(including using a record index). The result will be another array of records
+(a scalar if 1 element is selected) with the id preserved.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- print a := r_array(1:5, 2, 3)			# create array
+[*31=1, *32=2, *33=3, *34=4, *35=5, *36=1]
+- a::						# its shape
+[shape=[2 3] ] 
+-  r_slice(a,5)					# one element index
+5 
+- r_slice(a,5)::				# gives a scalar
+[=] 
+- r_slice(a,1,)					# a slice
+[*39=1, *40=3, *41=5] 
+- r_slice(a,1,)::				# gives a vector
+[shape=3] 
+- r_slice(a,1,2:3)				# and another
+[*49=3, *50=5] 
+- r_slice(a,1,2:3)::
+[shape=2] 
+[*17=1, *18=2] 
+- r_slice(a,1:2,)::				# an array slice
+[shape=[2 3] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{r\_fill}{Fill only a slice of a record array}
+\begin{ahargs}
+\ahaddarg[in]{what}{value(s) that will be filled cyclically in array}{}
+{any or vector/array of any}
+\ahaddarg[in]{...}{slicing dimensions}{}{integers, an index record, integer vectors}
+\end{ahargs}
+\ahreturns{record array}
+\begin{ahdescription}
+r\_fill will overwrite a slice of an array of records.
+It is comparable to an indexed write for standard Glish arrays. The value
+given as a filler will be re-used cyclically.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- x := dq.unit('5km/s')				# a record
+- x::
+[id=quant] 
+- print a := r_array(x,3,2)			# a record array
+[*40=[value=5, unit=km/s], *41=[value=5, unit=km/s], *42=[value=5, unit=km/s],
+ *43=[value=5, unit=km/s], *44=[value=5, unit=km/s], *45=[value=5, unit=km/s]]
+- a::
+[id=quant, shape=[3 2] ] 
+- r_fill(dq.unit('2s'), a, 2, 1)		# overwrite an element
+T 
+- a
+[*40=[value=5, unit=km/s], *41=[value=2, unit=s], *42=[value=5, unit=km/s],
+ *43=[value=5, unit=km/s], *44=[value=5, unit=km/s], *45=[value=5, unit=km/s]] 
+- r_fill(dq.unit(), a, 3,)			# a few more   
+T 
+- a
+[*40=[value=5, unit=km/s], *41=[value=2, unit=s], *42=[value=1, unit=],
+ *43=[value=5, unit=km/s], *44=[value=5, unit=km/s], *45=[value=1, unit=]] 
+- b := dq.unit('2s')				# see what happens
+- b::shape := 2					# if made an array
+- r_fill(b, a, 3,)         
+T 
+- a
+[*40=[value=5, unit=km/s], *41=[value=2, unit=s], *42=2,
+ *43=[value=5, unit=km/s], *44=[value=5, unit=km/s], *45=s] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{r\_index}{Get index array for a record array}
+\begin{ahargs}
+\ahaddarg[in]{v}{a record array from which to extract elements}{}{record (array)}
+\ahaddarg[in]{...}{slicing dimensions}{}{integers, an index record, integer vectors}
+\end{ahargs}
+\ahreturns{integer array}
+\begin{ahdescription}
+r\_index is a helper function for the record array functions. It returns an
+integer array with the selected elements. 
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- print a := r_array(1:6,3,2)			# create a record array
+[*29=1, *30=2, *31=3, *32=4, *33=5, *34=6]
+- r_index(a)					# its index
+[[1:3,]
+    1 4
+    2 5
+    3 6] 
+- r_index(a)::					# its shape 
+[shape=[3 2] ] 
+- r_index(a,2,)
+[2 5]  
+- r_index(a,2,)::
+[shape=2] 
+- r_index(a,2,2)
+5 
+- r_index(a,2,2)::
+[=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahobject}{quanta}{quanta tool}
+\ahcategory{utility}
+\ahkeyword{quanta}{}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{quanta}{Construct quanta tool}
+\begin{ahargs}
+\ahaddarg[in]{host}{host on which to run tool}{''}{valid host name string}
+\ahaddarg[in]{forceneweserver}{force the use of a new
+server}{F}{bool}
+\end{ahargs}
+\ahreturns{tool}
+\begin{ahdescription}
+Create a quanta \tool on the specified host (or by default the
+host you are running on). 
+\end{ahdescription}
+\end{ahconstructor}
+%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{gui}{Use the quanta GUI interface}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahdescription}
+
+Start a GUI interface for the handling of units and quanta.\\
+A menu bar will appear with 3 sets of menu headings.\\
+The File menu
+contains options to close the current window (start
+again with dq.gui()).\\
+The last menu is the Help menu, which can drive to different parts of the
+Reference manual. The '?' menu selects how popup help can be displayed 
+(initially hover for short-help, MB3 down for longer help).
+
+
+A way of starting automatically a GUI interface is by adding the
+following to your .aipsrc file
+\begin{verbatim}
+quanta.default: gui
+\end{verbatim}
+
+Note that all actions available on the screen, are also available as tool functions
+for the command line interface. They are each described separately.\\
+The screen has a top area, and three other areas. The {\em Map} menu
+in the top area allows you to check which units are recognised, and which
+constants are available.\\
+The quantity calculator works as an {\em RPN} calculator. Values are typed in
+the {\em Value} input field, the top of the stack.
+Values can have either the units attached (e.g. 5km/s), or
+detached (e.g. 5 mm.s/A), or be of the recognised time/angle possibilities
+(e.g. today, 12:15:2.2, 12.3.5.7 12d3m5.7, 1996/12/2/12h15m). The top of the
+stack is always shown in canonical units in the window below the action
+buttons (the right side of the window)
+Some simple actions are available on the bar below the entry window:
+\begin{description}
+\item[$\wedge$] pops stack to enter window (e.g. for editing)
+\item[$\vee$] pushes top of stack down onto stack (like Return)
+\item[$x<>y$] interchanges top two values on stack
+\item[{\em hand}] allow edit of top of stack
+\item[{\em dup}] duplicates top of stack
+\item[{\em copy}] copy top of stack to clipboard
+\item[{\em paste}] paste clipboard to  top of stack 
+\end{description}
+Note that the internal precision of the numbers is not reflected in the
+output precision.\\
+The bottom entry is used to enter units used in the {\em convert} and {\em
+define} actions.\\
+The Operators (right-hand) window works on the top, or top two, values of the
+stack. Most
+actions will be clear to the user. The last action is displayed in the action
+window. The actions in the left column and bottom row are:
+\begin{description}
+\item[pop] pops top of stack to enter window
+\item[clear] clears the whole stack
+\item[convert] converts the top of stack value to the units entered in the
+Units window (do not forget to hit Return). 
+Note that with the possibilities
+of entering angles as 5d11m, there is a difficulty having days as a
+unit. This is solved by having a decimal point in the number. I.e. 5d will be
+interpreted as 5 degrees, 5.d as 5 days.
+\item[canon] convert top of stack to canonical units
+\item[define] define the top of stack as your own unit in the Units field
+(e.g. define the value;1Jy as your unit:JY)
+\item[const] put the selected constant on top of stack
+\item[FITS] define some FITS units for use (check them with Map:User)
+\end{description}
+The functions available to the non-GUI user are the same as to the GUI
+user. They are, a.o.: {\em quantity, canonical, convert, define, map,
+fits, angle, time, add, sub, mul, div, neg, norm, sin, cos, tan, asin, acos,
+atan, atan2, abs, ceil, floor, compare, check, pow, constants, totime,
+toangle, tos} (see list at top of tool description).
+
+If at any stage you want to use a GUI result on the command line, the
+'copy' button of the GUI will transfer the last result to the clipboard.
+Most of the fields in the GUI have individual popup help, which can be
+viewed hovering on the field. 
+
+Trigonometric functions expect either angle units, or no units. In the latter
+case the selected units in the bottom of the right-hand side are used.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setformat}{set format for output of numbers}
+\begin{ahargs}
+\ahaddarg[in]{t}{type}{''}{coded string indicating which format
+parameter to set}
+\ahaddarg[in]{v}{format parameter value}{F}{numeric or coded string,
+depending on format type to be set}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+setformat allows to define output format parameters for a variety of
+value types. The {\em type} is indicated by the first parameter, and
+coded (see following list). The actual format parameter set depends
+on the value parameter {\em v} given. If this value is specified as
+the '...' string, the value will be asked interactively from the
+user. The formats specified (or the defaults) are used in the
+\ahlink{form}{quanta:quanta.form.xxx} functions.
+The formatting that can be specified:
+\begin{description}
+\item[prec] set the output precision for general numbers. If the
+value given is an integer less than one, the precision will be set
+to 6.
+\item[aprec] set the output prescion for angles. If the
+value given is an integer less than one, the precision will be set
+to 6. A value of 6 will output up to the seconds field, with decimal
+places if larger than 6.
+\item[tprec] set the output prescion for times. If the
+value given is an integer less than one, the precision will be set
+to 6. A value of 6 will output up to the seconds field, with decimal
+places if larger than 6.
+\item[long] longitude display. Valid formats: 'hms', 'dms', 'deg',
+'rad', 'd', '+deg'.
+\item[lat] latitude display. Valid formats: 'hms', 'dms', 'deg',
+'rad', 'd'.
+\item[len] length display. Valid format: any length dimension
+\item[dtime] time type display: 'local', 'utc', 'last' or 'solar'
+\item[elev] elevation limit rise/set: angle quantity
+\item[auto] auto frame update interval: time quantity
+\item[vel] velocity: velocity unit
+\item[freq] wave characteristics: frequency, length, time, angle/time,
+/length, energy, impulse units
+\item[dop] doppler type display: 'radio', 'opt', 'true'
+\item[unit] default units: any valid unit 
+\end{description}
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- 1.234567890123456		# note that quanta set precision to 9
+1.23456789			# (as compared to default Glish 6)
+- a:=dq.quantity(1.2345678901234567, 'km/s')
+- dq.form.vel(a)                # display as velocity in default units
+1.23456789 km/s 
+- dq.setformat('vel', 'yd/a')   # try another unit
+T 
+- dq.form.vel(a)
+4.26071737e+10 yd/a 
+- dq.setformat('prec',12)       # or another precision
+T 
+- dq.form.vel(a)          
+42607173719.8 yd/a 
+- dq.setformat('unit', 'm/s')   # set generic units
+T 
+- dq.form.unit(a)               # and see what it looks like
+1234.56789012 m/s 
+- b:=dq.quantity('5d2m3')       # an angle
+- dq.form.long(b)               # as longitude gives it in hms
+00:20:08.200 
+- dq.setformat('long', 'deg')   # display longitude in degrees
+                                # (rather than default hms)
+T
+- dq.form.long(b)               # and show it   
+5.03416667 deg 
+- dq.form.lat(b)                # as a latitude it is default dms
++005.02.03.000 
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getformat}{get current output format}
+\begin{ahargs}
+\ahaddarg[in]{t}{type}{''}{coded string}
+\end{ahargs}
+\ahreturns{coded format}
+\begin{ahdescription}
+getformat returns the current format value set for the different
+format possibilities. See the
+\ahlink{setformat}{quanta:quanta.setformat} function for the
+different format type descriptions. The known types are: \\
+prec, aprec, tprec, long, lat, len, dtime, elev, auto, vel, freq,
+dop, unit.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.getformat('prec')
+6 
+- dq.setformat('prec', 12)	# set precision to 12 significant digits
+T 
+- dq.getformat('prec')                                             
+12 
+- dq.getformat('long')
+hms
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{form.xxx}{Format a quantity using globaly set formats}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to be converted}{}{quantity}
+\ahaddarg[in]{showform}{show square brackets and separating , (not for
+all)}{F}{bool}
+\end{ahargs}
+\ahreturns{string}
+If a multi-dimensional value is given for the value $v$ in the case of {\em
+dtime}, {\em long} or {\em lat}, the returned value
+is a string vector of a length equal to last dimension. Each string has a
+number of fields equal to the number of elements in all earlier
+dimensions. If the {\em showform} is $T$, each vector element is surrounded
+by a pair of square brackets if there is more than one entry, and fields are
+separated by a ','.
+\begin{ahdescription}
+form.xxx (xxx can be lat, long, len, vel, freq, dtime, unit) will format the
+input into a string using the global format information set by setformat().
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.setformat('freq','cm')
+T 
+- dq.form.freq(dq.quantity('5GHz'))
+5.99584916 cm 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{convertfreq}{convert a frequency quantity to another unit}
+\begin{ahargs}
+\ahaddarg[in]{v}{quantity to convert}{'1Hz'}{quantity or string}
+\ahaddarg[in]{out}{unit to convert to}{'Hz'}{string or quantity}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+convertfreq converts a frequency quantity to another unit. All units allowed
+ in the \ahlink{setformat}{quanta:quanta.setformat} are allowed.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convertfreq('5GHz','cm')
+[value=5.99584916, unit=cm] 
+- dq.convertfreq('5cm','GHz')
+[value=5.99584916, unit=GHz] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{convertdop}{convert a doppler velocity quantity to another unit}
+\begin{ahargs}
+\ahaddarg[in]{v}{quantity to convert}{'0km/s'}{quantity or string}
+\ahaddarg[in]{out}{unit to convert to}{'km/s'}{string or quantity}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+convertfreq converts a velocity quantity to another unit. Units are either
+ velocity or dimensionless.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convertdop('1','km/s')
+[value=299792.458, unit=km/s] 
+- dq.convertdop('10km/s','1') 
+[value=3.33564095e-05, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\begin{ahfunction}{quantity}{make a quantity from a string or from a value
+and a unit string}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to convert to quantity}{'1' or 1.0}{quantity or string or numeric}
+\ahaddarg[in]{name}{unit string if v numeric}{''}{string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+quantity makes a quantity from a string, or from a value and a string. Note
+that a function {\em unit} exists which is a synonym for quantity.
+If only a string is given, it can be a scalar string, a vector of strings,
+or an array of strings. The result will be a scalar quantity, or an array
+of quantities. If a numeric value and a string are given, the numeric value
+can be any numeric type, and can also be an array or a vector of them. See
+the introduction for an example of all the possibilities. 
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity('1Jy')			# make quantity
+- tu
+[value=1, unit=Jy] 
+- dq.quantity(tu)				# also accepts a quantity
+[value=1, unit=Jy] 
+- tu := dq.unit('1Jy')			# make quantity with synonym
+- tu
+[value=1, unit=Jy] 
+- dq.quantity(-1.3, 'Jy')		# make quantity with separate value
+[value=-1.3, unit=Jy] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{getvalue}{get the internal value of a quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{quantity}{}{quantity or string or numeric}
+\end{ahargs}
+\ahreturns{numeric scalar or array}
+\begin{ahdescription}
+getvalue returns the internal value of a quantity. It also can handle an array
+of quantities.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity(-1.3, 'Jy')         # make quantity
+- tu
+[value=-1.3, unit=Jy] 
+- dq.getvalue(tu)
+-1.3 
+- dq.getunit(tu)
+Jy 
+- a := dq.quantity("5m/s 7A")
+- a::
+[id=quant, shape=2] 
+- dq.getvalue(a)
+[5 7]  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{getunit}{get the internal unit of a quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{quantity}{}{quantity or string or numeric}
+\end{ahargs}
+\ahreturns{string scalar or array}
+\begin{ahdescription}
+getunit returns the internal unit string of a quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity(-1.3, 'Jy')         # make quantity
+- tu
+[value=-1.3, unit=Jy] 
+- dq.getvalue(tu)
+-1.3 
+- dq.getunit(tu)
+Jy 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{canonical}{get canonical value of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to convert}{'1'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+canonical (with alias canon) gets the canonical value of a quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.canonical('1Jy')			# canonical value of a string
+[value=1e-26, unit=kg.s-2] 
+- dq.canon(dq.quantity('1Jy'))		# canonical value of a unit
+[value=1e-26, unit=kg.s-2] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{canon}{get canonical value of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to convert}{'1'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+canon gets the canonical value of a quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.canon('1Jy')			# canonical value of a string
+[value=1e-26, unit=kg.s-2] 
+- dq.canonical(dq.quantity('1Jy'))		# canonical value of a unit
+[value=1e-26, unit=kg.s-2] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{convert}{convert a quantity to another unit}
+\begin{ahargs}
+\ahaddarg[in]{v}{quantity to convert}{'1'}{quantity or string}
+\ahaddarg[in]{out}{unit to convert to}{''}{string or quantity}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+convert converts a quantity to another unit. If no output unit given,
+conversion is to canonical units
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity('5Mm/s')		# specify a quantity
+- tu
+[value=5, unit=Mm/s] 
+- dq.convert(tu, 'pc/a')		# convert it to parsec per year
+[value=0.00511356, unit=pc/a] 
+- dq.convert(tu)			# convert to canonical units
+[value=5e+06, unit=m.s-1] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{define}{define a new unit name}
+\begin{ahargs}
+\ahaddarg[in]{name}{name of unit to define}{}{string}
+\ahaddarg[in]{v}{quantity value of new unit}{'1'}{string or quantity}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+define defines the name and value of a user defined unit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.define('JY','1Jy')			# your misspelling
+T 
+- dq.define('VLAunit', '0.898 JY')	# a special unit using it
+T 
+- dq.quantity('5 VLAunit') 			# check its use
+[value=5, unit=VLAunit] 
+- dq.convert('5 VLAunit','Jy')
+[value=4.49, unit=Jy] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{map}{list known unit names and constants}
+\begin{ahargs}
+\ahaddarg[in]{v}{type of information to list}{'all'}{coded string}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+map lists the known mapping of units and constants. It has a single argument,
+which can be a coded string (no-case, minimax match):
+\begin{description}
+\item[all] all of the following units (not constants): also the default 
+\item[Prefix] known decimal prefixes
+\item[SI] known SI units
+\item[Customary] a set of customary units known to programs
+\item[User] units defined by the user
+\item[Constants] known constants (note: only 'const', 'Const', 'constants'
+and 'Constants' recognised).
+\end{description}
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.map('pre')			# list decimal prefixes
+        == Prefix ==== 20 ====
+        E         (exa)                        1e+18
+        G         (giga)                       1000000000
+        M         (mega)                       1000000
+        P         (peta)                       1e+15
+        T         (tera)                       1e+12
+        Y         (yotta)                      1e+24
+        Z         (zetta)                      1e+21
+        a         (atto)                       1e-18
+        c         (centi)                      0.01
+        d         (deci)                       0.1
+        da        (deka)                       10
+        f         (femto)                      1e-15
+        h         (hecto)                      100
+        k         (kilo)                       1000
+        m         (milli)                      0.001
+        n         (nano)                       1e-09
+        p         (pico)                       1e-12
+        u         (micro)                      1e-06
+        y         (yocto)                      1e-24
+        z         (zepto)                      1e-21
+- dq.map('Constants')			# list known constants
+        == Constants ====
+        pi    3.14..                    3.14159 
+        ee    2.71..                    2.71828 
+        c     light vel.                2.99792e+08 m/s
+        G     grav. const               6.67259e-11 N.m2/kg2
+        h     Planck const              6.62608e-34 J.s
+        HI    HI line                   1420.41 MHz
+        R     gas const                 8.31451 J/K/mol
+        NA    Avogadro #                6.02214e+23 mol-1
+        e     electron charge           1.60218e-19 C
+        mp    proton mass               1.67262e-27 kg
+        mp_me mp/me                     1836.15 
+        mu0   permeability vac.         1.25664e-06 H/m
+        eps0  permittivity vac.         1.60218e-19 C
+        k     Boltzmann const           1.38066e-23 J/K
+        F     Faraday const             96485.3 C/mol
+        me    electron mass             9.10939e-31 kg
+        re    electron radius           2.8179e-15 m
+        a0    Bohr's radius             5.2918e-11 m
+        R0    solar radius              6.9599e+08 m
+        k2    IAU grav. const^2         0.000295912 AU3/d2/S0
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{fits}{define some FITS units}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+fits defines some unit names used in reading and writing FITS files.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.fits()
+T 
+- dq.map('user')
+        == User ==== 19 ====
+        BEAM      (dimensionless beam)         1 _
+        DAYS      (day)                        86400 s
+        DEG       (degree)                     0.0174532925199 rad
+        DEGREES   (degree)                     0.0174532925199 rad
+        HZ        (hertz)                      1 s-1
+        JY        (jansky)                     1e-26 kg.s-2
+        KELVIN    (kelvin)                     1 K
+        KELVINS   (kelvin)                     1 K
+        KM        (km)                         1000 m
+        M         (meter)                      1 m
+        METERS    (meter)                      1 m
+        PASCAL    (pascal)                     1 m-1.kg.s-2
+        PIXEL     (dimensionless pixel)        1 _
+        S         (second)                     1 s
+        SEC       (second)                     1 s
+        SECONDS   (second)                     1 s
+        VOLTS     (volt)                       1 m2.kg.s-3.A-1
+        YEAR      (year)                       31557600 s
+        YEARS     (year)                       31557600 s
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{angle}{show an angle as a formatted string}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to output}{}{angle quantity or string}
+\ahaddarg[in]{prec}{number of digits shown}{0}{numeric}
+\ahaddarg[in]{form}{formatting information}{''}{coded string array}
+\ahaddarg[in]{showform}{show square brackets and separating ,}{F}{bool}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+angle converts an angle quantity to a formatted string. The formatting
+information is a precision (0 is default, 6 includes +-ddd.mm.ss) and a
+string array of codes (no-case, minimax match):
+Codes include:
+\begin{description}
+\item[clean] delete leading/trailing superfluous separators
+\item[no\_d] do not show degrees part
+\item[no\_dm] do not show degrees and minutes part
+\item[dig2] show only 2 digits of degrees in angle format
+\item[time] show as time (hh:mm:ss.ttt) rather than as angle
+\end{description}
+If a multi-dimensional value is given for the value $v$, the returned value
+is a string vector of a length equal to last dimension. Each string has a
+number of fields equal to the number of elements in all earlier
+dimensions. If the {\em showform} is $T$, each vector element is surrounded
+by a pair of square brackets if there is more than one entry, and fields are
+separated by a ','.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity('5.7.12.345678')		# define an angle
+- tu
+[value=5.1201, unit=deg] 
+- dq.angle(tu)    				# default output
++005.07.12 
+- dq.angle(tu, prec=7)				# 7 digits
++005.07.12.3 
+- dq.angle(tu, prec=4)				# 4 digits
++005.07. 
+- dq.angle(tu, form="tim no_d")		# as time, no hours shown
+:20:29 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{time}{show a time (or date) as a formatted string}
+\begin{ahargs}
+\ahaddarg[in]{v}{value to output}{}{time quantity or string}
+\ahaddarg[in]{prec}{number of digits shown}{0}{numeric}
+\ahaddarg[in]{form}{formatting information}{''}{coded string array}
+\ahaddarg[in]{showform}{show square brackets and separating ,}{F}{bool}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+time converts a time quantity to a formatted string. The formatting
+information is a precision (0 is default, 6 includes hh.mm.ss) and a
+string array of codes (no-case, minimax match):
+Codes include:
+\begin{description}
+\item[clean] delete leading/trailing superfluous separators
+\item[no\_d] do not show hours part
+\item[no\_dm] do not show hours and minutes part
+\item[ymd] include a date as yyyy/mm/dd (date is by default not shown)
+\item[dmy] include a date as ddMMMyyyy (date is by default not shown)
+\item[mjd] include a date as Modified Julian Day (date is by default not shown)
+\item[fits] include a date and show time in FITS format: le from OS
+\item[angle] show in angle (dd.mm.ss.ttt) rather than time format
+\item[day] prefix day-of-week to output
+\item[local] show local time rather than UTC (add timezone offset)
+\item[no\_time] suppress printing of time part
+\end{description}
+If a multi-dimensional value is given for the value $v$, the returned value
+is a string vector of a length equal to last dimension. Each string has a
+number of fields equal to the number of elements in all earlier
+dimensions. If the {\em showform} is $T$, each vector element is surrounded
+by a pair of square brackets if there is more than one entry, and fields are
+separated by a ','.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- tu := dq.quantity('today')		# a time
+- tu
+[value=50450.2243, unit=d] 
+- dq.time(tu)				# default format
+05:23:01.000 
+- dq.time(tu,form="dmy")  		# show date
+02-Jan-1997/05:23:01.000 
+- dq.time(tu,form="ymd day")		# and day
+Thu-1997/01/02/05:23:01.000
+- dq.time(tu,form="fits")               # FITS format    
+1997-01-02T05:23:01.000 
+- dq.time(tu,form="fits local")         # local FITS format
+1997-01-02T15:23:01.000+10:00 
+- dq.time(tu,form="ymd local")          # local time         
+1997/01/02/15:23:01.000 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{add}{add quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+add adds two quantities
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.add('5m', '2yd')   
+[value=6.8288, unit=m] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{sub}{subtract quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+sub subtracts two quantities
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.sub('5m', '2yd')   
+[value=3.1712, unit=m] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{mul}{multiply quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'1'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+mul multiplies two quantities
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.mul('5m', '3s')
+[value=15, unit=m.s] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{div}{divides quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'1'}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+div divides two quantities
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.div('5m', '3s') 
+[value=1.66667, unit=m/(s)] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{neg}{negate quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{1}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+neg negates a quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.neg('5m')   
+[value=-5, unit=m] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{norm}{normalise angle}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle quantity or string}
+\ahaddarg[in]{a}{lower interval boundary}{-0.5}{numeric}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+norm normalise angles in interval of $2\pi$ radians. The default interval is
+from -0.5 to +0.5 of a full interval (i.e. from -180 to +180 degrees). The
+lower end of the interval can be set as a fraction of $2\pi$
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.norm('713deg')			#default normalisation
+[value=-7, unit=deg] 
+- dq.norm('713deg', -2.5) 		# normalise to interval -900 - -540 deg
+[value=-727, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{le}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+le compares two quantities for less than or equal.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.le('5m', '2yd')   
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{lt}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+lt compares two quantities for less than.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.lt('5m', '2yd') 
+F  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{eq}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+eq compares two quantities for equality.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.eq('5m', '2yd')  
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{ne}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+ne compares two quantities for non equality.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.ne('5m', '2yd')   
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{gt}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+gt compares two quantities for greater than.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.gt('5m', '2yd')   
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{ge}{compare quantities}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{'0'}{quantity or string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+ge  compares two quantities for greater than or equal.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.ge('5m', '2yd') 
+T  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{sin}{sine of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+sin gives sine of angle quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.sin('7deg')
+[value=0.121869, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{cos}{cosine of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+cos gives cosine of angle quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.cos('7deg')
+[value=0.992546, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{tan}{tangent of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+tan gives tangent of angle quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.tan('7deg')
+[value=0.122785, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{asin}{arcsine of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{non-dimensioned quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+asin gives arcsine of non-dimensioned quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convert(dq.asin(dq.sin('7deg')), 'deg')
+[value=7, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{acos}{arccosine of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{non-dimensioned quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+acos gives arccosine of non-dimensioned quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convert(dq.acos(dq.cos('7deg')), 'deg')
+[value=7, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{atan}{arctangent of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{non-dimensioned quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+atan gives arctangent of non-dimensioned quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convert(dq.atan(dq.tan('7deg')), 'deg')
+[value=7, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{atan2}{arctangent of two quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{non-dimensioned quantity or string}
+\ahaddarg[in]{a}{value}{}{non-dimensioned quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+atan gives arctangent of two non-dimensioned quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.convert(dq.atan2(dq.sin('7deg'), dq.cos('7deg')), 'deg')
+[value=7, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{abs}{absolute value of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+abs gives absolute value of quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.abs('-5km/s')
+[value=5, unit=km/s] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{ceil}{ceil value of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+ceil gives ceiling value of quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.ceil('5.1AU')
+[value=6, unit=AU] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{floor}{floor value of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+floor gives flooring value of quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.floor('-5.1AU')
+[value=-6, unit=AU] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{log}{logarithm of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{dimensionless quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+log gives natural logarithm of dimensionless quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.log('2')
+[value=0.693147181, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{log10}{logarithm of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{dimensionless quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+log10 gives logarithm of dimensionless quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.log10('2')
+[value=0.301029996, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{exp}{exponential of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{dimensionless quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+exp gives exponential value of dimensionless quantity
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.exp('2')
+[value=7.3890561, unit=] 
+- dq.exp('2m')
+SEVERE: Caught an exception! Event type=run exception=Quantum::exp 
+	       illegal unit type 'm'
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{sqrt}{square root of quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{dimensionless quantity or string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+sqrt gives square root of quantity with only even powered dimensions
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.sqrt('2m2')
+[value=1.41421356, unit=m] 
+- dq.sqrt('2s')
+SEVERE: Caught an exception! Event type=run exception=UnitVal::UnitVal
+	        Illegal unit dimensions for root
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{compare}{compare dimensionality of units}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{value}{}{quantity or string}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+compare compares the dimensionality of units of two qauntities
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.compare('5yd/a', '6m/s')  		# equal dimensions
+T
+- dq.compare('5yd', '5s')		# unequal dimensions
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{check}{check for proper unit string}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{string or quantity}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+check checks if the argument has a properly defined unit string
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.check('5AE/Jy.pc5/s')
+T 
+- dq.check('7MYs')
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{checkfreq}{check for proper frequency unit}
+\begin{ahargs}
+\ahaddarg[in]{cm}{value}{}{string or quantity}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+checkfreq checks if the argument has a properly defined frequency interpretable
+unit string
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.checkfreq('5GHz')
+T 
+- dq.checkfreq('5cm')  
+T 
+- dq.checkfreq('5cm/s2')
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{pow}{raise quantity to power}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{a}{power}{1}{integer}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+pow raises a quantity to an integer power
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.pow('7.2km/s', -3)
+[value=0.00267918, unit=(km/s)-3] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{constants}{get a constant}
+\begin{ahargs}
+\ahaddarg[in]{v}{name}{'pi'}{coded string}
+\end{ahargs}
+\ahreturns{quantity}
+\begin{ahdescription}
+constants gets a named constant quantity. Names (no-case, minimax) are:
+\begin{verbatim}
+        pi    3.14..                    3.14159 
+        ee    2.71..                    2.71828 
+        c     light vel.                2.99792e+08 m/s
+        G     grav. const               6.67259e-11 N.m2/kg2
+        h     Planck const              6.62608e-34 J.s
+        HI    HI line                   1420.41 MHz
+        R     gas const                 8.31451 J/K/mol
+        NA    Avogadro #                6.02214e+23 mol-1
+        e     electron charge           1.60218e-19 C
+        mp    proton mass               1.67262e-27 kg
+        mp_me mp/me                     1836.15 
+        mu0   permeability vac.         1.25664e-06 H/m
+        eps0  permittivity vac.         1.60218e-19 C
+        k     Boltzmann const           1.38066e-23 J/K
+        F     Faraday const             96485.3 C/mol
+        me    electron mass             9.10939e-31 kg
+        re    electron radius           2.8179e-15 m
+        a0    Bohr's radius             5.2918e-11 m
+        R0    solar radius              6.9599e+08 m
+        k2    IAU grav. const^2         0.000295912 AU3/d2/S0
+\end{verbatim}
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.constants()
+[value=3.14159, unit=] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{is\_angle}{check if valid angle or time quantity}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle/time quantity or string}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+is\_angle checks if the argument is a valid angle/time quantity.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.is_angle(dq.constants('pi'))
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{totime}{convert an angle (or a time) to a time}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle/time quantity or string}
+\end{ahargs}
+\ahreturns{time quantity}
+\begin{ahdescription}
+totime converts an angle quantity (or a time) to a time
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.totime('2d5m')
+[value=0.00578704, unit=d] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{toangle}{convert a time (or an angle) to an angle}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle/time quantity or string}
+\end{ahargs}
+\ahreturns{angle quantity}
+\begin{ahdescription}
+toangle converts a time quantity (or an angle) to an angle
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.toangle('5h30m12.6')
+[value=82.5525, unit=deg] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{splitdate}{split a date/time into a record}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{angle/time quantity or string}
+\end{ahargs}
+\ahreturns{record}
+\begin{ahdescription}
+splitdate splits a date/time quantity into a record with constituent fields
+like year, yearday, month etc. All fields will be integer (to enable use as
+index and easy personal formatting), with the exception of the {\em s} field
+which is a double float. See the example for the fields returned.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.splitdate('today')
+[mjd=52075.0361, year=2001, yearday=166, month=6, monthday=15,
+		  week=24, weekday=5, hour=0, min=52, sec=1,
+		   s=1.24799991, msec=247, usec=247999] 
+- dq.splitdate('183.33333333deg')
+[mjd=0.509259259, year=1858, yearday=321, month=11, monthday=17,
+		   week=46, weekday=3, hour=12, min=13, sec=19,
+		    s=19.9999992, msec=999, usec=999999] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{tos}{convert quantity to string}
+\begin{ahargs}
+\ahaddarg[in]{v}{value}{}{quantity or string}
+\ahaddarg[in]{prec}{convert precision of value}{0}{integer}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+tos converts a quantity to a string with the precision defined with
+the {\em setformat('prec')} (which defaults to 9). If the optional
+{\em prec} argument is set to an integer value greater than 1, that
+precision is used in the conversion
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- print a := dq.quantity('2.56 yd/s')
+[value=2.56, unit=yd/s]
+- dq.tos(a)
+2.56 yd/s 
+- a:=dq.quantity(1/7, 'km/s')
+- dq.tos(a)
+0.142857143 km/s 
+- dq.tos(a,2)
+0.14 km/s 
+- dq.tos(a,20)
+0.14285714285714284921 km/s 
+- dq.tos(a)   
+0.142857143 km/s 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{id}{identification of tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{object id}
+\begin{ahdescription}
+id will return the object identification. Its use is meant for the
+toolmanager.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.id()
+[sequence=1, pid=4774, time=1020735188, host=cetus, agentid=3] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%
+
+\begin{ahfunction}{type}{type of tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+type will return the tool name.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dq.type()
+quanta 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%
+
+\begin{ahfunction}{done}{free resources used by tool}
+\begin{ahargs}
+\ahaddarg[in]{kill}{force kill of the default tool}{F}{bool}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+done will free the resources used by the tool. If the tool is the
+default tool ({\em dm}) the done will only be executed if the kill
+argument is true.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- a:=quanta()
+- a.done()
+T 
+- dq.done()
+F 
+- dq.done(kill=T)
+NORMAL: Successfully closed empty server: quanta
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject}
+
+\input{quantagui.help}
+
+\end{ahmodule}
+\end{document}

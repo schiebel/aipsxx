@@ -1,0 +1,99 @@
+#
+# Make file for a pipeline to process spectral line data
+#
+VERSION		+= spectralline.0.01
+PIPESTATE	= pipelinestate
+#
+# Define replacement rules FIRST!!!
+#
+# Threads
+#
+threads.g: ${PIPESTATE}/fill
+	glish include "e2emsutils.g";
+	glish msutils := e2emsutils(msname);
+	glish msutils.summary('separate');
+	glish msutils.writethreads('separate');
+	glish msutils.done();
+#
+# Second edit of data for spectral data
+#
+${PIPESTATE}/secondedit: ${PIPESTATE}/Gcalibrate
+	glish include 'autoflag.g';
+	glish result := T;
+	glish af := autoflag(msname);
+	glish if(is_fail(af)) fail;
+	glish result := result && af.setfreqmed();
+	glish result := result && af.run(plotscr=F);
+	glish af.done();
+	glish if(is_fail(result)) fail;
+	glish shell(spaste('mv flagreport.ps ', archive, '/secondedit.ps'));
+	glish if(result) shell('touch $@')
+#
+# Solve for B terms
+#
+${PIPESTATE}/Bcal: ${PIPESTATE}/secondedit
+	glish msutils := e2emsutils(msname);
+	glish include "calibrater.g";
+	glish result := T;
+	glish cal:=calibrater(msname);
+	glish if(is_fail(cal)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()) {
+	glish     fields:=thread.fields().Bcal;
+	glish     if(is_fail(fields)) fail;
+	glish     msselect:=spaste('(FIELD_ID in ', as_evalstr(fields), ')');
+	glish     if(thread.query()!='') msselect:=spaste(thread.query(), ' && ', msselect);
+	glish     result := result && cal.setdata(msselect=msselect);
+	glish     Gcaltable := thread.caltable('scaledG');
+	glish     Bcaltable := thread.caltable('B');
+	glish     result := result && cal.setapply('G', table=Gcaltable);
+	glish     result := result && cal.setsolve('B', table=Bcaltable, t=1e8);
+	glish     result := result && cal.solve();
+	glish	  thread.addhistory('Calibrated B Jones (bandpass) on ', thread.sources().Bcal);
+	glish     if(is_fail(result)) fail;
+	glish   }
+	glish }
+	glish cal.done();
+	glish if(result) shell('touch $@')
+# 
+# Apply B jones calibration table
+#
+${PIPESTATE}/Bcalibrate:	${PIPESTATE}/Bcal
+	glish include "calibrater.g";
+	glish result := T;
+	glish cal:=calibrater(msname);
+	glish if(is_fail(cal)) fail;
+	glish for (thread in threads) {
+	glish   if(thread.valid()) {
+	glish     fields:=thread.fields().all;
+	glish     msselect:=spaste('(FIELD_ID in ', as_evalstr(fields), ')');
+	glish     if(thread.query()!='') msselect:=spaste(thread.query(), ' && ', msselect);
+	glish     Gcaltable := thread.caltable('scaledG');
+	glish     Bcaltable := thread.caltable('B');
+	glish     result := result && cal.setdata(msselect=msselect);
+	glish     result := result && cal.setapply('G', table=Gcaltable);
+	glish     result := result && cal.setapply('B', table=Bcaltable);
+	glish     result := result && cal.correct();
+	glish     if(is_fail(result)) fail;
+	glish   }
+	glish }
+	glish cal.done();
+	glish if(is_fail(result)) fail;
+	glish if(result) shell('touch $@')
+#
+# Subtract continuum
+#
+${PIPESTATE}/imlin: ${PIPESTATE}/image
+	glish include "e2eimagingutils.g";
+	glish result := T;
+	glish for (thread in threads) {
+	glish   result := result && e2eimagingutils().imlin(thread);
+	glish   if(is_fail(result)) fail;
+	glish }
+	glish if(result) shell('touch $@')
+#
+all:	root threads.g threads ${PIPESTATE}/imlin ${PIPESTATE}/publish log
+#
+# Include make file for continuum as the base
+#
+.include "continuum.gm"

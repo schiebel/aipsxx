@@ -1,0 +1,490 @@
+%\documentclass{book}
+%\documentstyle[10pt]{article}
+%\usepackage{html, longtable, epsfig}
+%\begin{document}
+
+%\newcommand{\aipspp}{{\sc aips++}}
+
+%\htmladdtonavigation{\htmladdnormallink{\htmladdimg{../../gif/home.gif}}{{../../html/aips++.html}}}
+
+\section{Motivation}
+
+This note elaborates on the revisions to DISH occurring over the past 6 months.
+A stable version of newdish exists in builds after 14.239.
+
+\section{Introduction}
+
+The latest version of DISH merges development between the single dish and
+interferometric efforts in AIPS++. DISH is now a standard tool and may take
+advantage of the tool manager interface. DISH also has a new and hopefully
+much simplified Command Line Interface (CLI). We elaborate on these changes
+in this note. In cases of the DISH GUI operation, Note 225 is still accurate.
+
+\bigskip
+
+\section{Accessing the new DISH:}
+
+Currently, both versions of DISH are being maintained independently until a 
+complete check of the new version has been completed. During this time, the
+new DISH may be accessed in two ways:
+
+\begin{enumerate}
+
+\item{} Through the tool manager interface.
+	\begin{enumerate}
+	\item{}Select on Packages, unclassified.
+	\item{}Select on Modules, unclassifed.
+	\item{}Select on Tools, newdish.
+	\item{}Press create.
+	\item{}Choose the toolname for the new DISH tool and press "Create".
+	\end{enumerate}
+
+\item{} From the command line.
+	\begin{enumerate}
+	\item{} include 'newdish.g'
+	\end{enumerate}
+
+\end{enumerate}
+
+The default is to start the newdish tool with the GUI interface as before.
+However, this may be over-ridden using a local .aipsrc value:
+
+\begin{verbatim}
+#dish.gui.auto:T
+dish.gui.auto:F
+\end{verbatim}
+
+\section{The new DISH CLI}
+
+The new DISH CLI benefits from a much cleaner public namespace. Most public
+functions of an operation either set variables or execute obvious actions.
+Table 1 summarizes the public functions of the available operations. 
+
+The scripter is intended as both a tutorial and a means of constructing 
+batch command scripts. It is invoked from the AIPS++ command line as:
+\begin{verbatim}
+- ds.gui()
+F 
+\end{verbatim}
+
+The Options menu "Write Script commands" must then be selected. Subsequent
+commands will then be written to the scripter. See other info on scripter.
+NOTE: The submit button on the scripter will not work since this command
+executes the script as a shell client which doesn't know about the tool
+you've created. Instead to run a stored script (default name is 
+aips++.script.g), simply include it (include "aips++.script.g").
+
+{\tiny
+\begin{longtable}{cccccccccc}
+average & function & gaussian & regrid & save & select&smooth&statistics&write\\
+setweighting&getfn&setheight&setboxwidth&setws&cws&setboxwidth&setstart&setof \\
+setalignment&setfn&setcenter&setdecimate&-&newworkingset&setdecimate&setstop&-\\
+doselection&-&setwidth&setgausswidth&-&setcriteria&setgausswidth&-&-\\
+dorestshift&-&fixheight&setgridfact&-&setws&settype&-&-\\
+-&-&fixcenter&settype&-&-&-&-&-\\
+-&-&fixwidth&-&-&-&-&-&-\\
+\end{longtable}
+}
+
+%\subsection{mynewdish}
+
+\subsection{Universal functions}
+
+\subsubsection{apply}
+
+Perform the relevant operation. See Bulk Processing for more details.
+
+\subsubsection{done}
+
+This closes down access to the operation's functions. Generally this should
+*not* be done by the user.
+
+\subsubsection{getstate}
+\begin{verbatim}
+- mynewdish.ops().average.getstate()
+[selection=T, alignment=NONE, restshift=F, weighting=NONE] 
+\end{verbatim}
+
+\subsection{average}
+
+\subsubsection{setweighting}
+The accepted weighting schemes are: NONE, RMS, and TSYS.
+\begin{verbatim}
+- mynewdish.ops().average.setweighting("RMS")
+T 
+\end{verbatim}
+
+\subsubsection{setalignment}
+The accepted alignment options are: NONE, VELOCITY, and XAXIS.
+\begin{verbatim}
+- mynewdish.ops().average.setalignment("VELOCITY")
+T 
+\end{verbatim}
+
+\subsubsection{dorestshift}
+This option is enabled only when the alignment has been set to VELOCITY.
+This option will shift spectra to match the first in the average.
+\begin{verbatim}
+- mynewdish.ops().average.dorestshift(T)
+T 
+\end{verbatim}
+
+\subsubsection{doselection}
+This option determines if an active selection (from the select operation)
+should be used prior to the average.
+\begin{verbatim}
+- mynewdish.ops().average.doselection(T) 
+T 
+\end{verbatim}
+
+If the GUI is enabled, these functions will also check the relevant button 
+on the average GUI.
+
+An example scripter session looks as follows:
+
+\begin{verbatim}
+ok := mynewdish.ops().average.setalignment(alignment="NONE" )
+ok := mynewdish.ops().average.setweighting(weighting="NONE" )
+ok := mynewdish.ops().average.apply()
+\end{verbatim}
+
+\subsection{baseline}
+\subsubsection{settype}
+The accepted types are: sinusoid and polynomial.
+\begin{verbatim}
+- mynewdish.ops().baseline.settype("sinusoid")
+T 
+\end{verbatim}
+
+\subsubsection{setaction}
+The accepted types are: show and subtract.
+\begin{verbatim}
+- mynewdish.ops().baseline.setaction("show")
+T 
+\end{verbatim}
+
+\subsubsection{getaction}
+Retrieves status of the action parameter.
+\begin{verbatim}
+- mynewdish.ops().baseline.getaction()
+show 
+\end{verbatim}
+
+\subsubsection{setunits}
+The acceptable types are: channels and xaxis.
+\begin{verbatim}
+- mynewdish.ops().baseline.setunits("channels")
+T 
+\end{verbatim}
+
+\subsubsection{setorder}
+If the type of fit is polynomial, this sets the order.
+\begin{verbatim}
+- mynewdish.ops().baseline.setorder(3)
+T 
+\end{verbatim}
+
+\subsubsection{recalculate}
+The fit is recalculated if this state is true when apply is done.
+\begin{verbatim}
+- mynewdish.ops().baseline.recalculate(T)
+T 
+\end{verbatim}
+
+\subsubsection{setamplitude}
+This and the following four functions apply in cases of a sinusoid fit. 
+This sets the amplitude of the sinusoid.
+\begin{verbatim}
+- mynewdish.ops().baseline.setamplitude(2.)    
+T 
+\end{verbatim}
+\subsubsection{setperiod}
+Sets the period of a sinusoid fit.
+\subsubsection{setx0}
+Sets the X0 of a sinusoid fit.
+\subsubsection{setmaxiter}
+Sets the maximum number of iterations for the fit of a sinusoid.
+\subsubsection{setcriteria}
+Sets the convergence criteria for a sinusoid fit.
+
+\subsubsection{setrange}
+\subsubsection{getrange}
+This function retrieves the range for the baseline.
+\begin{verbatim}
+- mynewdish.ops().baseline.getrange()
+[[1:2,]
+    85.861813
+    119.882504] 
+\end{verbatim}
+
+The following functions are used mainly internally but are provided as
+public functions as well: setrangestring, convertunits, polynomial, sinusoidal.
+
+If the GUI is enabled, these functions will also check the relevant button
+on the average GUI.
+
+An example script follows. It fits a second order polynomial over the
+specified range, first to see it ("show") and then to apply it ("subtract"):
+\begin{verbatim}
+ok := mynewdish.ops().baseline.setorder(order=2)
+ok := mynewdish.ops().baseline.setrange(newrangestring="[119.882504:85.861813]")
+ok := mynewdish.ops().baseline.setrange(newrange=[-70603.3518, -53031.125] ,
+	units="xaxis" ,changeunits=F)
+ok := mynewdish.ops().baseline.setaction(action="show" )
+ok := mynewdish.ops().baseline.setrange(newranges="[119.882504:85.861813]" ,
+	units="channels" )
+ok := mynewdish.ops().baseline.apply()
+ok := mynewdish.ops().baseline.setaction(action="subtract" )
+ok := mynewdish.ops().baseline.setrange(newranges="[119.882504:85.861813]" ,
+	units="channels" )
+ok := mynewdish.ops().baseline.apply()
+\end{verbatim}
+
+\subsection{calculator}
+
+Calculator remains unchanged from the old DISH tool.
+%Need to adjust ifft/fft reciprocity; add sditerator capability
+
+\subsection{function}
+
+This operation will perform some function on the data array of the selected
+SDRecord or SDIterator. The data array is accessed directly through the 
+variable ARR.
+
+\subsubsection{getfn}
+This function retrieves the function which has been set either through the
+CLI or the GUI.
+\begin{verbatim}
+- mynewdish.ops().function.getfn()
+3*ARR 
+\end{verbatim}
+
+\subsubsection{setfn}
+This function sets the function to be used. If the GUI is active, this will
+also be reflected in the GUI entry field.
+\begin{verbatim}
+- mynewdish.ops().function.setfn("4*ARR")
+T 
+\end{verbatim}
+
+An example scripter session looks as follows:
+
+\begin{verbatim}
+ok := mynewdish.ops().function.setfn(fn="3*ARR" )
+ok := mynewdish.ops().function.apply()
+\end{verbatim}
+
+\subsection{gaussfit}
+This operation allows gaussian fitting of an SDRecord(s).
+
+\subsubsection{setheight}
+Sets the initial guess for the height.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setcenter}
+Sets the initial guess for the center.
+
+\subsubsection{setwidth}
+Sets the initial guess for the width.
+
+\subsubsection{fixheight}
+Determines whether it will hold the height fixed (T or F).
+
+\subsubsection{fixcenter}
+Determines whether it will hold the center fixed (T or F).
+
+\subsubsection{fixwidth}
+Determines whether it will hold the center fixed (T or F).
+
+\subsection{regrid}
+This operation allows for more general regridding of data in an SDRecord.
+It allows all of the options in smooth in addition to a spline interpolation
+and a Fourier Transform interpolation.
+
+The following are identical to the smooth operation: setboxwidth, setdecimate,
+setgausswidth. 
+
+\subsubsection{setgridfact}
+Sets the Grid Factor for interpolations (Spline or FFT).
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{settype}
+Additional types are splineint and ftint.
+\begin{verbatim}
+\end{verbatim}
+
+
+\subsection{save}
+
+This operation will store results (i.e. SDRecords) to a specified SDIterator
+or working set. The working set must already exist (create through the File
+menu, New command).
+
+\subsubsection{setws}
+
+An example session would look like:
+\begin{verbatim}
+- mynewdish.ops().save.setws('tempsave') # Note name must be a string
+T 
+- mynewdish.ops().save.apply()
+T 
+- The currently viewed SDRecord has been appended to the selected working set
+\end{verbatim}
+
+\subsection{select}
+This operation allows selection through various criteria for forming subsets
+of SDRecords.
+
+\subsubsection{cws}
+This function returns the current working set.
+
+\subsubsection{newworkingset}
+
+\subsubsection{setcriteria}
+
+\subsubsection{setws}
+
+\subsection{smooth}
+This operation allows smoothing of SDRecords using hanning, boxcar or gaussian
+functions.
+
+\subsubsection{setboxwidth}
+This sets the width of a boxcar smooth.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setdecimate}
+This determines whether decimation will be used (T or F).
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setgausswidth}
+This sets the width (FWHM) of a gaussian smooth.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{settype}
+This determines the type of smooth: HANNING, BOXCAR, GAUSSIAN.
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{statistics}
+This operation allows determination of statistics over an interval of an
+SDRecord.
+
+\subsubsection{setstart}
+This sets the start channel of the interval.
+\begin{verbatim}
+\end{verbatim}
+
+\subsubsection{setstop}
+This sets the stop channel of the interval.
+\begin{verbatim}
+\end{verbatim}
+
+\subsection{write}
+
+This operation will write the abscissa and ordinate of an SDRecord
+to a specified ASCII file.
+
+\subsubsection{setof}
+Specifies the output file for the spectrum.
+\begin{verbatim}
+- mynewdish.ops().write.setof('myspectrum')
+T 
+\end{verbatim}
+
+An example script looks as follows:
+\begin{verbatim}
+ok := mynewdish.ops().write.setof(ofname="myspectrum" )
+ok := mynewdish.ops().write.apply()
+\end{verbatim}
+
+\bigskip
+\section{Bulk Processing of data in new DISH}
+
+Bulk processing is currently enabled for most functions in DISH. From the CLI,
+if an SDITERATOR is specified, it will step through the collection of scans
+and perform the relevant operation. This is not possible from the GUI unless
+there has been no previously viewed spectrum in the plotter; the precedence
+for operations from the GUI always seek the last viewed spectrum first and
+then search for selections in the results manager.
+
+\section{Operation template}
+
+\begin{verbatim}
+
+1) If the operation should be automatically added, add the following line to 
+	newdish.g (to the function private.defaultops):
+	public.addop('filename.g','filename') where filename is the ctor.
+   If want to add the operation after creation of the new DISH tool, it can be 
+	added as above by calling your toolname's addop function.
+2) Write the following:
+
+filename.g                              filenamegui.g
+include 'filenamegui.g'                 include 'widgetserver.g'
+const filename := function(ref itsdish) const filenamegui:=subsequence(parent,
+                                          itsop, logcommand, widgetserver=dws)
+{                                       { 
+                                           widgetset.tk_hold();
+        public := [=];
+        private:= [=];                     private := [=];
+                                           private.op := itsop;
+                                           private.logcommand := logcommand
+
+                                           private.outerFrame := 
+                                                   widgetset.frame(parent,
+                                                   side='top',relief='ridge');
+                                           private.labelFrame :=
+                                                   dws.frame(private.outerframe,
+                                                   expand='x');
+                                           private.mainLabel := 
+                                                   dws.label(private.labelframe,
+                                                   'main label text');
+                                           private.combo := 
+                                                dws.combobox(private.outerframe,
+                                                'Title',autoinsertorder='head',
+                                                canclearpopup=T,help='help');
+                                           # more GUI construction
+                                           private.bottomFrame:=
+                                           private.leftPad:=
+                                           private.applyFrame:=
+                                           private.applyButton:=
+                                           private.rightPad:=
+                                           private.dismissButton:=
+                                           etc...
+                                           # handlers for buttons
+                                           whenever private.dismissbutton->press
+                                           whenever private.applyButton->press
+					  
+#       def: start w/o GUI
+        private.gui := F;
+        private.dish := itsdish;
+        ...other initial declarations...
+
+        ...other private functions...
+
+        public.apply:=function(){}	  
+*       public.dismissgui:=function(){}
+*       public.done:=function(){}          self.done:=function(){
+*       public.getstate:=function(){}           wider private,self;
+*       public.gui:=function(){}                self->done();
+*       public.opmenuname:=function(){}	   }
+*       public.opfuncname:=function(){}	   self.outerframe:=function(){
+*       public.setstate:=function(){}           wider private;
+        public.debug:=function(){               return private.outerFrame;
+                wider private;             }
+                return private;}           ...other functions to do things...
+
+                                           junk:=dws.tk_release();
+
+        return public;                     #self auto returned
+}                                          }
+
+* indicates must be present (to pass verifyOp)
+	
+\end{verbatim}
+
+\end{document}

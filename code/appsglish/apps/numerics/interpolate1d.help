@@ -1,0 +1,230 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: interpolate1d.help,v 19.2 2004/08/25 01:44:27 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{interpolate1d}{Various sorts of 1-dimensional interpolation}
+
+\ahinclude{interpolate1d.g}
+
+\ahcategory{mathematics}
+
+\ahkeyword{interpolate}{}
+\ahkeyword{interpolation}{}
+\ahkeyword{spline interpolation}{}
+\ahkeyword{linear interpolation}{}
+\ahkeyword{cubic interpolation}{}
+\ahkeyword{nearest neighbor interpolation}{}
+
+\ahmethods{}
+
+\begin{ahdescription} 
+
+  This tool does one-dimensional interpolation on a user supplied set
+  of $(x,y)$ values. The computation is performed in a pre-compiled
+  executable. It is not interpreted by Glish.
+
+  {\tt interpolate1d} is used to interpolate between values using any
+  of the following algorithms:
+  \begin{description}
+    \item[nearest neighbor] This simply returns the $y$-value for the
+    data point that has the nearest $x$-value to the requested
+    x-value. You could argue that this is not interpolation at
+    all. But it is fast.
+    \item[linear] Linear interpolation is the simplest useful
+    interpolation scheme. It fits a line between the two data points
+    whose $x$-value straddle the requested $x$-value. It is quite a
+    robust interpolation scheme.
+    \item[cubic polynomial] This fits a cubic polynomial to the four
+    points whose $x$-value straddle the requested $x$-value.
+    \item[spline] This fits a natural cubic spline to the entire data
+    set and then interpolates on this function. A natural cubic spline
+    is a curve that is smooth in its first derivative, continious in
+    its second and has a zero second second derivative at the end
+    points. This interpolation scheme uses the entire data set to
+    compute the interpolating function unlike all the others described
+    above which only use nearby points.
+
+  \end{description}
+
+  Demo and test functions are available: {\tt interpolate1ddemo()} and
+  {\tt interpolate1dtest()}.
+\end{ahdescription}
+
+\begin{ahexample}
+
+  To use the functions in this tool we have to firstly (1) load the
+  definition of the interpolate1d tool and (2) construct a tool that
+  will actually perform the computations.
+
+  \begin{verbatim}
+    include "interpolate1d.g"     # 1
+    interp := interpolate1d()     # 2
+  \end{verbatim}
+
+  OK, lets create some fake data to interpolate: $y = 3x^2 + 5$
+  \begin{verbatim}
+    x := 1:10        # 1,2,3,4,5,6,7,8,9,10
+    y := 3*x*x + 5   # 8, ..., 305
+  \end{verbatim}
+
+  Next we need to initialize the interpolation tool --- provide it
+  with the x,y data and tell it what interpolation function we want:
+
+  \begin{verbatim}
+    interp.initialize(x,y,'linear')   # Returns F if it fails
+  \end{verbatim}
+
+  We actually did not have to specify {\tt linear}, because that is
+  the default interpolation function.  After the interpolator is
+  initialized, we can use it to interpolate the value at some new
+  values of {\tt x}:
+
+  \begin{verbatim}
+    interp.interpolate([1.5, 2.5])
+    # [12.5 24.5]
+  \end{verbatim}
+
+  Obviously our linear interpolation isn't doing the best possible job
+  with a second order polynomial, so instead we could try a cubic
+  polynomial:
+
+  \begin{verbatim}
+    interp.setfunction('cubic')      
+    interp.interpolate([1.5, 2.5])
+    # [11.75 23.75]  
+  \end{verbatim}
+  This is exact of course. 
+\end{ahexample}
+
+\begin{ahseealso}
+  \ahlink{interpolate1ddemo}{mathematics:interpolate1ddemo}
+  \ahlink{interpolate1dtest}{mathematics:interpolate1dtest}
+\end{ahseealso}
+
+\begin{ahconstructor}{interpolate1d}{Construct an interpolate1d \tool}
+  \begin{ahdescription}
+    Use this constructor to construct an interpolate1d tool.
+  \end{ahdescription}
+  \ahreturns{An interpolate1d tool}
+
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'interpolate1d.g'
+      interp := interpolate1d();
+    \end{verbatim}
+  \end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{initialize}{Set the data and the interpolation function}
+  \begin{ahargs}
+    \ahaddarg{x}{independent data variable}{}{Real valued array.}
+    \ahaddarg{y}{dependent data variable}{}{Real valued array. Must be the same length as x.}
+    \ahaddarg{function}{interpolation function to use}{'linear'}{'linear', 'nearest', 'cubic', 'spline'}
+  \end{ahargs}
+  \ahreturns{Bool: T if successful}
+  \begin{ahdescription}
+    Set the data and the interpolation function.
+  \end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{interpolate}{Perform an interpolation}
+  \begin{ahargs}
+    \ahaddarg{x}{Perform the interpolation for these positions}{}{Real valued array}
+  \end{ahargs}
+  \ahreturns{Real array: interpolated values (same length as x)}
+  \begin{ahdescription}
+    Perform the actual interpolation. The results are undefined if
+    initizlize has not been called first.
+  \end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setfunction}{Change the interpolation function}
+  \begin{ahargs}
+    \ahaddarg{function}{interpolation function to use}{'linear'}{'linear', 'nearest', 'cubic', 'spline'}
+  \end{ahargs}
+  \begin{ahdescription}
+    Change the interpolation function.
+  \end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete the interpolate1d tool}
+  \begin{ahdescription}
+    The done function frees up all the memory associated with a
+    interpolate1d tool. After calling this function the interpolate1d
+    tool cannot be used. This function will shut down the
+    server process if no other tools are using the numerics
+    server.
+  \end{ahdescription}
+  \ahreturns{T}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'interpolate1d.g'
+      server := interpolate1d();
+      # ... manipulate the server as you see fit ...
+      server.done(); # shut down the interpolate1d tool
+    \end{verbatim}
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool}
+  \ahreturns{string}
+  \begin{ahdescription}
+    This function returns the string `interpolate1d'.  It is used so
+    that in a script, you can make sure this \glish\ variable is an
+    interpolate1d \tool.
+  \end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%% Global functions
+
+\begin{ahfunction}{interpolate1ddemo}{Demonstrate the use of functions in interpolate1d}
+  \begin{ahdescription}
+    Demonstrate the use of the functions in interpolate1d. Inputs and results
+    are sent to the logger.
+  \end{ahdescription}
+  \begin{ahseealso}
+    \ahlink{interpolate1d}{mathematics:interpolate1d}
+  \end{ahseealso}
+  \ahreturns{Bool: T for success}
+\end{ahfunction}
+
+\begin{ahfunction}{interpolate1dtest}{Test the interpolate1d class}
+  \begin{ahdescription}
+    This class purports to test the interpolate1d class. In fact, all
+    it does currently is run interpolate1ddemo.
+  \end{ahdescription}
+  \begin{ahseealso}
+    \ahlink{interpolate1d}{mathematics:interpolate1d}
+    \ahlink{interpolate1ddemo}{mathematics:interpolate1ddemo}
+  \end{ahseealso}
+  \ahreturns{Bool: T for success}
+\end{ahfunction}
+
+\end{document}

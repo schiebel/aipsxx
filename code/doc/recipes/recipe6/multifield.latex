@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\begin{document}
+\begin{ahrecipe}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals:</font>
+\end{rawhtml}
+{Make a multi-field clean of a confused field}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{imager}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume:</font>
+\end{rawhtml}
+{You have a VLA observation of a weak source with a
+confusing source nearby. You wish to remove the effect of the
+confusing source and make a clean image of the weak source.
+You can find the location of the confusing
+source from a lower-resolution image.}
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script:</font>
+\end{rawhtml}
+{\htmladdnormallink{multifield.g}{../multifield.g.txt}}
+
+\begin{arexample}
+\arline{include~'imager.g';
+include~'general.g';}{Include the imager and general scripts.}
+\arline{dowait:=T}{Tell the object system to wait for a function to finish}
+\arline{if(!tableexists('uvdata.ms')) \{ \\
+  m:=fitstoms('uvdata.ms', 'UVDATA.TB0');m.summary(verbose=T);m.close(); \\
+\} }{If the MS doesn't exist, make it from the UVFITS file} 
+
+\arline{imgr:=imager('uvdata.ms')}{Make the imager}
+\arline{if(!tableexists('clean.restored')) \{ \\
+  imgr.setimage(cellx='1.5arcsec', celly='1.5arcsec', nx=1024, ny=1024, stokes='I') \\
+  imgr.weight('robust') \\
+  imgr.uvrange(0, 60000); \\
+  imgr.clean(model='clean') \\
+  imgr.restore(model='clean')\\
+\} }{Clean a low-resolution image from the inner third of the uv plane}
+
+\arline{im:=image('clean.restored'); \\
+center:=im.coordmeasures().direction \\
+other :=im.coordmeasures([591,303]).direction \\
+im.done() }{Find the measure for the direction of the phasecenter and of another bright source}
+
+\arline{
+imgr.setimage(cellx='0.15arcsec', celly='0.15arcsec', nx=256, ny=256, stokes='I',
+              phasecenter=center);\\
+imgr.make('center.clean')\\
+imgr.weight('robust')\\
+imgr.setimage(cellx='0.15arcsec', celly='0.15arcsec', nx=256, ny=256, stokes='I',\\
+              phasecenter=other);\\
+imgr.make('other.clean')
+}{Make empty full resolution images at the two positions}
+\arline{
+imgr.clean(algorithm='mf', model=['center.clean', 'other.clean'])\\
+imgr.restore(model=['center.clean', 'other.clean'])
+}{Clean and restore the two images jointly using the mf algorithm.}
+\arline{imgr.close()}{Close the imager}
+\arline{imgr.done()}{Delete the imager object}
+\end{arexample}
+
+%\arconclusion
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Conclusion:</font>
+\end{rawhtml}
+{Note the use of the coordmeasures function in the
+image object. This return both the value of the specified pixel
+and the position in measures format which can be used elsewhere.
+
+Once we have two images, we have to use the multi-field algorithm. The
+multifield clean algorithm works as follows:
+
+\begin{enumerate}
+\item A first estimate image (usually zero) is made for each field.
+\item For the current models, the predicted visibilities 
+are calculated by applying the appropriate primary beam and then
+Fourier transforming and de-gridding.
+\item The residual visibilities are calculated and then
+gridded and Fourier transformed to obtain the residual
+image for each pointing.
+\item Each residual image is then cleaned using the appropriate PSF down
+to some level using the Clark Clean approach.
+\item The incremental clean components are added to the current model
+and the process is iterated from step 2 onwards.
+\item The procedure stops at some threshold in residual.
+\end{enumerate}
+
+}
+\end{ahrecipe}
+
+\end{document}

@@ -1,0 +1,294 @@
+\section{SDFITS}
+\label{app:sdfits}
+
+SDFITS is a convention for the use FITS binary tables to store 
+single dish data.  This appendix will eventually be turned into a full 
+fledged note.
+At the present time, it is simply a summary of the various rules
+regarding the interpretation of keywords and
+columns which, taken together, constute the Single Dish
+FITS convention.
+
+A FITS binary table is also a SDFITS binary table if it follows
+these rules.
+
+\subsection{EXTNAME keyword}
+\begin{verbatim}
+EXTNAME = 'SINGLE DISH'
+\end{verbatim}
+The EXTNAME keyword must have a value of ``SINGLE DISH''.
+A table having this value for EXTNAME is assumed to be fully compliant
+with this convention.
+
+\subsection{Virtual columns}
+Most keywords should be thought of as
+a column of the same name which has a constant value for all rows in 
+the table.
+
+There are a few exceptions to this rule.  FITS keywords which are
+required to describe the structure of the table are not virtual
+columns.  These include NAXIS, NAXIS1, NAXIS2, BITPIX, XTENSION, \linebreak[0]
+EXTNAME, EXTVER, EXTLEVEL, PCOUNT, GOUNT, TFIELDS, TFORM, TTYPE, TUNIT, TNULL,
+and TDISP.  The TDIMnnn keyword is the only table description keyword
+which may be a column as described elsewhere in this appendix.
+
+DATAMAX and DATAMIN are special keywords.  When used as keywords
+it is most likely that the writer of that table meant them to
+reflect the range of all of the data found in that table and
+not to be used on a row-by-row sense.  If the writer feels a
+need to supply row-by-row values for these two keywords, they should
+explicitly make them true columns.
+
+When creating a table, a column may be made virtual if it's
+value can be represented as a single keyword (if it
+is constant over all rows) and if that constant value is NOT
+an IEEE special value (it has a standard ASCII 
+representation) and the name of the column is 8 character or less.
+
+If a column exists which has the same name as a keyword, the
+column values should be assumed to take precedence (writers
+should attempt to ensure that this confusing situation
+does not happen).
+		
+
+\subsection{The DATA column and the DATA axes}
+The DATA column containsthe primary data array.  It is required.
+Each row of this column contains an n-dimensional array of data.  
+The axis descriptions are handled in a similar way to FITS images.  
+
+\begin{description}
+\item[The TDIMnnn convention]This is how the shape of the DATA array should
+be specified.
+\begin{verbatim}
+TDIMnnn = '(n1,n2,n3,n4...)'
+\end{verbatim}
+\begin{itemize}	
+\item The product of all of the n1, n2, n3, etc.,  must be $\leq$ the width of
+the column as given by the TFORMnnn keyword.
+\item TDIMnnn may either be a keyword (constant shaped columns)
+or it may itself be a column (variable shaped columns).
+\item The data may be stored directly - unused elements in 
+a particular row should contain the appropriate value
+to indicate an undefined value as described in the
+Binary Table Extension paper (i.e. NaN or use TNULL),
+Or the DATA column may use the P type of storage 
+(storage on ``the heap'').
+\end{itemize}
+This convention may be used with other columns which
+do NOT use the same axis description (these will be
+site specific columns and readers are free to ignore
+these columns).
+\item[Axis description]
+This description applies to any column which has \\
+\verb+TMATXnnn = T+.
+It is assumed that \verb+TMATXnnn = T+ for the DATA column even when not
+present.  The use of \verb+TMATXnnn = F+ for the DATA column is an error.
+
+Axes descriptor keywords/columns include (not all need be present for each axis):
+\begin{description}
+\item[CTYPEn]The type of physical coordinate on axis n.
+\item[CRVALn]The value of the physical coordinate on axis n at the 
+reference pixel.
+\item[CRPIXn]The array location of the reference pixel along axis
+n.  CRPIX may be a fractional pixel and/or be outside
+of the limits of the array.  This descriptor is optional for degenerate axes.
+\item[CDELTn]The increment in physical coordinates along axis
+n.  This descriptor is optional for degenerate axes.
+\item[CROTAn]The axis rotation
+\item[CUNITn]The unit of coordinate values along this axis.
+\end{description}
+Note that these are the original FITS axes description
+keywords.  It is anticipated that when an agreement is
+reached on the WCS convention that the appropriate keywords
+specified in that convention will be used to describe
+the axes here (e.g. CROTA is deprecated in favor of 
+a more general mechanism).
+
+Due to the virtual column convention, the following conflict may arrise:
+\begin{verbatim}
+TTYPE10 = 'CDELT4'
+TFORM1  = '1E'
+TUNIT10 = 'radian'
+CUNIT4  = 'degree'
+\end{verbatim}
+Writers should avoid this conflict.  Readers encountering
+such a conflict should report this as an error in the FITS
+table.  However, readers may also choose to proceed by 
+arbitrarily resolving the conflict so that some attempt
+may be made within the anaysis package to deal with
+this error.  It is recommended that the CUNITxxx specification
+take precedence over any TUNITxxx specification.  In any
+case, this conflict and the readers resolution of the
+conflict (if at all) should be reported to the user.
+
+The other standard FITS Image axis keywords may be used here.
+This will include all of the WCS convention keywords
+when they become accepted as part of the FITS standard.
+
+Defined axis types (CTYPEnnn values) for this convention (others are allowed
+but their values may be ignored by readers) are:
+
+\begin{description}
+\item[frequency-like]An 8 character string consisting
+of the 4 character axis type plus 4 characters describing the reference frame.
+An axis having this type is required.
+\begin{description}
+\item[axis types]
+\begin{itemize}
+\item 'FREQ' - frequency (Hz)
+\item 'VELO' - velocity (m/s) (radio convention, unless 
+overridden by use of the VELDEF SHARED keyword)
+\item 'FELO' - regularly gridded in frequency but expressed 
+as velocity in the optical convention (m/s)
+\end{itemize}
+\item[reference frames]
+\begin{itemize}
+\item '-LSR' : Local Standard of Rest
+\item '-HEL' : heliocentric (barycentric)
+\item '-OBS' : the frame of rest of the observer/telescope (topocentric)
+\item 'LSRK' : LSR as a kinematical definition
+\item '-GEO' : Geocentric
+\item 'REST' : rest frequency
+\item '-GAL' : Galactocentric
+\end{itemize}
+\end{description}
+\item[Longitude-like] 'RA','GLON','ELON' plus an optional WCS 
+projection code (degrees). This axis is required.
+\item[Latitude-like] 'DEC','GLAT,'ELAT' plus an optional WCS 
+projection code (degrees). This axis is required.
+\item['TIME']The time since DATE-OBS (seconds) If the TIMESYS 
+keyword is present, that keyword defines the time system for 
+this table, including this column, otherwise UTC
+is assumed.  This axis is optional.  If not present,
+a value of 0.0 should be assumed.  This axis will
+often be absent if DATE-OBS contains a time as well as a date.
+\item['STOKES']The Stokes parameter of the data.
+\begin{itemize}
+\item $1,2,3,4$ $\Rightarrow$ I,Q,U,V
+\item $-1,-2,-3,-4$ $\Rightarrow$ RR, LL, RL, LR
+\item $-5,-6,-7,-8$ $\Rightarrow$ XX, YY, XY, YX
+\end{itemize}
+This axis is optional.  If not present, a value of 1 (Stokes I) should 
+be assumed.
+\item['BEAM']Beam ID.  This axis is optional.  If not present,
+a value of 1 should be assumed.
+\item['RECEIVER']receiver ID.  This axis is optional.  If not
+present, a value of 1 should be assumed.
+\end{description}
+\end{description}
+
+\subsection{CORE keywords and columns}
+These must be provided in all SDFITS tables.  They are essential
+and common to all observations and telescopes.  All single dish
+FITS readers and writers must acknowledge (write and properly
+interpret) all CORE keywords.
+
+\begin{description}
+\item[OBJECT]A string value giving an object name.
+\item[TELESCOP]A string value giving the telescope name.
+\item[BANDWID]The total bandwidth of the backend in units of Hertz.
+\item[DATE-OBS]A string giving the observation date and optionally
+the time at the start using the new FITS y2k 
+convention.  The TIMESYS keyword may be used to
+indicate the time system.  UTC is assumed if TIMESYS is absent.
+\item[EXPOSURE]The effective integration time in seconds.
+\item[TSYS]The system temperature in Kelvin.
+\end{description}
+
+\subsection{SHARED keywords and columns}
+These have agreeded definitions and interpretions however their
+presense is obtional.  These are largely common to all observations
+and telescopes but not essential.  These may be ignored by a 
+single dish FITS reader.
+\begin{description}
+\item[OBSERVER]A string giving the observer's name.
+\item[OBSID]A string describing the observation.
+\item[PROJID]A string describing the project.
+\item[SCAN]A scan ID number.  Typically this is an identification number
+given to a chunk of data when the data is taken.  Not all telescopes
+provide a scan ID number.
+\item[OBSMODE]The type of data and observing mode (8 characters 
+total).  The type (LINE, CONT, PULS, etc) $+$ the 
+mode (PSSW, FQSW, BMSQ, PLSQ, LDSW, TLPW, etc).
+These rules do NOT define these observing modes.  Writers are strongly 
+encouraged to use the FITS comments to document these modes.
+\item[MOLECULE]A string used as a line identifier (with TRANSITI).
+\item[TRANSITI]A string used as a line identifier (with MOLECULE.)
+\item[TEMPSCAL]A string describing the scaling applied to reach 
+the output intensity scale (``TB'',``TA'',``TA*'',``TR'',``TR*'').
+\item[FRONTEND]A string giving the name of the front end device.
+\item[BACKEND]A string giving the name of the back end device.
+\item[TCAL]The calibration temp (K).
+\item[THOT]The hot load temp (K).
+\item[TCOLD]The cold load temp (K).
+\item[TRX]The receiver temp (K).
+\item[FREQRES]The frequency resolution in Hz.  This may differ 
+from the channel spacing.
+\item[TIMESYS]The time system which applies to all time columns
+and keywords (see the y2k FITS DATE agreement).
+\item[VELDEF]The velocity definition and frame (8 characters).
+The first 4 characters describe the velicity definition.  Possible
+definitions include:
+\begin{description}
+\item[RADI]radio
+\item[OPTI]optical
+\item[RELA]relativistic
+\end{description}
+The second 4 characters describe the reference frame (e.g. ``-LSR'',
+``-HEL'', ``-OBS'').  If the frequency-like axis gives a frame,
+then the frame in VELDEF only applies to any velocities given
+as columns or keywords (virtual columns).
+ \item[VFRAME]The radial velocity of the reference frame wrt the
+observer.  $V_frame - V_telescope$.
+\item[RVSYS]The radial velocity, $V_source - V_telescope$.
+\item[OBSFREQ]The observed frequency (Hz) at the reference pixel 
+of the frequency-like axis.
+\item[IMAGFREQ]The image sideband freq (Hz) corresp. to OBSFREQ.
+\item[LST]The LST (seconds) at the start of scan.
+\item[AZIMUTH]The azimuth at TIME (deg) (if the TIME axis is
+non-degenerate, then this is the azimuth at the TIME
+of the first pixel on the TIME axis.
+\item[ELEVATIO]The elevation at TIME (deg) (same caveat as for AZIMUTH)
+\item[TAU]The opacity at OBSFREQ.
+\item[TAUIMAGE]The opacity at IMAGFREQ.
+\item[TAUZENIT]The opacity per unit air mass.
+\item[HUMIDITY]The relative humidity (fraction, 0..1).
+\item[TAMBIENT]The ambient temp (K).
+\item[PRESSURE]The atmospheric pressure (mm Hg).
+\item[DEWPOINT]The dew point (K).
+\item[WINDSPEE]The wind speed (m/s).
+\item[WINDDIRE]The wind direction (deg. west of north).
+\item[BEAMEFF]The main-beam efficiency.
+\item[APEREFF]The antenna aperture efficiency.
+\item[ETAL]The rear spillover and scattering efficiency.
+\item[ETAFSS]The forward spillover and scattering efficiency.
+\item[ANTGAIN]K per Jy.
+\item[BMAJ]The major main-beam FWHM (deg).
+\item[BMIN]The minor main-beam FWHM (deg).
+\item[BPA]The beam position angle (degrees east of north).
+\item[SITELONG]The site longitude (deg).
+\item[SITELAT]The site latitude (deg).
+\item[SITEELEV]The site elevation (m).
+\item[RESTFREQ]The rest frequency (Hz).
+\end{description}
+
+\subsection{Other columns}
+Any additional columns not explicitly mentioned here
+can be added to an SDFITS table, although, obviously,
+most readers will not be able to propertly interpret
+those columns.
+
+\subsection{Multiple SDFITS tables in a single file}
+Any number of FITS binary tables can be attached to
+the same FITS table. This convention doesn't have anything
+to say about how the tables in such a file might be
+related.  This strategy, attaching multiple SDFITS binary
+tables to a single FITS file, is one possible strategy
+for storing variable length DATA.  DATA with similar
+sizes could be stored in separate tables, minimizing the
+amount of padding required in any one table without
+resorting to using the table heap convention to store
+variable length arrays.  SDFITS readers should be
+capable of appending the contents of several SDFITS
+tables to a single result.
+

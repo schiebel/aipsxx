@@ -1,0 +1,156 @@
+\chapter{UV data and imaging}
+
+\section {Class descriptions}
+
+The problem specified for the UV data and imaging group is essentially
+as specified for the Green Bank meeting; {\it i.e.} the manipulation
+of (for the prototype) visibility data, with particular regard to
+calibration, and the formation of images from data.  Thus the classes
+which have been defined and implemented closely resemble those
+described in the Green Bank report, but given the very limited amount
+of time available for this prototype, the design and implementation of
+these is often rather different from what we envisage for a full-scale
+system based on the Green Bank analysis.  In particular, the classes
+do not exhibit the full functionality specified in the Green Bank
+report, and their relationships have been somewhat simplified.
+Nevertheless, the overall scheme is basically the same as that
+decribed in the Green Bank report, although it is by no means a
+meaningul test of that proposal.
+
+A number of issues have been ignored and/or circumvented.  In
+particular, persistence is neither required nor implemented in the
+prototype.
+
+The fundamental classes are described below, and the way in which
+these differ from the corresponding classes in the Green Bank report
+are indicated.  More detailed descriptions of the classes are given in
+the header files.
+
+\begin{description}
+
+  \item[YegSet and IntYegSet -] These are the representations of the
+       data themselves.  The full functionality of YegSet as described in the
+       Green Bank report is not implemented.  We have chosen to deal with
+       data in bulk, as YegSets, rather than as individual Yegs.  In
+       addition, the selection and sorting operations have not been
+       implemented, although these are still regarded as essential to a real
+       system.
+
+  \item[Telescope -] As described in the Green bank report, this is essentially
+       a crude means of associating various kinds of objects which are
+       related in some way.  In our small prototype, this functionality
+       is largely redundant, since we can maintain the relationships 
+       in a ``hard-wired'' form, and the use of this is not really explored.
+
+  \item[Telescope Model -] This is a model of all attributes of the
+       observing telescope which are required in calibration/self-calibration
+       of YegSets, together with methods for updating the model
+       {\it e.g., } determining gain solutions and applying corrections
+       to the data on the basis of the new attributes.
+       In the prototype, this models a simple interferometer using
+       only complex gains for each receptor.
+
+       
+  \item[ImagingModel/IntImagingModel -] This is an imaging model for 
+       interferometer data.  It performs a Fourier transform 
+       on a YegSet to produce an image which represents the
+       sky brightness distribution.
+
+\end{description}
+
+In addition to the principal classes, a number of subsidiary classes
+have also been developed from an analysis of the individual classes
+described above.  Briefly, these are:
+
+\begin{description}
+
+  \item[RVector -] Real vector;
+
+  \item[DVector -] Double vector;
+
+  \item[CVector -] Complex vector;
+
+  \item[AssArray -] Associative array;
+
+  \item[GainTable -] Complex table;
+
+\end{description}
+Whilst these classes have been developed specifically to serve the
+requirements of the application-related classes, they are clearly
+likely to be generally useful.  The Vector classes used to implement
+YegSets, could also be used to implement the GainTable in a way which
+might be more efficient for operations such as applying complex gains
+to a YegSet.
+
+
+\section {Design issues, problems and lessons}
+
+A number of simplifications to the Green Bank model have been
+mentioned, and in most cases we do not envisage that these would be
+present in the ultimate design.  A number of problems which arise if
+these simplifications are not made will be discussed shortly, and
+these will have to be addressed.  However, one change which is likely
+to remain is that we may wish to work with YegSets (rather than
+individual Yegs) in many most cases.  In the prototype, we have
+assumed that all Yegs in a YegSet are associated with the same
+Telescope, TelescopeModel and ImagingModel, and we believe it may be
+more convenient (as well as efficient) to make this assumption.  We
+should still be able to cope with data from multiple telescopes, but
+we should deal with them as sets of YegSets.
+
+One of the most important problems arose out of design exercise which
+immediately preceeded the implementation of the prototype.  The Green
+Bank scheme requires many kinds of objects to be associated together,
+and proposed that this be implemented by using pointers or references
+in one object to refer to another.  It is often the case that such
+associations may involve classes derived from those for which the
+pointers are defined, and may require a cast down to the derived type
+in order to make use of methods which are not present in the base
+class.  This problem appears to be quite common, and it is almost
+certainly the case that any scheme other than the Green Bank proposal,
+which has the degree of flexibility we require, will also suffer from
+this problem.  Put simply, relying solely on the static typing of C++
+may restrict the kind of dynamic association of different kinds of
+objects which is likely to be essential.
+
+This presents no problem in the simplified prototype, but must be
+addressed in a generally extensible system.  Whilst it would be
+inappropriate to discuss solutions to this problem in this report, we
+should say that it is not insurmountable, and need not affect the
+fundamental classes and their interrelationships.  The most obvious
+difference might be the need to maintain associations between objects
+using some entity external to the objects, rather than by using
+pointers or references within the objects themselves.  This external
+entity might be a simple table containing ``handles'' for the objects
+to be associated, or might be a more complicated database-like system,
+possibly part of the Project system proposed in the Green Bank report.
+
+The prototyping exercise has confirmed that under some circumstances,
+encapsulation may be an obstacle to efficiency.  For example, if we
+wish to perform some arbitrary operation on all the elements of a
+vector or multi-dimensional array, this is best performed with direct
+access to the array itself.  It seems unlikely that it will always be
+possible to implement such operations as methods of the class, and it
+might be argued that allowing applications programmers to routinely
+modify such fundamental classes as vectors and images is worse than
+introducing methods which present an array of raw data to the
+application.  The latter might be regarded as a violation of
+encapsulation, but could be performed with some degree of control by
+the class itself.  The appropriate solution to this problem is not
+clear; there are a number of possibilities, most of which will have
+important consequences for the ultimate design of our classes.
+
+The analysis and design of high level application-oriented classes
+leads to new requirements which are best implemented as a lower layer
+of classes.  The Vector and GainTable classes are examples of these;
+with a little modification, they could serve a variety of requirements
+from many high-level classes.  It is clear that there is considerable
+scope for reuse of objects at this level.  This will require a great
+deal of interaction between designers of high level classes in order
+to specify requirements for utility classes which can be used
+commonly.  However, this is likely to result in a class library which
+is better tailored to the needs of the system, as compared to one
+which is built out of classes which have not been designed with a
+particular need in mind, and thus often turn-out to be a poor fit to
+the requirements.
+

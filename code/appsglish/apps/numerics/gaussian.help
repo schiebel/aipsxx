@@ -1,0 +1,162 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: gaussian.help,v 19.2 2004/08/25 01:44:12 cvsmgr Exp $
+
+\begin{ahfunction}{gaussian1d}{Calculate a one-dimensional Gaussian}
+
+  \ahinclude{gaussian.g}
+
+  \begin{ahdescription}
+
+    The gaussian1d function evaluates one-dimensional Gaussians. You
+    can specify the peak height of the Gaussian, the center of the
+    Gaussian and the width of the Gaussian.
+
+    The width of the Gaussian is defined to be the full width at
+    half-maximum (FWHM). If you prefer to use ``natural'' widths, a
+    constant {\tt fwhm\_to\_natural} is provided\footnote{\protect{The
+    natural width is $\sigma$ in the expression $\exp(\frac{-(x -
+    x_0)^2}{\sigma^2})$ }}. To get a natural width, multiply the FWHM
+    by this constant \footnote{\protect{$\frac{1}{\sqrt{\ln(16)}}$}}.
+    Similarly the FWHM is derived by dividing the natural width by
+    this constant.
+
+    You can evaluate the Gaussian at a number of positions by passing
+    the function a vector for ``x'' instead of a scalar.
+
+  \end{ahdescription}
+
+  \begin{ahargs}
+    \ahaddarg[in]{x}{values at which to evaluate the Gaussian}
+	         {no default}{double}
+    \ahaddarg[in]{height}{maximum value of the Gaussian}
+	         {1.0}{double}
+    \ahaddarg[in]{center}{location of the maximum value of the Gaussian}
+                 {0.0}{double}
+    \ahaddarg[in]{fwhm}{width of the gaussian}
+	         {1/fwhm\_to\_natural}{double}
+  \end{ahargs}
+  \ahreturns{The ``y'' values or fail}
+
+  \begin{ahexample}
+    This simple example calculates and plots a Gaussian.
+    \begin{verbatim}
+      include 'gaussian.g';
+      x := 1:100;
+      y := gaussian1d(x, height=3, center=30, fwhm=20);
+    \end{verbatim}
+    And then plot the example, marking the peak and FWHM of the Gaussian.
+    \begin{verbatim}
+      include 'pgplotter.g';
+      pg := pgplotter();
+      pg.env(1, 100, 0, 3, 0, 0);
+      pg.line(x,y);                   # Plot the Gaussian
+      pg.line([30,30], [0, 3]);       # Show the center
+
+      # Show the FWHM
+      pg.line([30-20/2, 30-20/2, 30+20/2, 30+20/2],   # x
+	      [0,       3/2,     3/2,     0]);        # y
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahseealso}
+    \ahlink{gaussian2d}{mathematics:gaussian2d}
+  \end{ahseealso}
+\end{ahfunction}
+%
+\begin{ahfunction}{gaussian2d}{Calculate two-dimensional Gaussian}
+
+  \ahkeyword{mathematics}{}
+  \ahkeyword{math}{}
+  \ahkeyword{gaussian}{}
+  \ahinclude{gaussian.g}
+
+  \begin{ahdescription}
+
+    The gaussian2d function evaluates two-dimensional Gaussians. You
+    can specify the peak height of the Gaussian, the center of the
+    Gaussian, the width of the major and minor axes and the
+    position-angle of the Gaussian.
+
+    The width of the Gaussian is defined to be the full width at
+    half-maximum (FWHM). If you prefer to use ``natural'' widths a
+    constant {\tt fwhm\_to\_natural} is provided\footnote{\protect{The
+    natural width is $\sigma$ in the expression $\exp(\frac{-(x -
+    x_0)^2}{\sigma^2})$ }}. To get a natural width, multiply the FWHM
+    by this constant \footnote{\protect{$\frac{1}{\sqrt{\ln(16)}}$}}.
+    Similarly the FWHM is derived by dividing the natural width by
+    this constant.
+
+    The ``position angle'' is the angle, measured counter-clockwise,
+    between the ``x'' axis and the major axis of the Gaussian.  This
+    angle is in radians.
+
+    The major axis of the Gaussian is considered to be the first axis
+    of the specified FWHM, whether or not that width is in fact wider
+    than the second axis. If you care about this, you should be
+    careful to ensure that the first width is not smaller than the
+    second.
+
+    You can evaluate the Gaussian at a number of positions by passing
+    the function a vector for ``x'' and ``y'' instead of just scalars.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg[in]{x}{values at which to evaluate the Gaussian}
+                 {no default}{double}
+    \ahaddarg[in]{y}{values at which to evaluate the Gaussian}
+                 {no default}{numeric}
+    \ahaddarg[in]{height}{maximum value of the Gaussian}
+                 {1.0}{double}
+    \ahaddarg[in]{center}{location of the maximum value of the Gaussian}
+                 {[0.0,0.0]}{double vector}
+    \ahaddarg[in]{fwhm}{width of the gaussian}
+                 {[1.0,1.0]/fwhm\_to\_natural}{double vector}
+    \ahaddarg[in]{pa}{position angle (from y-axis to major-axis) (radians)}
+                 {0.0}{double}
+  \end{ahargs}
+  \ahreturns{The ``z'' values or fail}
+  \begin{ahexample}
+    First evaluate a 2-D Gaussian onto a {\tt [100,100]} array.
+    \begin{verbatim}
+      include 'gaussian.g';
+      z := array(0, 100, 100);
+      x := 1:100
+      for (i in 1:100) {
+        y := array(x[i], 100);
+        z[,i] := gaussian2d(x, y, center=[50, 50], fwhm=[30, 15], pa=30*pi/180)
+      }
+    \end{verbatim}
+    And then show it in a plotter:
+    \begin{verbatim}
+      include 'pgplotter.g';
+      pg := pgplotter();
+      pg.env(1, 100, 1, 100, 1, 0);
+      pg.gray(z, 1, 0, [0, 1, 0, 0, 0, 1])
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahseealso}
+    \ahlink{gaussian1d}{mathematics:gaussian1d}
+  \end{ahseealso}
+\end{ahfunction}

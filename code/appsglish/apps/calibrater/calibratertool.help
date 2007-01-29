@@ -1,0 +1,1688 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: calibratertool.help,v 1.6 2006/04/03 06:39:09 gvandiep Exp $
+
+\begin{ahobject}{calibrater}{Synthesis calibration (self- and cross-)}
+\begin{ahdescription}
+A {\tt calibrater} tool allows synthesis calibration operations
+within \aipspp . A separate {\tt calibrater} tool  needs to be created
+for each separate measurement set for which processing is to be
+performed.  
+\end{ahdescription}
+
+\ahfuncs{}
+
+
+%%************************************************************
+
+\begin{ahconstructor}{calibrater}{Construct a calibrater tool}
+
+\begin{ahargs}
+\ahaddarg[in]{filename}{MeasurementSet file name.  No default}{}{String}
+\ahaddarg[in]{compress}{Compress calibration columns?}{F}{Bool}
+%%\ahaddarg[in]{host}{Host on which to run imager. String '' means localhost.}{''}{String}
+%%\ahaddarg[in]{forcenewserver}{Flag to force a new imager client}{T}{Bool}
+\end{ahargs}
+\ahreturns{calibrater tool}
+
+
+\begin{ahdescription}
+
+Create a {\tt calibrater} tool, and attach it to the specified
+Measurement Set. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS')      
+c.solve()
+c.close()
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+%%************************************************************
+
+\begin{ahfunction}{setdata}{Set the data selection for subsequent processing}
+
+\begin{ahargs}
+\ahaddarg[in]{mode}{Type of data selection: channel or velocity}{'none'}{String from 'none'|'channel'|'velocity'}
+\ahaddarg[in]{nchan}{Number of channels to select (mode='channel')}{1}{Int}
+\ahaddarg[in]{start}{Start channel (1-relative) (mode='channel'}{1}{Int}
+\ahaddarg[in]{step}{Step in channel number (mode='channel')}{1}{Int}
+\ahaddarg[in]{mstart}{Start velocity (e.g. '20Km/s')}{'0km/s'}{Quantity}
+\ahaddarg[in]{mstep}{Step in velocity (e.g. '100m/s'}{'0km/s'}{Quantity}
+\ahaddarg[in]{uvrange}{UV range (in klambda) (e.g. [0, 50]).  Default is no restriction.}{0}{Vector of Doubles}
+\ahaddarg[in]{msselect}{TAQL selection string.  Default is no selection.}{' '}{String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function selects which data will be treated by subsequent
+execution of the {\stfaf solve} and {\stfaf correct} functions.  Note
+that data selection is not cumulative; any selection made in a
+previous call is replaced by the selection from the current call.
+
+The arguments are used as follows:
+
+\begin{description} 
+
+\item[mode] indicates how you select the desired channels.  A value of
+'none' means select all data (make no channel selection); all channel-
+or velocity-dependent arguments are ignored in this case.  A value of
+'channel' indicates that you select by channel number.  A value of
+'velocity' indicates that you select by radio velocity and a value
+'opticalvelocity' indicates that you select by optical velocity.
+
+\item[nchan] is the number of selected channels for mode='channel'. It
+defaults to 1; to select all channels, set to 0.
+
+\item[start] is active only when {\stfaf mode='channel'} and 
+specifies the first channel to be selected.  It defaults to 1.
+
+\item[step] is active only when {\stfaf mode='channel'}
+and specifies the increment between selected input channels. 
+It defaults to 1.
+
+The channels are centered on velocities: start, start+step,
+start+2*step, etc.  
+
+\item[mstart] is active only when {\stfaf mode='velocity'} 
+or {\stfaf mode='optical velocity'}. It specifies 
+the start velocity to select as a quantity string. The default is 0.
+
+\item[mstep] is active only when {\stfaf mode='velocity'} 
+or {\stfaf mode='optical velocity'}. It specifies 
+the increment between selected channels as a quantity string.  
+The default is 0 which is not very useful...
+
+The channels are centered on velocities: mstart, mstart+mstep,
+mstart+2*mstep, etc.  
+
+\item[msselect] is used to specify a subselection of data according to
+field, spectral window, time, etc., and should be specified as a valid
+\htmladdnormallink{TaQL}{../../notes/199/199.html} expression.
+
+\end{description}
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+\end{verbatim}
+
+Select according to channel:
+
+\begin{verbatim}
+c.setdata(mode='channel',nchan=512,start=1,step=1,msselect='FIELD_ID==1')
+\end{verbatim}
+
+Select according to velocity:
+\begin{verbatim}
+c.setdata(mode='velocity', nchan=64, mstart='20km/s', mstep='-100m/s');
+\end{verbatim}
+%%\end{ahexample}
+
+Reset selection to the entire dataset
+\begin{verbatim}
+c.setdata()
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{setapply}{Arrange to apply calibration}
+
+\begin{ahargs}
+\ahaddarg[in]{type}{Component type}{}{String from
+'B','BPOLY','G','GSPLINE','D','P','T','TOPAC','GAINCURVE','M','MF','K'}
+\ahaddarg[in]{t}{Interpolation interval (seconds)}{0.0}{Float}
+\ahaddarg[in]{table}{Calibration table name}{' '}{String}
+\ahaddarg[in]{interp}{Interpolation type (in time)}{'nearest'}{String from 'nearest', 'linear', 'aipslin'}
+\ahaddarg[in]{select}{TAQL selection string. Default is no selection}{' '}{String}
+\ahaddarg[in]{spwmap}{Spectral windows to apply}{-1}{Vector of Int}
+\ahaddarg[in]{unset}{If T, unset apply of this type}{F}{Bool}
+\ahaddarg[in]{opacity}{Array-wide zenith opacity (for type='TOPAC')}{0.0}{Float}
+\ahaddarg[in]{rawspw}{Spectral window with data phases for application}{-1}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is used to specify the calibration components which should be
+applied during subsequent execution of the {\stfaf solve} and 
+{\stfaf correct} functions.  This function will be executed as many
+times as necessary to specify all desired calibration components.
+
+Each calibration component represents a separate calibration matrix
+correction included in the measurement equation. The different types
+correspond to different instrumental and atmospheric effects.
+Calibration components are available as calibration tables generated
+by previous {\stfaf solve} executions (types
+'B','BPOLY','G','GSPLINE','D','T','M','MF','K'), or are calculated
+analytically on the fly (types 'P', 'TOPAC', 'GAINCURVE').  See
+the {\stfaf setsolve} section for more information about the
+solvable types.
+
+Use the {\stfaf interp} parameter to specify the desired type of
+time-dependent interpolation.  Use {\stfaf interp='nearest'} to
+calibrate each datum with the calibration value nearest in time.  Use
+{\stfaf interp='linear'} to calibrate each datum with calibration
+phases and amplitudes linearly interpolated from neighboring (in time)
+values.  In the case of phase, this mode will assume that phase jumps
+greater than 180 degrees between neighboring points indicate a cycle
+slip, and the interpolated value will follow this change in cycle
+accordingly.  Use {\stfaf interp='aipslin'} to emulate the basic
+interpolation mode used in classic AIPS, i.e., linearly interpolated
+amplitudes, with phases derived from interpolation of the complex
+calibration values.  While this method avoids having to track cycle
+slips (which is unstable for solutions with very low SNR), it will
+yield a phase interpolation which becomes increasingly non-linear as
+the spanned phase difference increases.  The non-linearity mimics the
+behavior of {\stfaf interp='nearest'} as the spanned phase difference
+approaches 180 degrees (the phase of the interpolated complex
+calibration value initially changes very slowly, then rapidly jumps to
+the second value at the midpoint of the interval). If the uncalibrated
+phase is changing this rapidly, a 'nearest' interpolation is not
+desirable.  Usually, {\stfaf interp='linear'} is the best choice.
+
+The {\stfaf interp} parameter is applicable to any calibration type,
+as long as there are sufficient solutions available to perform the
+interpolation.  Note that calibration solutions which have been
+determined for only one timestamp will default to 'nearest'.  More
+interpolation options (e.g., 'cubic') will be added in the near
+future.
+
+Currently, the interpolation interval is forced to {\stfaf t=0} for
+solved-for components, which means that the interpolation (or
+extrapolation) will extend indefinitely, as circumstances dictate.  A
+future version of calibrater will use this parameter to limit the
+range in time over which interpolation/extrapolation will be
+permitted.  
+
+The interpolation type and timescale are, by definition, irrelevant
+for analytically calculated calibration types (e.g., the parallactic
+angle, P).
+
+For solved-for components, the filename specified in {\stfaf table}
+parameter must contain a calibration table of the type specified in
+{\stfaf type}.
+
+Use the {\stfaf select} parameter to specify selection of a subset of
+calibration measurements from the table to be applied to the
+visibility data.  Arbitrary cross-calibration is possible by combining
+this function with the {\stfaf setdata} function.  The string
+specified must be a valid
+\htmladdnormallink{TaQL}{../../notes/199/199.html} expression.
+
+The {\stfaf spwmap} parameter is used to indicate how solutions
+derived from different spectral windows should be applied to other
+spectral windows.  Nominally, data in each spectral window will be
+corrected by solutions derived from the same spectral window.  This is
+the default behavior of {\stfaf spwmap}, i.e., if {\stfaf spwmap} is
+not specified, calibrater will insist that data be corrected by
+solutions from the same spw.  Otherwise, {\stfaf spwmap} takes a
+vector of integers indicating which spectral window {\em solutions} to
+apply to which spectral window {\em data}, such that {\tt spwmap[j]=i}
+causes solutions derived from the i-th spectral window to be used to
+correct the j-th spectral window.  For example, if (say) bandpass
+solutions are available for spws 1 \& 3, and it is desired that these
+be applied to spws 2 \& 4 (as well as 1 \& 3), respectively, use
+{\stfaf spwmap=[1,1,3,3]}.  Even if some spws do not require an
+explicit {\stfaf spwmap} setting, yet one or more does, it is safest
+to specify it explicitly for all, e.g., {\stfaf spwmap=[1,2,4,4]}
+indicates that spw 3 will be corrected with solutions from spw 4, and
+the others will behave nominally.  Note that if no solutions exist 
+for any of the spws specified in {\stfaf spwmap}, an error message
+will result.
+
+For {\stfaf type='TOPAC'}, an elevation-dependent opacity correction
+will be applied according to the zenith opacity value supplied in the
+{\stfaf opacity} parameter.  Currently, only one zenith opacity value
+can be supplied, and it is used for all antennas.
+
+For {\stfaf type='GAINCURVE'}, an elevation-dependent correction
+will be applied using parameters read from the data repository.
+Currently, this is only supported for the VLA.
+
+Use the {\stfaf rawspw} parameter to specify a spectral window from
+which the phase will be copied for application (in a baseline-based
+manner) to the data selected in {\stfaf setdata}.  The phases will be
+scaled by the appropriate frequency ratio.  Note that this option
+currently only works when solving for or applying {\stfaf
+type='GSPLINE'} solutions.
+
+Currently, only single-polarization data will work with
+{\stfaf type='BPOLY'} or {\stfaf type='GSPLINE'}.
+
+Use the {\stfaf state} function to review the list of calibration
+components that have been set for application.  To deselect a single
+component, run {\stfaf setapply} with {\stfaf unset=T} and {\stfaf type}
+accordingly.  Use the {\stfaf reset} function to delect all components.
+
+Pending improvements:
+
+\begin{itemize}
+\item Enable variety of interpolation modes and timescales
+\item Allow for antenna- and time-dependent opacities
+\item Generalize BPOLY and GSPLINE to dual polarization
+\item Provide more user-friendly selection
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setdata();
+c.setapply (type='G', table='gcal2', select='FIELD_NAME==FIELD1')
+c.setapply (type='P' t=10.0)     
+c.correct();
+c.close();
+\end{verbatim}
+
+In this example, 'G' solutions from FIELD1 in table gcal2, and 'P'
+solutions calculated on a 10-second timescale are applied to
+the entire visibility dataset.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{smooth}{Produce a smooth and/or interpolated table}
+
+\begin{ahargs}
+\ahaddarg[in]{infile}{Input calibration table}{No default}{String}
+\ahaddarg[in]{outfile}{Output calibration table}{No default}{String}
+\ahaddarg[in]{append}{Append to an existing output table?}{F}{Bool}
+\ahaddarg[in]{select}{TAQL selection string}{No selection}{String}
+\ahaddarg[in]{smoothtype}{The smoothing filter to be
+used}{'mean'}{String from 'mean', 'median', 'smean' (sliding mean),
+'smedian' (sliding median) or 'none'}
+\ahaddarg[in]{smoothtime}{Smoothing filter time constant (sec)}{0.0}{Float}
+\ahaddarg[in]{interptype}{The type of interpolation
+desired}{'spline'}{String from 'nearest','spline','linear','cubic',or 'none'}
+\ahaddarg[in]{interptime}{Sampling interval for interpolation (sec)}{0.0}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is intended to be used for interpolating and/or
+smoothing Jones matrices derived from one or more sources
+(calibraters).  The time-stamps at which the interpolating function is
+sampled is defined by the selection (via the select argument) and the
+Measurement Set associated with the input calibration table.  The
+interpolated values are then written to the output calibration table.
+A smoothing filter can be optionally applied to the input table and
+the smoothed table then used to derive the specified interpolation
+function.
+
+A value of 'none' for either {\tt interptype} or {\tt smoothtype}
+switches off interpolation or smoothing respectively.  A value of
+'none' for both these would therefore just copy the input table to the
+output table.
+
+The size of the 'mean' and 'median' smoothing filters is truncated (as
+against rounded) to the nearest value smaller than or equal to the
+specified smoothing time constant.  This means that the smoothing
+filter size can be smaller than the specified time constant by some
+fraction of the sampling interval in the input table.  The 'smean' and
+'smedian' are sliding versions of the 'mean' and 'median' filters.
+The sliding step is always one pixel, with the filter centered on each
+pixel (gain solutions in the input table).  At the boundaries, the
+filters expand (from the starting edge) or shrink (for the ending
+edge) from a size of one pixel (for the last and first point) till
+they are of the size smaller than or equal to the specified
+time-constant.
+
+The filter output is used for deriving the parameters of the specified
+interpolation function.  The interpolated function is then sampled at
+the sampling interval specified by {\tt interptime}.  The output table
+can then be applied to the data as usual (via the setapply()->correct()
+sequence).
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.smooth(infile='in.gcal',outfile='out.gcal', append=F, select='',smoothtype='median',smoothtime=10,interptype='spline');
+c.setapply (type='G', table='out.cal', select='FIELD_NAME==FIELD1')
+c.correct();
+c.close();
+\end{verbatim}
+
+In this example, 'G' solutions in the table 'in.gcal' are first
+smoothed using the median filter with a time-constant of 10sec and
+then interpolated on timestamps from the associated MS using the
+spline interpolation function.  The output is written into 'out.gcal'
+and applied to a field named 'FIELD1'.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+
+%%************************************************************
+
+\begin{ahfunction}{setsolve}{Arrange to solve for calibration}
+
+\begin{ahargs}
+\ahaddarg[in]{type}{Component type}{}{String from 'G','T','B','D','M','MF','K'}
+\ahaddarg[in]{t}{Solution interval (in sec)}{60.0}{Float}
+\ahaddarg[in]{preavg}{Pre-averaging interval (in sec)}{60.0}{Float}
+\ahaddarg[in]{phaseonly}{Solve only for phase?}{F}{Bool}
+\ahaddarg[in]{refant}{Reference antenna.  Default is none.}{-1}{Int}
+\ahaddarg[in]{table}{Output calibration table name}{}{String}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Bool}
+\ahaddarg[in]{unset}{If T, unset solve of this type}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+
+\begin{ahdescription}
+
+This function specifies the calibration component will be solved for
+by the {\stff solve} function.  Currently, only one type should
+be solved for at one time.
+
+Each calibration component represents a separate calibration matrix
+correction included in the measurement equation. The different types
+correspond to different instrumental and atmospheric effects.
+Currently, the solvable calibration components are types 'G','T','B',
+and 'D', which are antenna-based, and, 'M', 'MF', and 'K' which are
+baseline-based.  Arrange to pre-apply any existing calibration components (of
+types other than the solved-for one) using the {\stfaf setapply}
+function.
+
+The solution interval {\stfaf t}, if $>$ 0.0, specifies the duration
+of data used for each calibration solution.  In general, the solution
+intervals are measured from the beginning of data segments for each
+field and spectral window.  If {\stfaf t} is large enough, a single
+solution may encompass data from more than one scan or even the whole
+observation (per field and spectral window).  The solution interval
+represents a coherence time, not an integration time w.r.t. any gaps
+in the time series; in effect, such gaps are ignored, and the latest
+time in the solution is never more than {\stfaf t} seconds after the
+earliest time.  If {\stfaf t} $=$ 0.0, one solution per scan will be
+computed regardless of the (possibly variable) scan durations.  If
+{\stfaf t} $=$ -1, one solution will be obtained for each
+unique timestamp in the data.
+
+For types B, G, and T, the Measurement Equation is always
+assumed stationary on the timescale of the solution ({\stfaf t}), and
+so the data are appropriately normalized and automatically averaged
+within the solution interval before solving.  For type D, there
+are systematic variations (e.g., parallactic angle, P) in Measurement
+Equation terms (even after pre-applied) on timescales shorter than the
+expected variation in the D terms.  In this case, it is necessary to
+specify a pre-averaging interval which is shorter than the solution
+interval.  This is done using the {\stfaf preavg} parameter, which
+defaults to 60 seconds.
+
+Supported calibration types:
+
+\begin{description}
+\item[G] Antenna-based, multiplicative complex gains
+\item[B] Antenna-based complex bandpass; a frequency-dependent version of G
+\item[T] Antenna-based polarization-independent (tropospheric) gain; a
+polarization-independent version of G
+\item[D] Antenna-based instrumental polarization leakage
+\item[M] Baseline-based complex gains (cf, G)
+\item[MF] Baseline-based complex bandpass (cf, B)
+\item[K] Baseline-based fringe-fitting (phase,delay,delay-rate;
+currently limited to delays and delay-rates in the central ambiguity)
+\end{description}
+
+Pending improvements:
+
+\begin{itemize}
+\item Fix multi-setsolve (serial) mode
+\item Improve phase-only mode (per type), internal refant usage
+\item Add fixed mean gain modulus option
+\item Enable generalized solution modes, e.g., per-field, etc.
+(and rationalize {\stfaf t=0} and {\stfaf t=-1} accordingly).
+\end{itemize}
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply (type='P',t=5.0);
+c.setsolve (type='G',t=300.0, refant=3, table='gcal');
+c.solve();
+c.done();
+\end{verbatim}
+
+In this example, analytic (non-solvable) parallactic angle corrections
+are applied on a 5-second timescale before G solutions are obtained on
+a timescale of 300 seconds.  The resulting solutions are
+phase-referenced to antenna 3, and stored in a calibration table
+called 'gcal'.
+
+\begin{verbatim}
+c.reset();
+c.setapply (type='P',t=5.0);
+c.setapply (type='G',table='gcal');
+c.setsolve (type='D',t=86400.0, preavg=60.0, refant=3, table='dcal');
+c.solve();
+c.done();
+\end{verbatim}
+
+In this example, the solve/apply state of the calibrater tool is reset
+and then the P and G corrections (from above) are applied before
+solving for D solutions on a diurnal timescale.  Note that the data
+will be averaged only to 60 seconds before the solution.  The resulting
+D solutions are stored in a table called 'dcal'.
+
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{setsolvegainpoly}{Specialization of setsolve}
+
+\begin{ahargs}
+\ahaddarg[in]{table}{Output calibration table name}{' '}{String}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Bool}
+\ahaddarg[in]{mode}{Phase or Amplitude mode?}{'PHAS'}{String from 'PHAS', 'AMP', or 'PHASAMP'}
+\ahaddarg[in]{degree}{Order of polynomial)}{3}{Int}
+\ahaddarg[in]{refant}{Reference antenna.  Default is none.}{-1}{Int}
+\ahaddarg[in]{unset}{If T, unset solve of this type}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is a specialization of the {\stfaf setsolve} method.
+
+\end{ahdescription}
+
+\end{ahfunction}
+
+%%************************************************************
+
+\begin{ahfunction}{setsolvegainspline}{Specialization of setsolve for
+cubic spline G (time-dependent gain) solving}
+
+\begin{ahargs}
+\ahaddarg[in]{table}{Output calibration table name}{' '}{String}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Bool}
+\ahaddarg[in]{mode}{Phase or Amplitude mode?}{'PHAS'}{String from 'PHAS', 'AMP', or 'PHASAMP'}
+\ahaddarg[in]{preavg}{Pre-averaging interval (in sec)}{0.0}{Float}
+\ahaddarg[in]{splinetime}{Spline timescale (sec)}{10800}{Float}
+\ahaddarg[in]{refant}{Reference antenna.  Default is none.}{-1}{Int}
+\ahaddarg[in]{npointaver}{}{10}{Int}
+\ahaddarg[in]{phasewrap}{}{250}{Float}
+\ahaddarg[in]{unset}{If T, unset solve of this type}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is a specialization of the {\stfaf setsolve} method which
+should be used when cubic spline G solutions are desired, e.g., when
+SNR on calibrators is very low.  Currently, this solving mode is available
+only for single polarization data.  
+
+The visibility data are averaged in frequency (for multi-channel data)
+prior to the solution.  The spline timescale (time between knots) is
+specified in the {\stfaf splinetime} paramter, which defaults to 
+10800 seconds (3 hours).  
+
+The solution is performed for phase and/or amplitude according
+to the {\stfaf mode} parameter.  For phase solutions only, use
+{\stfaf mode='PHAS'}.  For amplitude solutions only, use
+{\stfaf mode='AMP'}.  If both are desired,
+use {\stfaf mode='PHASAMP'}, and both will be solved for using the
+same spline timescale (this mode also assumes that all calibrators
+have the correct relative flux densities).
+If solving for phase and amplitude separately (usually in this order), 
+be sure run setapply to specify application of the first one when 
+solving for the second one.  The combined solution will be stored
+in the table specified for the second solve.  If it is desired that
+the first solution table be preserved, use a new {\stfaf table} 
+name.  
+
+Different spline timescales may be used
+for phase and amplitude.  If multiple fields are present, they will
+be used together to obtain a single solution.  In {\stfaf mode='AMP'},
+it is important that the model flux densities of each fields be correct,
+so that a single, consistent gain function can be properly determined.
+
+The parameters {\stfaf npointaver} and {\stfaf phasewrap} tune the
+phase-unwrapping algorithm when {\stfaf mode $=$ 'PHAS'}.  Cycle slips
+are detected (and removed before the spline solve) when the median
+phase a sequence of length {\stfaf npointaver} (in integrations)
+differs by more than {\stfaf phasewrap} degrees from the previous
+sequence. 
+
+When {\tt solve} is run, the solutions are obtained, and postscript
+plot of baseline data and solutions is generated and deposited in
+your working directory.  Its name is the same as {\tt table}, with
+{\tt .ps} appended.
+
+At this time, it is not yet possible to plot the {\em antenna-based}
+solutions themselves using {\stfaf plotcal}.
+
+After obtained, these solutions should be applied using type='GSPLINE'
+in {\stfaf setapply}.
+
+Pending improvements:
+
+\begin{itemize}
+\item Generalize to dual polarization
+\item Enable plots of antenna-based solutions (currently, only plots of
+      baseline data and solutions are produced)
+\end{itemize}
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setsolvegainspline (table='gcal',mode='PHAS');
+c.solve();
+
+c.reset();
+c.setsolvegainspline (table='gcal',mode='AMP');
+c.solve();
+c.done();
+\end{verbatim}
+
+In this example, a spline solution is first found for phase,
+then for amplitude.  
+
+\end{ahexample}
+\end{ahfunction}
+
+%%************************************************************
+
+\begin{ahfunction}{setsolvebandpoly}{Specialization of setsolve for
+polynomial B (bandpass) solving}
+
+\begin{ahargs}
+\ahaddarg[in]{table}{Output calibration table name}{' '}{String}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Bool}
+\ahaddarg[in]{degamp}{Polynomial degree for amplitude solution}{3}{Int}
+\ahaddarg[in]{degphase}{Polynomial degree for phase solution}{3}{Int}
+\ahaddarg[in]{visnorm}{Normalize data prior to solution}{F}{Bool}
+\ahaddarg[in]{bpnorm}{Normalize result?}{T}{Bool}
+\ahaddarg[in]{maskcenter}{Number of channels to avoid in center of each band}{1}{Int}
+\ahaddarg[in]{masksedge}{Fraction of channels to avoid at each band edge (in \%)}{5}{Int} 
+\ahaddarg[in]{refant}{Reference antenna}{-1}{Int}
+\ahaddarg[in]{unset}{If T, unset solve of this type}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is a specialization of the {\stfaf setsolve} method
+which should be used to arrange for bandpass solving when polynomial
+solutions for B are desired, e.g., when SNR on calibrators is very
+low.  Currently, this solving mode is available only for single
+polarization data.
+
+Prior to the solution, the visibility data are averaged in time, and
+if multiple spectral windows are present (after running {\stfaf
+setdata}), they are concatenated in frequency and one polynomial 
+solution is delivered.
+
+The solution is performed for both phase and amplitude, to the
+polynomial degrees specified in {\stfaf degamp} and {\stfaf degphase}
+(they can be different), and the result will be stored in the same
+table.  The frequency domain of the solutions is limited to only the
+range of frequencies selected in {\stfaf setdata}.  When correcting
+data with these solutions (for other solves or with {\stfaf correct}),
+only data within this domain will be corrected.  Data outside (e.g.,
+edge channels avoided in {\stfaf setdata} for the solve), will not be
+corrected.  Therefore, the same (or narrower) channel selection is
+recommended for all operations using solutions produced by this
+function and {\stfaf solve()}.
+
+Like other solve types, the {\stfaf solve()} function actually
+performs the solve according to the parameters set in this function,
+and for this type, it generates a plot file which shows the baseline
+spectra delivered to the solver (i.e., corrected according to any
+{\stfaf setapply()} invocations, and time-averaged), with the derived
+solution (products of antenna-based bandpass polynomials) overlaid.
+
+After solving, these solutions should be applied using type='BPOLY'
+in {\stfaf setapply}.
+
+The {\stfaf visnorm} parameter is used to normalize the assembled
+spectral data, in a per baseline manner.  If {\stfaf visnorm=T} is
+used, this will have the effect of removing any
+non-frequency-dependent closure errors (e.g., as caused by source
+structure, or introduced by the instrument) from the data, and should
+be used with caution.  The resulting solutions will be effectively
+normalized as well.  When {\stfaf visnorm=F} is used, closure errors
+in the data (as supplied to the solver) may be visible in the form of
+offsets between the data and solutions.  For bandpass calibration,
+this is usually ok, as the {\em shape} of the bandpass is the most
+important aspect of the solution.
+
+The {\stfaf bpnorm} parameter controls normalization of the resulting
+solutions {\em after} the solve.  Note that the baseline spectra plot
+does not show normalized solutions, even if {\stfaf bpnorm=T} (the
+plot shows the data as provided to the core solver, and is generated
+before the solutions are normalized).
+
+Note that use of {\stfaf bpnorm=T} or {\stfaf visnorm=T} will remove or 
+prevent the storage of scaling information in the bandpass solutions.  
+Sometimes it is desirable to store absolute scaling information in the
+bandpass solution; in these cases, {\stfaf bpnorm} and {\stfaf visnorm}
+must both be F.
+
+The {\stfaf maskcenter} and {\stfaf maskedge} parameters control how
+many channels are ignored on-the-fly, at the center and edges of each
+input spectral window, respectively.  To avoid edge channels, it is
+almost always better to flag these channels directly, or select
+against them in {\stfaf setdata}.  Aggressive use of maskedge (large
+values), will yield polynomial solutions which will tend to diverge at
+the edges (especially when the polynomial degree is also high),
+because maskedge does not change the frequency domain of the
+solutions.  Such solutions should be used with caution in subsequent
+operations.  (It is best to avoid use of maskedge.)
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('ngc5921.ms');
+c.setsolvebandpoly(table='bpoly',degamp=5,degphase=7);
+c.solve();
+c.done();
+\end{verbatim}
+
+In this example, amplitude (degree 5) and phase (degree 7) Chebychev
+polynomial bandpasses are determined using the default parameters.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+%%************************************************************
+
+\begin{ahfunction}{state}{Request the apply/solve state of the calibrater tool}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+Request the apply/solve state of the calibrater tool.  A listing of
+all calibration components that have been set for application or
+solving is written to the logger.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply ('P', 5.0);
+c.setsolve ('G', 300.0, F, 3, 'gcal_1', T);
+c.state();
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{reset}{Reset the selected apply and/or solve components}
+
+\begin{ahargs}
+\ahaddarg[in]{apply}{If T, unset all apply settings}{T}{Bool}
+\ahaddarg[in]{solve}{If T, unset all solve settings}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+Resets the apply and/or solve components previously set by setapply and
+setsolve.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply ('P', 5.0);
+c.setsolve ('G', 300.0, F, 3, 'gcal_1', T);
+c.state();
+c.reset(apply=T,solve=F);
+
+c.reset()
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{initcalset}{Re-initialize the calibration scratch columns}
+\begin{ahargs}
+\ahaddarg[in]{calset}{Not yet used.}{1}{Int}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+
+This function re-initializes the calibration scratch columns:
+MODEL\_DATA to unity (in total intensity, and unpolarized), and
+CORRECTED\_DATA to (observed) DATA.  \end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply ('P', 5.0);
+c.setsolve ('G', 300.0, F, 3, 'gcal_1', T);
+c.state();
+c.initcalset();
+c.solve();
+
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{solve}{Solve for the selected calibration components}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+Execution of this function initiates a solve for the calibration component
+specified in a previous {\stfaf setsolve} execution.  Existing calibration
+components (as specified in one or more {\stfaf setapply} executions) will
+be appropriately applied to the observed and model data according to their
+position in the Measurement Equation, and their commutation properties.  
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply ('P', t=10)
+c.setsolve ('G', 300.0, F, 3, 'gcal_1', T);
+c.solve();
+c.close();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{correct}{Apply calibration information}
+\ahreturns{Bool}
+
+\begin{ahdescription} 
+
+This function applies the calibration components specified via the
+{\stff setapply} function to the observed visibility data and writes
+the result to the CORRECTED\_DATA column of the Measurement Set.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.setapply ('G', 10.0, 'gcal_1')
+c.correct();
+c.close();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{modelfit}{Fit single-component source models
+to the uv-data}
+
+\begin{ahargs}
+\ahaddarg[in]{niter}{Number of fitting iterations to execute}{0}{Int}
+\ahaddarg[in]{type}{The component type}{"P"}{String: "P", "G", or "D"}
+\ahaddarg[in]{par}{Starting guess for component parameters}{[1,0,0]}{Vector of Int}
+\ahaddarg[in]{vary}{Control which parameters to let vary in fit}{[]}{Vector of Bool}
+\ahaddarg[in]{file}{Optional output component list table}{""}{String}
+\end{ahargs}
+\ahreturns{Vector containing resulting fit parameters}
+
+
+\begin{ahdescription}
+
+This function enables fitting single component source models
+to the uv-data selected by a prior run of {\tt setdata}.  If the
+selected data span multiple spectral windows, a single model
+will be fit to them jointly.
+
+The function is in the calibrater tool because it is desirable to fit
+a resolved calibrator with a resolved component shape after phase
+calibration but before amplitude calibration, to improve the
+quality of the amplitude calibration solution. 
+
+The supported component types are points, elliptical Gaussians, or 
+elliptical Disks, and their integrated flux density, direction 
+offset (from the phase center), and (if applicable) their shape
+parameters are derived using a non-linear fitting algorithm.
+A subset of their parameters may optionally be held fixed.
+
+Use of {\tt modelfit} is straightforward:
+
+The {\tt niter} parameter is used to specify how many non-linear
+fitting iterations should be used before quitting.  Since the adequacy
+of the model component choice is not known a priori, {\tt modelfit}
+does not attempt to automatically detect convergence; it will do as
+many iterations as specified (not counting iterations which spuriously
+increase chi-squared).  A few to a few 10s of iterations is usually
+adequate.  If not, then the requested fit is ill-conditioned.
+
+The {\tt type} parameter is used to indicate which component type to
+solve for.  Use {\tt "P"} for a point, {\tt "G"} for an elliptical Gaussian,
+or {\tt "D"} for an elliptical disk.  {\tt modelfit} will do its best to
+fit the selected shape.
+
+The {\tt par} parameter is used to specify a starting guess for the
+component parameters.  Three parameters are required for a point
+component: integrated flux density, and RA and Decl direction
+offsets (arcsec). Three additional parameters are required for the elliptically
+shaped components: the ellipse major axis size (arcsec), the ellipse
+axial ratio ($<$ 1), and the major axis position angle (deg, measured
+from North thru East on the sky).  
+
+The {\tt vary} parameter is a vector of Bools that indicate which of
+the component parameters specified in {\tt par} should be varied in
+the fit.  The default is to vary all of the component parameters (all
+{\tt T}).  If any elements of {\tt vary} are set {\tt F}, the
+corresponding parameters in {\tt par} will be held fixed in the
+fitting.
+
+The {\tt file} parameter is used optionally to specify a table name in
+which will be created at the conclusion of the fit to contain the 
+result component (as a componentlist).  This componentlist table
+can be used in other applications, e.g., in {\tt imager.ft()} to
+specify a model for filling the MODEL\_DATA column for subsequent
+processing.
+
+It is generally very important to give a decent ("close enough")
+starting guess for the parameters.  The way to think about this is
+that, for a single point component, all peaks (positive or negative)
+in the dirty image correspond to local minima in chi-square, and the
+fit can be trapped in any of them.  You want the fit to get trapped in
+the correct (global) one.  This generally means that the first guess
+should be within a factor of a few of the correct flux density, within
+a (naturally weighted) beamwidth of the correct direction offset, and
+a factor of a few of the correct size. The other parameters are
+somewhat less sensitive to the starting guess (being limited in range
+or cyclical).  These estimates of adequacy can be complicated by
+correlations between the parameters for some sets of values.
+Interactive and autmatic means of providing optimal first guesses are
+under consideration for future versions, which will also support
+multiple components.
+
+The errors reported by modelfit are robust if the data weights are
+strictly inverse variance weights with no arbitrary global scaling and
+the model component choice is appropriate.  If these conditions hold,
+the reduced chi-quared should approach $\sim 1$, and the parameter
+error estimates will be solid formal errors.  If the weights are
+arbitrarily scaled, so too will be the chi-squared and error
+estimates.  Interpret these with caution!  An excess in the converged
+chi-square could indicate either a global mis-scaling of the weights
+(hopefully), or that the model component just isn't a good
+representation of the source.  In either case, the reported errors
+will be wrong.  If the weights are mis-scaled {\em and the model is,
+in fact, a good fit}, then the errors will be under-estimated by
+approximately the square root of the reduced chi-squared value (which
+may be $<$ 1, in which case the errors are actually over-estimated).
+
+
+Pending improvements:
+
+\begin{itemize}
+\item Provide interactive (and automatic) means of specifying 
+components.  This will be particularly useful when the source
+is not expected to lie at the phase center.
+
+\item Fit multiple components.  This is mainly limited by the 
+inadequate means of specifying a priori components.  The multiple
+component option may be limited to a standalone modelfit application,
+to keep the {\tt calibrater.modelfit} interface simple.
+
+\item Improve error estimation and reporting, including access
+to the full covariance matrix.
+
+\item Permit on-the-fly averaging in frequency and time, to 
+improve performance.
+
+\item Fit for component polarization 
+
+\item Fit for spectral index for multi-spectral window or
+multi-channel data.
+
+\item Support more component shapes, e.g., optically thin
+ellipsoid, elliptical rings, etc.
+
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+mycal:=calibrater('uvmod_test.ms');
+
+# an offset point source
+mycal.setdata(msselect='FIELD_ID==4');    # select field 4
+mycal.modelfit(niter=10,                  # 10 fitting iterations
+               type='P',                  # fit for a point
+	       par=[1.0,3.0,1.0]);        # first guess
+
+
+# an offset disk
+mycal.setdata(msselect='FIELD_ID==6');        # select field 6
+mycal.modelfit(niter=15,                      # 15 fitting iterations
+               type='D',                      # fit for disk
+               par=[3.0,2.5,-2.5,7.0,0.5,0]); # first guess
+
+
+# a Gaussian at the phase center, for keeps
+mycal.setdata(msselect='FIELD_ID==2');    # select field 2
+mycal.modelfit(niter=10,                  # 10 fitting iterations
+               type='G',                  # fit for Gaussian
+               par=[2.0,0,0,1.0,0.5,0],   # first guess for pars
+               vary=[T,F,F,T,T,T] ,       # fix direction (at phase center)
+               file='gauss1.cl');         # export a component file
+
+myimgr:=imager('uvmod_test.ms');          # fill resulting model into
+myimgr.setdata(fieldid=2);                #  MODEL_DATA column
+myimgr.ft(complist='gauss1.cl');
+myimgr.done();
+
+....more calibration steps....
+
+
+mycal.done();
+\end{verbatim}
+
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{fluxscale}{Bootstrap the flux density scale from standard calibrators}
+
+\begin{ahargs}
+\ahaddarg[in]{tablein}{Input calibration table name}{}{String}
+\ahaddarg[in]{tableout}{Output calibration table name.  Default is tablein.}{''}{String}
+\ahaddarg[in]{reference}{Reference calibrator field names or indices}{}{Vector of strings}
+\ahaddarg[in]{transfer}{Transfer source field names or indices.  Default is all other fields}{-1}{Vector of strings}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Bool}
+\ahaddarg[in]{refspwmap}{List of alternate spw for
+referencing}{-1}{Vector of Ints}
+\ahaddarg[out]{fluxd}{Array of output flux densities}{[]}{Double}
+\end{ahargs}
+\ahreturns{Bool}
+
+
+\begin{ahdescription}
+
+This function is used to bootstrap the amplitude scale the
+calibration solutions according to specified reference calibrator(s)
+of known flux density.  This is necessary when the flux densities
+of some of your calibrators were unknown (and thus were assumed
+to be 1 Jy) during G solving.
+
+The bootstrapping is achieved by comparing the mean gain norm of the
+calibration solutions derived for the calibrators specified in {\stfaf
+reference} (one or more sources with known flux densities at the time
+of G solving) with that of the calibrators specified in {\stfaf
+transfer}, and enforcing the assumption that the antenna gains are
+constant, on average.  The gain solutions for the transfer sources are
+then re-scaled accordingly.
+
+If no {\tt transfer} fields are specified, then the solutions for
+all non-reference fields in {\tt tablein} will be re-scaled.  
+
+If no {\tt tableout} is specified the input table will be overwritten
+with the scaled solutions.  Note that the resulting table will only
+contain solutions for those fields implicit in the {\tt reference} and
+{\tt transfer} specifications.     Use {\tt append=T} to append the scaled
+solutions to an existing table.  
+
+Use the {\stfaf refspwmap} parameter to indicate how data for
+different spectral windows should be matched in calculating the flux
+density scale factor for {\stfaf transfer} fields. The default
+behavior for {\tt refspwmap} is to insist on precisely matching
+spectral windows for {\tt reference} and {\tt transfer} fields.  When
+specified, the {\stfaf refspwmap} parameter takes a vector of integers
+indicating which spectral window solutions to use as the reference for
+others, such that {\tt refspwmap[j]=i} causes solutions (from reference
+fields) observed in the i-th spectral window to be used to reference
+solutions (from transfer fields) observed in the j-th spectral window.
+For example, for the case of a total of 4 spectral windows: if the
+{\tt reference} fields were observed only in spw=2 \& 4, and the {\tt
+transfer} fields were observed variously in all 4 spws, specify {\tt
+refspwmap=[2,2,4,4]}.  This will ensure that {\tt transfer} fields
+observed in spws 1,2,3,4 will be referenced to {\tt reference} field
+data from spws 2,2,4,4, respectively.  Note that if the {\tt transfer}
+fields were observed only in spws 1 \& 3, the same specification would
+work, but {\tt refspwmap=[2,2,4]} would suffice.  In this case,
+nothing need be specified for the 4th spw (there are no transfer
+fields there), and specifying 2 for the 2nd spw is actually
+inconsequential (though required so that the specification of 4 for spw 3
+is properly interpretted).
+
+The derived flux densities for the transfer fields will be reported in
+the logger, and returned to the glish variable specified in {\tt
+fluxd}.  This will be an 2D array of shape [number-of-spectral-windows
+X number-of-fields].
+
+Note that elevation-dependent gain effects may render the basic
+assumption used here invalid, and so should be corrected for prior to
+solving for G, using types 'TOPAC' or 'GAINCURVE' in {\tt setapply}.
+
+Note that the visibility data itself is not used directly by this
+function.
+
+Pending improvements:
+
+\begin{itemize}
+\item Allow antenna and uv-distance selection to improve results for 
+resolved calibrators
+\item Set the visibility model according to the flux density results
+\item An option to use the data to derive the relative flux densities
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.fluxscale (tablein='3C273.gcal', tableout='3C273.gcal2', 
+              reference='1328+307', transfer="0957+561 0917+624");
+c.done();
+\end{verbatim}
+
+This example takes an existing calibration table containing {\tt G}
+solutions,  and writes a scaled output version, using 3C286
+(1328+307) as the reference calibrator, to derive properly scaled
+amplitude calibration for the transfer sources, 0957+561 and 0917+624.
+
+\end{ahexample}
+\end{ahfunction}
+
+%%************************************************************
+
+\begin{ahfunction}{accumulate}{Accumulate incremental calibration
+solutions into a cumulative calibration table}
+
+\begin{ahargs}
+\ahaddarg[in]{tablein}{Input cumulative calibration table name}{""}{String}
+\ahaddarg[in]{incrtable}{Input incremental calibration table name}{""}{String}
+\ahaddarg[in]{tableout}{Output cumulative calibration table name.  Default is tablein.}{""}{String}
+\ahaddarg[in]{field}{List of fields to update in input cumulative table.  Default is all.}{-1}{Vector of strings}
+\ahaddarg[in]{calfield}{List of fields in incremental table to use.  Default is all.}{-1}{Vector of strings}
+\ahaddarg[in]{interp}{Interpolation mode to use on incremental solutions}{'linear'}{String}
+\ahaddarg[in]{t}{Cumulative table timescale when creating from scratch}{-1.0}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+
+
+\begin{ahdescription}
+
+This function enables cumulative calibration using {\tt calibrater}.
+It is the analog of the task ``CLCAL'' in classic AIPS.
+
+The {\tt accumulate} function is useful when:
+
+\begin{itemize}
+\item a calibration solution of a particular type already exists,
+\item an incremental calibration solution {\em of the same type} is desired
+(an incremental solution in this context means derived independently
+from, or determined with respect to, the first)
+\item the first calibration cannot be implicitly recovered in the course 
+of obtaining the incremental solution
+\end{itemize}
+
+For example, a phase-only ``G'' self-calibration on a target source
+may be desired to tweak the full amplitude and phase ``G'' calibration
+already obtained from a calibrator.  The initial calibration (from the
+calibrator) contains amplitude information, and so must be carried
+forward, yet the phase-only solution itself cannot (by definition)
+recover this information, as a full amplitude and phase
+self-calibration would.  In this case, the initial solution must be
+applied while solving for the phase-only solution, then the two
+solutions combined to form a {\em cumulative} calibration embodying
+the net effect of both. In terms of the Measaurement Equation, the net
+calibration is the {\em product} of the initial and incremental
+solutions.  
+
+The analog of {\tt accumulate} in classic AIPS is the use of CLCAL to
+combine a series of (incremental) SN calibration tables to form
+successive (cumulative) CL calibration tables.
+
+Cumulative calibration tables also provide a means of generating
+carefully interpolated calibration, on variable user-defined
+timescales, that can be examined prior to application to the data with
+{\tt setapply} and {\tt correct}.  The solutions for different fields
+and/or spectral windows can be interpolated in different ways, with
+all solutions stored in the same table.
+
+The only difference between incremental and cumulative calibration
+tables is that incremental tables are generated directly from the data
+via {\tt solve} or (in the near future) from other ancilliary data
+(e.g. weather information), and cumulative tables are generated from
+other cumulative and incremental tables via {\tt accumulate}.  In all
+other respects (internal format, application to data via {\tt
+setapply} and {\tt correct}, plotting with {\tt plotcal}, etc.), they
+are the same, and therefore interchangable.  Thus, {\tt accumulate} and 
+cumulative calibration tables need only be used when circumstances
+require it.
+
+The {\tt accumulate} function represents a generalization on the
+classic AIPS CLCAL model of cumulative calibration in that its
+application is not limited to accumulation of ``G'' solutions (SN/CL
+tables classic AIPS are the analog of ``G'' (and, implicitly, ``T'')
+in {\tt aips++}).  In principle, any basic calibration type can be
+accumulated (onto itself), as long as the result of the accumulation
+(matrix product) is of the same type.  This is true of all the basic
+types, except ``D''.  Accumulation is currently supported for ``B'',
+``G'', and ``T'', and, in future, ``F'' (ionospheric Faraday
+rotation), ``J'' (generic full-polarization calibration),
+fringe-fitting, and perhaps others.  Accumulation of certain
+specialized types (e.g., ``GSPLINE'', ``TOPAC'', etc.) onto the basic
+types will be supported in the near future.  The treatment of various
+calibration from ancilliary data (e.g., system temperatures, weather
+data, WVR, etc.), as they become available, will also make use of {\tt
+accumulate} to achieve the net calibration.
+
+Note that accumulation only makes sense if treatment of a uniquely
+incremental solution is required (as described above), or if a careful
+interpolation or sampling of a solution is desired.  In all other
+cases, re-solving for the type in question will suffice to form
+the net calibration of that type.  For example, the product of
+an existing ``G'' solution and an amplitude and phase ``G'' self-cal 
+(solved with the existing solution applied), is equivalent to full
+amplitude and phase ``G'' selfcal (with no prior solution applied),
+as long as the timescale of this solution is at least as short as
+that of the existing solution.  
+
+Use of {\tt accumulate} is straightforward:
+
+The {\tt tablein} parameter is used to specify the existing cumulative
+calibration table to which an incremental table is to be applied.
+Initially, no such table exists, and {\tt accumulate} will generate
+one from scratch (on-the-fly), using the timescale (in seconds)
+specified by the parameter {\tt t}.  These nominal solutions will
+be unit-amplitude, zero-phase (i.e., unit matrix) calibration,
+ready to be adjusted by accumulation.  When {\tt t} is negative (the
+default), the table name specified in {\tt tablein} must exist and
+will be used.
+
+The {\tt incrtable} parameter is used to specify the incremental table
+that should be applied to {\tt tablein}.  The calibration type of
+{\tt incrtable} sets the type assumed in the operation, so {\tt
+tablein} must be of the same type.  If it is not, {\tt accumulate}
+will exit with an error message.  (Certain combinations of types
+and subtypes will be supported by accumulate in the future.)
+
+The {\tt tableout} parameter is used to specify the name of the output
+table to write.  If un-specified (or ``''), then {\tt tablein} will be
+overwritten.  Use this feature with care, since an error here will 
+require building up the cumulative table from the most recent distinct
+version (if any).
+
+The {\tt field} parameter specifies those field names in {\tt tablein}
+to which the incremental solution should be applied.  The solutions for
+other fields will be passed to {\tt tableout} unaltered.  If the cumulative
+table was created from scratch in this run of {\tt accumulate}, then these
+solutions will be unit-amplitude, zero-phase, as described above.
+
+The {\tt calfield} parameter is used to specify the fields to select
+from {\tt incrtable} to use when applying to {\tt tablein}.  Together,
+use of {\tt field} and {\tt calfield} permit completely flexible
+combinations of calibration accumulation with respect to fields.
+Multiple runs of {\tt accumulate} can be used to generate a single
+table with many combinations.  In future, a ``self'' mode will be
+enabled that will simplify the accumulation of field-specific
+solutions.
+
+The {\tt interp} parameter is used to specify the interpolation type
+to use on the incremental solutions, as in {\tt setapply}.  The
+currently available interpolation types are ``nearest'', ``linear'',
+and ``aipslin''.  See the {\tt setapply} URM documentation for more
+details.
+
+
+Pending improvements:
+
+\begin{itemize}
+\item Implement a ``self'' mode (independent of interpolation type), 
+to simplify or eliminate use of the {\tt field} and {\tt calfield} 
+parameters in some contexts (e.g., self-cal)
+\item Provide {\tt spwmap} parameter to enable transfer of solutions
+among spectral windows, as in {\tt setapply}
+\item More interpolation modes, e.g., ``cubic'', and interpolation
+timescale (timerange to permit interpolation)
+\item Handle propogation (or not) of bad/flagged solutions 
+\item Support of specialized types (e.g., TOPAC) onto the basic
+types
+\item Smoothing (probably a separate function)
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('ap366.sim');
+
+# obtain G solutions from calibrator
+c.setdata(msselect='FIELD_ID IN [9,11]');
+c.setsolve(type='G',table='cal.G0',t=300);
+c.solve()
+
+# obtain proper flux density scale
+c.fluxscale (tablein='cal.G0', tableout='cal.G1',
+             reference='1328+307', transfer="0917+624");
+
+# generate cumulative table for target source on 20s timescale
+c.accumulate(tablein='',incrtable='cal.G1',tableout='cal.cG0',
+             field='0957+561',calfield='0917+624',
+             interp='linear',t=20);
+
+# apply this calibration to target
+c.setdata(msselect='FIELD_ID==10');
+c.setapply(type='G',table='cal.cG0',interp='linear')
+c.correct();
+
+#    (image target with imager tool)
+
+# phase-selfcal target on 60s timescale 
+c.setdata(msselect='FIELD_ID==10');
+c.setapply(type='G',table='cal.cG0',interp='linear')
+c.setsolve(type='G',table='cal.G2',t=60,phaseonly=T);
+c.solve();
+
+# accumulate new solution onto existing one
+c.accumulate(tablein='cal.cG0',incrtable='cal.G2',tableout='cal.cG1',
+             field='0957+561',calfield='0957+561',
+             interp='linear');
+
+# apply new cumulative solution to data
+c.setapply(type='G',table='cal.cG1',interp='linear')
+c.correct();
+
+#   (another round of imaging, etc.)
+
+c.done();
+\end{verbatim}
+
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{posangcal}{Apply position angle calibration to an existing cal table}
+
+\begin{ahargs}
+\ahaddarg{tablein}{Input calibration table name}{}{String}
+\ahaddarg{tableout}{Output calibration table name.  Default is input table}{}{String}
+\ahaddarg{posangcor}{Position angle corrections (degrees)}{[]}{Vector of Floats}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function is used to apply position angle calibration for
+observations made using circularly polarized feeds.  According to the
+Measurement Equation formalism, this correction should be applied to a
+{\tt D} (instrumental polarization) calibration table.
+
+If no {\tt D} calibration is performed (and thus no such table is
+available), the correction can be applied to a {\tt G} table, but it
+should NEVER be applied to both, and always applied to a {\tt D} table
+if one is available.  An input table must be specified.  If no output
+table is specified, then the input table will be modified in place.
+
+Specify, as a vector of values, a position angle adjustment (in degrees)
+for each spectral window.  If only one value is specified, it will be
+duplicated to all spectral windows; otherwise, the number of values
+specified must match the number of spectral windows.  The sign
+convention for the position angle adjustment is such that the specified
+value is the that which, when added to the position angle implied by the
+data, will yield the correct position angle.  For example, if {\tt G-},
+{\tt D-}, and {\tt P-}calibrated data for 3c286 suggests a position
+angle of 45 degrees, the posangcor value should be -12 degrees as this
+will yield the correct position angle of 33 degrees when added.  In
+general, posangcor equals correct position angle minus observed position
+angle. 
+
+A future version of this function will have an option to recognize
+standard position angle calibrators and determine the correction
+automatically. 
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.posangcal(tablein='3C286.dcal', tableout='3C286.dpacal', 
+             posangcor=[-12.0, 54.0]);
+c.done();
+\end{verbatim}
+
+This example takes an existing calibration table containing {\tt D}
+Jones matrices, and applies a position angle calibration of 45 and 54
+degrees to spectral windows 1 \& 2, respectively, writing the result
+to a new table.  The observed position angles for 3C286 must have been
+45 and -21 degrees; the corrections specified yield the correct value
+of 33 degrees when added to the observed values.
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{calave}{Average calibration solutions over fields, spectral windows, and/or time} 
+
+\begin{ahargs}
+\ahaddarg[in]{tablein}{Input calibration table name.  No default}{}{String}
+\ahaddarg[in]{tableout}{Output calibration table name.  No default}{}{String}
+\ahaddarg[in]{fldsin}{Input field id(s).  No default}{}{Vector of integers}
+\ahaddarg[in]{spwsin}{Input spectral window id(s).  No default}{}{Vector of integers}
+\ahaddarg[in]{fldsout}{Output field id(s).  No default}{}{Vector of integer}
+\ahaddarg[in]{spwout}{Output spectral window.  No default}{}{Integer}
+\ahaddarg[in]{t}{Averaging time (s).  Default is to just copy solutions}{-1.0}{Float}
+\ahaddarg[in]{append}{Append to existing table?}{F}{Boolean}
+\ahaddarg[in]{mode}{}{'RI'}{String from RI or AP}
+\ahaddarg[in]{verbose}{Write extra information to logger about proceses}{'T'}{T or F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription} 
+
+This function can be used to average calibration solutions over fields,
+spectral windows, and/or time.  It is useful for smoothing solutions in
+time, and for re-identifying solutions for field and spectral window, as
+may be required in spectral line observations where doppler tracking is
+used on the target source, but not on the calibrater (and hence the
+spectral windows for each source are different).  This function
+currently supports averaging of calibration tables containing Jones
+matrices with diagonal elements only (G, B, T).  For B, the averaging is
+done for each channel separately (there is no channel averaging). 
+Handling of tables with off-diagonal elements (D, F) will be supported
+in the future. 
+
+The {\stfaf fldsin} parameter takes a vector of integers; the {\stfaf
+fldsout} parameter must be a single integer (used for all {\stfaf
+fldsin}) or a vector of integers, one for each in {\stfaf fldsin}.  They
+must both be specified. 
+
+The {\stfaf spwsin} parameter takes a vector of integers; currently,
+only one {\stfaf spwout} can be specifed (all {\stfaf spwsin} will be
+averaged to this).  They must both be specified.  Use {\stfaf append=T}
+to write more than one output spectral window to the same file.  All
+input and output ids must exist in the measurement set. 
+
+Use the {\stfaf t} paramater to set the interval over which solutions
+from the input field ids and spectral window ids will be averaged.  Note
+that simple solution time-averaging can be achieved by making {\stfaf
+fldsin=fldsout} and {\stfaf spwsin=spwout}.  If this parameter is
+negative (the default) the solutions are just copied. 
+
+Use the {\stfaf mode} parameter to choose between 'RI'$=$ averaging real
+and imaginary (coherently) or 'AP'$=$ averaging amplitude and phase
+(incoherently).  Use 'AP' to avoid reduction in amplitude if the
+solution phases drift appreciably during the averaging interval, t. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.calave(tablein='3C273.gcal', tableout='3C273.gcal2', 
+              fldsin=[1,2],spwsin=[2,3],fldsout=7,spwout=13,
+              t=300, append=F, mode='AP')
+c.done();
+\end{verbatim}
+
+This example will average solutions from field ids 1 \& 2 in
+spectral windows 2 \& 3 in 300 second intervals and identifies the result
+as field id 7 and spectral window 13.  The averaging is incoherent.
+
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{linpolcor}{Correct the gain table for linear polarization of the calibrator}
+
+\begin{ahargs}
+\ahaddarg{tablein}{Input calibration table name}{''}{String}
+\ahaddarg{tableout}{Output calibration table name}{''}{String}
+\ahaddarg{fields}{Calibrator field names}{""}{Vector of strings}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function can be used to correct the gains derived from secondary
+calibrators with unknown or variable polarization.  It should only be
+used for arrays with linear (X/Y) feeds and an Alt-Az mount for which
+the observed polarization varies with feed position angle on the sky. 
+
+The function fits the gains with a sine and cosine term in feed position
+angle and extracts the Q and U components of the secondary calibrator. 
+This is only possible if there is sufficient range in the position angle
+(i.e., minimum of about 6 scans spanning at least 90 degrees in position
+angle).  Check the error of the fit to judge if the fit was succesfull,
+it should generally be smaller than 0.5\%.  
+
+Use the {\stfaf fields} argument to select calibrator fields to be
+fitted.  The function takes a calibration table as input, and can write
+the adjusted gain solutions to the same table on output, or create a new
+table containing these results.  The function also prints the derived
+polarization for each field for each spectral window. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('atca.ms');
+c.linpolcor(tablein='atca.gcal', tableout='atca.gcal2', 
+             fields='2254-367');
+c.done();
+\end{verbatim}
+
+This example takes an existing calibration table containing {\tt G}
+Jones matrices, and writes a corrected output table, correcting only
+gains derived from 2254-367 for linear polarization.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{plotcal}{Plot a calibration table}
+
+\begin{ahargs}
+\ahaddarg[in]{plottype}{Plot type}{'AMP'}{String from 'AMP'|'1/AMP'|'PHASE'|'RLPHASE'|'XYPHASE'|'RI'|'DAMP'|'DPHASE'|'DRI'|'FIT'|'FITWGT'|'TOTALFIT'}
+\ahaddarg[in]{tablename}{Calibration table name}{''}{String}
+\ahaddarg[in]{antennas}{Antennas to plot}{[]}{Vector of Ints}
+\ahaddarg[in]{fields}{Fields to plot}{[]}{Vector of Ints}
+\ahaddarg[in]{polarization}{Polarization to plot}{1}{Integer}
+\ahaddarg[in]{spwids}{Spectral windows id.'s to plot}{[]}{Vector of Ints}
+\ahaddarg[in]{multiplot}{Turn on separate antenna plots}{F}{Bool}
+\ahaddarg[in]{nx}{If multiplot=T, number of plots on horizontal axis}{1}{Integer}
+\ahaddarg[in]{ny}{If multiplot=T, number of plots on vertical axis}{1}{Integer}
+\ahaddarg[in]{psfile}{name of output PostScript file. Empty string causes plot to be sent to the screen}{''}{string}
+\end{ahargs}
+\ahreturns{Bool}
+
+
+\begin{ahdescription}
+
+This function plots a calibration table either to a plotter or 
+to a file.  
+
+The argument {\stfaf plottype} can take the following values
+for all types of solutions: 
+\begin{description}
+\item[AMP] Gain Amplitude vs. Time
+\item[1/AMP] Inverse Gain Amplitude vs. Time (useful for 
+comparing with classic AIPS)
+\item[PHASE] Gain Phase vs. Time
+\item[RI] Gain Real vs. Imaginary
+\item[RLPHASE] Right/Left Gain phase difference (if polarizations are R,L)
+\item[XYPHASE] X/Y Gain phase difference (if polarizations are X,Y)
+\end{description}
+
+
+The argument {\stfaf plottype} can take the following values
+for D tables
+
+\begin{description}
+\item[DAMP] Cross-polarized Gain Amplitude vs. Time
+\item[DPHASE] Cross-polarized Gain Phase vs. Time
+\item[DRI] Cross-polarized Gain Real vs. Imaginary
+\end{description}
+
+The quality of the solutions can be examined with the following 
+{\stfaf plottype} choices:
+\begin{description}
+\item[FIT] Fit per spectral window
+\item[FITWGT] Fit weight per spectral window
+\item[TOTALFIT] Total fit
+\end{description}
+
+By default, all antennas (as specified in the antennas argument) will
+appear on the same plot. Separate plots (all with the same scale) 
+for each antenna can be activated by setting multiplot=T.  The multiplot
+argument only separates plots by antenna (not, e.g., by the field\_id(s)
+specified in the fields argument).  If multiplot=T, the nx and ny 
+arguments can be used to specify the number of plots per page.
+
+At the moment, only one polarization can be plotted per execution.
+This restriction will be relaxed in the near future.
+
+For B solutions, the plotting will loop over timestamps (if more than
+one).  
+
+A hardcopy plot can be created by specifying the \texttt{psfile}
+argument (which is especially useful for batch processing when a
+display screen is not available).  This will cause the plot to be
+written to a PostScript file which can be subsequently sent to a
+printer.  
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.plotcal(plottype='PHASE', tablename="gcal", antennas=[1,3], polarization=2);
+c.close();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{close}{Close the calibrater tool}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+Close the {\tt calibrater} tool, which is hardly ever necessary.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.correct();
+c.close();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+%%************************************************************
+
+\begin{ahfunction}{done}{Destroy the calibrater tool}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+This function destroys the {\tt calibrater} tool, 
+writing data to disk first.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+c:=calibrater('3C273XC1.MS');
+c.correct();
+c.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+\end{document}
+
+
+

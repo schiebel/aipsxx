@@ -1,0 +1,225 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: plugins.help,v 19.2 2004/08/25 02:09:43 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{plugins}{attach code to tools at runtime}
+
+\ahinclude{plugins.g}
+
+\ahkeyword{plugin}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+{\tt plugins} is the technique by which additional Glish functions are attached to
+tools when that tool is created. For example, a user might want to attach
+some code that automatically fits models to data to a 
+\ahlink{pgplotter}{plotter:pgplotter}, or a site might wish to attach
+telescope-specific calibration functions to standard data reduction classes.
+
+The function is a simple one. When {\tt plugins.g} is first included, it
+searches all directories in its include path (Glish variable {\tt
+system.path.include}) for files of the form {\tt class\_*.gp}, where
+{\tt .gp} means ``Glish plugin'', ``class'' is the tool type that
+the plug refers to, and the ``{\tt *}'' is a category  for the types of
+functionality within that plugin. For example, {\tt pgplotter\_fitting.gp}
+might  be the name of a plugin for attaching fitting functionality to a
+pgplotter.
+
+The files are not actually loaded at this stage, they are just located. Then
+when an tool of a type that has plugins is actually created, the plugin code
+is attached to the tool just before the tool is returned to the user.
+
+The plugin system is careful to do as little work as possible. In particular,
+it loads files only on demand, and does not require any services from the rest
+of \aipspp that might take more than a brief time to start.
+
+{\tt plugins} is a single tool. Not more than one such tool can ever be
+created (automatically via the inclusion of {\tt plugins.g}) in any Glish
+session. 
+\end{ahdescription}
+
+\begin{ahexample}
+If you want to plugin-enable your classes, you merely have to:
+\begin{enumerate}
+\item include {\tt plugins.g} at the beginning of your {\tt .g} file; and
+\item include Call {\tt plugins.attach} before returning the tool from your
+      constructor
+\end{enumerate}
+That's it! It is so simple and low-cost, that generally speaking all user-level
+classes should be plugin-enabled.
+
+Here is a simple example.of a plugin-enabled tool that just keeps track of a
+counter: 
+\begin{verbatim}
+pragma include once
+include 'plugins.g'                        ### 1
+
+counter := function() { # constructor
+    private := public := [=];
+    private.count := 0;
+
+    # Member functions
+    public.bump := function() {
+        wider private;
+        private.count +:= 1;
+        return T;
+    }
+
+    public.total := function() {
+        wider private;
+        return private.count;
+    }
+
+    plugins.attach('counter', public);     ### 2
+    return ref public; # tool return
+}
+\end{verbatim}
+The numbered lines are all that is necessary to plugin-enable the counter
+class. 
+
+The unaugmented class can be used like this:
+
+\begin{verbatim}
+- c := counter()
+- c.bump(); c.total();
+T 
+1 
+\end{verbatim}
+
+Now, suppose we are a user who wants to customize this simple counter so
+that we can ``bump'' the counter an arbitrary number of times. We could create
+the following plugin to attach a ``multibump'' function.
+\begin{verbatim}
+# counter_mychanges.gp
+pragma include once;
+
+counter_mychanges := [=];
+
+counter_mychanges.attach := function(ref public) {
+    # Multibump function
+    public.multibump := function(count) {
+        for (i in 1:count) { public.bump(); }
+        return T;
+    }
+
+    return T; # Say that the attach worked
+}
+\end{verbatim}
+
+Note how we can both extend the list of functions in the plugin by just adding a
+function to public, and how we can use other public functions. There is no
+access to the private state of the class through a plugin -- it preserves
+encapsulation.
+
+A careful programmer would check to see whether or not a ``multibump'' function
+already exists before adding one, and returning a ``fail'' (probably via the
+\ahlink{throw}{misc:throw} function) if it does.
+
+Now we can just use the multibump function as if it was defined in the original
+class, even though it has been added after the fact:
+
+\begin{verbatim}
++ c.multibump(5); c.total()
+T 
+6 
+\end{verbatim}
+
+If there was any one-time initialization code that was needed by any of the
+functions in the file, you would implement them in a function:
+\begin{verbatim}
+counter_mychanges.init := function() # no arguments
+{
+    ...        # initialization code
+    return T;  # or fail if there is an error
+}
+\end{verbatim}
+
+\end{ahexample}
+
+\begin{ahfunction}{rescan}{Find all plugin (.gp) files}
+\begin{ahdescription}
+This function is used to find all plugin files. It is called automatically when 
+the {\tt plugins} tool is constructed, so you generally never need to call
+it. You might call it if you know that some new {\tt *.gp} files have been
+created since you started your Glish session.
+
+The rules are that it searches all directories in {\tt system.path.include} for 
+{\tt .gp} files that are of the form {\tt class\_something.gp}, where ``class'' 
+is the classname this plugin is to be attached to, and something is a general
+description (category) of what functionality is provided by the plugin 
+(for example, ``demo''). 
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{loadplugins}{load plugin (.gp) files for some class}
+\begin{ahdescription}
+This function loads all the plugin files for some class ({\em i.e.}, type). You
+should never have to call it, since {\tt plugins} itself will call it the first 
+time it is needed for that class.
+
+If a plugin has an ``init'' function, {\tt loadplugins} will call it after the
+file has been included.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{type}{type (class) for which we want to load plugins}{}{string}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{loaded}{list which plugins have been loaded}
+\begin{ahdescription}
+This function returns a record with information about what plugins have been
+loaded. It is probably not of any general interest.
+\end{ahdescription}
+\ahreturns{record}
+\end{ahfunction}
+
+
+\begin{ahfunction}{attach}{Attach plugins for a type to an tool}
+\begin{ahdescription}
+This is the only function that most programmers will have to call. You call it
+from the constructor(s) of your class. Its arguments are the class name (type), 
+and the tool you are about to return to the user (that is, you pass it
+``public'' if you are using the usual closure-tool idiom).
+
+If necessary, it loads all the plugin ({\tt .gp}) files for the requested
+types, and runs any plugin {\tt init()} functions it finds. It then calls all the 
+{\tt attach()} functions on the loaded plugins. Those attach functions add 
+functions to the tool.
+\begin{ahargs}
+  \ahaddarg{type}{type (class) for which we want to load plugins}{}{string}
+  \ahaddarg{objpublic}{the tool the constructor will return to the caller}{}{record}
+\end{ahargs}
+\ahreturns{reference to objpublic (so you can return it directly)}
+\end{ahfunction}
+
+
+\end{ahobject}
+\end{document}
+

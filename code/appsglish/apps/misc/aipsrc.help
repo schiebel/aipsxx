@@ -1,0 +1,418 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: aipsrc.help,v 19.1 2004/08/25 01:33:13 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{aipsrc}{tool to find aips resources from .aipsrc files}
+
+\ahinclude{aipsrc.g}
+
+\ahkeyword{resources}{}
+\ahkeyword{.aipsrc}{}
+\ahkeyword{aipsrc}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+The aipsrc tool is used to interrogate the .aipsrc files (\aipspp 
+resource files) to find values for a given keyword, and to connect with some
+of the more widely used keywords. More on aipsrc
+files can be found in the system manual, and in the
+\ahlink{aipsrcdata}{aipsrcdata} description.
+
+Including the 'aipsrc.g' file creates a {\em defaultaipsrc} tool
+(also called {\stf drc}.
+
+Only in special cases it is necessary to create your own aipsrc tool.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include "aipsrc.g"
+T 
+- drc.find(where, "help.directory")   # use default server
+T
+- arc := aipsrc()                     # create your own tool
+- arc.find(where, "help.directory")    
+T 
+- print where
+/aips++/daily/sun4sol_gnu/doc/aips2help
+- arc.find(where, "does.not.exist") 
+F 
+- arc.tzoffset()
+10 
+- arc.done()                          # delete your own tool
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{aipsrc}{Construct aipsrc tool}
+\begin{ahargs}
+\ahaddarg[in]{host}{host on which to run tool}{''}{valid host name string}
+\ahaddarg[in]{forceneweserver}{force the use of a new
+server}{F}{bool}
+\end{ahargs}
+\ahreturns{tool}
+\begin{ahdescription}
+Create a quanta \tool on the specified host (or by default the
+host you are running on). 
+\end{ahdescription}
+\end{ahconstructor}
+
+\begin{ahfunction}{find}{lookup a resource definition}
+\begin{ahdescription}
+find will return {\em T} if the specified keyword was found in an aipsrc
+file, {\em F} otherwise. If a find was made, its value will be returned.
+If a default value was specified it will be used if the aipsrc keyword was
+not present.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{The value of the resource (Out)}{}{String}
+  \ahaddarg{keyword}{The name of the resource to look up (In)}{}{String}
+  \ahaddarg{def}{The default value to use if no aipsrc resource
+	found}{F}{String} 
+  \ahaddarg{usehome}{Use the users own .aipsrc file? (In)}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool -- is the resource defined?}
+\end{ahfunction}
+
+\begin{ahfunction}{findbool}{lookup a boolean resource definition}
+\begin{ahdescription}
+findbool will return {\em T} if the specified keyword was found in an aipsrc
+file, {\em F} otherwise. If a find was made, its value is returned, otherwise
+the specified (or default) default value {\tt def} will be used. The test for
+boolean is based on a first character being one of y Y t T 1 2 3 4 5 6 7 8 9
+to return true, all others are interpreted as false.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{The value of the resource (Out)}{}{Bool}
+  \ahaddarg{keyword}{The name of the resource to look up (In)}{}{String}
+  \ahaddarg{def}{Default to use if keyword not found}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool -- is the resource defined?}
+\end{ahfunction}
+
+\begin{ahfunction}{findfloat}{lookup a float value resource definition}
+\begin{ahdescription}
+findfloat will return {\em T} if the specified keyword was found in an aipsrc
+file, {\em F} otherwise. If a find was made, its value is returned, otherwise
+the specified (or default) default value {\tt def} will be used.
+The value defined in the keyword is converting according to standard rules,
+i.e. the field upto a non-conforming character will be returned.\\
+The value can be defined with optional units in the aipsrc file. By
+specifying in the findint a default unit string that has to be used in the
+absence of given units, and specifying units the result will be converted to
+before the value is returned. E.g.
+\begin{verbatim}
+drc.findfloat(x, 'test.float' , 5, 'h', 'd')
+\end{verbatim}
+will assume that if the keyword is not present, the value of 5 is returned in
+x. If the keyword is given, but has no units specified, it will be assumed
+that the user has given the value in 'h'. The value returned will be
+converted to 'd' (i.e. twenty-four times smaller). If the user has specified
+units, the value returned will be converted to these ('d' in this case).
+\end{ahdescription}
+\begin{ahexample}
+With the following aipsrc keywords:
+\begin{verbatim}
+test.float:		5
+test.float2:		5:30
+test.float3:		5a
+\end{verbatim}
+The following will be the result:
+\begin{verbatim}
+- arc:=aipsrc()
+- arc.findfloat(x, 'test.float')
+T 
+- x
+5 
+- arc.findfloat(x, 'test.float1')
+F 
+- x
+0 
+- arc.findfloat(x, 'test.float1', 7)
+F 
+- x
+7 
+- arc.findfloat(x, 'test.float', undef='h', unres='d')  
+T 
+- x
+0.208333333
+- arc.findfloat(x, 'test.float2', undef='h', unres='d')
+T 
+- x
+0.229166667
+- arc.findfloat(x, 'test.float3', undef='h', unres='d') 
+T 
+- x
+1826.25
+- arc.done()            # remove tool 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+  \ahaddarg{value}{The value of the resource (Out)}{}{Double}
+  \ahaddarg{keyword}{The name of the resource to look up (In)}{}{String}
+  \ahaddarg{def}{Default to use if keyword not found}{0}{Numeric}
+  \ahaddarg{undef}{Default units to use if none given in aipsrc
+  file}{F}{valid unit string}
+  \ahaddarg{unres}{The units the result will be converted to before giving
+  the value from aipsrc file}{F}{valid unit string}
+\end{ahargs}
+\ahreturns{Bool -- is the resource defined?}
+\end{ahfunction}
+
+\begin{ahfunction}{findint}{lookup a float value resource definition}
+\begin{ahdescription}
+findint will return {\em T} if the specified keyword was found in an aipsrc
+file, {\em F} otherwise. If a find was made, its value is returned, otherwise
+the specified (or default) default value {\tt def} will be used.
+The value defined in the keyword is read as a float, and converted according
+to standard rules.\\
+The value can be defined with optional units in the aipsrc file. By
+specifying in the findint a default unit string that has to be used in the
+absence of given units, and specifying units the result will be converted to
+before the value is returned. E.g.
+\begin{verbatim}
+drc.findint(x, 'test.int' , 5, 'km', 'm')
+\end{verbatim}
+will assume that if the keyword is not present, the value of 5 is returned in
+x. If the keyword is given, but has no units specified, it will be assumed
+that the user has given the value in 'km'. The value returned will be
+converted to 'm' (i.e. thousand times bigger). If the user has specified
+units, the value returned will be converted to these ('m' in this case).
+\end{ahdescription}
+\begin{ahexample}
+With the following aipsrc keywords:
+\begin{verbatim}
+test.int:		2.9
+test.int2:		2.9hm
+\end{verbatim}
+The following will be the result:
+\begin{verbatim}
+- arc:=aipsrc()
+- arc.findint(x, 'test.int')
+T 
+- x
+2 
+- arc.findint(x, 'test.int1')
+F 
+- x
+0 
+- arc.findint(x, 'test.int1', 7)
+F 
+- x
+7 
+- arc.findint(x, 'test.int', 7, 'm', 'km')
+T 
+- x
+0 
+- arc.findint(x, 'test.int', 7, 'km', 'm') 
+T 
+- x
+2900 
+- arc.findint(x, 'test.int1', 7, 'km', 'm')
+F 
+- x
+7 
+- arc.findint(x, 'test.int2', 7, 'km', 'm') 
+T 
+- x
+290 
+- arc.findint(x, 'test.int2', 7, '', '')    
+T 
+- x
+290 
+- arc.findint(x, 'test.int2', 7)         
+T 
+- x
+2 
+- arc.done()             # remove tool
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+  \ahaddarg{value}{The value of the resource (Out)}{}{Int}
+  \ahaddarg{keyword}{The name of the resource to look up (In)}{}{String}
+  \ahaddarg{def}{Default value to use if keyword not found}{0}{Numeric}
+  \ahaddarg{undef}{Default units to use if none given in aipsrc
+  file}{F}{valid unit string}
+  \ahaddarg{unres}{The units the result will be converted to before giving
+  the value from aipsrc file}{F}{valid unit string}
+\end{ahargs}
+\ahreturns{Bool -- is the resource defined?}
+\end{ahfunction}
+
+\begin{ahfunction}{findlist}{lookup a value in a code list}
+\begin{ahdescription}
+findlist will return {\em T} if the specified keyword was found in an aipsrc
+file and the value conformed to one in the list given, {\em F} otherwise. If
+a find was made, its value is compared with the codes given in a list
+(comparison is case insensitive, and only enough characters have to be in the
+value to give a unique match). The position in the list will be returned.
+If the keyword was not found, or if no match was found, a default value (if
+given) will be matched and its position returned. If the default is not
+given, or also does not match the code list, the returned value will be
+beyond the given list.
+\end{ahdescription}
+\begin{ahexample}
+With the following aipsrc keywords:
+\begin{verbatim}
+test.list:		ScR
+test.list1:		test
+\end{verbatim}
+The following will be the result:
+\begin{verbatim}
+- y := "none screen gui" 
+- drc.findlist(x, 'test.list', y, 'gui')
+T 
+- x
+2 
+- drc.findlist(x, 'test.list1', y, 'gui')
+F 
+- x
+3 
+- drc.findlist(x, 'test.list1', y)        
+F 
+- x
+4 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+  \ahaddarg{value}{The value of the resource (Out)}{}{Int}
+  \ahaddarg{keyword}{The name of the resource to look up (In)}{}{String}
+  \ahaddarg{vlist}{List of code values that will be recognised}{}{String
+  array} 
+  \ahaddarg{def}{Default value to use if keyword not present, or value does
+  not match code value list}{''}{String}
+\end{ahargs}
+\ahreturns{Bool -- is the resource defined and has correct code?}
+\end{ahfunction}
+
+\begin{ahfunction}{init}{re-read all the .aipsrc files}
+\end{ahfunction}
+
+\begin{ahfunction}{aipsroot}{The AIPSROOT directory string}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{aipsarch}{The AIPSARCH directory string}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{aipssite}{The AIPSSITE directory string}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{aipshost}{The AIPSHOST directory string}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{aipshome}{The user's aips++ directory string}
+\begin{ahdescription}
+aipshome will return the user's aips++ base directory. This will either be
+\begin{verbatim}
+~/aips++
+\end{verbatim}
+or the value of the aipsrc keyword 'user.aipsdir' if it has been defined.
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{tzoffset}{The local time zone offset}
+\begin{ahdescription}
+tzoffset will return the local time zone offset in hours (East, i.e. add it to
+UTC).
+\end{ahdescription}
+\ahreturns{Double -- offset in hours}
+\end{ahfunction}
+
+\begin{ahfunction}{id}{identification of tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{object id}
+\begin{ahdescription}
+id will return the object identification. Its use is meant for the
+toolmanager.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+drc.id()
+[sequence=1, pid=5765, time=1020744553, host=cetus, agentid=2] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%
+
+\begin{ahfunction}{type}{type of tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+type will return the tool name.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- drc.type()
+aipsrc
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{free resources used by tool}
+\begin{ahargs}
+\ahaddarg[in]{kill}{force kill of the default tool}{F}{bool}
+\end{ahargs}
+\ahreturns{bool or fail}
+\begin{ahdescription}
+
+If you have created your own aipsrc \tool\ (rather than using the
+default {\em drc} one), and you no longer need it, its resources can
+be destroyed by the {\tt done} function. Note that the default
+\tool\ can only be destriyed by setting the {\tt kill} argument
+explicitly to T. 
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- arc := aipsrc()
+- arc.aipsarch()
+/nfs/aips++/weekly/sun4sol_gnu 
+- arc.done()
+T 
+- arc.aipsarch()                     # the tool was destroyed
+warning, operand to .aipsarch is not a record
+error, F is not a function value
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}
+

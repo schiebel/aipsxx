@@ -1,0 +1,749 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: misc.help,v 19.1 2004/08/25 01:34:36 cvsmgr Exp $
+\begin{ahmodule}{misc}{Miscellaneous utilities}
+\ahcategory{misc}
+\ahinclude{misc.g}
+
+\begin{ahdescription} 
+The misc module contains a number of generally useful tools:
+
+\begin{description}
+
+\item[\tt misc] contains a grab-bag of useful functions.
+
+\item[\tt os] contains system-specific functions like
+file and directory handling. 
+
+\item[\tt aipsrc] is available for querying the \aipspp\  resources
+(``.aipsrc'' files). {\tt aipsrcedit} allows interactive editing
+of \aipspp\ resources.
+
+\item[\tt getrc] is available for querying the \aipspp\  resources
+(``.aisprc'' files) during system startup to avoid recursive
+dependencies involving aipsrc.
+
+\item[\tt sysinfo] allows interrogation of other miscellaneous
+\aipspp\ information.
+
+\item[\tt printer] is available for printing files and Glish values.
+
+\item[\tt assay] is available for testing the installation.
+
+\item[\tt stopwatch] implements a set of timing functions in the
+style of a traditional stopwatch.
+
+\item[\tt sh] creates a persistent shell client, amortizing startup
+over many different function calls.
+
+\item[\tt substitute] is available for substituting Glish variables
+and expressions in a string.
+
+\item[\tt itemcontainer] is a generic closure tool  container.
+
+\item[\tt aips2loc] plots the lines of code in AIPS++ as a function
+of time.
+
+\item[\tt ftp] allows ftp operation from inside AIPS++.
+
+\item[\tt make] provides a facility equivalent to Unix make inside Glish.
+
+\item[\tt executive] provides a facility for running scripts in a queue.
+
+\end{description}
+
+\end{ahdescription}
+
+\ahobjs{}
+\ahfuncs{}
+%
+\begin{ahobject}{misc}{Misc tool}
+\begin{ahdescription}
+The misc tool contains a number of string, file, and
+miscellaneous functions. 
+
+{\bf NOTE} Some (limited) functions emulating C-based input and output routines are
+available. These have been replaced by functions native to Glish.
+We strongly recommend that you use the Glish functions instead.
+
+Some of these functions are implemented completely in Glish without
+using the gmisc client.  They remain in this tool for now.  These
+functions are indicated in the individual descriptions.
+
+This uses a server process misc which is started when first needed
+and then automatically restarted if it fails (hopefully never!).
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{misc}{Construct a misc tool}
+A misc tool is created by the global constructor function
+misc. A default misc tool called defaultmisc is created
+automatically on inclusion of misc.g. A convenient shorthand name
+for defaultmisc is dms. Normally the defaultmisc tool is all
+that you'll need.
+\end{ahconstructor}
+
+
+\begin{ahfunction}{type}{Returns tool type; ``misc''}
+\begin{ahdescription}
+Returns the type of tool, in this case, ``misc''.
+\end{ahdescription}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+- dms.type()
+misc
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{shellcmd}{Execute a shell command}
+\begin{ahdescription}
+Execute a shell command, logging results optionally.  The Glish
+function {\tt shell()} can also be used directly but it does not split
+lines or log.  This function does not use the gmisc client,
+just the Glish shell client.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{command}{Command string}{}{String}
+\ahaddarg{log}{Log the output?}{T}{Bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.shellcmd('ls -l', log=F)
+total 54
+lrwxrwxrwx   1 root     bin            31 Jul 29 16:45 RCS -> /aips++/daily/rcs/trial/apps/ms
+drwxr-xr-x   2 tcornwel staff         512 Aug 29 15:11 aips++.log.table
+-r--r--r--   1 tcornwel staff         256 Aug  1 21:31 makefile
+-rw-r--r--   1 tcornwel staff        1556 Aug 29 09:28 ms.cc
+-r--r--r--   1 tcornwel staff        7275 Aug 29 09:29 ms.g
+-rw-r--r--   1 tcornwel staff        8889 Aug 29 09:28 ms.help
+-rw-r--r--   1 tcornwel staff       22235 Aug 29 09:28 msImpl.cc
+-rw-r--r--   1 tcornwel staff        4200 Aug 29 09:28 msImpl.h
+-rw-r--r--   1 tcornwel staff         269 Aug  1 21:41 templates
+drwxrwsr-x   2 tcornwel staff         512 Aug  1 21:41 tmplinst
+T 
+- shell('ls -l')
+total 54 lrwxrwxrwx   1 root     bin            31 Jul 29 16:45 RCS -> /aips++/daily/rcs/trial/apps/ms drwxr-xr-x   2 tcornwel staff         512 Aug 29 15:11 aips++.log.table -r--r--r--   1 tcornwel staff         256 Aug  1 21:31 makefile -rw-r--r--   1 t
+
+
+
+
+cornwel staff        1556 Aug 29 09:28 ms.cc -r--r--r--   1 tcornwel staff        7275 Aug 29 09:29 ms.g -rw-r--r--   1 tcornwel staff        8889 Aug 29 09:28 ms.help -rw-r--r--   1 tcornwel staff       22235 Aug 29 09:28 msImpl.cc -rw-r--r--   1 tcornwe
+
+
+
+
+l staff        4200 Aug 29 09:28 msImpl.h -rw-r--r--   1 tcornwel staff        3059 Jun 12 15:07 tMS.cc~ -rw-r--r--   1 tcornwel staff         269 Aug  1 21:41 templates drwxrwsr-x   2 tcornwel staff         512 Aug  1 21:41 tmplinst 
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{escapespecial}{escape characters in a string special to the shell}
+\begin{ahdescription}
+This simply replaces the characters {\tt *}, {\tt \#}, {\tt (},
+{\tt )}, and {\tt |}, by the sequences \verb+\*+ -- \verb+\|+,
+respectively.  This is mainly used on strings that are to be passed
+to the shell.  In a compromise between speed and completeness, this is
+only a subset of all possible significant characters, but it covers
+the most commonly problematic cases.  There is no escape mechanism to
+avoid the filtering.  This uses the builtin regex substitution
+capabilities of Glish.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{string}{String}{}{String}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+- dms.escapespecial('abc def ghi jkl mno')
+abc def ghi jkl mno 
+- dms.escapespecial('a#c d*f g(i j)l m|o') 
+a\#c d\*f g\(i j\)l m\|o 
+-
++ files := shell('ls -1 A*foo')                                   
+- files
+A*foo Anotherfoo 
+-
++ for (f in files) { print shell(spaste('ls -l ',f)) }                
+-rw-rw-r--   1 dbriggs  visitor        5 Dec 19 18:02 A*foo 
+-rw-rw-r--   1 dbriggs  visitor        4 Dec 19 18:16 Anotherfoo
+-rw-rw-r--   1 dbriggs  visitor        4 Dec 19 18:16 Anotherfoo
+-
++ for (f in files) { print shell(spaste('ls -l ',dms.escapespecial(f))) }
+-rw-rw-r--   1 dbriggs  visitor        5 Dec 19 18:02 A*foo
+-rw-rw-r--   1 dbriggs  visitor        4 Dec 19 18:16 Anotherfoo
+\end{verbatim}
+The {\tt *} in the filename, which we don't know about a priori, has confused
+the shell.  This is cured simply by wrapping all unknown strings in
+dms.escapespecial() before passing them to the shell.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{striptrailingblanks}{Strip trailing blanks from a string}
+\begin{ahdescription}
+This uses the builtin regex substitution and not the gmisc client.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{string}{String to be stripped}{}{String}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+- dms.striptrailingblanks("foo         ")
+foo 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stripleadingblanks}{Strip leading blanks from a string}
+\begin{ahdescription}
+This uses the builtin regex substitution and not the gmisc client.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{string}{String to be stripped}{}{String}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+- dms.stripleadingblanks("       foo")
+foo 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{patternmatch}{Find matching strings using shell expressions}
+\begin{ahdescription}
+This pattern matching function uses the shell expression syntax familiar
+to anyone who has used a UNIX shell. In brief:
+
+
+\begin{description}
+\item[*]     Matches any string, including the null string.
+\item[?]    Matches any single character.
+\end{description}
+
+Note that \verb+[...]+ matches any one of the enclosed characters.  A
+pair of characters separated by - matches any character lexically
+between the pair, inclusive.  If the first character following the
+opening \verb+[+ is a !, any character not enclosed is matched.
+
+The following characters have a special meaning to the shell
+and cause termination of a word unless quoted:
+
+\begin{verbatim}
+;  &  (  )  |  ^  <  >  newline  space  tab
+\end{verbatim}
+
+A character may be  quoted  (that  is,  made  to  stand  for
+itself) by preceding it with a backslash (\verb+\+) or inserting it
+between a pair of quote marks ('' or ""). 
+ 
+For further definition of the syntax, see the UNIX man page for sh.
+This is a simple syntax that suffices for many applications. If a more
+capable matching syntax is needed, use the builtin regex capabilities
+of Glish.
+
+This is implemented entirely in Glish and not the gmisc client.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{pattern}{Pattern}{}{Any shell expression}
+\ahaddarg{strings}{Strings to be tested}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.patternmatch ('12**', "12345 89712 123 12 11")
+12345 123 12
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fields}{list fields in a record or tool}
+\begin{ahdescription}
+This function is similar to the glish function field\_names, except that it
+lists the names of fields in a human-readable format.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{rec}{record name}{}{record}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- pg := pgplotter()
+- dms.fields(pg)
+activatecallback    hist                qcol                settings            addredrawfunction   iden                qcr                 setx2scale          addtool             imag                qcs                 setxaxisgrid        arro                isa                 qfs                 setxaxislabel       ask                 lab                 qhs                 setxscale           asking              lastchange          qid                 sety2axisgrid       bbuf                ldev                qinf                sety2scale          bin                 len                 qitf                setyaxisgrid        box                 line                qls                 setyaxislabel       busy                maskline            qlw                 setyscale           canplay             message             qpos                sfs                 circ                move                qtbg                shls                clear               mtxt                qtxt                shortnametofullname conb                numb                qvp                 shs                 conl                page                qvsz                sitf                cons                panl                qwin                size                cont                pap                 record              sls                 ctab                pgpa                recording           slw                 curs                pixl                rect                stbg                cursor              play                refresh             subp                deactivatecallback  plotfile            resetplotnumber     svp                 demo                plotxy              resetzoom           swin                displaylist         plotxy1             restore             tbox                done                plotxy2             rnd                 text                draw                ploty               rnge                timey               ebuf                ploty2              sah                 timey2              editgui             pnts                save                title               env                 poly                scf                 tool                eras                postscript          sch                 type                errb                psprint             sci                 unsa                errx                psprinttofile       scir                unzoom              erry                pt                  scr                 updt                getagent            ptxt                screen              userframe           getcallbacks        qah                 scrn                vect                gray                qcf                 setagent            vsiz                gui                 qch                 setcallback         vstd                help                qci                 setcolor            wedg                hi2d                qcir                setplottitle        wnad              
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fileexists}{Does this file exist?}
+\begin{ahdescription}
+This provides a simple interface to the UNIX test command
+for testing for the existence of files. See the man page
+for test for a definition of the options that can be used
+to test for particular file types. The default test is to
+see if a file exists and has a size greater than zero.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{file name}{}{String}
+\ahaddarg{opt}{option for UNIX test command}{-s}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.fileexists('foo')
+F 
+- dms.fileexists('.')
+T 
+- dms.fileexists('.', '-f')
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{dir}{Return the directory for a given directory name}
+\begin{ahdescription}
+This returns a set of strings containing the files in the specified
+directory. Note that the directory name '.' is always returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{directoryname}{Directory name}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.dir('.')
+. tmplinst ms.help makefile RCS templates ms.cc ms.g msImpl.cc msImpl.h aips++.log.table 
+- dms.dir('RCS')
+RCS UVFitsWriter.h,v makefile,v ms.cc,v ms.g,v ms.help,v msImpl.cc,v templates,v msImpl.h,v UVFitsFiller.cc,v UVFitsFiller.h,v UVFitsWriter.cc,v 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{parentdir}{Return the parent directory}
+\begin{ahdescription}
+This returns the name of the parent directory.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{directoryname}{Directory name}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.parentdir('/home/tarzan/tcornwel')
+/home/tarzan 
+- dms.parentdir('/home/tarzan/tcornwel/aips++')
+/home/tarzan/tcornwel 
+- dms.parentdir('.')          # If current directory is /home/tarzan/tcornwel
+/home/tarzan 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{thisdir}{Return the name of this directory}
+\begin{ahdescription}
+This returns the full name of this directory.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{directoryname}{Directory name}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.thisdir('.')
+/home/tarzan/tcornwel
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{filetype}{returns the UNIX type of file}
+\begin{ahargs}
+\ahaddarg{filename}{File name}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dms.filetype('.')
+Directory 
+- dms.filetype('ms.cc') 
+Regular File 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fopen}{interface to c fopen}
+\begin{ahdescription}
+This function and those following emulate the low-level
+input/output functions available in C. We expect to replace
+these in the near future.
+
+This function opens a file, returning a file id (an integer)
+that must be used to close the file.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{File name}{}{String}
+\ahaddarg{mode}{UNIX mode of access}{}{Usually r, w, or a}
+\end{ahargs}
+\ahreturns{fileid}
+\begin{ahexample}
+\begin{verbatim}
+- bugReport := spaste('/tmp/bugreport.',emailID)
+- fp := dms.fopen(bugReport, 'w')
+- dms.fclose(fp)
+T
+\end{verbatim}
+In the example, a filename found in the string variable bugReport is opened
+for writing.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fclose}{close fileid}
+\begin{ahargs}
+\ahaddarg{fileid}{File id}{}{file id as returned by fopen}
+\end{ahargs}
+\ahreturns{fileid}
+\begin{ahexample}
+\begin{verbatim}
+- fp := dms.fopen('myfile', 'w')
+# Do some stuff here
+- dms.fclose(fp)
+T
+\end{verbatim}
+\end{ahfunction}
+
+\begin{ahfunction}{fprintf}{C-style formatted output}
+\begin{ahdescription}
+This and the following routines provide input and output
+formatting capabilities similar to those provided in C
+libraries. See the UNIX man page on {\em e.g.} fprintf
+for more information. Differences from the C routines
+are described.
+
+The ellipsis {\em ...} denotes that any number of
+arguments may be provided.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{fileid}{File id}{}{file id as returned by fopen}
+\ahaddarg{format}{c-style format description}{}{String}
+\ahaddarg{...}{Additional arguments}{}{Strings, floats, ints, etc...}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- fp := dms.fopen('myfile', 'w')
+- sourcename := 'mySource'
+- hour := 12
+- minute := 4
+- seconds := 42.3
+- dms.fprintf(fp, '%s %02d:%02d:%05.2f\n', sourcename, hour, minute, seconds)
+- dms.fclose(fp)
+T
+\end{verbatim}
+In this example you'd get the following in myfile
+
+mySource 12:04:42.30   
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fgets}{interface to fgets}
+\begin{ahdescription}
+Get a string buffer from a file. fgets is similar to the C function
+fgets but different in a couple of key ways.  First it reads up to 500
+characters or until a new line is reached in the file.  Unfortunately
+500 is hard-coded (the current implementation requires this, you don't
+want to know).  Second, if you supply a fill character it will replace
+blank characters with your fill character.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{fileid}{File id}{}{file id as returned by fopen}
+\ahaddarg{filler}{string buffer to replace blanks}{''}{String}
+\end{ahargs}
+\ahreturns{Contents of current line in the file}
+\begin{ahexample}
+\begin{verbatim}
+- fp := dms.fopen('myfile', 'r')
+- a := dms.fgets(fp)
+- print a
+mySource 12:04:42.30
+\end{verbatim}
+\end{ahexample}
+dms.fgets(fp) will return 0 when it reaches the end of file.
+\end{ahfunction}
+
+\begin{ahfunction}{readfile}{reads a file into a buffer}
+\begin{ahdescription}
+The file is read into a buffer. This is useful for 
+reading binary files, for example.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{File name}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- buff:=dms.readfile("/export/home/estella/AIPS/DATA/CAD000000.0B4;")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fopen}{interface to c fopen}
+\begin{ahdescription}
+This function and those following emulate the low-level
+input/output functions available in C. We expect to replace
+these in the near future.
+
+This function opens a file, returning a file id (an integer)
+that must be used to close the file.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{File name}{}{String}
+\ahaddarg{mode}{UNIX mode of access}{}{Usually r, w, or a}
+\end{ahargs}
+\ahreturns{fileid}
+\begin{ahexample}
+\begin{verbatim}
+- bugReport := spaste('/tmp/bugreport.',emailID)
+- fp := dms.fopen(bugReport, 'w')
+- dms.fclose(fp)
+T
+\end{verbatim}
+In the example, a filename found in the string variable bugReport is opened
+for writing.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{initspinner}{start an ascii activity spinner}
+\begin{ahdescription}
+This initializes a traditional ascii activity spinner.  The characters
+{\tt |}, {\tt /}, {\tt -}, and \verb+\+ are printed periodically, followed
+by a backspace.  The printing is done outside the standard Glish output
+mechanism, resulting in a spinning bar.  If any Glish output is done during
+this time, orphaned characters will be left over as the cursor moves.  In
+particular, this will probably confuse Glish's notion of where the cursor
+is during editing.  It is probably best not to leave this active while
+the user is expected to type anything.  Use
+\ahlink{killspinner}{misc:misc.killspinner} to shut this down.
+As there should only be one of these things active at once, there can
+only be one spinner per misc tool, and the spinner argument is
+implicit.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{interval}{Interval in seconds between characters}{}{Real}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{killspinner}{kill an ascii activity spinner}
+\begin{ahdescription}
+This shuts down the spinner as started by
+\ahlink{initspinner}{misc:misc.initspinner}.
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{listfields}{Hierarchically list fields in a record}
+
+\begin{ahargs}
+\ahaddarg{rec}{Record to list}{}{Glish record}
+\ahaddarg{listdata}{List data at bottom of record}{T}{Boolean}
+\ahaddarg{depth}{Depth in record}{0}{Integer}
+
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+This function hiearchically lists the contents of a record
+by drawing a tree and optionally printing the data at the
+end of each branch.
+
+If you choose not to list the data at the end of the branch,
+then its type will be printed for you instead.
+
+The {\stfaf depth} argument is just used to offset
+the printed output as it works its way down the record.
+If you put some other value, other than 0, then the text
+will be offset to the right differently.  You shouldn't
+need to use it.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+r := [=]
+r.x := [=]
+r.y := [=];
+r.x.a := [1,2,3]
+r.x.b := 'trout'
+r.y.a := [10,20,30]
+r.y.b := 'salmon'
+r.y.c := [=]
+r.y.c.i := 1
+r.y.c.k := [=]
+r.y.c.k.x := [1,2,3,4]
+r.y.c.k.y := -400
+r.y.c.j := 1
+#
+dms.listfields(r)
+  x
+    a = [1 2 3] 
+    b = trout
+  y
+    a = [10 20 30] 
+    b = salmon
+    c
+      i = 1
+      k
+        x = [1 2 3 4] 
+        y = -400
+      j = 1
+#
+dms.listfields(r, listdata=F)
+  x
+    a = integer [3]
+    b = string
+  y
+    a = integer [3]
+    b = string
+    c
+      i = integer
+      k
+        x = integer [4]
+        y = integer
+      j = integer
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{tovector}{Convert variable to a vector}
+
+\begin{ahargs}
+\ahaddarg{thing}{Variable to convert}{}{Any Glish variable}
+\ahaddarg{type}{Specify the output type of the vector}{'string'}{String chosen from `string', `float', `double', `integer'}
+\ahaddarg{unsetvalue}{Unset value for unset items in records}{unset}{Numeric value}
+\end{ahargs}
+\ahreturns{Vector of given type or fail}
+
+\begin{ahdescription}
+This function converts a Glish variable to a vector of the given type.
+It is a bit specialized, and ultimately this functionality should
+be moved to a central parsing location like entryparser.g
+
+Its purpose is so that a vector variable can be specified as a vector,
+a string, or a vector of strings.  Thus no matter how the vector is
+entered to Glish, the right thing comes back.  It is really meant for
+numeric and string vectors.  If you put in what you want out
+(e.g. input a float vector and ask for the output to be a float
+vector) that is ok.   If the input is a string, you can use
+space or comma or both delimiters.
+
+After attempting to convert the input (argument {\tt thing}) to a
+vector, it is type converted to the specified type.  
+
+The {\tt unsetvalue} argument is only relevant if the input {\tt
+thing} is a record.  Then, any fields in the record that are unset,
+are replaced by {\tt unsetvalue}.  If {\tt unsetvalue=unset} and a
+record field is unset, then an exception will be thrown.  The record
+fields are then converted to vector of the appropriate type.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- dms.tovector("1 2.2 3", 'double')     # Vector of strings
+[1 2.2 3]  
+- dms.tovector('1 2.2 3', 'double')     # String (space delimiters)
+[1 2.2 3]  
+- dms.tovector('1,  2.2,  3', 'double') # String (space and comma delimiters)
+[1 2.2 3]  
+- dms.tovector([1,2.2,3], 'float')      # Numeric vector
+[1 2.2 3]  
+- dms.tovector([1,2.2,3], 'integer')    # Float -> integer
+- r := [=]
+- r.a := '1'
+- r.b := unset                          # Unset field
+- r.c := 2
+- dms.tovector(r,'float', 20)           # Record -> float
+[1 20 2] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\end{ahobject}
+
+\input{os.help}
+\input{aipsrc.help}
+\input{aipsrcedit.help}
+\input{getrc.help}
+\input{sysinfo.help}
+\input{about.help}
+\input{printer.help}
+\input{aips2help.help}
+\input{sh.help}
+\input{substitute.help}
+\input{itemcontainer.help}
+%
+\begin{ahfunction}{bug}{Displays the \aipspp\ bug reporting form}
+\begin{ahdescription}
+Bug allows you to report an \aipspp\ bug directly from Glish/Tk.  You
+fill out the requested information and press the send button.  The
+bug report is then sent to aips2bugs@aoc.nrao.edu and put into the
+\aipspp\  bug reporting and tracking system.  You will receive an
+acknowledgment once the bug is in the system.
+
+There are four required fields, Name, Email, Brief Description and Detail
+Description.  If data is missing in any of these fields your bug report
+will not be sent.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{ask}{Displays the \aipspp\ question submission form}
+\begin{ahdescription}
+Ask allows you to ask a question of the \aipspp\ Project directly from
+Glish/Tk.  You fill out the requested information and press the send
+button.  The question is then sent to aips2bugs@aoc.nrao.edu and put
+into the \aipspp\ bug reporting and tracking system.  You will receive
+an acknowledgment once the question is in the system.
+
+There are four required fields, Name, Email, Brief Description and Detail
+Description.  If data is missing in any of these fields your bug report
+will not be sent.
+\end{ahdescription}
+\end{ahfunction}
+%
+\input{assay.help}
+\input{stopwatch.help}
+\input{edit.help}
+\input{note.help}
+\input{plugins.help}
+\input{timer.help}
+\input{serverexists.help}
+\input{aips2loc.help}
+\input{ftp.help}
+\input{make.help}
+\input{executive.help}
+
+\end{ahmodule}

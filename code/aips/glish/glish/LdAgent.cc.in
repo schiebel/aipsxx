@@ -1,0 +1,466 @@
+// $Id: LdAgent.cc.in,v 19.13 2004/11/03 20:38:58 cvsmgr Exp $
+// Copyright (c) 2002 Associated Universities Inc.
+
+#include "Glish/glish.h"
+RCSID("@(#) $Id: LdAgent.cc.in,v 19.13 2004/11/03 20:38:58 cvsmgr Exp $")
+#include "system.h"
+#include "Sequencer.h"
+#include "LdAgent.h"
+#include "Glish/Reporter.h"
+
+#include <time.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <dlfcn.h>
+
+LoadedAgentSelectee::LoadedAgentSelectee( Sequencer* s, LoadedProxyStore *store, LoadedAgent *a, int source_fd )
+	: proxy_store(store), agent(a), Selectee( source_fd ), sequencer(s), in_fd(source_fd) { }
+
+int LoadedAgentSelectee::NotifyOfSelection( )
+	{
+	int result = 0;
+	static int count = 0;
+	pthread_mutex_lock( &proxy_store->out_lock );
+	int len = proxy_store->outgoing.length( );
+	pthread_mutex_unlock( &proxy_store->out_lock );
+
+	while ( len > 0 )
+		{
+		pthread_mutex_lock( &proxy_store->out_lock );
+		GlishEvent *event = proxy_store->outgoing.remove_nth(0);
+		pthread_mutex_unlock( &proxy_store->out_lock );
+
+		sequencer->NewEvent( agent, event, 0, 0, 0 );
+
+		char b;
+		read( in_fd, &b, 1 );
+
+		pthread_mutex_lock( &proxy_store->out_lock );
+		len = proxy_store->outgoing.length( );
+		pthread_mutex_unlock( &proxy_store->out_lock );
+		}
+
+	return result;
+	}
+
+LoadedProxyStore::LoadedProxyStore( Sequencer *s, int in, int out, GlishLoopFunc f ) :
+		ProxyStore( ), loaded_loop(f), done(0), do_quiet(1), in_fd(in), out_fd( out ), last_event(0),
+		pending_reply(0), seq(s)
+	{
+	pthread_mutex_init(&in_lock,NULL);
+	pthread_mutex_init(&out_lock,NULL);
+
+	pthread_mutex_init(&init_lock,NULL);
+	pthread_mutex_lock( &init_lock );
+
+	task_str = seq->NewTaskId( task_id );
+	}
+
+IValue *LoadedProxyStore::SendEvent( const char *event_name, parameter_list *args,
+			    int is_request, u_long flags, Expr *from_subsequence )
+	{
+	return is_request ? new IValue( glish_true ) : 0;
+	}
+
+GlishEvent* LoadedProxyStore::NextEvent( EventSource * )
+	{
+	pthread_mutex_lock( &in_lock );
+	int len = incoming.length( );
+	pthread_mutex_unlock( &in_lock );
+	char b;
+
+	read( in_fd, &b, 1 );
+
+	Unref( last_event );
+
+	pthread_mutex_lock( &in_lock );
+	last_event = incoming.remove_nth(0);
+	pthread_mutex_unlock( &in_lock );
+	
+	if ( last_event )
+		{
+		IValue *v = (IValue*) last_event->value;
+		if ( last_event->IsRequest() && v->FieldVal( "*reply*", pending_reply ) )
+			{  // Request/reply event; unwrap the request
+			IValue *request = (IValue*) v->Field( "*request*" );
+			if ( ! request ) glish_fatal->Report( "bad request/reply event" );
+			Ref( request );
+			Unref(v);
+			last_event->value = request;
+			}
+		}
+
+	return last_event;
+	}
+
+void LoadedProxyStore::Reply( const Value *event_value, const ProxyId &proxy_id )
+	{
+	if ( ! ReplyPending() )
+		glish_error->Report( "issued Reply without having received a corresponding request" );
+	else
+		{
+		  if ( &proxy_id != &glish_proxyid_dummy && proxy_id.interp() && proxy_id.task() && proxy_id.id() )
+			{
+			recordptr rec = create_record_dict( );
+			rec->Insert( string_dup("id"), ValCtor::create((int*)proxy_id.array(),ProxyId::len(),COPY_ARRAY) );
+			rec->Insert( string_dup("value"), deep_copy_value(event_value) );
+			GlishEvent e( (const char*) pending_reply, ValCtor::create(rec) );
+			e.SetIsReply();
+			e.SetIsProxy();
+			PostEvent( &e );
+			}
+		else
+			{
+			GlishEvent e( (const char*) pending_reply, event_value );
+			e.SetIsReply();
+			PostEvent( &e );
+			}
+		}
+
+	free_memory( pending_reply );
+	pending_reply = 0;
+	}
+
+void LoadedProxyStore::PostEvent( const char* event_name, const Value* event_value, const EventContext &context,
+		const ProxyId &proxy_id )
+	{
+	if ( &proxy_id != &glish_proxyid_dummy && proxy_id.interp() && proxy_id.task() && proxy_id.id() )
+		{
+		recordptr rec = create_record_dict( );
+		rec->Insert( string_dup("id"), ValCtor::create((int*)proxy_id.array(),ProxyId::len(),COPY_ARRAY) );
+		rec->Insert( string_dup("value"), deep_copy_value(event_value) );
+		GlishEvent e( event_name, ValCtor::create(rec) );
+		e.SetIsProxy( );
+		PostEvent( &e, context );
+		}
+	else
+		{
+		GlishEvent e( event_name, event_value );
+		PostEvent( &e, context );
+		}
+	}
+
+void LoadedProxyStore::PostEvent( const GlishEvent* event, const EventContext & )
+	{
+	GlishEvent *new_event = new GlishEvent( string_dup(event->name), deep_copy_value(event->value) );
+	new_event->SetFlags( event->Flags() );
+	if ( do_quiet ) new_event->SetIsQuiet( );
+
+	pthread_mutex_lock( &out_lock );
+	outgoing.append(new_event);
+	pthread_mutex_unlock( &out_lock );
+	write( out_fd, "", 1 );
+	}
+
+void LoadedProxyStore::Error( const char* msg, const ProxyId &proxy_id )
+	{
+	int quiet = do_quiet;
+	do_quiet = 0;
+
+	if ( ! ReplyPending() )
+		{
+		char buf[8192];
+		if ( last_event )
+			{
+			sprintf( buf, "bad \"%s\" event: %s",
+				 last_event->name, msg );
+			msg = buf;
+			}
+		IValue m( msg );
+		PostEvent( "error", &m );
+		}
+	else
+		{
+		if ( last_event )
+			{
+			char buf[1024];				// LOOK HERE
+			sprintf( buf, "bad \"%s\" event: %s", last_event->name, msg );
+			Value failv( buf, (const char*)0, 0 );
+			Reply( &failv, proxy_id );
+			}
+		else
+			{
+			Value failv( msg, (const char*)0, 0 );
+			Reply( &failv, proxy_id );
+			}
+		}
+
+	do_quiet = quiet;
+	}
+
+void LoadedProxyStore::Error( const char* fmt, const char* arg, const ProxyId &proxy_id )
+	{
+	char buf[8192];
+	sprintf( buf, fmt, arg );
+	Error( buf, proxy_id );
+	}
+
+void LoadedProxyStore::Error( const Value *v, const ProxyId &proxy_id )
+	{
+	int quiet = do_quiet;
+	do_quiet = 0;
+
+	if ( last_event )
+		{
+		char *msg = v->StringVal();
+		if ( ReplyPending() )
+			{
+			char buf[1024];				// LOOK HERE
+			sprintf( buf, "bad \"%s\" event: %s", last_event->name, msg );
+			Value failv( buf, (const char*)0, 0 );
+			Reply( &failv, proxy_id );
+			}
+		else
+			{
+			char buf[1024];
+			sprintf( buf, "bad \"%s\" event: %s", last_event->name, msg );
+			IValue msg( buf );
+			PostEvent( "error", &msg );
+			}
+		free_memory(msg);
+		}
+	else
+		PostEvent( "error", v );
+
+	do_quiet = quiet;
+	}
+
+void LoadedProxyStore::Unrecognized( const ProxyId &proxy_id )
+	{
+	if ( ! last_event )
+		return;
+
+	if ( last_event->name[0] == '*' )
+		// Internal event - ignore.
+		return;
+
+	int quiet = do_quiet;
+	do_quiet = 0;
+
+	if ( ReplyPending() )
+		{
+		char buf[1024];
+		sprintf( buf, "unrecognized event: \"%s\"", last_event->name );
+		Value failv( buf, (const char*)0, 0 );
+		Reply( &failv, proxy_id );
+		}
+	else
+		{
+		IValue name( last_event->name );
+		PostEvent( "unrecognized", &name );
+		}
+
+	do_quiet = quiet;
+	}
+
+
+const ProxyId LoadedProxyStore::getId( )
+	{
+	int *id = seq->NewObjId(task_id);
+	ProxyId result(id);
+	free_memory(id);
+	return result;
+	}
+
+void LoadedProxyStore::Loop( )
+	{
+	int error = pthread_create( &thread, 0, start_thread, (void *) this );
+	}
+
+void LoadedProxyStore::Initialized( )
+	{
+	pthread_mutex_unlock( &init_lock );
+	}
+
+void *LoadedProxyStore::start_thread( void *object )
+	{
+	((LoadedProxyStore*)object)->doLoop( );
+	return 0;
+	}
+
+void LoadedProxyStore::fileproc( void *obj )
+	{
+	LoadedProxyStore *stor = (LoadedProxyStore*) obj;
+	GlishEvent *e = stor->NextEvent();
+
+	if ( ! e )
+		stor->done = 1;
+	else
+		stor->ProcessEvent( e );
+
+	while ( stor->QueuedEvents() )
+		{
+		e = stor->NextEvent();
+
+		if ( e )
+			stor->ProcessEvent( e );
+		else
+			{
+			stor->done = 1;
+			break;
+			}
+		}
+	}
+
+void LoadedProxyStore::doLoop( )
+	{
+	GlishCallback cb( in_fd, fileproc, this );
+	if ( loaded_loop ) (*loaded_loop)( this, &cb, 1, 0, 0 );
+	}
+
+
+LoadedAgent::LoadedAgent( const_args_list *args, TaskAttr *task_attrs, Sequencer *s ) :
+				ProxySource( s, 0 ), handle(0)
+	{
+	if ( pipe( in ) < 0 || pipe( out ) < 0 )
+		perror( "glish: problem creating pipe" );
+
+	IValue *arg = 0;
+	if ( args->length() > 0 && (arg = (IValue*) (*args)[0]) &&
+	     arg->Type() == TYPE_STRING && arg->Length() > 0 )
+		{
+		charptr object = arg->StringPtr(0)[0];
+		char *sopath = which_shared_object( "GlishTk@SLIB_SUFFIX@" );
+		sopath = sopath ? sopath : string_dup( "GlishTk@SLIB_SUFFIX@" );
+
+		if ( ! (handle = dlopen( sopath, RTLD_NOW | RTLD_GLOBAL )) )
+			{
+			const char *error = dlerror( );
+			if ( ! error )
+				perror( "Error:" );
+			else
+				fprintf( stderr, "%s\n", error );
+			fprintf( stderr, "Couldn't open shared object: \"%s\"\n", sopath );
+			free_memory( sopath );
+			}
+		else
+			{
+			free_memory( sopath );
+			GlishInitFunc func = (GlishInitFunc) dlsym( handle, "GlishTk_init" );
+			if ( ! func )
+				{
+				const char *error = dlerror( );
+				if ( ! error )
+					perror( "Error:" );
+				else
+					fprintf( stderr, "%s\n", error );
+				fprintf( stderr, "Couldn't find initialization function: \"GlishTk_init\"\n" );
+				}
+
+			else
+				{
+				GlishLoopFunc loop_func = (GlishLoopFunc) dlsym( handle, "GlishTk_loop" );
+				if ( ! loop_func )
+					{
+					const char *error = dlerror( );
+					if ( ! error )
+						perror( "Error:" );
+					else
+						fprintf( stderr, "%s\n", error );
+
+					fprintf( stderr, "Couldn't find initialization function: \"GlishTk_loop\"\n" );
+					}
+
+				else
+					{
+					stor = new LoadedProxyStore( s, out[0], in[1], loop_func );
+					(*func)( stor, 0, 0 );
+
+					stor->Loop( );
+
+					s->AddSelectee( selectee = new LoadedAgentSelectee( s, stor, this, in[0] ) );
+					pthread_mutex_lock( &stor->init_lock );
+					pthread_mutex_unlock( &stor->init_lock );
+					}
+				}
+			}
+
+		}
+	}
+
+IValue *LoadedAgent::SendEvent( const char *event_name, parameter_list *args,
+				int is_request, u_long flags, Expr */*from_subsequence*/ )
+	{
+	return SendEvent( event_name, args, is_request, flags, glish_proxyid_dummy );
+	}
+
+
+IValue* LoadedAgent::SendEvent( const char* event_name, parameter_list* args,
+				int is_request, u_long flags, const ProxyId &proxy_id )
+	{
+	IValue* event_val = BuildEventValue( args, 1 );
+
+	IValue* result = SendEvent( event_name, event_val, is_request, flags, proxy_id );
+	Unref( event_val );
+
+	return result;
+	}
+
+IValue* LoadedAgent::SendEvent( const char* event_name, IValue *&event_val,
+				int is_request, u_long flags, const ProxyId &proxy_id, int is_bundle )
+	{
+	char b;
+	IValue *result = 0;
+	int is_proxy = &proxy_id != &glish_proxyid_dummy;
+
+	if ( is_proxy )
+		{
+		recordptr rec = create_record_dict( );
+		rec->Insert(string_dup("id"), new IValue((int*)proxy_id.array(),ProxyId::len(),COPY_ARRAY));
+		rec->Insert(string_dup("value"), event_val);
+		event_val = new IValue(rec);
+		}
+
+	//
+	// thread which the loaded client is running in gets its own copy
+	//
+	if ( ! is_request )
+		{
+		GlishEvent *event = new GlishEvent( string_dup( event_name ), deep_copy_value( event_val ) );
+		if ( is_bundle ) event->SetIsBundle();
+		if ( is_proxy ) event->SetIsProxy( );
+
+		pthread_mutex_lock( &stor->in_lock );
+		stor->incoming.append( event );
+		pthread_mutex_unlock( &stor->in_lock );
+		write( out[1], "", 1 );
+		}
+	else
+		{
+		const char* fmt = "*%s-reply*";
+		char* reply_name = alloc_char( strlen( event_name ) + strlen( fmt ) + 1 );
+		sprintf( reply_name, fmt, event_name );
+
+		recordptr rptr = create_record_dict();
+		rptr->Insert( string_dup("*request*"), deep_copy_value( event_val ) );
+		char **sary = alloc_charptr( 1 );
+		sary[0] = string_dup( reply_name );
+		rptr->Insert( string_dup("*reply*"), new IValue( (charptr*) sary, 1 ) );
+
+		GlishEvent *event = new GlishEvent( string_dup( event_name ), new IValue( rptr ) );
+		event->SetIsRequest( );
+		if ( is_proxy ) event->SetIsProxy( );
+		if ( is_bundle ) event->SetIsBundle();
+
+		pthread_mutex_lock( &stor->in_lock );
+		stor->incoming.append( event );
+		pthread_mutex_unlock( &stor->in_lock );
+
+		write( out[1], "", 1 );
+
+		if ( &proxy_id != &glish_proxyid_dummy && proxy_id.interp() && proxy_id.task() && proxy_id.id() )
+			{
+			Agent *agent = GetProxy( proxy_id );
+			if ( ! agent ) return (IValue*) Fail( "bad proxy identifier" );
+			result = sequencer->AwaitReply( agent, event_name, reply_name );
+			}
+		else
+			result = sequencer->AwaitReply( this , event_name, reply_name );
+		}
+
+	return result;
+	}
+
+LoadedAgent::~LoadedAgent( )
+	{
+	}

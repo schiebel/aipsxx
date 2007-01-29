@@ -1,0 +1,538 @@
+\chapter{Processing Tabular Information}
+\label{GRtabular}
+
+
+{\em Tim Cornwell}
+
+
+\section{Summary}
+
+This chapter provides an overview of how to process tabular data
+with standard \tools\ and \glish\ capabilities.
+
+The major modules and \tools\ that are required are:
+
+\begin{itemize}
+
+\item {\glish\ -} as the command line processor, for reading and writing
+files, and for various processing operations. 
+
+\item {\htmlref{Table}{table:table} \tool\ - } is for reading, writing, accessing and
+browsing tables.  Conversions can be made to and from ascii formats, and
+from FITS binary tables.  The Table  \tool\ supports selections and
+queries using the \htmladdnormallink{Table Query Language
+(TaQL)}{../../notes/199/199.html}. 
+
+\item {\htmlref{Pgplotter}{plotter:pgplotter} \tool\ - } is used to plot
+data using an interface to the PGPLOT graphics package.
+
+\item {\htmlref{Measures}{measures} \& \htmlref{Quanta}{quanta} \tools\ - } are
+useful for various conversions. 
+
+\item {\htmlref{mathematics}{mathematics} module - } has various
+\tools\ for mathematical operations such as statistics, fitting,
+fourier transforms, etc.
+
+\end{itemize}
+
+The \htmladdnormallink{User Reference
+Manual}{../../user/Refman/Refman.html} contains the primary
+documentation for all these \tools\ and their functions. The aim of this
+document is to provide pointers to the relevant chapters and examples.
+ 
+\section{The basics}
+
+Most data in \aipspp\ are stored in tables.  A table consists of an
+unlimited number of columns of data, with optional column keywords and
+optional table keywords.  See the  \htmlref{table}{table} module
+documentation for details.  
+
+There are different flavours of tables, e.g. Measurement Sets holding
+visibilities, Images, calibration tables and so on.   The flavour
+difference simply means that these tables have (different) specific
+required entries and there are high-level \tools\ which understand these
+differences.  But fundamentally, all these tables use the same
+underlying data structure, which can be accessed via a generic Table
+\tool.  A Table \tool\ provides you with direct access to a table, no
+matter what flavour it is.  You can recover, manipulate and display the
+data with it.
+
+As well as using a Table \tool, one can also manipulate tabular
+information (however it is stored) with \glish\ itself.  Examples
+are given below.
+
+
+\subsection{Reading and writing}
+
+You have a number of options for reading your data into \aipspp.
+
+\begin{itemize}
+
+\item Use the intrinsic \glish\ input and output operations to read
+either ASCII or binary files.
+
+\item Use the Table \tool\ constructors 
+\htmlref{tablefromascii}{table:table.tablefromascii.constructor} or
+\htmlref{tablefromfits}{table:table.tablefromfits.constructor} to read into a
+\htmlref{Table}{table:table} \tool.
+
+\item There are specialized readers for certain formats and purposes. 
+For example, to read NVSS catalog information from the
+\htmladdnormallink{NVSS catalog search
+page}{http://www.cv.nrao.edu/NVSS/NVSS.html}into a
+\htmlref{componentlist}{componentmodels:componentlist}, you can use the
+constructor
+\htmlref{asciitocomponentlist}{componentmodels:componentlist.asciitocomponentlist.constructor}. 
+There are similar readers for FIRST and WENSS. 
+
+\end{itemize}
+
+Reading into a table is often the best route  either if you have lots of
+data or you want to do things like selections and queries on the table. 
+Reading directly into \glish\ variables is adequate otherwise, and is
+more convenient if the data needs some preprocessing. 
+
+To write information out in an ASCII file, the basic route is to use the
+\htmlref{table.toascii}{table:table.toascii.function} function.
+
+\section{Examples}
+
+
+
+\subsection{Example 1: Reading from an ASCII file into a Table}
+
+As our first example, let's read from an ASCII file into a table.
+Our ASCII data file, called {\sff SampleData.txt} contains three columns:
+
+\begin{verbatim}  
+0.1  0.248   1.355
+0.2  0.596   1.306
+0.3  0.634   1.569
+0.4  0.877   1.312
+0.5  0.874   0.871
+0.6  1.182   0.550
+0.7  1.088   0.390
+0.8  1.169   0.261
+0.9  1.157   0.086
+1.0  1.075   0.171
+1.1  0.935   0.250
+1.2  0.798   0.411
+1.3  0.805   0.449
+1.4  0.504   0.530
+1.5  0.307   0.552
+1.6 -0.035   1.004
+1.7 -0.172   1.317
+1.8 -0.232   1.648
+1.9 -0.488   1.567
+2.0 -0.440   1.291
+\end{verbatim}
+
+
+We can read these into a Table \tool\ according to:
+
+\begin{verbatim}
+include 'table.g'
+tbl := tablefromascii('sample.tbl','SampleData.txt', autoheader=T)
+tbl.browse()
+#
+tbl.done()               # Destroy tool and free up resources when finished
+\end{verbatim}
+
+Here we have created a \aipspp\ table on disk called {\sff sample.tbl}
+and filled it with the data.   Note the use of the {\gcf autoheader}
+function argument to instruct the system to automatically work out the
+data type of each column. We then invoked the {\stf browse} function of
+this \tool\ to look at it.  The figure below shows you what you would
+see.
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=cookbook.dir/tablesfig1.ps,width=4.0in}
+\caption{The Table browser display}
+\label{fig:tb}
+\end{center}
+\end{figure}
+
+There are other features of the {\stf browse} GUI  which you can use to
+examine the data. For example, under the {\gif Table} item of the menu
+bar you will find a {\gif Plot} selection which enables you to make
+simple plots of the data.
+
+
+
+
+\subsection{Example 2: Reading, fitting and plotting from an ASCII file}
+
+This example shows how to read the file containing the number of lines
+of code in \aipspp\ and converts it into a plot. The file containing the
+lines of code is at
+\htmladdnormallink{ftp://aips2.nrao.edu/../linecount/source\_lines}
+{ftp://aips2.nrao.edu/../linecount/source\_lines}.  
+
+This example uses basic \glish\ I/O rather than a Table \tool, and
+includes writing some ad-hoc support \glish\ code. This is to show you
+the sort of flexibility \glish\ offers for this kind of processing.
+
+The first 10 lines are:
+\begin{verbatim}
+Wed Nov 25 14:41:51 GMT 1992 29830
+Tue Dec 1 01:08:02 GMT 1992 36557
+Tue Dec 1 12:55:01 GMT 1992 36699
+Wed Dec 2 12:55:01 GMT 1992 36951
+Thu Dec 3 12:55:01 GMT 1992 36965
+Fri Dec 4 12:55:01 GMT 1992 36965
+Sat Dec 5 12:55:01 GMT 1992 36966
+Sun Dec 6 12:55:01 GMT 1992 36966
+Mon Dec 7 12:55:00 GMT 1992 36966
+Tue Dec 8 12:55:00 GMT 1992 36966
+\end{verbatim}
+
+First we need to define a function which will convert date strings (1999, Sept, 12)
+to a fractional numerical date 1999.69589.
+
+\begin{verbatim}
+include 'quanta.g'
+toyears := function(yy, mm, dd) 
+{
+  s  := spaste (dd, mm, yy)
+  d  := dq.quantity(s)                      # Date
+#
+  s  := spaste ('01Jan', yy)
+  d0 := dq.quantity(s)                      # Reference date
+#
+  offset := dq.getvalue(d) - dq.getvalue(d0)    # Numerical offset
+  nyear := as_float(yy) + offset/365.0          # Result
+#
+  return nyear
+}
+\end{verbatim}
+
+Now we can read the file and apply some rudimentary checks
+as we go along:
+
+\begin{verbatim}
+parts := split(dq.time('today', form='dmy'), '-')
+today := toyears(parts[3], parts[2], parts[1])
+
+# We need some variables to hold the results
+loc := [=]     
+loc.date := []
+loc.size := []
+nlines := 0
+
+# Open the file containing the source lines and read a line
+f:=open('< source_lines')
+line := read(f)
+
+# While there is something in the line, process it
+while(sum(strlen(line)) > 0) {
+  nlines +:= 1
+  parts := split(line)
+  loc.date[nlines] := toyears(parts[6], parts[2], parts[3])
+  loc.size[nlines] := as_float(parts[7])
+
+  # Simple post-hoc editing
+  if((nlines>1)&&(loc.size[nlines]<0.5*loc.size[nlines-1])) nlines -:= 1
+  if(loc.date[nlines]>today) nlines -:= 1
+  if((parts[2]==19)&&(parts[3]==Jun)&&(parts[6]==1999)) nlines -:= 1
+  # Get the next line
+  line := read(f)
+}
+
+# Sort sizes on dates, and sort dates
+rec.y := sort_pair(loc.date, loc.size)
+rec.x := sort(loc.date)
+\end{verbatim}
+
+To make a plot, we can use a \htmlref{Pgplotter}{plotter:pgplotter} \tool:
+
+\begin{verbatim}
+include 'pgplotter.g'
+p:=pgplotter()
+p.plotxy(rec.x, rec.y, T, T, 'Date', 'Size (Lines of LOC)', 'Lines of Code in AIPS++')
+\end{verbatim}
+
+Suppose that we now want to make a fourth order fit and plot the result.
+We'll fit to the logarithm of the lines of code to ensure that the
+prediction is positive. We use a
+\htmlref{Polyfitter}{mathematics:polyfitter} \tool\ to do the fit and
+the evaluation of the fit for the given dates.
+
+\begin{verbatim}
+include 'polyfitter.g'
+pf:=polyfitter()
+coeff:=[]; coefferrs:=[=]; chisq:=0; ypred:=[=];
+#
+pf.fit(x=rec.x, y=ln(rec.y), coeff=coeff, coefferrs=coefferrs, chisq=chisq,
+         sigma=0.01, order=4)
+pf.eval(x=rec.x, coeff=coeff, y=ypred)
+
+p.sci(3)                       # Green
+p.pt(rec.x, exp(ypred), -1)
+
+# Destroy tools to free up resources when finished
+pf.done()
+p.done()
+\end{verbatim}
+
+
+The plot looks like this:
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=cookbook.dir/tablesfig2.ps,width=6.0in}
+\caption{Lines of code in \aipspp}
+\label{fig:tb}
+\end{center}
+\end{figure}
+
+
+
+\subsection{Example 3: Reading, fitting and plotting from an ASCII file}
+
+Each developer in \aipspp\ has a list of software targets
+which is tracked through the development cycle. In this
+example, we read a list of developer target dates 
+into an \aipspp\ table.
+
+Here are a few lines from such a list.  Each entry is a string.
+
+
+\begin{verbatim}
+"Filler for GBT spectral processor" "Bob Garwood" "1999/09/10" "1999/09/10"
+"SD imaging via imager" "Bob Garwood" "1999/09/13" "1998/08/17"
+"Initial calibration in dish" "Bob Garwood" "1999/09/13" "1999/03/01"
+"Tests of mosaicing in imager" "Mark Holdaway" "1999/09/13" "1998/12/31"
+"Lattice review" "Peter Barnes" "1999/09/13" "1999/02/01"
+"Review Coordinate classes" "Tim Cornwell" "1999/09/13" "1999/02/01"
+\end{verbatim}
+
+We can convert this file to an \aipspp\ table in the same way as the
+first example. We instruct the constructor to determine the header
+information ({\em e.g.} type and name of each column) automatically.
+
+\begin{verbatim}
+include 'table.g'
+tbl := tablefromascii(tablename='aipspptd.tab', asciifile='aipspptd.csv',
+                      autoheader=T)
+tbl.browse()
+\end{verbatim}
+
+When we browse the table, we see that it has four columns
+called Column1, Column2, Column3, Column4. To give these
+better names, we can write a short header file, let's call
+it {\sff aipspptd.hdr}.
+
+\begin{verbatim}
+Target Person TargetDate OriginalDate
+A A A A
+\end{verbatim}
+
+If we now do the following, we'll get the desired names:
+
+\begin{verbatim}
+include 'table.g'
+tbl := tablefromascii(tablename='aipspptd.tab', asciifile='aipspptd.csv',
+                      headerfile='aipspptd.hdr')
+tbl.browse()
+\end{verbatim}
+
+This screen shot shows  what the browser would show you:
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=cookbook.dir/tablesfig3.ps,width=6.0in}
+\end{center}
+\end{figure}
+
+For more information on the capabilities of the constructor
+see \htmlref{tablefromascii}{table:table.tablefromascii.constructor}.
+
+We can now use the Table Query Language (TaQL - see also
+\htmladdnormallink{Note199}{../../notes/199/199.html} and
+a GUI interface via  \htmlref{taqlwidget}{widgets:taqlwidget})
+to  select on the values in the columns. For example to see all entries that belong to
+'Tim Cornwell', we do:
+
+\begin{verbatim}
+subtbl1 := tbl.query('Person==\'Tim Cornwell\'')
+subtbl1.browse()
+\end{verbatim}
+
+Note that we had to ``escape'' the single quote around the string 'Tim
+Cornwell' to prevent it being interpreted by \glish\ as the end of
+string.  
+
+
+To get all targets whose TargetDate has already passed:
+
+\begin{verbatim}
+subtbl2 := tbl.query('TargetDate<DATE()')
+subtbl2.browse()
+\end{verbatim}
+
+The TaQl {\gcf DATE()} function returns the current date
+when given no arguments.  One could also have said:
+
+\begin{verbatim}
+subtbl2 := tbl.query('TargetDate>DATE(12Sep1999)')
+subtbl2.browse()
+\end{verbatim}
+
+to find all the target dates after 12Sep1999 (all but the first target).
+
+To plot the time delays between the original target completion date and
+the current target completion date, we need to get the two date columns
+from the table, convert to days, and subtract. We can then use the
+histogram capability of a \htmlref{Pgplotter}{plotter:pgplotter} \tool
+to display the histogram:
+
+\begin{verbatim}
+tdates := tbl.getcol('TargetDate') 
+odates := tbl.getcol('OriginalDate') 
+delay := []
+for (i in 1:length(tdates)) {
+   t1 := dq.getvalue(dq.totime(tdates[i]))         # Convert date strings to numeric time in days
+   t2 := dq.getvalue(dq.totime(odates[i]))
+   delay[i] := t2 - t1
+}
+#
+include 'pgplotter.g'
+p := pgplotter()
+p.env(min(delay), max(delay), 0, 20, 0, 1) 
+p.hist(delay, min(delay), max(delay), 30, 1)
+p.lab('Delay in days', 'Number', 'Histogram of target delays')
+#
+# Destroy tools to free up resources when done
+#
+p.done()
+subtbl1.done()
+subtbl2.done()
+tbl.done()
+\end{verbatim}
+
+
+
+
+\subsection{Example 4: Editing Tables From AIPS}
+
+In this example, a gain table associated with a visibility data set is
+written out of AIPS and read into \aipspp\ for inspection and
+manipulation.
+
+\begin{enumerate}
+
+\item Calibrate the data set in AIPS.
+\item Write gain table out of AIPS as an ASCII file.
+\item Read ASCII gain table into \aipspp.
+\item Manipulate the gain table in \aipspp.
+\item Read ASCII gain table back into AIPS.
+\end{enumerate}
+
+Begin by calibrating the data in AIPS (using the AIPS task {\stf CALIB})
+and obtaining a calibration table (SN or CL).  There are two tasks in
+AIPS to write out AIPS tables, {\stf PRTAB} and {\stf TBOUT}. {\stf PRTAB}
+outputs a limited number of significant digits and should {\em not} be
+used; {\stf TBOUT} allows for the output of double precision numbers and
+should be used.  The {\stf DOCRT} verb, which specifies the maximum width
+of the column in characters should be set to something large, such as
+10000.  Execute the {\stf TBOUT} task to create the output ASCII table
+file and then copy the file into a directory where you will run \aipspp.
+The following is a typical input to {\stf TBOUT}:
+
+\begin{verbatim}
+AIPS 1: TBOUT:  Task to Write AIPS tables to text files.
+AIPS 1: Adverbs         Values            Comments
+AIPS 1: ----------------------------------------------------------------
+AIPS 1: USERID        0                    Image owner ID number
+AIPS 1: INNAME     '10/11/96    '          Image name (name)
+AIPS 1: INCLASS    'X BAND'                Image name (class)
+AIPS 1: INSEQ         1                    Image name (seq. #)
+AIPS 1: INDISK        4                    Disk drive #
+AIPS 1: INEXT      'SN'                    Extension type
+AIPS 1: INVERS        1                    Extension file version #
+AIPS 1: OUTFILE    'DR21_SN.ASCII          External text file name.
+AIPS 1:
+AIPS 1:               '
+AIPS 1: DOCRT         1                    Max width of output (char)
+AIPS 1: BCOUNT        1                    Begin Table record to Write
+AIPS 1: ECOUNT        0                    End Table record to Write
+\end{verbatim}
+
+After {\tt TBOUT} has completed, start up \aipspp\ and read the
+ASCII table, using the Table \tool\ {\stf  tablefromascii} consructor.
+
+\begin{verbatim}
+include 'table.g'
+tbl := tablefromascii('DR21_SN.tbl', 'DR21_SN.ASCII', readonly=F)
+\end{verbatim}
+
+Assume that antenna 5 has significant fluctuations in its gain and you
+want to replace the determined gains with a 5th order polynomial fit to
+smooth out the variations.  The Table module allows for data to be read
+into and out of \glish\ variables.  The
+\htmlref{Mathematics}{mathematics} module contains the functionality to
+carry out numerical operations, such as polynomial fits
+(\htmlref{Polyfitter.fit}{mathematics:polyfitter.fit.function}) as well
+as evaluation the resulting fits
+(\htmlref{Polyfitter.eval}{mathematics:polyfitter.eval.function}).  The
+following session shows how to carry out the procedure described above.
+
+\begin{verbatim}
+include 'polyfitter.g'
+tbl2 := tbl.query("ANTENNA==5")                # Creates a reference table holding only ANTENNA 5
+#
+x := tbl2.getcol("TIME")                       # Get data
+yin := tbl2.getcol("REAL1")
+#
+pf:=polyfitter()                               # Make fitter and fit
+local coeff, coefferrs, chisq0, ypred, errmsg, yout
+pf.fit(coeff, coefferrs, chisq, errmsg, x, yin, order=5)
+pf.eval(yout, errmsg, x, coeff)
+#
+ok := tbl2.putcol("REAL1", yout)               # Put data back into reference and hence parent table
+#
+tbl2.done()
+tbl.done()
+pf.done()
+\end{verbatim}
+
+You can look at the gains as a function of time (both raw data and
+polynomial fit) by using the {\stf browse} function.
+
+The modified table can now be read back into AIPS using the AIPS
+task {\stf TBIN}.
+
+
+\subsection{Example 5: Creating a Table from scratch}
+
+In this example, a table with two columns is created and then populated with
+some data.   The first column is floating point data, the second column ascii.
+
+
+\begin{verbatim}
+tableName := 'junk.tbl'                                    # Name of table
+nameCol1 := 'Velocity'                                     # Names of columns
+nameCol2 := 'Colour'
+c1 := tablecreatescalarcoldesc(nameCol1, 1.0)              # Column descriptors with template data type
+c2 := tablecreatescalarcoldesc(nameCol2, 'A')
+#
+#
+td := tablecreatedesc (c1, c2)                             # Combine column descriptors into table descriptor
+#
+#
+nrow := 5
+t := table (tableName, td, nrow)                           # Create table with given number of rows
+#
+#                                                       
+col1Data := [pi, pi/2, pi*3, 0.0, -10.0]                   # Make some data of the right type and length
+col2Data := "red green brown blue pink"                    
+#
+#
+t.putcol(nameCol1, col1Data)                               # Insert columns 
+t.putcol(nameCol2, col2Data)
+#
+t.browse()                                                 # Browse
+#
+t.done();                                                  # Destroy tool leaving disk file
+\end{verbatim}

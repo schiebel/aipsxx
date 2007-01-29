@@ -1,0 +1,197 @@
+%% Copyright (C) 1999,2000,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road                                 
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: sdaverager.help,v 19.1 2004/08/25 01:50:43 cvsmgr Exp $
+
+\begin{ahobject}{sdaverager}{A tool for averaging single dish data}
+
+\ahinclude{sdaverager.g}
+
+\ahkeyword{dish}{}
+\ahkeyword{sdrecord}{}
+\ahkeyword{sditerator}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+This \texttt{tool} is intended to be used with \textbf{dish}, the single dish
+environment.   It averages single dish data including the contents of an
+Sditerator \texttt{tool} with a single function call.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+sdit := sditerator('dishdemo1')
+avger := sdaverager()
+avger.clear()
+avger.setalignment('VELOCITY')
+avger.setweighting('TSYS')
+avger.dorestshift(T)
+ok := avger.accumiterator(sdit)
+ok := avger.average(newarr, newtsys, newcrpix, newcrval, 
+                    newcdelt, newcunit, newctype, newveldef, 
+                    newrestfreq, newexposure, newduration)
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+The first line makes an \htmlref{sditerator}{dish:sditerator} from a file.  
+The second line makes the averager tool.  The averager is then
+cleared before the accumulation starts.  Various
+options are set.  The entire sditerator is then averaged.
+The resulting averaged array, system temperature, x-axis
+description, rest frequency, exposure, and duration are
+then requested from the averager.
+At this point, additional sdrecords from other iterators
+or other sources could continue to be added to this on-going
+average.  If a new average is to be started, the averager
+must first be cleared.
+\end{ahcomments}
+
+\begin{ahseealso}
+\htmlref{dish reference manual}{dish:dish}
+\htmladdnormallink{Using Dish}{../../notes/225/225.html}
+\htmlref{sditerator tool}{dish:sditerator}
+\end{ahseealso}
+
+\begin{ahconstructor}{sdaverager}{An sdaverager}
+\ahreturns{object}
+\end{ahconstructor}
+
+\begin{ahfunction}{clear}{Clear the on-going average.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setweighting}{Set the weighting option.}
+\begin{ahargs}
+\ahaddarg{option}{The weighting option}{}{'NONE','RMS','SIGMA'}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+A weighting of \texttt{NONE} means that each data value has
+equal weight.  The \texttt{RMS} weighting means that each
+data value in a spectra is weighted by the RMS across the
+entire spectra.  In the future it will be possible to 
+specify a region over which this RMS is calculated.  The
+\texttt{SIGMA} weighting option means that each data value
+in a spectra is weighted by $t_{exposure}/T_{sys}^2$.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getweighting}{Return the current weighting option.}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setalignment}{Set the alignment option.}
+\begin{ahargs}
+\ahaddarg{option}{The alignment option}{}{'NONE','VELOCITY'}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This function sets how the spectra are aligned during the
+averaging.  If this is set to \texttt{NONE} there is no
+alignment.  Channels are added in the order they occur
+starting with the first channel and proceding until there
+are no more channels.  If the alignment options is 
+\texttt{VELOCITY} then averaging is done after first
+aligning the data in by velocity.  The first scan in the
+average determines the velocity definition and reference
+frame to use throughout the average.  Subsequent scans
+first have their x-axes converted to velocity using 
+that definition and reference frame.  If the fractional
+channel alignment is $>$ 0.01 channels then a fourier
+transform is used to do that portion of the alignment.
+Velocity alignment always happens after any rest frequency
+adjustment indicated by the 
+\htmlref{restshiftstate}{dish:sdaverager.restshiftstate}.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getalignment}{Return the current alignment option.}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{dorestshift}{Do we align by rest frequency?}
+\begin{ahargs}
+\ahaddarg{torf}{Do we align by rest frequency?}{}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This option is useful if more than one specification of the
+rest frequency of the same line is present in the data.
+If this option is set to T, the x-axis is adjusted before
+alignment so that it is as if the data were observed at the
+rest frequency of the first sdrecord in the current
+accumulation.  This option is only active when \texttt{VELOCITY}
+alignment is in effect.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{restshiftstate}{Are we aligning by rest frequency?}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{accumulate}{Add the data array to the internal accumulation.}
+\begin{ahargs}
+\ahaddarg{data}{The data array}{}{Float matrix}
+\ahaddarg{tsys}{The system temp}{}{Float}
+\ahaddarg{crpix}{X axis reference pixel}{}{Double}
+\ahaddarg{crval}{X axis value at crpix}{}{Double}
+\ahaddarg{cdelt}{X axis increment per pixel}{}{Double}
+\ahaddarg{cunit}{X axis units}{}{string}
+\ahaddarg{ctype}{Type of X axis}{}{string}
+\ahaddarg{veldef}{Velocity definition}{}{string}
+\ahaddarg{restfrequency}{The rest frequency}{}{Double}
+\ahaddarg{exposure}{The effective integration time}{}{Float}
+\ahaddarg{duration}{The total integration time}{}{Float}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{accumiterator}{Add an entire iterator to the internal accumulation}
+\begin{ahargs}
+\ahaddarg{sditerator}{The sditerator to averager}{}{sditerator}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{average}{Get the current internal accumulation}
+\begin{ahargs}
+\ahaddarg{data}{The average data array}{}{}
+\ahaddarg{tsys}{The average system temperature}{}{}
+\ahaddarg{crpix}{X axis reference pixel of the average}{}{}
+\ahaddarg{crval}{X axis value at the reference pixel}{}{}
+\ahaddarg{cdelt}{X axis increment per pixel}{}{}
+\ahaddarg{cunit}{X axis units}{}{}
+\ahaddarg{ctype}{X axis type}{}{}
+\ahaddarg{veldef}{Velocity definition}{}{}
+\ahaddarg{restfrequency}{The rest frequency}{}{}
+\ahaddarg{exposure}{The effective integration time}{}{}
+\ahaddarg{duration}{The total integration time}{}{}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\end{ahobject}

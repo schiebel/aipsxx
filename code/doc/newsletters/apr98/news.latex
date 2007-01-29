@@ -1,0 +1,458 @@
+\documentstyle[11pt,psfig]{article}
+\begin{document}
+
+\begin{center}
+{\sf AIPS++} is a project of the {\sf AIPS++} Consortium
+\end{center}
+
+
+\begin{figure}
+\psfig{figure=aprilmast01.ps}
+\psfig{figure=timemast3.ps}
+\caption{*Please note Dwingeloo Standard Time (DST) is -2:00 GMT}
+\end{figure}
+
+
+\medskip
+
+{\bf \Large In this issue:}
+\begin{itemize}
+\item JIVE Use of {\sf AIPS++}
+\item What's New
+\item Measures System
+\item PGPlotter
+\item Calibration
+\item Story of {\it Glish}
+\item Programmer's Corner
+\item Project News Summary
+\end{itemize}
+
+
+\medskip
+
+
+\section*{JIVE Use of {\sf AIPS++}}
+{\it Huib Jan van Langevelde, 
+Chris Phillips, Harro Verkouter - 
+JIVE, Dwingeloo}\\
+
+
+
+One of the main efforts at the Joint Institute for VLBI in Europe (JIVE) at Dwingeloo in the Netherlands is the construction of a 16 station MkIV data processor for the European VLBI Network (EVN). This correlator will process both European and global VLBI projects recorded in VLBA and MkIV format - with data-rates up to 1024 Mbit/s per station and 4096 spectral channels per baseline. The project is currently in a transition phase between construction and testing; first fringes were obtained in the Summer of 1997 and currently we are integrating hardware prototypes and software. A first imaging test, using the final hardware, is planned for the Summer of 1998.\\
+
+
+It was decided to use {\sf AIPS++} as the platform for developing all post-processing software. This includes (pseudo) real-time display of results, data quality control, feedback to VLBI telescopes, preparation of calibration data, and formatting the product for the end user. For the latter it is assumed that most astronomical VLBI calibration initially will be carried out in "Classic" AIPS, and therefore users will need their data in {\tt UVFITS} format.\\
+
+One of the considerations in the decision to develop this "off-line" part of the software in {\sf AIPS++} is that we recognize it as the data reduction tool of the future. In particular, the idea that staff astronomers can work and program for the correlator with the same software they use for their scientific research is attractive, but the main consideration in streamlining the correlator output is speed. The expected data-rates are in the range of 50 kB/s to 3 MB/s.  We decided to minimize any formatting or sorting operations in the output stage. We also wanted to avoid having to copy the raw data to another format for inspection. This seemed to rule out direct conversion to a standard format, or re-sorting the data for a specific package. {\sf AIPS++}, on the other hand, offers an interesting capability  by creating a special Storage Manager for the correlator output in its raw form.\\
+
+At the moment we are still defining the correlator output format, ensuring that its content allows a direct mapping to an {\sf AIPS++} Measurement Set. This explains our interest in the current effort to come to an MS definition that is capable of completely describing VLBI measurements. As an important step in this project a "JIVE filler" was created that writes the current output data into an MS. This has proven a useful exercise not only to learn how to work in the {\sf AIPS++} software environment, but also to discover what data structures are required to create a proper data set.\\
+
+Furthermore, it has given us a nice tool to inspect the data produced by the correlator prototype. We have had the capability to study the data with the standard {\sf AIPS++} tools from the day after first fringes on 22 July 1997. Using mainly {\it Glish} scripts for mathematical operations, and plotting, it is possible to analyze the correlator output in the testing stage.\\
+
+
+\begin{figure}
+\psfig{figure=jive01.ps}
+\end{figure}
+
+
+A typical example of such an exercise is displayed in the above figure. Data from a recent test using two separate tapes, played back synchronously for the first time (the first fringes were obtained with two MERLIN stations recorded on a single tape), is displayed as a time series of correlation functions. The absolute value of the correlator response over 64 lags is given, with every two second integration slightly offset in amplitude from the previous one. The data were recorded (with the new MkIV formatters) in November 1997 and the baseline is between Effelsberg and Medicina. The bandwidth was 2 MHz, the observing band 5 GHz and the source 0016+731.\\
+
+
+The data were filled into an {\sf AIPS++} Measurement Set which contained the output of 128 correlator chips (one eighth of the final capacity), each with 64 complex lags, integrated over 2 seconds. {\it Glish} scripts were used to select and display the data. The figure shows that with the dynamic control of the correlator implemented in the control software, we get a nice stable residual delay, which is only 250 nanoseconds from where it was expected. Another important measure in this figure is that the average correlation amplitude is approximately 0.002, which again is as expected.\\
+
+Other simple diagnostics that are accessible with the standard {\sf AIPS++} tools are plots of the residual rate and comparison of the phase response of separate frequency bands. We have been able to quickly produce simple routines that, for example, compensate for the residual rate, average the data in time and Fourier transform to inspect the spectral response. The results can be compared with the autocorrelation spectra, which were also obtained by Fourier transforming the data.\\
+
+
+\section*{What's New in {\sf AIPS++}}
+{\it Tim Cornwell and  Brian Glendenning - NRAO, AOC}\\
+
+
+
+The following changes have been made to the development version of 
+{\sf AIPS++} over the last month:\\
+
+\begin{itemize}
+\item The single dish analysis program, {\tt Dish}, 
+can now do regridding (via several different algorithms), and multiple 
+operations can now be sequenced. 
+
+\item A {\it Glish}-based visibility visualizer, 
+{\tt mans}, is available. This is currently 
+most useful for WSRT data, but is being extended to work for 
+Measurement Sets from other telescopes. 
+
+\item {\tt sky}
+received a number of new additions: 
+deconvolution speed has been improved by using convolutions wherever 
+possible; complex images (e.g. RR, RL, LR, LL) can now be made; a 
+state window has been added to the GUI; and the documentation has 
+been reworked. 
+
+\item Component models of the sky brightness can vary in spectral 
+index and frequency. 
+
+\item The {\tt image} object can now work with 
+transient image expressions. 
+
+\item To improve on-line help for GUIs, a popup (transient) help 
+mechanism has been defined and is now available from some GUI's, 
+such as the {\tt pgplotter}. 
+
+\item The preferred plotting tool, {\tt pgplotter}, 
+acquired simple zoom and color map manipulation tools, and the general 
+ability for users to customize a "Tools" menu. In addition, users can 
+specify the minimum number of colors that are needed, and a private 
+color map will be installed if necessary. 
+
+\item The {\tt measures} GUI has been much improved 
+by a number of additions, including more on-line help (both pop-up and 
+transient); and some new applications such as Doppler-related conversions. 
+
+\item {\it Aipsview} has had a number of improvements: vector overlays 
+are now available, the GUI has been improved; and 'Transient" image 
+expressions can now be viewed. 
+
+\item Some {\it Glish}-based least-squares fitting 
+({\tt ls.g}) and general matrix routines  
+({\tt matrix.g}) 
+ are available. {\it Glish}/{\tt Tk} 
+buttons can now have icons (visible in the 
+{\tt Dish} GUI). 
+\item A flexible mechanism for executing functions periodically 
+in {\it Glish} is now available  
+({\tt timer.g})
+\end{itemize}
+
+
+
+\section*{The Measures System - Part 1}
+{\it Wim Brouw - ATNF, Epping}\\
+
+
+{\bf Background}\\
+
+The {\sf AIPS++}  {\tt measures} module contains two large groups:\\
+
+\begin{itemize}
+\item {\tt Quantities}, i.e. values with units attached 
+(10km/s)
+\item {\tt measures}, i.e. astronomical entities (one or more {\tt Quantities}) with a description of the reference frame they belong to (e.g. an epoch with a reference code 'LAST', an environment frame with the position on Earth, and an offset of the current sidereal date)
+\end{itemize}
+
+
+
+Both of these basic container groups can be manipulated and converted to other units and/or another reference environment (e.g. 10km/s to pc/a; the 'LAST' to a 'UTC'). This installment  mainly discusses them as used in C++ programs.
+\\
+
+{\bf Quantity}\\
+
+A {\tt Quantity} originates from a {\tt String} (e.g. {\tt Quantity("10.5km/s")} or from a value and a {\tt String} (e.g. {\tt Quantity(10.5, "km/s")}).The basic structure of the {\tt quantity String} is:\\
+
+
+{\tt \bf value[[ |.|/][unit[signed integer exponent]]]...}\\
+
+
+A space or "." denotes multiplication, a "/" division. The following would all
+indicate the same acceleration:
+ 
+
+\begin{itemize}
+{\tt 
+\item 5km/s2
+\item 5km/s/s 
+\item 5km.s-2
+\item .005Mm2/Mm.s-2}
+\end{itemize}
+
+Each unit is composed of an optional SI prefix (from Y (yotta) to y (yocto), and u for micro) and a named unit. The basic unit is one of the defining SI units (m, kg, s, A, K, cd, mol, rad, sr) (note that kg is defined, but multiples are expressed in g, e.g. mg) or one of a set of SI and astronomical SI units (like Jy, AU, h), while some special units are available as well (including non-SI ones used in {\tt FITS}). User specified units can be added to the known units as well. All known units can be viewed with {\tt UnitMap::list().} Some special formats can be used for dates (e.g. 1998/3/2), times (12:13), and angles (2:0:0, 30.0.0, 2h0m, 30d0m).\\
+
+{\tt Quantities} can be added and subtracted (if their units conform, no adding of apples and pears like s and m), multiplied and divided, and converted to other units with the convert ({\tt to\_unit}) member operation.  Examples:\\
+
+\begin{itemize}
+\item {\tt a = Quantity("10km/s")}
+\item {\tt cout << a.convert("AU/a") <<  endl}
+\item {\tt cout << a.convert("uJy") << endl}
+\end{itemize}
+
+will result in:\\
+
+\begin{itemize}
+\item {\tt 2.10949527 AU/a}\\
+\item {\tt 1e+36 uJy.m.kg-1.s}\\
+\end{itemize}
+
+The full range of possibilities can be viewed using the {\tt measures} module help in the {\it aips package} at http://aips2.nrao.edu/aips++/docs/
+aips/aips.html.\\
+
+A more general, templated {\tt Quantity} ({\tt Quantum}) is available, allowing such constructs as {\tt Quantum<INT>, Quantum<Vector<Float> >} and also
+   {\tt Vector<Quantum<Double> >}.\\
+
+
+{\bf Measure}\\
+A {\tt Measure} is an astronomical entity consisting of: a \underline{{\tt value}} (a {\tt MeasValue} in {\sf AIPS++} jargon, e.g. an {\tt  MVDirection} containing  direction-cosines derived from a right ascension and a declination); \underline{a reference environment}, representing the {\tt MeasValue}, and, \underline{if relevant, in which frame} (when, where, in which direction, and at what velocity) \underline{it belongs}. The environment can also contain an optional offset (the ability to specify only the time part of a full epoch, e.g. midnight today).\\
+
+
+The following {\tt Measures} are available at the moment or are being planned:\\
+
+\begin{itemize}
+\item - {\tt MEpoch} -- an instant in time (UTC, TAI, TDB, ...)\\
+\item - {\tt MPosition} -- a position on Earth (ITRF, WGS84, shortly more)\\
+\item - {\tt MDirection} -- a direction in space (J2000, B1950, HADEC, APP, AZEL, SUN, GALACTIC, JUPITER, ...)\\
+\item - {\tt MRadialVelocity}  -- a radial velocity (LSR, GALACTO, GEO, TOPO, ...)\\
+\item - {\tt MFrequency} -- electromagnetic wave characteristics (LSR, ...)\\
+\item - {\tt MDoppler} -- radial velocity in special units (RADIO, OPTICAL, ...)\\
+\item - {\tt MUVW} -- under trial at the moment (J2000, ...)\\
+\item - {\tt MEarthMagnetic} -- Earth magnetic field (partly available) (IGRF, DIPOLE, MXDIPOLE, ...)\\
+\end{itemize}
+
+The reference codes are enumerated (e.g. {\tt MDirection::VENUS}). The reference frame is created from {\tt Measures}:\\
+
+{\tt \bf MeasFrame frame(MDirection(ra,dec), MEpoch(54321,92))}\\
+
+
+The full environment is specified using constructs like: \\
+
+{\tt \bf MDirection::Ref ref(MDirection::GALACTIC, frame)}\\
+
+resulting in a direction:\\
+
+{\tt \bf MDirection dir(long,lat,ref)}\\
+
+{\tt Measures} as described above are basically containers: they can be used to describe the values used in an observation (they can also be stored in Tables for persistence with e.g. a {\tt MeasurementSet}).\\
+
+Since a {\tt measure} contains all the information to describe it fully (including the, possibly global, frame ('when', 'where', ...)), it can be converted to any other reference code of the same type; e.g., if you know the UTC epoch, and the frame has an observatory position ('where') in it, this UTC can be converted to a LAST with a simple conversion engine:\\
+
+\begin{itemize}
+\item {\tt \bf Quantity tim
+\item Quantity::read(tim, "today")
+\item MPosition tel = MeasTable::Observatory("ATCA")
+\item MEpoch epo(tim, MEpoch::UTC)
+\item MEpoch::Convert engine(epo, MEpoch::Ref(MEpoch::LAST, MeasFrame(tel)))
+\item cout $<<$  MVTime(engine().getValue()) $<<$  endl
+\item // MVTime for formatting}
+\end{itemize}
+
+The {\tt MEpoch::Convert} creates a conversion engine to convert from the input type to the output type (UTC to LAST). Once set-up it can be reused for similar calculations for speed reasons. Actual conversion is done with the {\tt ()} operator (empty argument indicates the input argument) as is shown in the output statement. The {\tt MVTime} (and {\tt MVAngle}) are special formatting (with specifiable format and precision) classes.\\
+
+
+{\tt Measure} conversions use the data (e.g. JPL tables, magnetic field components, dUT and polar motion) available from international organizations (e.g. IAU, IERS, IGRF).  Standard conversions use  the IAU nutation model with interpolation over an interval that can be specified to speed-up processing by default. However, the full JPL DE200 and DE405 tables can be used if higher precision needed.  If lower precision suffices, the linear interpolation interval can be changed; IERS tables (with dUT and polar motion) can be bypassed if their precision is not warranted etc. All these selections are steered by the standard {\sf AIPS++} {\tt aipsrc} mechanism (see the Reference manual).\\
+
+
+To aid the user, an {\tt Observatory} table is available on-line (add your observatory, or improve its coordinates),  a source list (with the VLBI reference frame sources) and spectral line list (which at the moment contains only one element): send me your favourite spectral lines. The full capabilities are described in the {\tt measures} module.\\
+
+
+Apart from the C++ classes described above, the full capabilities of both the {\tt Quantity} and {\tt Measure}  classes can be used from a {\tt measures}  GUI (invoked by {\tt dm.gui()} on the {\it Glish} command line). A description of this GUI will appear in the next Newsletter.\\
+
+
+
+\section*{PGPlotter}
+{\it Brian Glendenning - NRAO, AOC}\\
+
+
+A new plot GUI has appeared in the last couple of months - {\tt pgplotter.pgplotter} is essentially a replacement for {\tt plotter}. In it's simplest modes it is very easy to operate:\\
+
+\begin{itemize}
+\item {\tt include 'pgplotter.g'}
+
+\item {\tt pg := pgplotter()}		\# Make the plot surface
+
+\item {\tt x := 2*pi*1:1000/1000} 	\# 0-$>$2*pi
+
+\item {\tt pg.plotxy(x, sin(x))}
+
+\item {\tt pg.plotxy(x, cos(x), newplot=F)} 	\# Plot on the same graph
+\end{itemize}
+
+This creates a GUI window, and plots sine and cosine curves on the same plot. Besides this simple interface to plotting, complete access to {\tt PGPLOT}* style plotting is available. For those of you unfamiliar with {\tt PGPLOT}, it allows  you to:\\
+
+\begin{enumerate}
+
+\item plot lines, errors, and points in a variety of styles and colors;
+\item display 2D ("image") data as color rasters or contours;
+\item perform flexible annotation of axes or arbitrary plot locations;
+\item obtain cursor feedback for creating interactive applications;
+\item create multiple plots on a single page; and
+\item many, many other displays with options.
+\end{enumerate}
+
+
+The {\tt pgplotter} adds a number of capabilities on top of "native" {\tt pgplot} capabilities.\\
+
+\begin{itemize}
+\item Plot commands can be added or changed through a GUI. For example, if you want to change a line's color, or want to add an annotation, you can do this through the GUI. You can do this with plots that you create, or which are created for you by some application such {\tt sky}. 
+
+\item You can save the plot as a "plot" file, and come back to it in a later session and extend or change the plot. You can have multiple pages in a single plot file. 
+
+\item You can preview a PostScript version of your plot, and send it directly to the printer from the GUI. The GUI displays the {\tt x,y} value of the plot that the cursor is over, 
+
+\item You can interactively zoom the plot, and change the color map of a raster display. 
+
+\item When the {\tt pgplotter} window resizes, the plot is redrawn to fit the new window size.
+\end{itemize}
+
+
+For {\it Glish} programmers, the "Tools" menu (which by default has the {\tt zoomer} and {\tt colormap} editor) can be extended. So, for example, it would be straightforward to add a Tool which read some data from a table, fit a line to it, and displayed the fit and the residuals. Also, there is a lower level {\tt pgplotwidget} which has all the capabilities of {\tt pgplotter}, but which can be embedded within a larger control panel.\\
+
+The main deficiency of {\tt pgplotter} is that we should offer more "high-level" commands, like {\tt plotxy} shown above. I am interested in receiving any suggestions. However, {\tt pgplotter} even now is powerful and straightforward to use. Try it, I think you'll like it.\\
+
+\hrulefill
+
+
+*{\tt PGPLOT} was developed and is maintained by 
+Tim Pearson at tjp@astro.caltech.edu.
+{\tt PGPLOT} is {\bf copyrighted} software; {\it not}
+public domain.  For further information see the 
+{\tt PGPLOT} home page at http://astro.caltech.edu/~tjp/pgpl.  The {\sf AIPS++} {\tt PGPLOT} widget is a variant of Martin Shepherd's {\it Tcl}/{\tt Tk PGPLOt} widget at http://astro.caltech.edu/~tjp/pgplot/tkdriv.html. It was adapted for use with Rivet and {\sf AIPS++} through a collaboration between its author 
+\nolinebreak  and Darrell Schiebel.\\
+
+	
+\section*{Developments in Calibration in {\sf AIPS++}}
+{\it Athol Kemball - NRAO, AOC}\\
+
+
+As part of the synthesis development plan, calibration facilities have been consolidated in a new distributed object ({\tt DO}) called {\tt cal}. This {\tt DO} complements the new imaging capabilities available in {\tt sky}.\\
+
+Previously the {\tt imager} module contained both imaging and calibration functions. The calibration features have been separated partly due to the development of new capabilities in this area, particularly concerning cross-calibration. The term is used here to imply the availability of methods to derive calibration information from a selected subset of u-v data, which can be transferred, interpolated and applied to another selected subset of u-v data. This work involves several steps, including the formalization of calibration table formats, access routines to the new calibration tables, and interpolation methods to be used as these calibration data are applied. These features are being released incrementally at the moment, but all will be available in the next beta release to allow basic cross-calibration.\\
+
+The design of the calibration system rests on several objectives and principles. It is based on the measurement equation, which has been adopted in the {\sf AIPS++} project to model instrumental calibration errors in a general framework. The current design allows both initial and incremental calibration. In addition, a significant effort has gone into general interpolation methods to allow full user control of this important aspect of calibration. Support for different parametrization of the calibration matrices is allowed, as well as specialized solvers (such as for VLBI fringe-fitting). User programmability of the calibration system as a whole is a priority, and has been approached by modular decomposition of the system into structured units. A key problem that has been considered is maintaining history information regarding the origin of calibration tables, their associated initial calibration, and any further history notes recorded by the user.\\
+
+
+Work in this area is very active at the moment. Further updates will be provided as these features are released for testing.\\
+
+
+\section*{The Story of {\it Glish} - Part 2}
+{\it Darrell Schiebel - NRAO, CV}\\
+
+For the most part, {\it Glish} itself, is the work of a very small group of people, two in fact, but it is an amalgamation both in design and in implementation. {\it Glish} is the {\it glue} which binds most of {\sf AIPS++} together, and it is also an amalgamation of code from several different places. In this installment we emphasize a key feature of {\it Glish}: the control of processes.\\
+
+
+{\it Glish} is designed to allow users to tie many processes, called clients, together. Clients are the basis for extending and customizing {\it Glish}. They allow the {\sf AIPS++} group to take the basic generic {\it Glish} interpreter and create a data analysis system. Many people have worked on developing the clients which make {\it Glish} useful to astronomers. This flexibility makes {\it Glish} suitable for many different tasks, from telescope control to data analysis. {\it Glish}'s ability to act as a {\it glue} language is one of its key features.\\
+
+
+{\sf AIPS++} developers use {\it Glish} to seamlessly integrate the clients they develop into the system. {\it Glish} is used to start these clients and to orchestrate the flow of information between the clients. 
+The {\tt sditerator} client is
+an example of how clients are used to extend and specialize {\it Glish}. This client forms the basis of the single dish package, {\tt dish}, being developed in Charlottesville. The bulk of this application is developed in {\it Glish}, but much for this {\it Glish} code in {\tt dish} is based on this {\tt sditerator} client.\\
+
+Here is an example of how this client is used to step through a data set:\\
+
+\begin{itemize}
+\item {\tt \bf iter := sditerator("harv")
+\item while ( iter.more() ) \{
+\item record := iter.get()
+\item iter.next()
+\item \}}
+\end{itemize}
+
+The first function called, {\tt sditerator()}, starts the client and defines the interface for the user to communicate with the client. In this case, the data is contained in the {\tt harv} data set stored on disk. The subsequent function calls access information from the client one record at a time.\\
+
+
+The {\it Glish} interpreter and the clients communicate by sending events back and forth. Events are key/value pairs; the key is a string and the value is any {\it Glish} value, e.g. {\it float}, {\it array}, {\it string}, etc. The interpreter can deal with either synchronous or asynchronous events. Often, however, this event dialog is hidden beneath a function interface, as is the case above. {\it Glish} is the {\it glue} which ties all of the miscellaneous clients together.\\
+
+{\it Glish} has benefited greatly from freely available source code. In particular, the regular expressions which were recently added are based upon code taken from {\it Perl} at http://www.perl.com/, the GUI elements which are part of {\it Glish} are from {\tt TCL/Tk} at  http://www.tcltk.com/, and the command line editing is based on a modified version of a publicly available library, {\it editline}. The wide availability of source code is simply a tremendous aid in developing systems such as {\it Glish}.\\
+
+If you would like more specific information about how {\it Glish} is used, the {\it Glish}  manual is available on-line at http://aips2.nrao.edu/aips++/
+docs/reference/Glish/Glish.html, and there is also a tutorial at http://aips2.nrao.edu/aips++/
+docs/notes/195/195.html.\\
+
+
+\section*{{\bf Programmer's Corner - Episode 2}}
+{\it Brian Glendenning - NRAO, AOC}\\
+
+
+
+In our last installment you learned how to convolve two arrays. In this installment you will learn how to step through an image of any dimensionality "plane by plane", where the planes can be orthogonal to any cube face (e.g. XY planes, or YZ planes, or ...).\\
+
+In {\it Glish}, a {\tt for} loop merely picks one element at a time out of an array. For example:\\
+
+\begin{itemize}
+\item {\tt for (i in 1:5) print i}			\# Prints 1-5
+
+\item {\tt for (i in (1:5)*2) print i}		\# Prints 2,4,6,8,10
+
+\item {\tt for (prime in [2,3,5,7]) print prime}	\# Prints the first 4 primes
+\item {\tt for (word in ['hello', 'world']) print word} \# Prints hello and world
+\end{itemize}
+
+A very useful function is {\tt ind(x)} - it returns an array of indices that 
+match {\tt x}. This is very nearly the same as {\tt 1:length(x),}except if 
+{\tt length(x)}is zero, {\tt 1:0} returns {\tt [1,0]} whereas {\tt ind(x)} returns {\tt []}, the empty array. For example:\\
+
+\begin{itemize}
+\item {\tt x := []}		 		\# Empty
+\item {\tt for (i in ind(x)) print i}		\# Does nothing
+\item {\tt for (i in 1:length(x)) print i}	\# prints 1,0
+\end{itemize}
+
+Now then, how do you get all the planes out of an image?  Getting a single plane is easy - you can use the {\tt getchunk} method of the {\tt image} object. {\tt getchunk} allows you to specify the {\tt blc} (bottom-left corner) and {\tt trc} (top-right corner) of the pixels you  are interested in from an image. You merely have to set {\tt blc,trc} to  get the plane you  are interested in.\\
+
+
+For example, given a {\tt 256(RA)*256(DEC)*11(FREQ)*1(STOKES)} image cube, you can get individual RA/DEC or DEC/FREQ planes as follows:\\
+
+\begin{itemize}
+\item {\tt myimage := image('myimage')}
+\item {\tt myimage.shape() [256 256 11 1]} \# Length of each axis in image
+
+\item {\tt pixels := myimage.getchunk\\
+(blc=[1,1,5],trc=[256,256,5])}		\# XY plane 5
+
+\item {\tt shape(pixels) [256 256 1 1]}	\# Length of each axis in array pixels\\
+
+\item {\tt pixels := myimage.getchunk\\
+(blc=[128, 1, 1],+ trc=[128, 256, 11])}			\# YZ plane 128
+\item {\tt shape(pixels) [1 256 11 1]}
+\end{itemize}
+
+Note that in {\tt getchunk} (and {\tt putchunk}) unspecified values of {\tt blc} default to the beginning of the axis (1), and unspecified values of {\tt trc} default to last position of the axis. So, we could get all the XY planes in this image as follows:\\
+
+\begin{itemize}
+\item {\tt for (plane in 1:11) \{
+\item pixels :=
+\item myimage.getchunk([1,1,plane],[256,256,plane])
+\item ... operate on pixels ...
+\}}
+\end{itemize}
+
+While this is fine for stepping through a particular cube, suppose we want to be able to step through a cube of any dimensionality and shape? This is somewhat trickier, and moves us from the "advanced user" realm to the programmer realm. But since this is the "Programmer's Corner" let's press on!\\
+
+
+First let us set up some general variables:\\
+
+\begin{itemize}
+\item {\tt  axis1 := 1; axis2 := 2}	\# YZ planes
+
+\item {\tt shape := myimage.shape()}\# Extract the shape from the image
+
+\item {\tt numplanes := prod(shape)/(shape[axis1]*shape[axis2])}
+\end{itemize}
+
+The last statement probably requires a bit of explanation. It takes the product of the elements of the shape, in our example {\tt 256*256*11*1}, in other words the number of pixels, and divides it by the number of pixels in an XY plane, here {\tt 256*256} . This yields the number of planes in the image no matter what the dimensionality is (as long as t is greater than or equal to 2).\\
+
+So far so good, it seems like we should now be able to iterate through our image plane by plane:\\
+
+\begin{itemize}
+\item {\tt blc := array(1, length(shape));}  \# [1,1,...,1]
+\item {\tt trc := shape
+\item for (plane in 1:numplanes) \{
+\item blc := ????; trc := ????
+ \}}
+\end{itemize}
+
+Of course in 3D cases such as we have been using in our examples we have no problem, we merely would have to set the missing axis in {\tt blc/trc} to "plane". However in 4 or more dimensions (e.g., spectral-line ppolarimetry) we need to turn the plane number ("plane") into two or more numbers in {\tt blc/trc}. We will see how we can do this in our next installment.\\
+
+
+\section*{Project News Summary}
+{\it Tim Cornwell, {\sf AIPS++} Project Manager - NRAO, AOC}\\
+
+
+We are busy preparing the next, third, beta release of {\sf AIPS++}.  Current activities focus around internal testing of the system and writing documentation for users. In both these endeavors, we are aided by our group of hardy testers at the AOC and elsewhere. Our current estimate is that the release will be made in late May. The release will contain a large number of improvements and new capabilities, most of which have been described in the editions of this newsletter.\\
+
+In other project news, our Scientific and Technical Advisory Group (STAG) met in Socorro on February 9 and 10. This was the second meeting of the group, the first being back in November 1996. The group represents the various organizations comprising the {\sf AIPS++} Consortium and is chaired by Robert Braun of NFRA. The report of this meeting and the Project response are to be found as {\sf AIPS++} Notes at http://aips2.nrao.edu/
+ aips++/docs/notes/217/217.html and  at at http://aips2.nrao.edu/aips++/
+ docs/notes/218/218.html.
+
+\begin{center}{\sf AIPS++}  is a project of the {\sf AIPS+}  Consortium
+ at http://aips2.nrao.edu/aips++/docs/project/consortium.html
+\end{center}
+
+\end{document}
+

@@ -1,0 +1,152 @@
+\chapter{Glish Syntax and Grammar}
+\label{grammar}
+
+\index{Glish!grammar|(}
+\index{Glish!syntax|(}
+The {\em Glish} syntax is free-form.
+
+\index{comments}
+\index{%@\hash{\tt \ \ }comment character}
+Comments begin with \verb+#+ and extend
+to the end of the line.  Statements are formally terminated with semi-colons
+but in general {\em Glish} is able to infer the end of a statement and supply
+an implicit terminator at the end of a line.  Identifiers are case-sensitive;
+record field names and event names have separate name spaces and may
+include keywords.
+
+In the following grammar, some liberties are taken with the normal BNF form
+in order to simplify the presentation of the grammar. Outside of quotes,
+{\tt ()}'s enclose a group of tokens, {\tt *} indicates zero or more occurrences,
+and {\tt ?} indicates zero or one occurrence.  Terminals are surrounded with quotes
+or appear in uppercase. {\tt %prec} is the {\em YACC} precedence modifier.
+
+\begin{verbatim}
+glish:          statement
+        |       error
+        |
+
+statement:      '{' statement* '}'
+        |       TOK_LOCAL scope_list ';'
+        |       TOK_GLOBAL scope_list ';'
+        |       TOK_WIDER scope_list ';'
+        |       TOK_WHENEVER event_list TOK_DO statement
+        |       TOK_LINK event_list TOK_TO event_list ';'
+        |       TOK_UNLINK event_list TOK_TO event_list ';'
+        |       TOK_AWAIT event_list ';'
+        |       TOK_AWAIT TOK_ONLY event_list ';'
+        |       TOK_AWAIT TOK_ONLY event_list TOK_EXCEPT event_list ';'
+        |       TOK_ACTIVATE ';'
+        |       TOK_ACTIVATE expression ';'
+        |       TOK_IF '(' expression ')' statement
+        |       TOK_IF '(' expression ')' statement TOK_ELSE statement
+        |       TOK_FOR '(' TOK_ID TOK_IN expression ')' statement
+        |       TOK_WHILE '(' expression ')' statement
+        |       TOK_NEXT ';'
+        |       TOK_BREAK ';'
+        |       TOK_RETURN ';'
+        |       TOK_RETURN expression ';'
+        |       TOK_EXIT ';'
+        |       TOK_EXIT expression ';'
+        |       TOK_PRINT actual_params? ';'
+        |       TOK_FAIL expression? ';'
+        |       expression ';'
+        |       ';'
+
+expression:     '(' expression ')'
+        |       expression TOK_ASSIGN expression
+        |       expression TOK_OR_OR expression
+        |       expression TOK_AND_AND expression
+        |       expression '|' expression
+        |       expression '&' expression
+        |       expression TOK_LT expression
+        |       expression TOK_GT expression
+        |       expression TOK_LE expression
+        |       expression TOK_GE expression
+        |       expression TOK_EQ expression
+        |       expression TOK_NE expression
+        |       TOK_LT expression TOK_GT
+        |       expression '+' expression
+        |       expression '-' expression
+        |       expression '*' expression
+        |       expression '/' expression
+        |       expression '%' expression
+        |       expression '^' expression
+        |       expression TOK_APPLYRX expression
+        |       TOK_APPLYRX expression                  %prec '!'
+        |       '-' expression                          %prec '!'
+        |       '+' expression                          %prec '!'
+        |       '!' expression
+        |       expression '[' subscript_list ']'
+        |       expression '.' TOK_ID
+        |       expression TOK_ATTR
+        |       expression TOK_ATTR '[' expression ']'
+        |       expression TOK_ATTR TOK_ID
+        |       '[' '=' ']'
+        |       '[' array_record_params? ']'
+        |       expression ':' expression
+        |       expression '(' opt_actual_params? ')'
+        |       value_type expression                   %prec '^'
+        |       event '(' actual_params? ')'
+        |       TOK_LAST_EVENT
+        |       TOK_LAST_REGEX
+        |       TOK_INCLUDE expression                  %prec '!'
+        |       function
+        |       TOK_ID
+        |       TOK_CONSTANT
+        |       TOK_REGEX
+
+scope_list:     ( scope_item ',' )* scope_item
+
+scope_item:     TOK_ID TOK_ASSIGN expression
+        |       TOK_ID
+
+function:       function_head TOK_ID? '(' formal_params? ')' func_body
+
+function_head:  TOK_FUNCTION
+        |       TOK_SUBSEQUENCE
+
+formal_params:  ( formal_param ',' )* formal_param
+
+formal_param:   value_type? TOK_ID ( '=' expression )?
+        |       TOK_ELLIPSIS ( '=' expression )?
+
+actual_params:  ( actual_param ',' )* actual_param
+
+actual_param:   expression
+        |       TOK_ID '=' expression
+        |       TOK_ELLIPSIS
+
+opt_actual_params: opt_actual_params ',' actual_param
+        |       opt_actual_params ','
+        |       ','
+        |       ',' actual_param
+        |       actual_param
+
+subscript_list: subscript_list ',' expression
+        |       subscript_list ','
+        |       ','
+        |       ',' expression
+        |       expression
+
+array_record_params: ( array_record_param ',' )* array_record_param
+
+array_record_param: expression
+        |       TOK_CONST TOK_ID '=' expression
+        |       TOK_ID '=' expression
+        |       TOK_ELLIPSIS
+
+func_body:      '{' statement* '}'
+        |       expression                              %prec ','
+
+event_list:     ( event ',' )* event
+
+event:          expression TOK_ARROW '[' expression ']'
+        |       expression TOK_ARROW TOK_ID
+        |       expression TOK_ARROW '*'
+
+value_type:     TOK_REF
+        |       TOK_CONST
+        |       TOK_VAL
+\end{verbatim}
+\index{Glish!syntax|)}
+\index{Glish!grammar|)}

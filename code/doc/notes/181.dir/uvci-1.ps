@@ -1,0 +1,306 @@
+%!
+/ellipsedict 8 dict def
+ellipsedict /mtrx matrix put
+
+
+/ellipse % x y xrad yrad - ellipse with half-axes
+ { 0 360 earc
+ } def
+
+/earc % x y xrad yrad ang1 ang2 - elliptical arc with half-axes on the axes
+      % angles in the coordinate system of the original circle
+ { ellipsedict begin
+    /ang2 exch def
+    /ang1 exch def
+    /yrad exch def
+    /xrad exch def
+    /y exch def
+    /x exch def
+    /savematrix mtrx currentmatrix def
+    x y translate
+    xrad yrad scale
+    newpath 0 0 1 ang1 ang2 arc
+    savematrix setmatrix
+   end
+ } def
+
+
+/rectvals % x1 y1 x2 y2  - rectangle parameters
+ { 
+    /y2 exch def
+    /x2 exch def
+    /y1 exch def
+    /x1 exch def
+    /xc x1 x2 add 2 div def
+    /yc y1 y2 add 2 div def
+    /xw x2 x1 sub def
+    /yw y2 y1 sub def
+ } def
+
+/box % xc yc xw yw - draw rectangle 
+ {
+    rectvals
+    x1 y1 moveto
+    xw 0 rlineto 0 yw rlineto xw neg 0 rlineto 0 yw neg rlineto
+ } def
+
+/ebox % x1 y1 x2 y2 - draw ellipse in a rectangle
+ {
+    rectvals
+    xc yc xw 2 div yw 2 div ellipse
+ } def
+
+
+/loop % xc yc xr yr ang - draw half loop in given direction, radii are given
+ {
+    neg dup 90 sub exch 90 add earc
+ } def
+
+
+/pop4 % pops 4 values off the stack
+{
+    4 {pop} repeat
+} def
+
+/rbox % x1 y1 x2 y2 rad - draw rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+
+/urbox % x1 y1 x2 y2 rad - draw upper rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 lineto
+    x1 y2 lineto
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+/lrbox % x1 y1 x2 y2  - draw lower rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 y1 moveto
+    x2 y1 lineto
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 lineto
+} def
+
+
+/obox % x1 y1 x2 y2 - draw oval splined box
+{
+    rectvals
+    /rad 6 def 
+    xc y1 moveto
+    x2 y1 x2 y1 x2 yc curveto
+    x2 y2 x2 y2 xc y2 curveto
+    x1 y2 x1 y2 x1 yc curveto
+    x1 y1 x1 y1 xc y1 curveto
+} def
+
+
+/leftshow	%stack: string; point at left of line
+{
+  show 
+} def
+
+/centershow	%stack: string; point at center of line
+{
+   dup stringwidth pop 2 div neg 0 rmoveto show 
+} def
+
+/rightshow	%stack: string; point at right of line
+{
+   dup stringwidth pop neg 0 rmoveto show 
+} def
+
+/Inch {72 mul} def
+/SheetClip	% sheetname tx ty px py pw ph mi sx sy rot SheetClip
+		% All dimensions in inches
+		% tx,ty title, px,py origin, pw,ph clipping box
+		% sx,sy sheet coordinate in pixels of upper left point
+		% mi inches/pixels, assumes negative y axis
+		% rotate page if rot is non-zero
+ {
+   /rot exch def
+   /sy exch def
+   /sx exch def
+   Inch /mi exch def
+   Inch /ph exch def
+   Inch /pw exch def
+   Inch /py exch def
+   Inch /px exch def
+   Inch /ty exch def
+   Inch /tx exch def
+   /sheetname exch def
+   gsave
+   rot 0 ne { [0 -1 1 0 0 11 Inch] concat } if
+   tx ty  moveto 
+   (Module: ) show modulename show 
+   (  Sheet: ) show sheetname show 
+   moddate () ne {(  Time: ) show moddate show} if
+   newpath px py moveto
+   pw 0 rlineto 0 ph neg rlineto pw neg 0 rlineto
+   clip newpath
+   px py translate mi dup scale sx neg sy translate
+  } def
+/Sheet % sheetname Sheet
+ {
+   1.0 10.0 1.0 9.5 6.5 8.0 0.01 0 0 0 SheetClip
+  } def
+/Module {/modulename exch def} def
+/Modtime {/moddate exch def} def
+/ShowSheet {showpage grestore} def
+/PlainFont     /Helvetica findfont 12 scalefont def
+/LabelFont     /Helvetica-Oblique findfont 12 scalefont def
+/BoldLabelFont /Helvetica-BoldOblique findfont 12 scalefont def
+/BoldFont      /Helvetica-Bold findfont 12 scalefont def
+/Plain {PlainFont setfont} def
+/Bold {BoldFont setfont} def
+/Label {LabelFont setfont} def
+/BoldLabel{BoldLabelFont setfont} def
+Plain
+2 setlinecap
+1 setlinewidth
+/moddate () def
+
+% define color names
+/red     {0.00 1 1 sethsbcolor} def
+/yellow  {0.17 1 1 sethsbcolor} def
+/green   {0.33 1 1 sethsbcolor} def
+/cyan    {0.50 1 1 sethsbcolor} def
+/blue    {0.67 1 1 sethsbcolor} def
+/magenta {0.83 1 1 sethsbcolor} def
+/white   {0.00 0 1 sethsbcolor} def
+/black   {0.00 0 0 sethsbcolor} def
+/redfill     {0.00 0.35 1 sethsbcolor} def
+/yellowfill  {0.17 0.35 1 sethsbcolor} def
+/greenfill   {0.33 0.35 1 sethsbcolor} def
+/cyanfill    {0.50 0.35 1 sethsbcolor} def
+/bluefill    {0.67 0.35 1 sethsbcolor} def
+/magentafill {0.83 0.35 1 sethsbcolor} def
+/whitefill   {1 setgray} def
+/blackfill   {0.8 setgray} def
+(uvci) Module (Mon Apr  3 13:13:43 1995 ) Modtime
+%%EndProlog
+
+
+%%Page: 1 1
+
+(1: Corrector  Panel: \(0,0\)) 1 10.5 0.5 10 7.5 9.5 0.01 0 0 0 SheetClip
+58 -399 232 -443 box [] 0 setdash white fill 59 -400 231 -419 box [] 0 setdash
+white fill 61 -400 229 -404 box [] 0 setdash white fill 61 -405 229 -417 box
+[] 0 setdash white fill 64 -415 moveto black Bold (VisibilityCorrectorSequence)
+leftshow 61 -418 229 -419 box [] 0 setdash white fill 59 -420 moveto 231 -420
+lineto [] 0 setdash black stroke 59 -431 moveto 231 -431 lineto [] 0 setdash
+black stroke 58 -399 232 -443 box [] 0 setdash black stroke 62 -246 206 -316 box
+[] 0 setdash white fill 63 -247 205 -266 box [] 0 setdash white fill 65 -247 203
+-251 box [] 0 setdash white fill 65 -252 203 -264 box [] 0 setdash white fill 82
+-262 moveto black Bold (VisibilityCorrector) leftshow 65 -265 203 -266 box
+[] 0 setdash white fill 63 -267 moveto 205 -267 lineto [] 0 setdash black stroke
+63 -273 205 -285 box [] 0 setdash white fill 64 -273 65 -286 box [] 0 setdash
+white fill 66 -283 moveto black Plain (correctedFields) leftshow 63 -291 moveto
+205 -291 lineto [] 0 setdash black stroke 63 -297 205 -309 box [] 0 setdash
+white fill 64 -297 65 -310 box [] 0 setdash white fill 66 -307 moveto black
+Plain (applyVisibility\(Visibility\)) leftshow 62 -246 206 -316 box [] 0 setdash
+black stroke 281 -397 373 -454 box [] 0 setdash white fill 282 -398 372 -417 box
+[] 0 setdash white fill 284 -398 370 -402 box [] 0 setdash white fill 284 -403
+370 -415 box [] 0 setdash white fill 287 -413 moveto black Bold (AntennaGains)
+leftshow 284 -416 370 -417 box [] 0 setdash white fill 282 -418 moveto 372 -418
+lineto [] 0 setdash black stroke 282 -424 372 -436 box [] 0 setdash white fill
+283 -424 284 -437 box [] 0 setdash white fill 285 -434 moveto black Plain
+(gainTable) leftshow 282 -442 moveto 372 -442 lineto [] 0 setdash black stroke
+281 -397 373 -454 box [] 0 setdash black stroke 232 -248 316 -292 box
+[] 0 setdash white fill 233 -249 315 -268 box [] 0 setdash white fill 235 -249
+313 -253 box [] 0 setdash white fill 235 -254 313 -266 box [] 0 setdash white
+fill 238 -264 moveto black Bold (SDCorrector) leftshow 235 -267 313 -268 box
+[] 0 setdash white fill 233 -269 moveto 315 -269 lineto [] 0 setdash black
+stroke 233 -280 moveto 315 -280 lineto [] 0 setdash black stroke 232 -248 316
+-292 box [] 0 setdash black stroke 155 -167 moveto 155 -212 lineto [] 0 setdash
+black stroke 82 -231 moveto 252 -231 lineto [] 0 setdash black stroke 82 -232
+moveto 82 -245 lineto [] 0 setdash black stroke 252 -232 moveto 252 -247 lineto
+[] 0 setdash black stroke 145 -230 moveto 155 -213 lineto [] 0 setdash black
+stroke 155 -213 moveto 165 -230 lineto [] 0 setdash black stroke 52 -267 moveto
+22 -267 lineto [] 0 setdash black stroke 22 -267 moveto 22 -423 lineto
+[] 0 setdash black stroke 22 -423 moveto 42 -423 lineto [] 0 setdash black
+stroke 57 -267 4 4 ellipse [] 0 setdash gsave  black fill grestore black stroke
+57 -423 moveto 50 -427 lineto 43 -423 lineto 50 -419 lineto 57 -423 lineto 57
+-423 lineto [] 0 setdash black stroke 120 -317 moveto 120 -361 lineto
+[] 0 setdash black stroke 69 -380 moveto 301 -380 lineto [] 0 setdash black
+stroke 69 -381 moveto 69 -398 lineto [] 0 setdash black stroke 301 -381 moveto
+301 -396 lineto [] 0 setdash black stroke 110 -379 moveto 120 -362 lineto
+[] 0 setdash black stroke 120 -362 moveto 130 -379 lineto [] 0 setdash black
+stroke 548 -7 590 -51 box [] 0 setdash white fill 549 -8 589 -27 box
+[] 0 setdash white fill 551 -8 587 -12 box [] 0 setdash white fill 551 -13 587
+-25 box [] 0 setdash white fill 554 -23 moveto black Bold (Table) leftshow 551
+-26 587 -27 box [] 0 setdash white fill 549 -28 moveto 589 -28 lineto
+[] 0 setdash black stroke 549 -39 moveto 589 -39 lineto [] 0 setdash black
+stroke 548 -7 590 -51 box [] 0 setdash black stroke 422 -84 moveto 520 -84
+lineto [] 0 setdash black stroke 472 -31 moveto 472 -83 lineto [] 0 setdash
+black stroke 547 -31 moveto 540 -35 lineto 533 -31 lineto 540 -27 lineto 547 -31
+lineto 547 -31 lineto [] 0 setdash black stroke 422 -85 moveto 422 -93 lineto
+[] 0 setdash black stroke 520 -85 moveto 520 -93 lineto [] 0 setdash black
+stroke 532 -31 moveto 472 -31 lineto [] 0 setdash black stroke 422 -98 4 4
+ellipse [] 0 setdash gsave  black fill grestore black stroke 520 -98 4 4 ellipse
+[] 0 setdash gsave  black fill grestore black stroke 494 -103 547 -147 box
+[] 0 setdash white fill 495 -104 547 -124 box [] 0 setdash white fill 497 -104
+544 -108 box [] 0 setdash white fill 497 -109 544 -121 box [] 0 setdash white
+fill 499 -119 moveto black Bold (Column) leftshow 497 -122 544 -123 box
+[] 0 setdash white fill 495 -124 moveto 546 -124 lineto [] 0 setdash black
+stroke 495 -135 moveto 546 -135 lineto [] 0 setdash black stroke 494 -103 547
+-147 box [] 0 setdash black stroke 406 -103 470 -147 box [] 0 setdash white fill
+407 -104 469 -123 box [] 0 setdash white fill 409 -104 467 -108 box [] 0 setdash
+white fill 409 -109 467 -121 box [] 0 setdash white fill 412 -119 moveto black
+Bold (Keyword) leftshow 409 -122 467 -123 box [] 0 setdash white fill 407 -124
+moveto 469 -124 lineto [] 0 setdash black stroke 407 -135 moveto 469 -135 lineto
+[] 0 setdash black stroke 406 -103 470 -147 box [] 0 setdash black stroke 103
+-57 207 -166 box [] 0 setdash white fill 104 -58 206 -77 box [] 0 setdash white
+fill 106 -58 204 -62 box [] 0 setdash white fill 106 -63 204 -75 box
+[] 0 setdash white fill 128 -73 moveto black Bold (Corrector) leftshow 106 -76
+204 -77 box [] 0 setdash white fill 104 -78 moveto 206 -78 lineto [] 0 setdash
+black stroke 104 -84 206 -96 box [] 0 setdash white fill 105 -84 106 -97 box
+[] 0 setdash white fill 107 -94 moveto black Plain (applyDirection) leftshow 104
+-102 moveto 206 -102 lineto [] 0 setdash black stroke 104 -108 206 -120 box
+[] 0 setdash white fill 105 -108 106 -121 box [] 0 setdash white fill 107 -118
+moveto black Plain (apply\(MS\)) leftshow 104 -121 206 -133 box [] 0 setdash
+white fill 105 -121 106 -134 box [] 0 setdash white fill 107 -131 moveto black
+Plain (applyCopy\(MS\)) leftshow 104 -134 206 -146 box [] 0 setdash white fill
+105 -134 106 -147 box [] 0 setdash white fill 107 -144 moveto black Plain
+(save\(keyword\)) leftshow 104 -147 206 -159 box [] 0 setdash white fill 105
+-147 106 -160 box [] 0 setdash white fill 107 -157 moveto black Plain
+(restore\(keyword\)) leftshow 103 -57 207 -166 box [] 0 setdash black stroke 506
+-205 moveto 198 -205 lineto [] 0 setdash black stroke 198 -205 moveto 198 -176
+lineto [] 0 setdash black stroke 206 -194 moveto black Plain (corrector)
+leftshow 441 -223 moveto black Plain (corrected) leftshow 290 -187 moveto black
+Label (On-demand corrector) leftshow 198 -171 4 4 ellipse [] 0 setdash black
+stroke 507 -181 623 -251 box [] 0 setdash white fill 508 -182 622 -201 box
+[] 0 setdash white fill 510 -182 620 -186 box [] 0 setdash white fill 510 -187
+620 -199 box [] 0 setdash white fill 515 -197 moveto black Bold (MeasurementSet)
+leftshow 510 -200 620 -201 box [] 0 setdash white fill 508 -202 moveto 622 -202
+lineto [] 0 setdash black stroke 508 -208 622 -220 box [] 0 setdash white fill
+509 -208 510 -221 box [] 0 setdash white fill 511 -218 moveto black Plain
+(standard columns) leftshow 508 -221 622 -233 box [] 0 setdash white fill 509
+-221 510 -234 box [] 0 setdash white fill 511 -231 moveto black Plain
+(standard keywords) leftshow 508 -239 moveto 622 -239 lineto [] 0 setdash black
+stroke 507 -181 623 -251 box [] 0 setdash black stroke 574 -52 moveto 574 -132
+lineto [] 0 setdash black stroke 564 -151 moveto 584 -151 lineto [] 0 setdash
+black stroke 574 -152 moveto 574 -180 lineto [] 0 setdash black stroke 564 -150
+moveto 574 -133 lineto [] 0 setdash black stroke 574 -133 moveto 584 -150 lineto
+[] 0 setdash black stroke 405 -125 moveto 217 -125 lineto [] 0 setdash black
+stroke 258 -107 moveto black Label (Default Correctpr) leftshow 212 -125 4 4
+ellipse [] 0 setdash black stroke 405 -124 moveto 217 -124 lineto [] 0 setdash
+black stroke 405 -126 moveto 217 -126 lineto [] 0 setdash black stroke 405 -124
+moveto 217 -124 lineto [] 0 setdash black stroke 405 -126 moveto 217 -126 lineto
+[] 0 setdash black stroke ShowSheet
+
+%%Trailer

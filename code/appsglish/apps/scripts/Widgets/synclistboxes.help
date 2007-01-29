@@ -1,0 +1,559 @@
+%% Copyright (C) 1999,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: synclistboxes.help,v 19.2 2004/08/25 02:20:22 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{synclistboxes}{A collection of synchronized scrolllistboxes.}
+
+\ahinclude{synclistboxes.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+\ahkeyword{listbox}{}
+\ahkeyword{scrolllistbox}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+The synclistboxes widget is a collection of scrolllistboxes which
+are synchronized so that a selection in one is mirrored in all of
+the other listboxes and the vertical scrollbar controls all of
+the listboxes in the widget.  
+
+The synclistboxes widget supports all scrolllistbox widget events.
+However, in order to allow for fine control over the individual
+listboxes, many of the events have an optional additional 
+argument which specifies the listbox which will receive that
+event.  Each event is described below as a function due to the
+current limitations of the documentation system.  There is
+only one actual function associated with this widget - listbox.
+
+Direct access to the underlying listboxes is provided by the listbox
+function.  This is necessary in order to support popup help on
+synclistboxeses.  Popup help uses the tlead argument in constructing
+the outframe.  The value of that argument needs to be one of the
+underlying widgets hence the need to return a reference to a true
+listbox.  Care should be taken
+in using this as it allows the user to destroy the underlying listboxes
+and get them momentarily out of sync.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+include 'synclistboxes.g'   
+f := frame()
+# two syncronized listboxes filled from left to right inside f
+# the packing order is determined by the optional "side" argument
+# to the synclistboxes function.  The listbox labels will be
+# "Numbers" and "Colors".
+slb := synclistboxes(f,2,"Numbers Colors");
+# insert some values into the listboxes.  An equal number of values
+# must be inserted into each listbox with each use of insert.
+somevals := array(' ',2,9);
+somevals[1,] := "one two three four five six seven eight nine";
+somevals[2,] := "red orange yellow lightgrey blue brown peach mauve gold";
+slb->insert(somevals);
+# you decide you don't want the horizontal scrollbars
+slb->hscrollbar(F)
+# and you would like that listbox to only be 8 characters wide
+slb->width(8, 1)
+# you decide you don't want the widget to always show the end
+# after each insert event
+slb->seeoninsert(F)
+# you want to get the current selection(s), if any
+s := slb->selection();
+# and you want to get all of the values at that selection
+g := slb->get(s);
+# g[1] will have the value from the first listbox at index s
+# g[2] will have the value from the second listbox at index s
+\end{verbatim}
+\end{ahexample}
+
+
+\begin{ahconstructor}{synclistboxes}{Construct a synclistboxes}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the synclistboxes}{}{Tk frame}
+  \ahaddarg{nboxes}{The number of listboxes this widget will contain}{1}{Integer}
+  \ahaddarg{labels}{The label(s)}{`'}{String}
+  \ahaddarg{leadbox}{The default box returned by the listbox function}{1}{Integer}
+  \ahaddarg{side}{The packing order}{`left'}{String from `left', `right', `top', `bottom'}
+  \ahaddarg{hscrollbar}{Show a horizontal scrollbar in all listboxes?}{T}{Boolean}
+  \ahaddarg{vscrollbar}{Show a vertical scrollbar?}{T}{Boolean}
+  \ahaddarg{seeoninsert}{See the end after each insert?}{T}{Boolean}
+  \ahaddarg{width}{Width(s) in characters units}{20}{Integer}
+  \ahaddarg{height}{Height in characters units}{6}{Integer}
+  \ahaddarg{mode}{Listbox mode}{`browse'}{String from `browse', `single',
+						`extended', `multiple'}
+  \ahaddarg{font}{Font(s) of text }{`'}{X font}
+  \ahaddarg{relief}{Edge relief(s)}{`sunken'}{String from `flat', `ridge', 
+                                           `raised', `sunken', `groove'}
+  \ahaddarg{borderwidth}{Border width}{2}{Integer}
+  \ahaddarg{foreground}{Color(s) of text}{`black'}{X color}
+  \ahaddarg{background}{Background color(s)}{`lightgrey'}{X color}
+  \ahaddarg{exportselection}{export to X clipboard?}{F}{Boolean}
+  \ahaddarg{fill}{how to expand when resized}{`both'}{String from `x', `y',
+							`both', `none'}
+  \ahaddarg{widgetset}{Widget set to use}{dws}{A widgetserver closure tool}
+\end{ahargs}
+\ahreturns{synclistboxes widget}
+\begin{ahdescription}
+Constructs a synclistboxes according to the specified construction arguments,
+and returns a ref to the widget.
+
+The arguments described with (s), e.g. width, may be either single
+values or multiple values.  A single value argument applies to all
+of the listboxes.  A multiple value argument must have the same
+number of elements as the number of listboxes in the widget and 
+each argument is applied, in turn, to the listboxes in the order
+in which they are created.  
+\end{ahdescription}
+\end{ahconstructor}
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function destroys the widget.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{listbox}{Return an underlying listbox agent}
+\begin{ahargs}
+  \ahaddarg{whichbox}{Which listbox to return}{current leadbox}{Integer or unset}
+\end{ahargs}
+\ahreturns{Tk listbox agent}
+
+\begin{ahdescription}
+
+This function returns an underlying listbox agent.  Be careful
+when using this as it is possible to delete the underlying 
+listbox.  Also, insertions made directly to the listbox will not
+trigger the automatic "see" of the end of the listbox which
+would normally occur when seeoninsert is set to T.  It is also
+possible to get the listboxes out of sync using this function.
+The default listbox to return, if the whichbox argument is
+not supplied or is unset, is the listbox indicated by the
+leadbox argument.
+\end{ahdescription}
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{background}{Set the background color.}
+ \begin{ahargs}
+    \ahaddarg{background}{the new background color}{}{X color}
+    \ahaddarg{whichbox}{which listbox gets the new color}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+This is an event which sets the background color one or all listboxes.
+If there is only one argument, all listboxes are set to that background
+color.  If there is a second argument, it specifies which listbox should
+be set to that background color.  Listboxes are numbered started at 1
+up to the total number of listboxes.  They are numbered in the order in
+which they were created.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes having 4 listboxes
+# set the background color of all listboxes to lightgrey
+slb->background('lightgrey');
+# set the background color of listbox 3 to white
+slb->background('white',3);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{bind}{bind an event to a glish event}
+ \begin{ahargs}
+    \ahaddarg{xevent}{the x event to be bound}{}{X event}
+    \ahaddarg{gevent}{the glish event to be generated}{}{String}
+    \ahaddarg{whichbox}{which listbox should this be bound to}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+  This event works just like other Tk bind events in glish.  The only
+difference is that there is an optional third argument which specifies
+which listbox this binding will apply to.  If omitted, the binding
+applies to all listboxes in the widget.  The widget will emit
+an event having the name gevent whenever xevent occurs within the
+listboxes which the binding applies to.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes having 4 listboxes
+# bind mouse button 2 to all listboxes
+slb->bind('<Button-2>','mb2');
+# any button 2 events in any listbox will result in an "mb2" event
+# being seen from slb
+# bind mouse button 3 to the 2nd listbox
+slb->bind('<Button-3>', 'mb3', 2);
+# any button 3 events which occur within listbox 2 will result in an
+# "mb3" event being seen from slb.
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{borderwidth}{change the borderwidth(s)}
+ \begin{ahargs}
+    \ahaddarg{borderwidth}{the new borderwidth}{}{Integer}
+    \ahaddarg{whichbox}{which listbox gets the new borderwidth}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+  This is an event which sets the borderwidth for one or all listboxes.
+If there is only one argument, all listboxes are set to that borderwidth. 
+If there is a second argument, it specifies which listbox should
+be set to that borderwidth. 
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes having 4 listboxes
+# set the borderwidth of lb 2 to be 3
+slb->borderwidth(3,2);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{clear}{clear the selection at the indicated items}
+ \begin{ahargs}
+    \ahaddarg{start}{the start of the range to clear}{}{string}
+    \ahaddarg{end}{optional end of the range to clear}{}{string}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox clear event.  It is
+applied to all listboxes within the widget.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes 
+# clear all selections
+slb->clear('start','end')
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{delete the indicated items}
+ \begin{ahargs}
+    \ahaddarg{start}{the start of the range to delete}{}{string}
+    \ahaddarg{end}{optional end of the range to delete}{}{string}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox delete event.  It is
+applied to all listboxes within the widget.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes 
+# delete everything
+slb->delete('start','end')
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{exportselection}{export the selection to the X clipboard?}
+ \begin{ahargs}
+    \ahaddarg{torf}{export the selection to the X clipboard?}{}{Boolean}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox exportselection event.  It is
+applied to all listboxes within the widget.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{foreground}{Set the foreground color.}
+ \begin{ahargs}
+    \ahaddarg{foreground}{the new foreground color}{}{X color}
+    \ahaddarg{whichbox}{which listbox gets the new color}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+This is an event which sets the foreground color in one or all listboxes.
+If there is only one argument, all listboxes are set to that foreground
+color.  If there is a second argument, it specifies which listbox should
+be set to that foreground color.  Listboxes are numbered started at 1
+up to the total number of listboxes.  They are numbered in the order in
+which they were created.  See the description for the background event
+for a related example.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{font}{change the text font}
+ \begin{ahargs}
+    \ahaddarg{font}{The new text font}{}{X font}
+    \ahaddarg{whichbox}{which listbox gets the new font}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+This is an event which sets the text font in one or all listboxes.
+If there is only one argument, all listboxes are set to that text font.
+If there is a second argument, it specifies which listbox should
+be set to that text font.  
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{get}{request items, i.e. map indexes to items}
+ \begin{ahargs}
+    \ahaddarg{indexes}{the requested indexes}{}{Integer(s)}
+ \end{ahargs}
+\ahreturns{glish record of items}
+\begin{ahdescription}
+  All of the values in each of the listboxes at the requested indexes
+are returned by using this event.  The returned value is a record
+which can be indexed by listbox number, i.e. if the return value
+is result, then result[1] contains the requested items for listbox 1, 
+result[2] the items for listbox 2, etc.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes having 4 listboxes
+# get the items at indexes [1,2,4]
+g := slb->get([1,2,4]);
+# g[1] has the values for listbox 1, g[2] for listbox 2, etc.
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{height}{Set the height}
+ \begin{ahargs}
+    \ahaddarg{height}{the new height}{}{Integer}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox height event.  It is
+applied to all listboxes within the widget.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{hscrollbar}{Turn on or off the horizontal scrollbars}
+\begin{ahargs}
+  \ahaddarg{torf}{Show a horizontal scrollbar?}{}{Boolean} 
+\end{ahargs}
+
+\begin{ahdescription}
+This is an event which turns on or off all of the horizontal scrollbars.
+They must either be all on or all off to preserve syncronization.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes
+# turn off the horizontal scrollbar
+slb->hscrollbar(F);
+# turn it back on
+slb->hscrollbar(T);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\end{ahfunction}
+
+\begin{ahfunction}{insert}{insert values into the listboxes}
+ \begin{ahargs}
+    \ahaddarg{values}{insert these values}{}{A vector or matrix of strings}
+ \end{ahargs}
+\begin{ahdescription}
+  In order to remain in sync, the listboxes must always each have the
+same number of items as the other listboxes.  This is enforced by
+making the delete event apply to all listboxes and requiring that
+the insert event value have a integer multiple of nboxes elements.
+For a single vector there must be exactly nboxes elements.  Each
+element is then placed in each listbox in order.  To place multiple
+elements in each listbox using a single insert event, the value
+of that event should have a shape equal to [nboxes, nelements].
+In other words, to place 7 elements into each of 3 listboxes the
+insert value must have a shape of [3, 7].
+
+   Insertions are currently all done at the end of the listboxes.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes having 2 listboxes
+# insert 9 elements.
+somevals := array(' ',2,9);
+somevals[1,] := "one two three four five six seven eight nine";
+somevals[2,] := "red orange yellow lightgrey blue brown peach mauve gold";
+slb->insert(somevals);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{leadbox}{which listbox is the default returned by the listbox function}
+ \begin{ahargs}
+    \ahaddarg{leadbox}{which listbox takes the lead}{}{Integer}
+ \end{ahargs}
+\begin{ahdescription}
+As explain under the listbox function, popuphelp requires access
+to a true widget to act as the lead widget for positioning
+popuphelp.  It knows to look for a listbox() function to supply
+that widget.  The leadbox value determines which listbox is to
+act as the default lead widget when listbox is called with no
+arguments.
+
+\begin{ahfunction}{mode}{change listbox mode}
+ \begin{ahargs}
+    \ahaddarg{mode}{change listbox mode}{}{String from `browse', `single', `multiple', or `extended'}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox mode event.  It is
+applied to all listboxes within the widget.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{nearest}{return item nearest the y offset param}
+ \begin{ahargs}
+    \ahaddarg{nearest}{y offset param}{}{Integer}
+ \end{ahargs}
+\ahreturns{integer}
+\begin{ahdescription}
+  This event is just like the normal listbox nearest event.  It is
+applied to first listbox (all listboxes would return the same value
+assuming they are all in sync).
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{relief}{change the border relief}
+ \begin{ahargs}
+    \ahaddarg{relief}{The new border relief}{}{Standard relief string}
+    \ahaddarg{whichbox}{which listbox gets the new relief}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+This is an event which sets the border relieft in one or all listboxes.
+If there is only one argument, all listboxes are set to that relief.
+If there is a second argument, it specifies which listbox should
+be set to that text relief.  
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{see}{scroll listboxes to specified index is visible}
+ \begin{ahargs}
+    \ahaddarg{index}{the index to scroll to}{}{String}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox see event.  It is
+applied to all listboxes within the widget.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{seeoninsert}{See the end after each insert?}
+\begin{ahargs}
+  \ahaddarg{torf}{See the end after each insert?}{}{Boolean} 
+\end{ahargs}
+
+\begin{ahdescription}
+
+This event turns on or off the action which this widget
+does after each insert event.  When on (T) a "see" event is sent
+to the listboxes to show the end of the listboxes after each inset event.
+When off (T) no such "see" event is sent.
+
+\begin{ahexample}
+\begin{verbatim}
+# slb is a previously created synclistboxes
+# don't see the end after each insert event
+slb->seeoninsert(F);
+# see the after each insert event
+slb->seeoninsertT);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{select}{select the indicate items}
+ \begin{ahargs}
+    \ahaddarg{indexex}{the indexes to select}{}{String}
+ \end{ahargs}
+\begin{ahdescription}
+  This event is just like the normal listbox select event.  It is
+applied to all listboxes within the widget.
+
+  This widget also emits a select event whenever the user makes
+a selection graphically.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{selection}{get indexes of the current selection}
+\ahreturns{integer}
+\begin{ahdescription}
+  This event is just like the normal listbox selection event.  It is
+applied to the first listbox in the widget (all the listboxes should
+return the same result if they are still in sync).
+
+  This widget also emits a select event whenever the user makes
+a selection graphically.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{vscrollbar}{Turn on or off the vertical scrollbar}
+\begin{ahargs}
+  \ahaddarg{torf}{Show a vertical scrollbar?}{}{Boolean} 
+\end{ahargs}
+
+\begin{ahdescription}
+This is an event which turns on or off the verticall scrollbar.
+See the description of hscrollbar for a similar example.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{width}{Set the width}
+ \begin{ahargs}
+    \ahaddarg{width}{The new width}{}{Integer}
+    \ahaddarg{whichbox}{which listbox gets the new width}{}{An optional integer}
+ \end{ahargs}
+\begin{ahdescription}
+This is an event which sets the width of one or all listboxes.
+If there is only one argument, all listboxes are set to that width.
+If there is a second argument, it specifies which listbox should
+be set to that width.  
+\end{ahdescription}
+\end{ahfunction}
+
+ 
+\end{ahobject}
+
+

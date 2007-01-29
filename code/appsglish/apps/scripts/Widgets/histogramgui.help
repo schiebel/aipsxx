@@ -1,0 +1,278 @@
+%% Copyright (C) 2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id:
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\documentclass{book} 
+\usepackage{aips2help, html}
+\begin{document}
+
+\begin{ahobject}{histogramgui}{Window to display a histogram and
+allow selection of data min and max.}
+
+\ahinclude{histogramgui.g}
+
+\ahcategory{widgets}
+
+\ahkeyword{adjust}{} 
+\ahkeyword{histogram}
+
+\ahmethods{}
+
+\subsubsection*{General description}
+\label{viewer:histgen}
+\begin{ahdescription}
+
+This window is designed for use by a more complex GUI responsible for
+displaying an image. It takes an array of data, which it plots as a
+histogram, and allows the user to drag a region of the histogram,
+which the widget then fires as an event. Once the user has selected a
+region, they can resize or move the region. The widget has functions
+to allow the external chaging of a selection, and also the supply of
+different histogram data.
+
+The controlling GUI is responsible for recalculating the histogram
+data etc when required and also actually setting the selection it
+receives from the histogramgui window. 
+
+\end{ahdescription}
+
+\subsubsection*{Graphical User Interface}
+\label{viewer:histgui}
+\begin{ahdescription}
+
+The main screen is shown below. Several options are available to the
+user via drop down option menus. The 'range' option menu allows
+selection of a percentage of pixels. Selecting 95\% causes the central
+95\% of pixels to be selected. The other option for automatic
+selection is that of +/- n Sigma. This selects +/- n standard
+deviations away from the mean, or median (depending on selection). The
+other two option menus deal with the display options. Selecting from
+the 'scale' menu causes the count axis to be plotted logarithmically
+or linearly, depending on selection. The final user option allows for
+the selection of a different hightlight color to the default
+(yellow). The reset button resets all menus to their defaults,
+unselects the histogram and returns to the default zoom level.
+
+Control of the plot region is handled by the mouse. Selection of a
+region is obtained by using the left (Button - 1) mouse
+button. Clicking and dragging will cause a region to be created. Once
+a region is created it can be:
+
+\begin{itemize}
+
+\item {\gif Moved}, by dragging the region once the mouse is inside
+it. The cursor will change to a cross when the region can be moved.
+
+\item {\gif Resized (click)}, by clicking outside the region. The
+region will extend to the location of the click. The mouse will appear
+as a normal arrow when the region can be resized via a click.
+
+\item {\gif Resized (dragged)}, by holding the mouse over the ends of
+the region, the region can be resized by dragging either of its end
+points. The cursor will change to a resizing arrow when over either
+end.
+
+\end {itemize}
+
+Zooming is handled using the middle (Button - 2) mouse
+button. Clicking the middle button anywhere in the plot area will
+cause a zoom window to be opened. By moving the mouse after clicking,
+the box can be resized. Clicking the middle button again causes the
+plot area to zoom into the selected region. To unzoom, use <Control -
+Button - 2>.
+
+The scroll bar can be used to move along the x - axis. You can click
+and drag, or simply click to either side of the scroll tab.
+
+%\begin{latexonly}
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=histgui.ps,width=2.5in}
+\caption{The histogramgui Window}
+\label{fig:histgui}
+\end{center}
+\end{figure}
+%\end{latexonly}
+
+{\bf Note:} All \aipspp\ GUIs have popup help. Just
+rest your mouse cursor on top of a GUI element (e.g. a button)
+and a little frame will appear outlining the funtionality of this
+element. If you then press and hold down the right mouse button you
+will get a detailed description. The information given there should be
+sufficient to let you operate that GUI element.
+
+\end{ahdescription}
+
+\subsubsection*{Events}
+\label{viewer:histguievents}
+
+The most important event emitted by histogramgui is the {\tt change}
+event. It's {\tt \$value} field contains an array (length 2) which
+contains the new selection choosen by the user. The window may also
+emit other events, depending on the user. If the user requests the use
+of standard deviation, mean or median, the histogram will emit a {\tt
+newstats} event, the value field of which will contain a string array
+containing the desired statistics ('stddev', 'mean', 'median'). This
+indicates that an update is expected via the
+\ahlink{newstats}{widgets:histogramgui.newstats.function}
+function. The only other event emitted by the gui is a {\tt close}
+event. This lets the controlling GUI know that calculation of the
+histogram etc is no longer required.
+ 
+\begin{ahexample}
+\begin{verbatim}
+include 'histogramgui.g'   
+
+histwindow := histogramgui(xmin=-5, xmax=5, 
+			   array=myHistogramArray, 
+			   units='Jy/Beam');
+histwindowgui := histwindow.gui();
+
+whenever histwindow->change do {
+	# $value now contains an array representing the selection
+        # made by the user.
+	print 'New selection is: ', $value;
+}
+
+whenever somethinglocal->happens do {
+	# Something locally changed the selection, so update the
+	# histogram window
+	histwindow.setselection($value)
+}
+
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{histogramgui}{Construct a histogramgui}
+\begin{ahargs}
+  \ahaddarg{xmin}{Start of selection to begin with}{0}{Number}
+  \ahaddarg{xmax}{End of selection to begin with}{1}{Number}
+  \ahaddarg{array}{Record containing array to plot}{unset}{Record  containing .values and .counts}
+  \ahaddarg{units}{Units to use on labels}{'unknown'}{String}
+  \ahaddarg{widgetset}{Widgetset to use}{dws}{Widgetset}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+Constructs a new histogram gui with the specified parameters (does not
+build the gui).
+\end{ahdescription}
+
+\end{ahconstructor}
+
+\begin{ahfunction}{gui}{Build the GUI}
+\begin{ahdescription}
+Maps the GUI onto screen.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{newdata}{Supply the widget with new data to use to
+plot the histogram.}
+\begin{ahargs}
+\ahaddarg{array}{Record containing histogram data ( .values and .counts )}{unset}{Record}
+\ahaddarg{xmin}{New start of selection (min)}{}{Number}
+\ahaddarg{xmax}{New end of selection (max)}{}{Number}
+\end{ahargs}
+
+\begin{ahdescription}
+This function supplies the widget with a new array from which to plot
+the histogram. It can also supply a new selection range.
+\end{ahdescription}
+
+\end{ahfunction}
+
+\begin{ahfunction}{setstats}{Set new image statistics}
+\begin{ahargs}
+\ahaddarg{mean}{Mean data value}{F}{Number}
+\ahaddarg{median}{Median data value}{F}{Number}
+\ahaddarg{stddev}{Standard deviation of data}{F}{Number}
+\end{ahargs}
+
+\begin{ahdescription}
+This function accepts new statistics to use for automatic selection of
+a region. The histogram window will wait for this function to be
+called after firing a 'newstats' event.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setselection}{Set a new selection to be shown on
+the histogram.}
+\begin{ahargs}
+\ahaddarg{sel}{New selection}{}{Array}
+\ahaddarg{forcenosel}{Force the gui not to create or draw a selection}{F}{Boolean}
+\ahaddarg{forceselection}{Force the gui to draw a selection}{F}{Boolean}
+\end{ahargs}
+
+\begin{ahdescription}
+This function accepts an array, from which it updates the region
+displayed on the histogram.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{dismiss}{Removes the GUI from screen.}
+\begin{ahdescription}
+This function unmaps the frame containing the GUI from the screen.
+\end{ahdescription}
+\end{ahfunction}
+ 
+
+\begin{ahfunction}{done}{Destroys the widget and disables all whenevers.}
+\begin{ahdescription}
+This function destroys the widget.
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{disable}{Not yet implemented.}
+\begin{ahdescription}
+Not yet implemented, although sending an invalid histogram array will
+disable the window.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{enable}{Not yet implemented.}
+\begin{ahdescription}
+Not yet implemented, although if the window has been disabled by an
+invalid array, sending a new, valid array will enable it again.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+
+
+
+
+
+

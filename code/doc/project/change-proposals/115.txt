@@ -1,0 +1,98 @@
+Title:			Proposal to store table data in little endian format
+Person responsible:     Athol Kemball (akemball@nrao.edu)
+Originator of proposal: Ger van Diepen (diepen@astron.nl)
+Exploders targeted:     aips2-lib
+Time table:
+Date of issue:          2002 April 17		Done
+Comments due:           2002 April 20		Done
+Revised proposal:       2002 May 2		Done
+Final comments due:     2002 May 5		Done
+Decision date:          2002 May 6		Done
+
+
+Statement of goals:
+
+Improve the Table performance on Linux systems.
+
+
+Proposed changes:
+
+Now the table data are always stored in canonical format, which
+is big endian format. It means that on Linux systems the bytes are
+always swapped when reading and writing. Profiling tests done by Athol
+show that this contribution increases with dataset size, from 8%
+(8k rows) to 25% (1.3M rows), making this a very useful optimization
+for modest to large datasets under Linux.
+
+It is proposed to make it possible to store the data in little endian
+canonical format to avoid needless byte swapping.
+
+In detail I propose the following:
+
+1. Add a boolean flag to the Table constructor used to create a new
+table if the data are to be stored.
+Table::BigEndian means in big endian canonical format.
+Table::LittleEndian means in little endian canonical format.
+Table::LocalEndian means in the endian format of the machine the table
+is created on.
+Table::AipsrcEndian (which is the default) means in the endian format
+given by the aipsrc variable table.endianformat. It can have the value
+big, little and local (which is the default).
+ 
+
+2. Add a flag to table files telling if the data are stored in
+big or little endian canonical format. Note that I do not plan to
+support fully local format, because it means that N*(N-1) conversions
+are possible (where N is the number of different local formats).
+Little Endian canonical is usually Linux local with the exception of
+longs which are 4 or 8 bytes. Longs are seldomly used in a table
+file.
+Also note that some data (e.g. in the table.lock file) will always
+be in big endian format, because they can be interpreted outside the
+table system as well. Also I plan to store the data in table.dat in
+big endian format because it requires less software changes and
+because it contains only a bit of data which has no influence on
+performance.
+The actual flag will not be written into the main table file, but
+each storage manager will store it (and a storage manager like
+StManAipsIO may ignore the flag).
+
+Of course, the table files are backward compatible (thus new software
+can read old tables). I also plan to make it forward compatible
+(provided the data are stored in the old big endian format) by only
+writing the flag if the data are stored in little endian format.
+In particular it means that the log tables will be kept in big endian
+format.
+ 
+
+
+Expected Impact:
+
+- Classes LECanonicalConversion, etc. need to be added. This is little
+  work (and actually already done).
+- Storage manager code need to be changed a bit to optionally use
+  those new classes (depending on the Table setting) and to store
+  the format flag.
+  Note that most storage managers already have stubs for storing data
+  in canonical or local format, so it is little work to change them
+  Only StManAipsIO doesn't have it. Because it is hardly used anymore,
+  I plan to leave StManAipsIO as is.
+- Some test programs (mainly tTable_4.cc) need options to use the
+  format flag in various ways.
+
+Altogether it takes appr. 2-3 days (including extensive testing).
+I hope to be able to do it before the upcoming release (hence the
+time frame for comments is rather short).
+
+
+Tables written in little endian format cannot be read by old software.
+This once was a problem (at ATNF) with the introduction of StandardStMan.
+Is it necessary to keep the log table and image files in big endian
+format until after the upcoming release?
+Could Neil comment on this?
+
+
+Proposed documentation changes:
+
+Tables.h and table.help require some additions.
+I don't know if overall documentation needs to be changed.

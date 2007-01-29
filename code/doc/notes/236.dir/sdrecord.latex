@@ -1,0 +1,183 @@
+\section{The sdrecord}
+\label{app:sdrecord}
+
+The SDRecord is the fundamental data atom of dish. It has recently
+been updated (V1.4) to more closely resemble individual rows of the
+\texttt{MeasurementSet}.
+
+Unless otherwise stated, the units of all values in an SDRecord are
+SI units.  Angles are expressed in degrees.  This structure was
+arrived at before Measures and coordinates were fully supported in 
+\glish.  As a result, temporary fields in
+an SDRecord are used to hold sufficient information to indicate
+the coordinate system and reference frame where appropriate.
+All of the fields described below are required unless stated otherwise.
+
+The value of a field is undefined in the following circumstances:
+\begin{itemize}
+\item The \glish\ function \textbf{is\_nan(x)} returns \textbf{T} for a floating point
+value.
+\item The value is $< 0$ for an integer field.
+\item The string is empty.
+\end{itemize}
+For boolean fields, all values are considered valid.  In addition,
+all values in the data array should be considered valid.  The
+data array flag field should be used to indicate invalid values
+in the data array.
+
+An  SDRecord is a \glish\ record having the following structure:
+\begin{description}
+%		SDRecord structure
+\item[data] A \glish\ record which contains the data array and a
+description of the data array (axis type, values, increments, and
+units).
+\begin{description}
+%		data structure
+\item[arr - float | complex] The data array.  The dimensionality of the data 
+array is
+\texttt{(nstokes,nchan)} where \texttt{nchan} is the number of channels and 
+\texttt{nstokes} is the number of different stokes types found in this data.
+\texttt{nstokes} is either 1, 2 or 4.
+\item[desc] A \glish\ record which describes the data array.
+\begin{description}
+%		data.desc structure
+\item[chan\_freq - Quantity[nchan]] 'unit' defines the units of the x-axis and
+'value' defines the values of the x-axis.
+\item[refframe - string] Defines the reference frame.
+\item[reffrequency - double[Hz]] The frequency of the center pixel.
+\item[chan\_width - double] The width of the channels in units of x.
+\item[restfrequency - double[Hz]] The rest frequency of the observed line.
+\item[corr\_type - string[nstokes]] A vector of strings describing the Stokes 
+type of each element of the second axis of the data array.  The possible Stokes
+types are:
+\begin{quote}
+I, Q, U, V, RR, RL, LR, LL, XX, XY, YX, YY, RX, RY, LX, LY, XR, XL
+YR, YL, PP, PQ, QP, QQ
+\end{quote}
+For a typical single dish telescope, raw data will have 
+\texttt{stokes $=$ ("XX", "YY") or ("RR", "LL")}.
+%		end data.desc structure
+\item[unit - string] A string describing the units of the data array.
+\end{description}
+\item[flag -bool[nchan,nstokes]] A boolean matrix with the shape as 
+\textbf{arr}.  When true, the corresponding value in \textbf{arr} has been 
+flagged as bad and should not be used.  When false, the corresponding value 
+in \textbf{arr} is good.
+\item[weight - float[ntokes,nchan]] A floating point matrix having the same shape as \textbf{arr}.
+\item[sigma - float[nstokes,nchan]] Theoretical rms.
+%		end data structure
+\end{description}
+\item[header] A \glish\ record with the following fixed structure.
+The bulleted items are merely separators to make this list easier to read,
+they are not members of \textbf{header}.  
+The type of each
+field is indicated at the end of each description.  Vector fields
+are indicated by giving the length of the vector in parenthesis
+after the field type.
+\begin{itemize}
+%		header structure - grouped by type
+\item Identity
+\begin{description}
+%		header structure - identity
+\item[time - MEpoch] The mid-point of the observation (UT). A measure. 
+\item[scan\_number - int] The scan ID number.  Typically this is an 
+identification number given to a chunk of data when the data is taken.  Not all
+telescopes provide a scan ID number. 
+\item[source\_name - string] The name of the thing being observed.  
+\item[direction - MDirection] Where the telescope was pointed. A measure
+with the reference frame. 
+%		end of header header structure - identity
+\end{description}
+\item Times
+\begin{description}
+%		header structure - time
+\item[exposure - double[s]] The total amount of time actually spent 
+collecting photons (e.g excludes blanking time, etc).
+\item[duration - double[s]] The elapsed (clock) time.  
+%		end of header structure - time
+\end{description}
+\item Observer
+\begin{description}
+%		header structure - observer
+\item[observer - string]
+\item[project - string] 
+%		end of header structure - observer
+\end{description}
+\item Backend
+\begin{description}
+%		header structure - backend
+\item[resolution - double] The resolution.  The units are whatever chan\_freq 
+has.
+\item[bandwidth - double] The total bandwidth.
+\item[tcal - float(nstokes)[K]] The cal temperature.  
+\item[trx] - float(nstokes)[K]] The receiver temperature. 
+\item[tsys - float(nstokes)[K]] The system temperature. 
+%		end of header structure - backend
+\end{description}
+\item References
+\begin{description}
+%		header structure - References
+\item[reference\_direction - MDirection] 
+%		end of header structure - References
+\end{description}
+\item Telescope
+\begin{description}
+%		header structure - Telescope
+\item[telescope - string] A string identifying the telescope.
+\item[telescope\_position - MPosition] The (x, y, z) position of the telescope 
+in the ITRF (VLBI) coordinate system. 
+\item[azel - MDirection] The azimuth and elevation at time.  
+%		end of header structure - Telescope
+\end{description}
+\item Weather
+\begin{description}
+%		header structure - Weather
+\item[pressure - double[hPa]] The atmopheric pressure. 
+\item[dewpoint - double[K]] The dew point.  
+\item[tambient - float] The ambient temperature.
+\item[wind\_dir - float] The wind direction. 
+\item[wind\_speed - float] The wind speed.  
+%		end of header structure - Weather
+\end{description}
+\item Coordinate system kludges
+\begin{description}
+%		header structure - Kludges
+\item[veldef - string] The velocity definition (e.g. ``radio'', ``optical''). 
+\item[molecule - string]
+\item[transition - string]
+%		end of header structure - Kludges
+\end{description}
+%		end of header structure - grouped by type
+\end{itemize}
+\item[hist - string] This vector of strings contains a history of the operations
+which resulted in this SDRecord.  Each element is a valid \glish\
+command.  Taken as a whole, the hist field should be sufficient to
+regenerate the SDRecord from the original data source.
+%		end of SDRecord structure
+\end{description}
+
+
+In addition to the fixed structure described above.  An SDRecord
+may contain an optional {\tt ns\_header} field.  This is a \glish\
+record which can contain any additional information not found
+in the fixed portion of an SDRecord.  This field will typically be
+used for telescope-dependent information.
+
+To summarize, in pseudo-\glish\ an SDRecord looks like this:
+\begin{verbatim}
+	sdrecord := [data=[=], header=[=], hist=[=], ns_header=[=]];
+	sdrecord.data := [arr=[...], flag=[...], desc=[=], weight=[...]];
+	sdrecord.data.desc := [units=,stokes=,ctype=,crpix=,crval=,cdelt=];
+        sdrecord.header := [time=,scan_number=,object=,etc.];
+	sdrecord.hist := ["# useful history","# as a vector","# etc. etc."];
+        sdrecord.ns_header := [non-standard fields]
+
+ns_header is optional
+\end{verbatim}
+
+Additional information can be found in the 
+Reference Manual section on
+the \htmlref{\textbf{get}}{dish:sditerator.get.function} function of the 
+\htmlref{Sditerator \texttt{tool}}{dish:sditerator}.  See also
+the \htmlref{\textbf{is\_sdrecord}}{dish:is_sdrecord} function.
+

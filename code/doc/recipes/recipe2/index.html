@@ -1,0 +1,247 @@
+<HTML>
+<HEAD>
+<TITLE>Recipe 2: Glish mastrix operations doing least fitting squares with error analysis</TITLE>
+</HEAD>
+<BODY BGCOLOR="#FFFFFF">
+</b><P>
+
+</td></tr></table><hr>
+<font face=helvetica size="+3" color="#cc0000">Glish Matrix Operations Doing 
+Least Squares Fitting 
+with Error Analysis</font><p>
+<hr noshade>
+
+<P>
+Some of the advanced mathematical operations in <I>Glish</I> are 
+in packages like <FONT FACE=courier>matrix</FONT> and 
+<font face=courier>T mathematics</font>. 
+In this recipe we show how you can read 
+in a table of (x,y) data and do least squares fitting to these data with complete 
+error analysis including not only estimation of the errors in the polynomial 
+coefficients, but also computation of the covariance matrix and correlation 
+coefficients.
+
+<P>
+This is also an example of using a <I>matrix</I> object to carry out matrix 
+operations.
+
+
+<center><TABLE CELLSPACING=8 BORDER=0 CELLPADDING=7 WIDTH=450>
+<TR><TD VALIGN="TOP">
+<center><FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Goals</b></FONT></TD>
+<TD VALIGN="TOP">
+<B>Read an ASCII table of (x,y) data, fit a polynomial to the data, 
+perform error analysis on the fit, and plot data and fit.</B></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Using</b></FONT></TD>
+<TD VALIGN="TOP">
+<I>tablefromascii</I> function, <I>Table</I>, and <I>Matrix objects</I></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Results</b></FONT></TD>
+<TD VALIGN="TOP">
+Polynomial fit parameters, their errors, related Covariance and Correlation 
+Coefficient matrices, and plots data and fit.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Assume</b></FONT></TD>
+<TD VALIGN="TOP">
+You have an input file of ASCII data in columns, and a header description file. 
+In this recipe the ASCII data file named <tt>
+<A HREF="begdata.text">begdata.text</A>
+</tt>has two columns of numbers. The ASCII header file describes the data columns 
+in the data file; in this case a header file 
+<tt><a href="begdatahdr.txt">begdatahdr</a></tt> assigns names and data types to each 
+column, following the rules described in documentation of 
+the <a href="../../user/Utility/">header files</a>.   Both input and header files must be in the 
+directory from which you started <font face=helvetica><b>AIPS++</b></font>.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Script</b></FONT></TD>
+<TD VALIGN="TOP">
+A <polylsq.g.txt">Glish script</A> executes this example.</TD>
+</TR>
+</TABLE>
+</center>
+<P><HR><P>
+<TABLE CELLSPACING=8 BORDER=0 CELLPADDING=7 WIDTH="100%">
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE="+2" COLOR="#ff0000"><b>AIPS++/<i>Glish</i><br> 
+commands and results</b></FONT></TD>
+<TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE="+2" COLOR="#ff0000"><b>Purpose and background</b></FONT>
+</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<tt><b>tablefromascii('begtable','begdata.txt',<BR>
+'begdatahdr')</b></tt></TD>
+
+<TD VALIGN="TOP">
+Put ASCII table of data into an <font face=helvetica><b>AIPS++</b></font> table using the 
+<font face=helvetica><b>AIPS++</b></font> <tt>tablefromascii</tt> function. For details on 
+what you can do with <font face=helvetica><b>AIPS++</b></font> tables click  
+<a href="../../user/Utility/">here.</a>
+<P>
+The result of invoking <tt>tablefromascii</tt> is an 
+<font face=helvetica><b>AIPS++</b></font> Table named <i>begtable</i> 
+written to disk.
+</TD></TR>
+<TR><TD VALIGN="TOP">
+<tt><b>xydata := table('begtable')</b></tt></TD>
+<TD VALIGN="TOP">
+<P>Read this Table into a <i>Glish</i> object named 
+<tt>xydata</tt></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><B>xydata.getkeywords()</B></tt></TD>
+<TD VALIGN="TOP">
+View keywords defined in the <tt>gbihdr</tt> file</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><b>[XDATA=Independent Variable,<BR>
+YDATA=Dependent Variable] </b></tt></TD>
+<TD VALIGN="TOP">
+<P>Results in a  list of keywords</TD></TR>
+<TR><TD VALIGN="TOP">
+
+<B><tt>x := xydata.getcol('XDATA')<P>
+y := xydata.getcol('YDATA')<P>
+</B></tt></TD>
+
+<TD VALIGN="TOP">
+Extract columns from the table and assign them to 1-D arrays using 
+<font face=courier>getcol</font> on the <i>Glish</i> table object called 
+<tt>xydata</tt></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><B>N := length(y)<P>
+PolynomialOrder := 2<P>
+M := PolynomialOrder+1<P>
+ydata := array(y,N,1) </B></tt>></TD>
+<TD VALIGN="TOP">
+Extract number of <tt>(x,y)</tt> points<BR>
+Select polynomial fit to order 2<P>
+Order-dependent matrix parameter<P>
+Need <b><i>y</i></b> in array type for matrix input</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>mx := matrix_functions()</tt></B></TD>
+<TD VALIGN="TOP">
+Make matrix object named <b><i>mx</i></b></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>A := array(0,N,M)<P>
+A[,1] := 1<P>
+for (i in 1:N) for (j in 2:M)<BR>
+A[i,j] := x[i]^(j-1)<P>
+</tt></B></TD>
+
+<TD VALIGN="TOP">
+Build <b><i>A = 0</i></b> matrix of right shape and 
+put correct values into <b><i>A</i></b><P></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Atran := mx.transpose(A)
+G := mx.mult(Atran,A)<P>
+Ginv := mx.invert(G)<P>
+</tt></B></TD>
+
+<TD VALIGN="TOP">
+Transpose <i><b>A</b></i>, then multiply <b><i>Atran</i></b> by 
+<i><b>A</b></i> to get <b><i>G</i></b> matrix<BR>
+Invert <i><b>G</b></i></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Coef := mx.mult(Ginv,mx.mult(Atran,ydata))</tt></B></TD>
+
+<TD VALIGN="TOP">
+Polynomial fit to <b><i>y(x)</i></b></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt><P>ysoln := mx.mult(A,Coef)</tt></B></FONT></TD>
+
+<TD VALIGN="TOP">
+Compute <b><i>y</i></b> solution from fit </TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>errsq := N*mx.mean((ydata - ysoln)^2)/(N-1)<P>
+rms := errsq^0.5<P>
+Cov := errsq*Ginv</tt></B></TD>
+
+<TD VALIGN="TOP">
+Compute rms error<P>
+and Covariance matrix</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<B><tt>for (j in 1:M) sigma[j] := Cov[j,j]^0.5</tt></B></TD>
+<TD VALIGN="TOP">
+Compute errors for each coefficient</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt><P>r := Cov <br>
+for (j in 1:M) for (k in 1:M) <BR>
+r[j,k] := Cov[j,k]/(Cov[j,j]*Cov[k,k])^0.5M</tt></B></TD>
+
+<TD VALIGN="TOP">
+<P>Compute <b><i>r</i></b>= correlation coefficient matrix</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Coef<BR>
+rms<BR>
+Cov<BR>
+sigma<BR>
+r<tt></B></TD>
+
+<TD VALIGN="TOP">
+Print out the polynomial coefficients and the various 
+error parameters</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>pl := pgplotter(background="white") <P>
+red := 2<P>
+blue := 4<P>
+pl.sci(blue)<P>
+pl.env(min(x),max(x),min(y),max(y),0,1)<P>
+pl.lab("x","y","Plot Data (Red) and Second<BR>
+Order Polynomial Fit to Data (Blue)")<tt></B></TD>
+
+<TD VALIGN="TOP">
+Make a <I>pgplotter</I> object named <b><i>pl</i></b>, set  
+background to white, open plot window on the screen
+Set color values for plot<P>
+
+Set plot maxima and minima and
+label plot and axes<BR></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>pl.line(x,ysoln)<P>
+pl.sci(red)<P>
+pl.pt(x,ydata,4)</tt></B></TD>
+
+<TD VALIGN="TOP">
+Plot polynomial fit as blue line and
+data point with red symbols<P>
+Final plot shown below.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+</TD>
+<TD VALIGN="TOP">
+In the <I>Pgplotter</I> window, <i>File</i> can be used to 
+print and save the plot(s)</TD>
+</TR>
+</center></TABLE>
+
+<P>
+<center><img src="polylsq.gif"></center><br>
+
+<P>
+
+<P>Contributions of recipes or other material for a prototype 
+<font face=helvetica><b>AIPS++</b></font> Cookbook are welcome. 
+Please send to <A HREF="mailto:rhjellmi@nrao.edu">rhjellmi@nrao.edu</A>.
+
+</BODY>
+</HTML>

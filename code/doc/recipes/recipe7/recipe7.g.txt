@@ -1,0 +1,50 @@
+#
+   mymsfile := 'TOP1.CBAND.ms';
+   myfitsfile := 'TOP1.CBAND.UVFITS';
+
+   myms := fitstoms(msfile=mymsfile, fitsfile=myfitsfile);
+   myms.done();
+
+   tab := table(mymsfile);
+   data := tab.getcol('DATA');
+   flags := tab.getcol('FLAG');
+   thetime  := tab.getcol('TIME');
+
+   dt := 60;   #  this is the "solution interval"
+   n := 1;
+   newtimes := [];
+   newtimes[1] := thetime[1];
+   for (i in  [2:len(thetime)]) {
+      if (thetime[i] > (newtimes[n] + dt)) {
+        n +:= 1;
+        newtimes[n] := thetime[i];        
+      }
+   }
+   showtimes := newtimes - newtimes[1]
+
+   asum := 0*newtimes;
+   nsum := 0*newtimes;
+   isum := 1;
+   for (i in  [1:len(thetime)]) {
+     if (thetime[i] > newtimes[isum] + dt) {
+        isum +:= 1;
+        print " Working on solution ", isum ;
+     }
+     if ( !flags[4,,i] &&  !flags[4,,i]) {
+        asum[isum] +:= ( data[1,,i]) - data[4,,i])) / 
+          ( data[1,,i] + data[4,,i])
+        nsum[isum] +:= 1;
+     }
+   }
+   squint := asum / nsum;
+
+   print "time [s]         squint";
+   print "(time since first integration)";
+
+   for (i in [1:len(asum)]) {
+      print showtimes[i], "   ", squint[i];
+   } 
+   tab.done()
+
+
+

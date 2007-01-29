@@ -1,0 +1,1271 @@
+\chapter{Display of Data}
+\label{GRdisplay}
+{\em David Barnes, Malte Marquarding \& Neil Killeen}
+
+\newcommand{\vdp}	{{Viewer DisplayPanel}}
+\newcommand{\vdps}	{{Viewer DisplayPanels}}
+\newcommand{\vsdp}	{{Viewer Slice DisplayPanel}}
+\newcommand{\vdd}	{{Viewer DisplayData}}
+\newcommand{\ndd}	{{DisplayData}}
+\newcommand{\ndds}	{{DisplayData}}
+\newcommand{\ndp}	{{DisplayPanel}}
+\newcommand{\ndps}	{{DisplayPanels}}
+\newcommand{\vdm}	{{Viewer Data Manager}}
+
+
+\section{Summary}
+
+This chapter describes how to display data with the Viewer \tool.
+You can display images, \glish\ arrays, measurement sets, and Tables
+holding source catalogs in a specific format.  In the future, display
+of generic Tables will also be available.
+
+If you are impatient and don't want to know anything about the Viewer, you
+should look at this~\ref{sct:dummies}.
+
+There are three different ways to view data using the Viewer \tool.  The
+first approach is strictly using graphical user interfaces (GUIs).  The
+second approach shows you how to create Viewer based applications via
+\glish\ scripting.  The third approach is a combination of these two
+using the Image \tool.
+
+The Viewer \tool\ is available from the \glish\ command line interface
+(CLI) and from the \htmlref{Toolmanager}{tasking:toolmanager} GUI.
+Detailed documentation describing the full interface of the Viewer
+\tool is given in the \htmlref{Viewer module}{viewer} of the Reference
+Manual.  The Viewer \tool\ is made available in \glish\ with the
+command
+
+\begin{verbatim}
+include 'viewer.g'
+\end{verbatim}
+
+It will be assumed in all of the code fragment examples that follow,
+that you have issued this command.
+
+For working through the procedures  in this chapter without an image or
+a \glish\ array at hand, you may use the following code to generate an
+example of each:
+
+\begin{verbatim}
+ar := viewermaketestarray()
+im := imagemaketestimage('testimage.im')
+\end{verbatim}
+
+Now you have a \glish\ array in {\gcf ar} and an Image \tool\ in
+{\stf im}.  If you are interested in a sample source catalog to
+overlay on your images, you can open the {\tt Sources} table used in 
+the Measures tool as follows:
+
+\begin{verbatim}
+msc := vieweropentestskycatalog()
+\end{verbatim}
+
+Now you have a table of sources accesses via the Table \tool, {\stf msc}.
+
+\section[Viewing a raster map]{Viewing a raster map of an image or \glish\ array}
+\label{sct:vraster}
+
+It is straightforward to display a raster map of an image or \glish
+array.  A raster map represents pixel intensities in a two-dimensional
+cross-section of gridded data with colors selected from a finite set of
+(normally) smooth and continuous colors---a colormap.  
+
+\subsection{Procedures}
+
+Because of the toolkit approach, there are a variety of
+ways to accomplish our display goals.
+
+\subsubsection{Displaying an image via an Image \tool}
+
+First let us see the simplest way to display an image.  Do this from
+an Image \tool.  If the image you wish to display is already present
+in \glish\ as an Image \tool, (say, {\stf im}) then all that is
+necessary to display the image is:
+
+\begin{verbatim}
+im.view()
+\end{verbatim}
+
+If you haven't yet constructed an Image \tool\ for your image,
+then do that first, e.g.
+\begin{verbatim}
+include 'image.g'
+im := image('testimage.im')       # Native aips++ disk image
+im.view()
+\end{verbatim}
+
+Shortly a display of your image will appear, adorned with a GUI
+containing a menu bar and various buttons, whose functions are
+described \htmlref{here}{viewer:vdpgui}.  Right now, if you're keen to
+alter some of the settings of the display, just press the {\gif
+Adjust} button near the bottom left of the display! \footnote{Note
+that it can take a little time for the {\gif Adjust} window to appear
+on your screen---please be patient and wait, rather than repeatedly
+pressing the {\gif Adjust} button!}.  The
+\htmlref{Image.view}{images:image.view.function} function uses its own
+Viewer \tool\ to display the raster map.
+
+Using the \htmlref{Image.view}{images:image.view.function} function,
+while straightforward, imposes some limitations on the flexibility of the
+display.  
+
+We can also easily display a \fits\ image.
+
+\begin{verbatim}
+include 'image.g'
+im := image('/fits/3c273.fits')    # Detects whether aips++ or FITS image
+im.view()
+\end{verbatim}
+
+The performance of this native-FITS access display will be fine
+provided you don't reorder the display axes.  If you want to reorder
+axes in the display, then convert the image to native \aipspp\ format
+first.
+
+\begin{verbatim}
+include 'image.g'
+im := imagefromfits('/data/3c273.im', '/fits/3c273.fits')
+im.view()
+\end{verbatim}
+
+
+\subsubsection{A more flexible way to display a raster map}
+
+This describes how to use the general Viewer GUI, step by step.
+
+\begin{enumerate}
+
+\item{Include support for the Viewer \tool, and display its basic GUI}
+
+If you are starting from the Unix prompt, you can type:
+
+\begin{verbatim}
+viewer
+\end{verbatim}
+
+this line is just a wrapper which starts \glish\ and executes the code
+in the example immediately below. Otherwise, if you are already in the
+\glish\ command line, type:
+
+\begin{verbatim}
+include 'viewer.g'
+dv.gui()
+\end{verbatim}
+
+You will see a GUI which consists of two main windows, entitled {\gif
+viewer - Data Manager (AIPS++)} and {\gif viewer - Display Panel
+(AIPS++)}.  The \tool\ {\stf dv} is made for you when the {\gcf
+viewer.g} script is loaded.  It stands for 'default viewer'.  It's
+always there and generally that's the Viewer \tool\ to use (see below
+for examples of making your own).
+Here are the GUI descriptions of the \htmlref{\vdm}{viewer:viewerdatamanager}
+
+\item {Make a \vdd\ from your data}
+
+A \vdd\ is itself a \tool\ which holds both data and functions
+which can display those data. A \vdd\ for a raster map,
+for example, has attributes describing what colormap to use, what data
+range to display, etc.
+
+\begin{itemize}    
+
+\item{Data loaded into \glish\ via a \tool\ or global variable}
+
+In the bottom left box called {\gif Tool Name} of the {\gif viewer -
+Data Manager (AIPS++)} window, click on the array (or \tool) you want to
+display.
+
+If the dataset you created on the command line is not visible
+click the {\gif Update} button and the list should update, and in it you
+should see the name of the data you prepared for display. You are now
+given a list of available display types on the right hand side. 
+Clicking on the button {\gif Raster Map} will create a \vdd\ of this
+type.
+
+or
+
+\item{Image data on disk}
+
+In the {\gif viewer - Data Manager (AIPS++)} file browser window,
+select a filename.  After clicking on it, you are presented with the
+available display types for these data.  Clicking on the button {\gif
+Raster Map} will create a \vdd\ of this type. Follow \htmlref{this
+link}{viewer:viewerdatamanager} to see a detailed description of the
+\vdm\ GUI.
+
+\end{itemize}
+
+\item {If the {\gif Autoregister} button on the \vdm\ wasn't checked,
+register the newly created \ndd\ for display on the provided
+\vdp: in the {\gif viewer - Display Panel (AIPS++)} window, select the
+\ndd\ you have just created from the {\gif Register...} submenu
+of the {\gif DisplayData} menu.  Shortly thereafter, a raster map of
+your image or \glish\ array should appear on the \vdp.}
+
+\end{enumerate}
+
+The result of this procedure, for the test \glish\ array generated
+with the {\gcf viewermaketestarray} function, is shown in
+Figure~\ref{fig:dpregister}.  The array is displayed as a greyscale raster
+map in the {\gif viewer - Display Panel (AIPS++)} window.  The {\gif
+DisplayData} menu is extended in the figure to show that the \ndd\
+{\gcf array:mar(Raster Image:1)} has been registered for display
+(i.e. the checkbox is lit).
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=cookbook.dir/dpregister.ps,width=3.7in}
+\caption{Registering a \ndd\ on a \vdp}
+\label{fig:dpregister}
+\end{center}
+\end{figure}
+
+In Figure~\ref{fig:dpregister}, the main parts of the \vdp\ GUI
+are visible: the menubar along the top; the control buttons down the
+left side, which are used to assign functions to up to three mouse
+buttons; the animation buttons down the right hand side which are
+disabled in this case because the array has only two dimensions; the
+button bar along the bottom, and just above that, the position
+information box. These are described in detail
+\htmlref{here}{viewer:vdpgui}.
+
+\subsubsection{Command line procedure}
+
+This final offering of how to viewer a raster map of some appropriate
+data, is wholly command-line based.  Thus it forms a nice introduction
+to actually doing some more sophisticated things with the Viewer \tool, like
+using it in your own \glish\ application.
+
+First, construct a Viewer \tool:
+
+\begin{verbatim}
+mv := viewer();
+\end{verbatim}
+
+See the \htmlref{Viewer}{viewer:viewer} documentation in the Reference
+Manual for a description of the parameters that can be supplied to the
+Viewer \tool\ constructor.  Rather than constructing your own Viewer
+\tool, you could also use the default Viewer \tool\ ({\stf dv}) that
+we have seen earlier.  It is constructed upon inclusion of the {\gcf
+viewer.g} \glish\ script.  Now construct a \vdp\ in which the raster
+map will be displayed:
+
+\begin{verbatim}
+mdp := mv.newdisplaypanel();
+\end{verbatim}
+
+At this point, you will have a \vdp\ on the screen, ready to display
+data.  The \tool\ {\stf mdp} can be used to control this \vdp.  For
+example, you could temporarily remove the \vdp\ from the screen by
+entering {\gcf mdp.unmap()} at the command-line.  Once again, see the
+\htmlref{Viewer.newdisplayapanel}{viewer:viewer.newdisplaypanel.function}
+documentation for the available parameters for the {\stf
+viewer.newdisplaypanel} function, and the \htmlref{Viewer
+displaypanel}{viewer:viewerdisplaypanel} documentation for the
+functions available in the newly created \vdp.
+
+If you have an image to display, then load the data as follows,
+substituting {\sff '/data/3c273.im'} for the name of your \imagefile.
+The quotes are required, and you may need to specify the path to the
+image if it is not in the current directory.
+
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'raster');
+\end{verbatim}
+
+If instead you have a \glish\ array to display, then load the data as
+follows, substituting {\gcf data} for the name of the global \glish\
+variable in which the array is stored (note this time {\em without}\/
+quotes)
+\begin{verbatim}
+mdd := mv.loaddata(data, 'raster');
+\end{verbatim}
+Note that your image or array should have at least two dimensions.
+
+Once you have completed the above steps, {\stf mdd} is a \vdd, which
+needs to be registered on a \vdp\ (e.g.  {\stf mdp}) so that it can be
+displayed.  This is done like this:
+
+\begin{verbatim}
+mdp.register(mdd);
+\end{verbatim}
+
+and after a brief delay, the length of which is in some way
+proportional to the size of your image or array, you should see an
+initial raster map of your image or \glish\ array.
+
+
+\section[Viewing a contour map]{Viewing a contour map of an image or \glish\ array}
+\label{sct:vcontour}
+
+With only very slight modifications to the above procedures, it is
+possible to display a contour map generated from an image or \glish\
+array.  A contour map shows lines of equal pixel intensity (e.g.  flux
+density) in a two dimensional cross-section of gridded data.  Contour
+maps are particularly useful for overlaying on raster images, so that
+two different measurements of the same part of the sky can be shown
+simultaneously. 
+
+\subsection{Procedures}
+
+\subsubsection{Simple ways to display a contour map of an image}
+
+As in the case of a Raster Image, select the image \tool\ in the
+{\gif Tool Name} listbox or the image name in the file browser.
+Now click on {\gif Contour Map} instead of {\gif Raster Image}.
+Register the \vdd\ on the \vdp\ as before using the {\gif Register...}
+submenu of the {\gif DisplayData} menu.
+
+Alternatively, for an image already present in \glish\ as an image
+\tool, (say, {\stf im}), use the contour option of
+\htmlref{Image.view}{images:image.view.function} on the command line, i.e. 
+
+\begin{verbatim}
+im.view(contour=T);
+\end{verbatim}
+This will register the image for you automatically.
+
+\subsubsection{Other possibilities}
+
+The procedure via the Viewer \tool\ GUI  is easily modified to produce a
+contour map display: simply select {\gif Contour Image} where previously
+you selected {\gif Raster Image}.
+
+The command-line procedure for creating a raster map display can
+be modified to create a contour map display by simply replacing the
+line:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'raster');
+\end{verbatim}
+with:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'contour');
+\end{verbatim}
+
+
+\section[Viewing a vector map]{Viewing a vector map of an image or \glish\ array}
+\label{sct:vvector}
+
+Consider a Complex image or array.  At each pixel, this represents an
+amplitude and phase (position angle).  A common method of displaying
+amplitude and position angle data is via vectors (line-segments) where
+the length of the vector is proportional to the amplitude.  For example,
+it is usual to view linear polarization data in which the fractional
+polarization is the vector amplitude and the the linearly-polarized
+position angle is the vector position angle.  This may be overlaid on
+total-intensity raster displays.  Another example might be the display
+of fluid-flow. 
+
+Since amplitude and phase can be conveniently represented as a Complex
+number, the data source for this kind of vector display is either a
+Complex image or a Complex \glish\ array (later we will describe how
+you might create such data).  
+
+However, you can also provide Float images and arrays, in which case the
+data values specify the position angle and the amplitude is assumed to
+be unity.  The angular units should be specified by the brightness unit
+of the image.  If none, degrees are assumed.  
+
+The position angle is measured positive North through East when you
+display a plane holding a celestial coordinate (the usual astronomical
+convention).  For other axis/coordinate combinations, a positive
+position angle is measured from +x to +y in the absolute world
+coordinate frame. 
+
+The procedures already described for raster and contour displays
+are appropriate as well for vector displays.
+
+\subsection{Procedures}
+
+\subsubsection{How to display a vector map with Float images}
+
+At present, Image tools can only be associated with Float images.  
+You will get an error if you attempt to associate an Image tool
+with a Complex image disk file.  This will be rectified in the future.  
+
+For a Float image, you can make a vector map display via the Image tool
+function \htmlref{Image.view}{images:image.view.function}.  
+
+\begin{verbatim}
+include 'image.g'
+im := imagefromshape('zz', [64,64])    # Make empty image
+im.set(20)                             # Set to 20 degrees
+im.view(vector=T, axislabels=T)        # Display
+\end{verbatim}
+
+For Complex images (and optionally for Float images) you must use
+the native Viewer  interface as described below.  This also gives
+you more flexibility in combining displays (raster, contour, vector etc).
+
+\subsubsection{A more flexible way to display vector maps}
+
+The procedure via the Viewer \tool\ GUI is easily modified to produce a
+vector map display.  After selecting an image, Image tool or \glish\
+array (Complex or Float), simply select {\gif Vector Map} where
+previously you selected {\gif Raster Image}.
+
+The command-line procedure for creating a raster image display can
+be modified to create a vector map display by simply replacing the
+line:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'raster');
+\end{verbatim}
+with:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'vector');
+\end{verbatim}
+although in this case drawing vectors of the intensity of
+3C273 wouldn't be very illuminating ! You might try
+
+\begin{verbatim}
+im := imagefromshape('zz', [128,128])
+im.set(45.0)
+im.setbrightnessunit('deg')
+im.done()
+mdd := mv.loaddata('zz', 'vector')
+mdp.register(mdd);
+\end{verbatim}
+
+which will make an image with value 45~deg and then display lots of
+vectors all of the same length aligned in the same direction.
+
+
+\subsubsection{Making Complex images and arrays}
+
+Complex images are not yet fully supported in \aipspp.  Most notably,
+the  \htmlref{Image}{images:image} tool cannot open a Complex image which
+is unfortunate.  This will be rectified in a future release.
+
+However, selected functions of the \htmlref{Imagepol}{images:imagepol}
+tool do write out Complex disk images which can be used as a data source
+for the vector displays.
+
+These functions are:
+
+\begin{itemize}
+
+\item \htmlref{complexlinpol}{images:imagepol.complexlinpol.function}
+- generates Complex linear polarization $Q+iU$
+
+\item
+\htmlref{complexfraclinpol}{images:imagepol.complexfraclinpol.function}
+- generates Complex fractional linear polarization $(Q+iU)/I$
+
+\item
+\htmlref{fourierrotationmeasure}{images:imagepol.fourierrotationmeasure.function}
+- generated Complex linear polarization $Q+iU$ as a function of
+Rotation Measure
+
+\item \htmlref{makecomplex}{images:imagepol.makecomplex.function} -
+generates a Complex image from either Float amplitude and phase
+images, or real and imaginary images
+
+\end{itemize}
+
+
+\section[Viewing a marker map]{Viewing a marker map of an image or \glish\ array}
+\label{sct:vmarker}
+
+A marker map represents pixel intensities by a particular marker shape
+and fill style.  For example, the marker shape may be a square.  The
+size of the square is proportional to the absolute pixel intensity.  If
+the pixel is positive the square is filled, if the pixel intensity is
+negative, the square is open. 
+
+This kind of display is useful for quantities such as the Rotation
+Measure.  The RM may be positive or negative with a distribution that
+may well be quite discontinuous.  Displaying RM images as rasters is not
+very useful because the strongly negative values (which are equally
+important as the strongly positive values) will come out dark. 
+Contouring usually fails because of continuity issues.  With the marker
+map display you are biased against seeing small absolute values (square size
+becomes smaller).   So you really have to decide what you are interested
+in and what display is most useful.
+
+
+\subsection{Procedures}
+
+\subsubsection{Simple ways to display a marker map of an image}
+
+As in the case of a Raster Image, select the image \tool\ in the
+{\gif Tool Name} listbox or the image name in the file browser.
+Now click on {\gif Marker Map} instead of {\gif Raster Image}.
+Register the \vdd\ on the \vdp\ as before using the {\gif Register...}
+submenu of the {\gif DisplayData} menu.
+
+Alternatively, for an image already present in \glish\ as an image
+\tool, (say, {\stf im}), use the contour option of
+\htmlref{Image.view}{images:image.view.function} on the command line, i.e. 
+
+\begin{verbatim}
+im.view(marker=T);
+\end{verbatim}
+This will register the image for you automatically.
+
+\subsubsection{Other possibilities}
+
+The procedure via the Viewer \tool\ GUI  is easily modified to produce a
+contour map display: simply select {\gif Contour Image} where previously
+you selected {\gif Raster Image}.
+
+The command-line procedure for creating a raster map display can
+be modified to create a contour map display by simply replacing the
+line:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'raster');
+\end{verbatim}
+with:
+\begin{verbatim}
+mdd := mv.loaddata('/data/3c273.im', 'marker');
+\end{verbatim}
+
+
+
+
+\section[Viewing a catalog overlay]{Viewing a source catalog overlay}
+\label{sct:vskycatoverlay}
+
+The Viewer can be used to plot overlays of sources from catalogs
+stored in \aipspp\ tables, on raster images or contour maps.  Note
+though, that it is only an {\em overlay} feature---you {\bf MUST} have
+another \ndd\ already registered on a \vdp\ in order for the catalog
+sources to be drawn.\footnote{This is necessary because the sky
+catalog overlay facility is {\em passive}, that is it will not set up
+a coordinate system on the \vdp\ for itself to use.}
+
+\paragraph{Creating a Skycatalog} 
+The Viewer module comes with a \htmlref{skycatalog}{viewer:skycatalog}
+tool to convert from ASCII tables and componentlists to the skycatalog
+table format.  Most commonly you will have an ASCII file
+e.g. {\em mydata.txt} like this:\par
+
+\begin{tabular}{|llllll|}
+\hline
+NED  &16 &19:44:47 &-14:46:51 &NGC6822	&159.8\\
+NED  &22 &01:04:46 &+02:07:04 &IC1613	&328.1\\
+\hline
+\end{tabular}
+
+The best way to prepare this file for import is to prepend a header
+with information about what is in the columns.  (Note that this is not
+necessary and the skycatalog tool can automatically determine the
+column data and name the columns Column1..ColumnN if no header is
+present.)
+
+So after inserting the header into your file it looks like this:\par
+
+\begin{tabular}{|llllll|}
+\hline
+Name &No &RA       &DEC       &NED-ID 	&mom0 \\ 
+A    &A  &A        &A         &A      	&R    \\
+NED  &16 &19:44:47 &-14:46:51 &NGC6822	&159.8\\
+NED  &22 &01:04:46 &+02:07:04 &IC1613 	&328.1\\
+\hline
+\end{tabular}
+
+The first line specifies the names you would like to use to
+identify the columns. The second line indicates what data type your
+column holds. Most commonly you'll only need these:
+
+\begin{tabular}{lll}
+A& =& ASCII(String)\\
+R& =& Real(Float)\\
+\end{tabular}
+See \htmlref{tablefromascii}{table:table.tablefromascii.constructor} for
+more on table headers.
+
+All you need to do now is:
+\begin{verbatim}
+include 'skycatalog.g'
+sca := skycatalog('myscat.tbl')
+sca.fromascii(asciifile='mydata.txt',hasheader=T, # tell the tool which columns
+              longcol='RA',latcol='DEC')          # are longitude and latitude
+sca.browse()                                      # invokes table browser 
+sca.done()                                   
+\end{verbatim}
+
+You can re-access this skycatalog table in the \vdm\ via the table {\sff
+myscat.tbl}.
+
+Look at the \htmlref{skycatalog}{viewer:skycatalog} tool in the
+reference manual for more details on how to use this \tool.
+
+\subsection{Procedures}
+
+As for viewing raster and contour maps, viewing catalog overlays is
+pretty straightforward, and can be accomplished a number of ways:
+
+\begin{enumerate}
+
+\item{Use the viewer GUI: click on a a suitable table in the
+{\gif Data manager} window, and the {\gif Display Types} will show
+{\gif SkyCatalog Overlay}.  If you click on this a \ndd\ 
+will be created.  Then in a \vdp\ which already has a raster and/or
+contour map registered, register the newly made \ndd\ for
+display.  Any sources in your catalog table, which are in the region
+of sky currently displayed in the \vdp, will be drawn with crosses.}
+
+\item{Use the command-line interface as follows:
+\begin{verbatim}
+mdd := dv.loaddata('myscat.tbl', 'skycatalog');
+mdp.register(mdd);
+\end{verbatim}
+In this example, {\stf mdp} is an existing \vdp\ with a raster or
+contour map already registered.}
+
+\end{enumerate}
+
+Once you have a sky catalog overlay registered on a \vdp\ you
+can adjust a number of parameters to obtain the desired display.
+
+\subsection{Notes}
+
+\begin{itemize}
+
+\item{For a source table to appear in the {\gif Datasets} listbox of
+the {\gif viewer - Data Manager (AIPS++)} window, it must be available
+as an \aipspp\ table}
+
+\item{There are no sources in the 'Sources' table provided in
+\aipspp\ which lie in the field of the test image provided in
+\aipspp.  So to see any catalog sources, you either need to 
+prepare your own catalog source table, or view an image which
+contains a bright continuum source, for example a synthesis imaging
+calibrator source.}
+
+\end{itemize}
+
+
+\label{sct:vms}
+\section{Viewing a measurement set}
+Measurement sets can now be displayed and flagged directly from the
+viewer.  The interface is fairly basic at present, but further
+refinements are in progress.  From the \vdm\ window, simply choose
+your measurement set file, then click 'Raster Image'.
+
+You could do the same thing from the command line with:
+
+\begin{verbatim}
+mv := viewer();
+mdp := mv.newdisplaypanel();
+mdd := mv.loaddata('mydata.ms', 'raster');
+mdp.register(mdd);
+\end{verbatim}
+
+You should use the filename rather than the variable name of an ms
+{\gcf tool}.  You should also assure that no other
+Display Data is registered on the \vdp.
+
+The only type of display currently available is 'raster', which
+is similar to {\gcf msplot}'s 'Display data as an image' mode
+(or to TVFLG).  A plotting-style Display Data for measurement sets
+is planned for the future.
+
+Usually, the measurement set data is loaded automatically when the
+\vdd\ is created.  Loading data for large measurement sets can take
+some time.  Look at the AIPS++ console window (rather than the
+logger) to monitor progress.
+
+For {\em very} large measurement sets, you must press 'Apply' on the
+'Adjust' panel to load the data yourself.  This gives you the
+opportunity to choose something other than Observed Amplitude,
+for example, before a time-consuming data load.
+
+A complete description of the 'Adjust' panel interface for controlling
+display and editing of the measurement set can be found at
+\htmlref{this link}{viewer:vddoptionsms}.
+
+
+\section{Operating the \vdp}
+\label{sct:voperate}
+The Reference Manual gives a complete description on how to operate
+the \vdp\ GUI. Just follow \htmlref{this link}{viewer:vdpgui}
+
+\section{Adjusting display parameters}
+\label{sct:vadjust}
+
+On the \vdp, there is a button at the bottom left labelled {\gif
+Adjust...}.  If you click it, then for each \ndd\ that is currently
+registered on the \vdp, a window labelled {\gif Adjustment (AIPS++)}
+(and prefixed by the name of the {\gif DisplayData} so that you know
+which is which) will appear (a little patience is sometimes needed).
+Each of these adjustment GUIs consists of a series of roll-up windows,
+which can be exposed or hidden by clicking the text next to the up or
+down arrow.  The options available for adjustment depend on the type
+of display.  The settings common to {\em raster}, {\em contour} and
+{\em vector} and are described \htmlref{here}{viewer:vddoptions}
+Each of them have specific settings as well:
+\begin{itemize}
+\item \htmlref{raster}{viewer:vddoptionsrst}
+\item \htmlref{contour}{viewer:vddoptionscnt}
+\item \htmlref{vector}{viewer:vddoptionsvec}
+\item \htmlref{marker}{viewer:vddoptionsmkr}
+\item \htmlref{skycatalog}{viewer:vddoptionssct}
+\item \htmlref{measurement set}{viewer:vddoptionsms}
+\end{itemize}
+
+At the bottom of the adjustment window, are a couple of buttons with
+which you can save current settings, and restore previously saved
+settings.  Just type a unique name which you will remember for this
+\ndd, and hit save or restore.  The new parameters (if they exist) will
+be installed and the displays updated accordingly.  {\bf Note: You have
+to be in the directory you started the viewer in to be able to retrieve
+the parameters.}
+
+\section{Advanced, worked examples}
+\label{sct:advexamples}
+
+In this section, a few fully-worked examples are given which cover quite
+advanced uses of the viewer.  The examples are generally accomplished
+from the command-line so that you can easily replicate them yourself.
+
+\subsection{Overlaying contours on raster maps}
+
+A common operation is to overlay contours of one image on a raster map
+of another image to show, for example, the {\sc Hi} emission in relation
+to the starlight in a galaxy.  The Viewer \tool\ can easily produce
+such a display, provided the two images have the same coordinate type,
+epoch, projection and projection parameters.  Yes, that's a long list of
+requirements, but most of them will be relaxed in the near future. 
+Since there is only one test image available however, in this example we
+will overlay contours from the test image on a raster map of the very
+same image.  Let's begin by creating the test image and making a \ndp\
+and two \ndds:
+
+\begin{verbatim}
+include 'image.g';
+im := imagemaketestimage('test.im');
+#
+mdp := dv.newdisplaypanel();
+mdd1 := dv.loaddata(im.name(), 'raster');
+mdd2 := dv.loaddata(im.name(), 'contour');
+\end{verbatim}
+
+Immediately we can see the overlay by simply registering the two
+\ndds\ on the \ndp.  For a single refresh cycle, we wrap
+the registration between a {\stf hold} and {\stf release} pair:
+
+\begin{verbatim}
+dv.hold();
+mdp.register(mdd1);
+mdp.register(mdd2);
+dv.release();
+\end{verbatim}
+
+There are plenty of ways to improve the display, by adjusting various
+parameters for the raster and contour maps.  This can be done by
+pressing the {\gif Adjust...} button on the \vdp, and modifying the
+parameters in the GUI.  The GUI can also be displayed for
+each \ndd\ by doing:
+
+\begin{verbatim}
+tmp := mdd1.gui();
+tmp := mdd2.gui();
+\end{verbatim}
+
+Why don't you do this now and start playing away ?
+
+
+
+
+\subsection{Blinking Between Images -- Side-by-Side Display}
+
+This example shows how to use the 'Blink' mode of the viewer to
+flip between views of several different Images, or to view them
+side-by-side.
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=cookbook.dir/sidebyside.ps,width=3.9in}
+\caption{Side-by-Side Image Display}
+\label{fig:sidebyside}
+\end{center}
+\end{figure}
+
+As in raster/contour overlaying, the images should have
+the same coordinate projections and extents on the display axes,
+and (ideally) the same number of channels on the 'Z' or 'movie' axis.
+We'll discuss ways around these restrictions later, but begin with the
+simple case.  Trial images from the same raw data, in different stages
+of calibration or deconvolution (as shown in the Figure) are ideal.
+Follow the steps below.
+
+\begin{verbatim}
+# for review--you may already have done these steps in examples above.
+include 'viewer.g'
+mdp := dv.newdisplaypanel();
+\end{verbatim}
+
+If you have any DisplayDatas left on the \ndp\ from previous
+examples, remove them now using the 'DisplayData/Remove...' menu, to
+start fresh.
+
+The following images may already be included in your aips++ installation.
+If not, you can use two of your own images from different 'Clean' stages,
+but which have the same resolution.
+
+\begin{verbatim}
+mdd1 := dv.loaddata('/aips++/data/bima/test/sgrb2n.spw1.dirty', 'raster');
+mdd2 := dv.loaddata('/aips++/data/bima/test/sgrb2n.spw1.restored', 'raster');
+# (For '/aips++', you may need to substitute the directory where
+# aips++ is installed on your system).
+\end{verbatim}
+
+You may notice considerable delay
+loading the 33MByte images above if you are accessing them over the net.
+To avoid these delays, store or copy your data to the machine where you
+run aips++.
+
+If you don't find these images and have none of your own, you can
+still try out blink mode by loading the test image of previous examples
+twice.  In that case, change the colormap of the second \ndd\ to
+'Rainbow 2' to make them easy to tell apart.
+
+\begin{verbatim}
+# use these steps instead, if you couldn't find the images above.
+
+include 'image.g';                     # If not done
+im := imagemaketestimage('test.im');   # previously...
+
+mdd1 := dv.loaddata(im.name(), 'raster');
+mdd2 := dv.loaddata(im.name(), 'raster');
+
+mdd2.setoptions([colormap='Rainbow 2']);
+\end{verbatim}
+
+Whichever pair of \ndd s you use, register them onto the \ndp\ now.
+
+\begin{verbatim}
+mdp.register(mdd1);
+mdp.register(mdd2);
+\end{verbatim}
+
+You will see only the last-registered \ndd , since they are drawn in
+that order and there is no transparency mode at present.
+
+If you are using the sgrb2n data, notice that the animator indicates
+that you are on frame (channel) 1 of 128.  Move to channel 61 or so,
+by typing  {\gcf\bf 61} <Enter>  into the text box that indicates the current
+frame.  The script commands to do the same thing are:
+
+\begin{verbatim}
+an := mdp.animator();
+an.goto(61);
+\end{verbatim}
+
+Position the cursor somewhere around the left border of this image,
+hold down the middle mouse button, and move it around a bit, to
+lighten up the image as desired.
+
+That last scripted command used the animator in its 'Normal'
+mode, which moves to a chosen plane on a third axis of your image(s).
+(If you are using 'test.im', it has no third axis, and the animator
+is disabled).  In order to blink between different images or view them
+side-by-side, change the animator's mode to 'Blink', either by
+pressing the 'Blink' radio button on the panel, or entering:
+
+\begin{verbatim}
+an.setmode('blink');
+\end{verbatim}
+
+The animator now indicates that you are viewing image 1 of 2.  You can
+'blink' between the two images now by using the animator's 'tapedeck'
+buttons.  For reference, the corresponding animator script commands are:
+
+\begin{verbatim}
+an.forwardplay(); an.stop();
+an.reverseplay();
+an.forwardstep(); an.reversestep();
+an.tostart();     an.toend();
+\end{verbatim}
+
+To view the two images side-by-side, bring up the 'Canvas manager'
+window from the File menu of the \ndp , and set 'Number of panels in x'
+to 2.  Stop the animator if it is playing and set it to the beginning
+as well, so that the first-registered image is on the left, just to avoid
+confusion.  In script commands, this is:
+
+\begin{verbatim}
+an.stop();
+an.tostart();
+cm := mdp.canvasmanager();
+cm.setoptions([nxpanels=2]);
+\end{verbatim}
+
+Three (or more) images can be accommodated in a similar manner.
+You can zoom into both images in synchronization by sweeping out a
+rectangle on either image with the left mouse button and then
+double-clicking inside the rectangle.
+
+
+\subsubsection{Blink mode limitations (and ways around them)}
+
+If you used the sgrb2n images in the example above, you'll notice
+that both images remained on channel 61 during blink mode.  To look
+at a different channel, you could move back to normal mode,
+select a different channel, and return to blink mode to view both
+images on the new channel.  A shortcut command for this is:
+
+\begin{verbatim}
+an.gotoz(67);     # change to channel 67, while still in 'blink' mode.
+\end{verbatim}
+
+There is no way for the animator to tell the various images
+to display {\em different} channels; it has only a
+single frame number setting, which is communicated to all
+the images.  There are several ways around this limitation,
+however.
+
+\begin{itemize}
+
+\item
+If you have a spectral image and a continuum (single-channel)
+image with the same sky projection and extents, the continuum image
+can be blinked or displayed along with whichever channel you select
+for the spectral image.  For now, you should register the spectral
+image first, but that requirement will be removed soon.
+
+\item
+If your images have both a Stokes (polarization) axis and a
+Frequency axis, you can move the Stokes axis onto the animator, which
+will put the Frequency axes under separate slider controls within the
+'Adjust' panels of each \ndd .
+To accomplish this, press the 'Adjust' button on the
+\ndp .  Then, on both 'Adjust' panels that appear, open the 'Display'
+axes rollup, select 'Stokes' for the 'Z-axis', and press 'Apply' on both.
+The channel for each image can then be selected independently, from
+the 'Hidden axes' rollup of the corresponding Adjust panel.
+
+If your images {\em don't} have a Stokes axis, it's easy to give them one.
+
+\begin{verbatim}
+include 'image.g'                     # (probably already included by now).
+im := image('nostokes.im');           # use the file name of your image here.
+imst := im.adddegaxes(stokes='I');    # add Stokes axis temporarily.
+ddst := dv.loaddata(imst, 'raster');  # load the new image tool
+mdp.register(ddst);                   # and register it on the displaypanel.
+\end{verbatim}
+
+You can save that stokes axis permanently if you wish, by adding an
+{\gcf outfile} parameter in the {\gcf adddegaxes} command above:
+
+\begin{verbatim}
+imst := im.adddegaxes(stokes='I', outfile='hasstokes.im');
+\end{verbatim}
+
+\end{itemize}
+
+If your images cover a similar portion of the sky but have different
+projections or extents on it, you can view them both by
+regridding one to the projection and shape of the other, as follows:
+\begin{verbatim}
+im1 := image('first.im');       # use the file names of your
+im2 := image('second.im');      # images here.
+cs1 := im1.coordsys();          # coordinate system of the first image.
+im2r:= im2.regrid(outfile='second-regrid.im', csys=cs1, shape=im1.shape());
+\end{verbatim}
+
+{\gcf im2r} contains the second image regridded to the projection
+and shape of the first image.  You can omit the {\gcf outfile}
+parameter if you don't need to save the regridded image permanently.
+You can now display and blink between the images {\gcf im1} and {\gcf im2r}.
+
+\begin{verbatim}
+dd1 := dv.loaddata(im1,  'raster');  mdp.register(dd1);
+dd2 := dv.loaddata(im2r, 'raster');  mdp.register(dd2);
+\end{verbatim}
+
+Different images can always be displayed 'side-by-side' in completely
+separate \ndp\ windows as well.  In that case the the images need
+have nothing in common at all.  There is no zoom synchronization or
+other 'linkage' between different \ndd s in the different panels, however.
+
+The first item under the 'File' menu in one panel will bring up
+a new panel; registration of \ndd s, zooming, and animation can be
+controlled separately in each panel.
+
+
+
+
+
+\subsection{Displaying complex data}
+
+In this example, we generate a complex data array, and use some special
+features of the Viewer \tool\ to visualize the data.  Let's commence by taking
+the standard Viewer \tool\ test array data, and Fourier transform it to obtain
+a complex array:
+
+\begin{verbatim}
+myrealdata := viewermaketestarray(180);
+include 'fftserver.g';
+mfft := fftserver();
+mycxdata := mfft.realtocomplexfft(myrealdata);
+\end{verbatim}
+
+At this point, {\gcf mycxdata} is a complex array, storing the
+Fourier transform of the real array {\gcf myrealdata}.  We can
+immediately view the complex array with the Viewer \tool\ as follows:
+
+\begin{verbatim}
+mrdp := dv.newdisplaypanel();
+mrdd := dv.loaddata(mycxdata, 'raster');
+mrdp.register(mrdd);
+\end{verbatim}
+
+The image has a rather high dynamic range, so let's ramp up the
+``magnifying'' power of the colormap, and zoom in by a factor of
+three:
+
+\begin{verbatim}
+mrdd.setoptions([powercycles=-3.0]);
+mrdp.zoom(3);
+\end{verbatim}
+
+Now, the default behavior of the raster map, when provided with complex
+data, is to shade pixels according to the magnitude of the pixel values. 
+Valid alternatives are the phase, real and imaginary components.  Select
+which you like according to the following examples:
+
+\begin{verbatim}
+mrdd.setoptions([complexmode='phase']);     # display phase
+mrdd.setoptions([complexmode='real']);      # display real component
+mrdd.setoptions([complexmode='imaginary']); # display imaginary component
+mrdd.setoptions([complexmode='magnitude']); # back to magnitude display
+\end{verbatim}
+
+Make sure you execute at least the last line here, so that at this point
+you are back viewing the magnitude of the data.  Note that if you have
+the adjustment panel open for this \ndd\ as you are making changes from
+the command line, you will see the adjustment panel update in response
+to your changes!
+
+Let's get a little more sophisticated.  We can actually display two (or
+even three) components of the complex data at once, using a
+multi-channel raster map.  Such a map has different data being mapped to
+either the red, green and blue components of each pixel on the screen,
+or instead the hue, saturation and value components of each pixel on the
+screen.  First we shall avail ourselves of a different type of \vdp, an
+{\ssf RGB} \ndp, and make two new \ndds:
+
+\begin{verbatim}
+mcxdp := dv.newdisplaypanel(maptype='rgb');
+mcxdd1 := dv.loaddata(mycxdata, 'raster');
+mcxdd2 := dv.loaddata(mycxdata, 'raster');
+\end{verbatim}
+
+Now we will set the {\gcf mcxdd1} \ndd\ to display the real
+component of the pixels, and place this on the red channel, and set
+{\gcf mcxdd2} to display the imaginary component via the green
+channel:
+
+\begin{verbatim}
+mcxdd1.setoptions([complexmode='real', colormode='red']);
+mcxdd2.setoptions([complexmode='imaginary', colormode='green']);
+\end{verbatim}
+
+Now we should be able to make a really cool display by registering both
+these \ndds\ on the one \vdp.  We make use of the {\stf hold} and {\stf
+release} functions of the Viewer \tool\ to do this in one refresh cycle:
+
+\begin{verbatim}
+dv.hold();
+mcxdp.register(mcxdd1);
+mcxdp.register(mcxdd2);
+dv.release();
+\end{verbatim}
+Again, let's just improve things by spreading out the colors,
+switching to a smoother resampling mode, and zooming in:
+\begin{verbatim}
+dv.hold();
+mcxdd1.setoptions([powercycles=-1.0, resample='bilinear']);
+mcxdd2.setoptions([powercycles=-1.0, resample='bilinear']);
+mcxdp.zoom(5);
+dv.release();
+\end{verbatim}
+
+Finally, we can allocate more colors to the red and green channels by
+taking them away from the blue channel.  Find out the current color
+cube dimensions:
+
+\begin{verbatim}
+print mcxdp.status().pixelcanvas.colorcubesize;
+\end{verbatim}
+
+Chances are the result will look something like {\tt [7 6 6]} if you 
+are using an 8-bit screen, or {\tt [256 256 256]} if you are using a
+TrueColor screen.  If the numbers are low, you can rearrange them as
+follows:
+
+\begin{verbatim}
+dv.hold()
+tmp := mcxdp.setoptions([colorcubeblueaxislength=1]);
+tmp := mcxdp.setoptions([colorcuberedaxislength=12]);
+tmp := mcxdp.setoptions([colorcubegreenaxislength=12]);
+dv.release();
+\end{verbatim}
+
+If you are on a TrueColor (24bit) screen, you cannot modify the color
+allocations at this point.
+
+In the final display, you can now see the areas where the real
+component is dominant (red-dominant pixels), areas where the imaginary
+component is dominant (green-dominant pixels), and the in-between areas
+where the real and imaginary components have roughly the same
+magnitudes (yellow colored pixels).
+
+\section{3D slice display of data cubes}
+
+The Viewer \tool\ also provides a slightly modified \vdp, the \vsdp.
+It has most of the functionality of the \vdp.  You might notice that
+some of the tools in the control box don't appear.  These tools will
+be available soon.  In addition the \vsdp\ provides an extra tool, the
+Multi panel crosshair.  This controls the slicing action.  Dragging it
+over one of the three different displays of the data will control the
+animation of the other two.  The top-left display will show a XY
+slice, the top-right a ZY and the bottom-left panel a XZ slice of the
+data.  {\bf Note that only a \vdd\ with at least three axes and more
+than one pixel along the third axis will register on the \vsdp.}  The
+slices probably will not fill the panels evenly. This is because the
+ratio of the pair of displayed axes
+
+The button bar at the bottom of the \vsdp\ shows a {\gif Preload...}
+button.  It executes an animation loop on each of the slices of data.
+By doing this, the display caches all views of the data and will
+improve the speed of the Multi panel crosshair tool.  {\bf Note: This
+can take a while for large data cubes, although it is recommended to
+use this if you chose to have axis labels.}
+
+{\bf Note: Don't use \fits\ images on this \ndp.  Convert them to
+native \aipspp\ images first.  The access of \fits\ images with
+re-ordered axes is very slow.}
+
+
+\section{Displaying channel maps of a data cube}
+The \htmlref{viewercanvasmanager gui}{viewer:vcmgui} accessible via
+the {\tt File} menu of \vdp, gives you control over the number of
+channels in a data cube you want to display at the same time - so
+called channel maps.  The {\tt Layout} rollup drives this
+application. Select the number of views you want to see in x and y and
+the animator will take care of the distribution. These will be
+arranged from top-left to right-bottom, starting at the frame selected
+in the animator. {\bf Be careful here: If your margins are too big
+this can get out of control. Always reduce the margins in the {\tt
+Geometry} rollup first.}
+
+\section{A step-by-step recipe to make a post-script plot of your image}
+\label{sct:dummies}
+This section gives a detailed description on how to get from your image
+on disk to a publishable PS file just using the GUI.
+
+Let's say we have an image called {\tt ngc253.fits}:
+\begin{enumerate}
+
+\item{\bf Starting the viewer}\par
+To start the viewer type {\tt viewer} at your Unix command line.
+
+\item{\bf loading the image into the viewer}\par
+
+\begin{itemize}
+\item In the data manager window select the file {\tt ngc253.fits}.
+
+\item On the right-hand side click on {\tt Raster image}. The image
+will now be displayed on the display panel.
+
+\item Click on the {\tt Done} button to finish with the data manager.
+
+\end{itemize}
+
+\item{\bf Adjust (fiddle) the colormap}\par
+The displayed might not show a nice contrast. You can use the colormap
+fiddling tool to adjust this.
+
+\begin{itemize}
+
+\item This is by default associated with the middle mouse button, so move
+your cursor onto the image and drag the cursor across the display
+while holding the middle mouse button down. Release when you are happy
+with the result.
+
+\end{itemize}
+
+\item{\bf Turning on axis labels}\par
+
+\begin{itemize}
+
+\item Click on the {\tt Adjust...} button at the bottom-left of the
+display panel.
+
+\item click on the roll-up {\tt Basic settings} to roll it up.
+
+\item  click on the roll-up {\tt Axis labels} to roll it down
+
+\item press the menu button next to {\tt Axis Labelling \& annotation}
+and select {\tt True}. The axis labels will appear on the display panel.
+
+\item press the {\tt Dismiss} button at the bottom of the
+adjustment gui to hide this window.
+
+\end{itemize}
+
+Your axis labels might be cut off right now or you think that there is
+too much space around them. In this case you should go to point 4,
+otherwise continue skip this.
+
+\item{\bf Adjusting the axis label space}\par
+
+\begin{itemize}
+
+\item On the display panel select {\tt Canvas manager} from the
+{\tt File} menu
+
+\item press on {\tt Geometry} to roll this rollup down.
+
+\item use the sliders to remove excess or add extra space.
+
+\item press the {\tt Done} button at the bottom of the
+canvas manager gui to remove this window.
+
+\end{itemize}
+
+\item{\bf Printing the image/ save it to a PS file}\par
+
+\begin{itemize}
+
+\item press the {\tt Print...} button at the bottom of the display
+panel.
+
+\end{itemize}
+Now either save it to a file:
+\begin{itemize}
+
+\item enter a filename in to the first field ({\tt Output file}) of the
+canvas print manager AND(!) hit return.
+
+\item press the {\tt Save PS} button at the bottom of the gui.
+
+\end{itemize}
+
+or print it directly:
+
+\begin{itemize}
+
+\item press the {\tt Print} button at the bottom of the gui.
+
+\item in the new window select either {\tt Ghostview} or a {\tt
+Printer} with name.
+
+\item if you want to delete the underlying postscript file after
+printing check the box {\tt Remove after printing}
+
+\item press the {\tt Print} button
+
+\end{itemize}
+
+\item press the {\tt Dismiss} button on the canvas print manager window.
+
+\end{enumerate}
+
+That's it you have successfully create a post-script file of your image.
+You might have noticed all the other options you have in the Adjust
+panel. Just play around and look what they do.

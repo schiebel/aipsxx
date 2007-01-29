@@ -1,0 +1,313 @@
+# atomsalma.g: help atoms for the alma package. 
+# Copyright (C) 1999
+# Associated Universities, Inc. Washington DC, USA.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Library General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
+#
+# This library is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Library General Public License
+# along with this library; if not, write to the Free Software Foundation,
+# Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+#
+# Correspondence concerning AIPS++ should be addressed as follows:
+#        Internet email: aips2-request@nrao.edu.
+#        Postal address: AIPS++ Project Office
+#                        National Radio Astronomy Observatory
+#                        520 Edgemont Road
+#                        Charlottesville, VA 22903-2475 USA
+#
+# $Id: atomsalma.g,v 19.966 2006/10/17 01:30:47 wyoung Exp $
+
+pragma include once
+val help::pkg.alma := [=];
+help::pkg.alma::d := 'ALMA-related modules and tools';
+
+help::pkg.alma.alma := [=];
+help::pkg.alma.alma.objs := [=];
+help::pkg.alma.alma.funs := [=];
+help::pkg.alma.alma.d := 'Module for clic emulation functionalities';
+help::pkg.alma.alma.objs.iramcalibrater := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m := [=];
+help::pkg.alma.alma.objs.iramcalibrater.c := [=];
+help::pkg.alma.alma.objs.iramcalibrater.d := 'tool to perform calibration on data ( a la GILDAS) ';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater := [=];
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.d := 'Construct an iramcalibrater tool';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.ms := [=];
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.ms.d := 'Measurementset to calibrate';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.ms.def := '\' \' ';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.ms.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.initcal := [=];
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.initcal.d := 'Initialize calibration?';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.initcal.def := '\' T\' ';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.a.initcal.a := 'Boolean';
+help::pkg.alma.alma.objs.iramcalibrater.c.iramcalibrater.s := 'iramcalibrater(ms, initcal)';
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.d := 'Select data atmospheric corrected data or not';
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.a.trial := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.a.trial.d := 'Execute in trial mode or not';
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.a.trial.def := 'T';
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.a.trial.a := 'Bool';
+help::pkg.alma.alma.objs.iramcalibrater.m.phcor.s := 'phcor(trial)';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.d := 'perform phase and amplitude bandpass calibration';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.fieldname := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.fieldname.d := 'Field name of (single) calibrator to be used';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.fieldname.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.fieldname.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.freqgrp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.freqgrp.d := 'spectral windows to be used in the bandpass calibration';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.freqgrp.def := '\' 3mm-LSB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.freqgrp.a := '\' 3mm-LSB\'  || \' 3mm-USB\'  || \' 1mm\'  || \' 1mm-LSB\'  || \' 1mm-USB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.visnorm := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.visnorm.d := 'Do an auto calibration in time before integrating';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.visnorm.def := 'F';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.visnorm.a := 'Bool';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.bpnorm := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.bpnorm.d := 'normalize bandpass solution';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.bpnorm.def := 'T';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.bpnorm.a := 'Bool';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.refant := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.refant.d := 'Reference antenna';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.refant.def := '1';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.refant.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.gibb := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.gibb.d := 'number of central channels to reject in solve';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.gibb.def := '2';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.gibb.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.drop := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.drop.d := 'percentage of channels to ignore on edges of band';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.drop.def := '5';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.drop.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degamp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degamp.d := 'Degree of amplitude polynomial in fit';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degamp.def := '6';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degamp.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degphase := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degphase.d := 'Degree of phase polynomial in fit';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degphase.def := '12';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.a.degphase.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.rf.s := 'rf(fieldname, freqgrp, visnorm, bpnorm, refant, gibb, drop, degamp, degphase)';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.d := 'perform phase calibration on the data';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.fieldnames := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.fieldnames.d := 'Field names of calibrators to be used';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.fieldnames.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.fieldnames.a := 'Vector of Strings';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.freqgrp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.freqgrp.d := 'frequency group to solve for phase';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.freqgrp.def := '\' 3mm-LSB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.freqgrp.a := '\' 3mm-LSB\'  || \' 3mm-USB\'  || \' 1mm\'  || \' 1mm-LSB\'  || \' 1mm-USB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.refant := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.refant.d := 'Reference antenna';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.refant.def := '1';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.refant.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasetransfer := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasetransfer.d := 'type of transfer for 1mm solution';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasetransfer.def := '\' raw\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasetransfer.a := '\' raw\'  || \' curve\'  || \' none\'  ';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.rawspw := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.rawspw.d := 'spectral window used in case of raw phase transfer';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.rawspw.def := '-1';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.rawspw.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.npointaver := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.npointaver.d := 'Number of consecutive time points averaged for phase tracking';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.npointaver.def := '10';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.npointaver.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasewrap := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasewrap.d := 'Phase difference that indicates a cycle slip in phase tracking';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasewrap.def := '\' 250deg\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.a.phasewrap.a := 'Quantity';
+help::pkg.alma.alma.objs.iramcalibrater.m.phase.s := 'phase(fieldnames, freqgrp, refant, phasetransfer, rawspw, npointaver, phasewrap)';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.d := 'perform flux calibration on the data';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fieldnames := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fieldnames.d := 'Field names of calibrators to be used';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fieldnames.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fieldnames.a := 'Vector of Strings';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fixed := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fixed.d := 'Fixed flux densities for known calibrators (as string quantities)';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fixed.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.fixed.a := 'Vector of Strings';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.freqgrp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.freqgrp.d := 'spectral windows to be used in the bandpass calibration';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.freqgrp.def := '\' 3mm-LSB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.freqgrp.a := '\' 3mm-LSB\'  || \' 3mm-USB\'  || \' 1mm\'  || \' 1mm-LSB\'  || \' 1mm-USB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.timerange := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.timerange.d := 'Timerange(s) specified in pairs';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.timerange.def := '\'  \' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.timerange.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.plot := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.plot.d := 'Display flux renormalized amplitudes';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.plot.def := 'F';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.plot.a := 'Bool';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.gibb := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.gibb.d := 'number of central channels to reject in solution';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.gibb.def := '2';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.gibb.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.drop := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.drop.d := 'percentage of channels to ignore on edges of band';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.drop.def := '5';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.drop.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.numchancont := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.numchancont.d := 'Number of channels in continuum spectral window';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.numchancont.def := '64';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.a.numchancont.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.flux.s := 'flux(fieldnames, fixed, freqgrp, timerange, plot, gibb, drop, numchancont)';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.d := 'perform amplitude calibration on the data';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.fieldnames := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.fieldnames.d := 'Field names of calibrators to be used';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.fieldnames.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.fieldnames.a := 'Vector of Strings';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.freqgrp := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.freqgrp.d := 'frequency group to use';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.freqgrp.def := '\' 3mm-LSB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.a.freqgrp.a := '\' 3mm-LSB\'  || \' 3mm-USB\'  || \' 1mm\'  || \' 1mm-LSB\'  || \' 1mm-USB\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.amp.s := 'amp(fieldnames, freqgrp)';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.d := 'to extract calibrated and combine it into another ms';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.fielname := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.fielname.d := 'Name of source to be extracted';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.fielname.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.fielname.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.spwid := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.spwid.d := 'spectral window for which data is to be extracted';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.spwid.def := '1';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.spwid.a := 'Int';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.filename := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.filename.d := 'name of new ms into which data is to written';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.filename.def := '';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.filename.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.option := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.option.d := '\' new\'  ms or \' append\'  to an existing one';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.option.def := '\' new\' ';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.a.option.a := 'String';
+help::pkg.alma.alma.objs.iramcalibrater.m.uvt.s := 'uvt(fielname, spwid, filename, option)';
+help::pkg.alma.alma.objs.iramcalibrater.m.done := [=];
+help::pkg.alma.alma.objs.iramcalibrater.m.done.d := 'Close the iramcalibrater tool';
+help::pkg.alma.alma.objs.iramcalibrater.m.done.s := 'done()';
+help::pkg.alma.alma.funs.resample := [=];
+help::pkg.alma.alma.funs.resample.a := [=];
+help::pkg.alma.alma.funs.resample.d := 'Does a simple 3 point Hanning on spectral MS ';
+help::pkg.alma.alma.funs.resample.a.infile := [=];
+help::pkg.alma.alma.funs.resample.a.infile.d := 'Name of input ms';
+help::pkg.alma.alma.funs.resample.a.infile.def := 'No Default';
+help::pkg.alma.alma.funs.resample.a.infile.a := 'String';
+help::pkg.alma.alma.funs.resample.a.outfile := [=];
+help::pkg.alma.alma.funs.resample.a.outfile.d := 'Name of output ms, \' \'  output in the input';
+help::pkg.alma.alma.funs.resample.a.outfile.def := '\' \' ';
+help::pkg.alma.alma.funs.resample.a.outfile.a := 'String';
+help::pkg.alma.alma.funs.resample.s := 'resample(infile, outfile)';
+help::pkg.alma.alma.funs.shadow := [=];
+help::pkg.alma.alma.funs.shadow.a := [=];
+help::pkg.alma.alma.funs.shadow.d := 'Check and flag for antenna shadowing';
+help::pkg.alma.alma.funs.shadow.a.msname := [=];
+help::pkg.alma.alma.funs.shadow.a.msname.d := 'Name of input ms';
+help::pkg.alma.alma.funs.shadow.a.msname.def := 'No Default';
+help::pkg.alma.alma.funs.shadow.a.msname.a := 'String';
+help::pkg.alma.alma.funs.shadow.a.trial := [=];
+help::pkg.alma.alma.funs.shadow.a.trial.d := ' trial run, if T, no flagging ';
+help::pkg.alma.alma.funs.shadow.a.trial.def := 'T';
+help::pkg.alma.alma.funs.shadow.a.trial.a := 'Bool';
+help::pkg.alma.alma.funs.shadow.a.minsep := [=];
+help::pkg.alma.alma.funs.shadow.a.minsep.d := ' Minimum acceptable seperation';
+help::pkg.alma.alma.funs.shadow.a.minsep.def := '14.0';
+help::pkg.alma.alma.funs.shadow.a.minsep.a := 'Double';
+help::pkg.alma.alma.funs.shadow.s := 'shadow(msname, trial, minsep)';
+help::pkg.alma.alma.objs.almati2ms := [=];
+help::pkg.alma.alma.objs.almati2ms.m := [=];
+help::pkg.alma.alma.objs.almati2ms.c := [=];
+help::pkg.alma.alma.objs.almati2ms.d := 'A tool for converting ALMA-TI format data to a measurement set';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.d := 'Construct an almati2ms tool.';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.msfile := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.msfile.d := 'Output MS file name';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.msfile.def := '\' \' ';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.msfile.a := 'Table name';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.fitsin := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.fitsin.d := 'Input ALMA-TI FITS file';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.fitsin.def := '\' \' ';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.fitsin.a := 'String';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.append := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.append.d := 'True if appending to an existing MS';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.append.def := 'F';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.append.a := 'Boolean';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.host := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.host.d := 'The host on which the almati2ms should be run';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.host.def := 'unset';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.host.a := 'string';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.forcenewserver := [=];
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.forcenewserver.d := 'Always start a new server';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.forcenewserver.def := 'F';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.a.forcenewserver.a := 'Boolean';
+help::pkg.alma.alma.objs.almati2ms.c.almati2ms.s := 'almati2ms(msfile, fitsin, append, host, forcenewserver)';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions := [=];
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.d := 'Set general filler options';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.compress := [=];
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.compress.d := 'True if compressed MS output required';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.compress.def := 'F';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.compress.a := 'Boolean';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.combinebaseband := [=];
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.combinebaseband.d := 'True if sub-bands are to be combined';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.combinebaseband.def := 'F';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.a.combinebaseband.a := 'Boolean';
+help::pkg.alma.alma.objs.almati2ms.m.setoptions.s := 'setoptions(compress, combinebaseband)';
+help::pkg.alma.alma.objs.almati2ms.m.select := [=];
+help::pkg.alma.alma.objs.almati2ms.m.select.d := 'Input data selection';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.obsmode := [=];
+help::pkg.alma.alma.objs.almati2ms.m.select.a.obsmode.d := 'Observing mode (from ALMA-TI DATAPAR)';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.obsmode.def := '\' \' ';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.obsmode.a := 'String';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.chanzero := [=];
+help::pkg.alma.alma.objs.almati2ms.m.select.a.chanzero.d := 'Channel-zero selection options';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.chanzero.def := '\' NONE\' ';
+help::pkg.alma.alma.objs.almati2ms.m.select.a.chanzero.a := 'String:\' NONE\' |\' TIME\_AVG\' |\' TIME\_SAMPLED\' ';
+help::pkg.alma.alma.objs.almati2ms.m.select.s := 'select(obsmode, chanzero)';
+help::pkg.alma.alma.funs.almatifiller := [=];
+help::pkg.alma.alma.funs.almatifiller.a := [=];
+help::pkg.alma.alma.funs.almatifiller.d := 'Convert ALMA-TI fits files to an MS';
+help::pkg.alma.alma.funs.almatifiller.a.msfile := [=];
+help::pkg.alma.alma.funs.almatifiller.a.msfile.d := 'Output MS file name';
+help::pkg.alma.alma.funs.almatifiller.a.msfile.def := '\' \' ';
+help::pkg.alma.alma.funs.almatifiller.a.msfile.a := 'Table name';
+help::pkg.alma.alma.funs.almatifiller.a.fitsdir := [=];
+help::pkg.alma.alma.funs.almatifiller.a.fitsdir.d := 'Input ALMA-TI FITS directory';
+help::pkg.alma.alma.funs.almatifiller.a.fitsdir.def := '\' \' ';
+help::pkg.alma.alma.funs.almatifiller.a.fitsdir.a := 'String';
+help::pkg.alma.alma.funs.almatifiller.a.pattern := [=];
+help::pkg.alma.alma.funs.almatifiller.a.pattern.d := 'File modifier string e.g. 18-feb*';
+help::pkg.alma.alma.funs.almatifiller.a.pattern.def := '';
+help::pkg.alma.alma.funs.almatifiller.a.pattern.a := 'String';
+help::pkg.alma.alma.funs.almatifiller.a.append := [=];
+help::pkg.alma.alma.funs.almatifiller.a.append.d := 'True if appending to an existing MS';
+help::pkg.alma.alma.funs.almatifiller.a.append.def := 'F';
+help::pkg.alma.alma.funs.almatifiller.a.append.a := 'Boolean';
+help::pkg.alma.alma.funs.almatifiller.a.compress := [=];
+help::pkg.alma.alma.funs.almatifiller.a.compress.d := 'True if compressed MS output required';
+help::pkg.alma.alma.funs.almatifiller.a.compress.def := 'F';
+help::pkg.alma.alma.funs.almatifiller.a.compress.a := 'Boolean';
+help::pkg.alma.alma.funs.almatifiller.a.combinebaseband := [=];
+help::pkg.alma.alma.funs.almatifiller.a.combinebaseband.d := 'True if sub-bands are to be combined';
+help::pkg.alma.alma.funs.almatifiller.a.combinebaseband.def := 'F';
+help::pkg.alma.alma.funs.almatifiller.a.combinebaseband.a := 'Boolean';
+help::pkg.alma.alma.funs.almatifiller.a.obsmode := [=];
+help::pkg.alma.alma.funs.almatifiller.a.obsmode.d := 'Observing mode (from ALMA-TI DATAPAR)';
+help::pkg.alma.alma.funs.almatifiller.a.obsmode.def := '\' \' ';
+help::pkg.alma.alma.funs.almatifiller.a.obsmode.a := 'String';
+help::pkg.alma.alma.funs.almatifiller.a.chanzero := [=];
+help::pkg.alma.alma.funs.almatifiller.a.chanzero.d := 'Channel-zero selection options';
+help::pkg.alma.alma.funs.almatifiller.a.chanzero.def := '\' NONE\' ';
+help::pkg.alma.alma.funs.almatifiller.a.chanzero.a := 'String:\' NONE\' |\' TIME\_AVG\' |\' TIME\_SAMPLED\' ';
+help::pkg.alma.alma.funs.almatifiller.a.dophcor := [=];
+help::pkg.alma.alma.funs.almatifiller.a.dophcor.d := 'Do the phcor process after filling';
+help::pkg.alma.alma.funs.almatifiller.a.dophcor.def := 'F';
+help::pkg.alma.alma.funs.almatifiller.a.dophcor.a := 'Boolean';
+help::pkg.alma.alma.funs.almatifiller.s := 'almatifiller(msfile, fitsdir, pattern, append, compress, combinebaseband, obsmode, chanzero, dophcor)';
+

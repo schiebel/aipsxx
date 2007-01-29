@@ -1,0 +1,49 @@
+// $Id: input.h.in,v 19.1 2005/10/19 14:44:07 dschieb Exp $
+// Copyright (c) 1993 The Regents of the University of California.
+// Copyright (c) 1997,2000 Associated Universities Inc.
+#ifndef input_h
+#define input_h
+
+#include <stdio.h>
+
+#include "Glish/glish.h"
+
+class Sequencer;
+class Str;
+extern Sequencer* current_sequencer;
+
+// Whether to use the editline library.
+#define USE_EDITLINE 1
+
+#undef HAVE_YY_CHAR
+#ifdef HAVE_YY_CHAR
+typedef unsigned char YY_CHAR;
+#else
+#define YY_CHAR char
+#endif
+
+extern YY_CHAR *yytext;
+extern FILE* yyin;
+
+extern int interpreter_state;
+
+inline int interactive() { return interpreter_state & 1; }
+inline void interactive_set( int v ) { interpreter_state = (v ? interpreter_state | 1 : interpreter_state & ~1); }
+
+inline int in_evaluation() { return interpreter_state & (1<<1); }
+inline void in_evaluation_set( int v ) { interpreter_state = (v ? interpreter_state | (1<<1) : interpreter_state & ~(1<<1)); }
+
+extern void set_statement_can_end( );
+extern void clear_statement_can_end( );
+extern int first_line;
+extern const char* glish_init[];
+
+extern int in_func_decl;
+
+extern void restart_yylex( FILE* input_file );
+extern void scan_strings( const char** strings );
+extern char *readline_read( const char prompt[], int new_editor=1 );
+extern int interactive_read( FILE* file, const char prompt[], char buf[],
+				int max_size );
+
+#endif	/* input_h */

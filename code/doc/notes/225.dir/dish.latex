@@ -1,0 +1,449 @@
+\section{Introduction}
+
+DISH is a collection of \glish\ scripts and clients which provide an
+environment within \aipspp\ intended to be used for single dish radioastronomy
+data analysis. Its initial aim is to be a worthy replacement for
+traditional single dish analysis programs such as UniPOPS. Eventually it
+will provide access to more advanced data calibration and imaging utilities
+which will share the same basic design as the sythesis calibration and
+imaging utilities in \aipspp.
+
+To start DISH, you must type the following at the glish command
+line after starting \aipspp:
+\begin{verbatim}
+	include "dish.g"
+\end{verbatim}
+
+In DISH, wherever practical, what you see is what you are operating
+on.  So, for example, when you press the ``Apply'' button in the
+``Baselines'' graphical user interface (GUI) frame of DISH, a
+baseline will be fit to whatever is currently plotted in the
+DISH plotter.  Results appear in the results manager
+and, when appropriate, are immediately displayed on the plotter.
+Results can be moved between the results manager, the calculator,
+and the browser through the use of
+a menu which appears when the user presses the right mouse button
+in one of these frames.
+
+The current state of DISH (the contents of the results manager, the
+settings of all of the operations, the contents of the calculator,
+and any active browsers) can be saved at any time either to the
+default state file or to a location of the user's choosing.  DISH can
+be restored to a previously saved state.  By default, DISH saves its
+state upon exit from glish and restores itself to that same state when 
+DISH is started in a new \glish\ session.
+
+In this release DISH only uses data in \aipspp\ tables which have
+been filled from FITS binary tables which follow the single
+dish FITS convention (SDFITS) described in Appendix~\ref{app:sdfits}.  Future 
+versions will interact directly with \aipspp\ MeasurementSets containing 
+single dish data.
+
+\section{Getting Data Into Dish}
+
+\subsection{UniPOPS SDD -$>$ \aipspp\ table}
+
+Converting from UniPOPS SDD data to an \aipspp\ table readable by DISH currently
+requires three steps:
+
+\begin{enumerate}
+\item Convert UniPOPS SDD data to UniPOPS FITS binary table.
+
+Use the UniPOPS utility {\it uni2fits} to convert the SDD data to FITS binary
+format. To use the program, you must be logged onto a Sun workstation 
+where UniPOPS has previously been installed and have your path include:
+
+\begin{verbatim}
+export popsdir=~unipops/test/
+export PATH=$popsdir/sunbin:$popsdir/utilities:$PATH
+\end{verbatim}
+
+\item Convert UniPOPS FITS to standard SDFITS.
+
+Use the \aipspp\ utility {\it uni2sdfits} to convert the data file. The syntax 
+is:
+
+\begin{verbatim}
+uni2sdfits input=unipops_fits_file output=sdfits_file
+\end{verbatim}
+
+\item Convert the SDFITS file to an \aipspp\ table.
+See the next section for the syntax of this step.
+\end{enumerate}
+
+\subsection{SDFITS -$>$ \aipspp\ table}
+Use the \aipspp\ utility {\it fits2table} to convert from a binary
+table following the SDFITS convention to an \aipspp\ table. The syntax is:
+\begin{verbatim}
+fits2table input=sdfits_file output=aips2_table [which_hdu=#]
+\end{verbatim}
+where ``sdfits\_file'' is the name of the SDFITS file and ``aips2\_table'' is 
+the desired name of the new \aipspp\ table created by this step.
+The third argument, ``which\_hdu'', is optional.  Use this to specify
+a specific FITS header data unit (hdu) other than the first one after
+the primary hdu.  For example, if you have a FITS file which has three tables
+following the primary hdu and the second table is a valid SDFITS table
+then you would use \verb!which_hdu=2! to indicate that that hdu is
+the one to be converted to the indicated output \aipspp\ table.
+
+\section{The Dish Graphical User Interface}
+
+The following sections detail the major graphical compenents of DISH.
+
+\subsection{Results Manager}
+
+The Results Manager is the heart of DISH. All results which DISH 
+creates in response to user actions are stored in the results manager and 
+listed in the {\it Results} window. These results are all available at the 
+\glish\ command line as glish variables of the same name for the user to 
+interact with. DISH immediately plots the
+currently selected result if it can be plotted. A description is associated
+with each result. The user can change the description or the name of the  
+result if they choose to do so. Certain results can also be browsed.
+Since each result is also a glish variable of the same name, new names
+are limited to be a valid glish variable name.
+
+Results can be copied to and from the clipboard or to the calculator.
+This Copy/Paste facility is activated by pressing the right mouse
+button when the mouse pointer is over the {\it Results} window.  A
+popup menu appears with the three possible options.  The
+current selection is copied to the chosen destination when a copy
+option is selected.  The contents of the cliboard is
+pasted into the results manager when that option is selected.
+
+\subsubsection{Working sets, SDRECORDs, and everything else}
+
+Results are either working sets (also known as sditerators),
+SDRECORD, and anything else.  
+
+A working set is a collection of
+SDRECORDs.  Specifically, it is an sditerator tool.  When you
+open a data set through the {\it File} menu (either a new one
+or an existing one) the result is a working set which will be shown
+in the results manager.  The other way to create a working set is
+to use the ``Apply'' button in the ``Selection'' operation.
+When you make a selection this way the result is also a 
+working set.  It does not make a copy of the selected data, rather
+it makes a reference to the selected data in the underlying data.
+This means that if you change the underlying data, the reference
+in the selected data is also changed.  Working sets can be browsed.
+See the Reference Manual for more information 
+on the \htmlref{Sditerator \texttt{tool}}{dish:sditerator}.
+
+An SDRECORD is a \glish\ record which has the structure described
+in Appendix~\ref{app:sdrecord}.  It is data (generally spectra at this 
+point in DISH development) plus some standard header values, any
+non-standard header values, and a history of what has been done
+to that particular SDRECORD.  SDRECORDs can be browsed and plotted.
+
+Anything may appear in the results manager.  If it isn't a working
+set or an SDRECORD it can not be browsed or plotted.
+
+\subsection{Menubar and Message Line}
+
+New data files are created, existing data files are opened, the state of
+DISH is saved, a previously saved state is restored, and DISH is reset to
+its default initial state through the 
+{\it File} menu. The GUI panels for each available operation are enabled
+and dismissed through the {\it Operations} menu. The {\it Options} menu
+has two options which can be turned on or off.  The ``Write to Script'' option, 
+when turned on, causes DISH to echo the
+underlying glish commands to the \aipspp\ defaultscripter (ds) tool when a GUI 
+operation occurs in DISH.  This can be a way to learn more about what
+DISH is doing behind the scenes and write glish scripts to do operations
+not yet available in DISH.  When the ``Save when done'' option is turned on,
+the state of DISH is saved to the current state file when the
+``done'' function is invoked (e.g. \verb!dish.done()!).  The ``done''
+function is always invoked whenever you exit glish.  Because DISH can
+not be restarted after ``done'' has been called it is best not to
+do that unless you are about to exit glish. This deficiency will be
+corrected in the next release.
+
+The Message Line is the text immediately below the Results Manager. These 
+messages are also echoed to the \aipspp\ logger for longer term storage.
+
+\subsection{Browsing}
+
+A working set within the results manager can be 'browsed' or examined by 
+hitting the 'Browse' button. This brings up a frame which lists all of
+the scan numbers and objects, record by record, within the working set. Each
+SDRECORD can also be browsed to examine all of the contents
+(e.g., all of the header information and data).
+
+When browsing a working set, individual records can be copied to the clipboard 
+or to the results manager.
+This copy facility is activated by pressing the right mouse
+button when the mouse pointer is over the browser window.  A
+popup menu appears with the three possible options.  The
+current selection is copied to the chosen destination when one
+of the copy options is selected.
+
+\subsection{Inspecting}
+
+Inspecting is another way of viewing the values of the results within
+the results manager. It lists all of the contents of the
+selected result.  These may be accessed via the \glish\ command line by the 
+names shown while inspecting. 
+
+\subsection{Operations}
+
+\input{dish_oper.latex}
+
+\section{Saving/Restoring State}
+
+If you do nothing, a file called {\it default} will be created within 
+the \verb!$HOME/aips++/dishstate! directory upon exiting from a DISH session. 
+The file is created automatically and dish will be restored to the
+state saved in that file automatically 
+upon startup. The dish state file
+contains all of the values known to the results manager as well as the
+various settings for each GUI element and operation.  So, by default
+a record is kept of the state of DISH after each use of DISH and
+DISH is restored to this state the next time DISH is used.
+
+There are several ways in which you can alter this default behavior.
+\begin{itemize}
+\item The state can be saved at any time by selecting the {\it File/Save state}
+menu item.
+\item A state can be restored to a previously restored state at any time by
+selecting the {\it File/Restore state} menu item.
+\item The state can be saved to a state file other than the default file at
+any time by selecting the {\it File/Save state as ...} menu item.  This
+makes the \aipspp\ catalog tool visible and allows you type in or select
+a file name to hold the state information.  Once you have made your
+selection and the state saved to that file, that file becomes the default
+state file until changed with {\it Save state as ...} or 
+{\it Restore state from ...}.
+\item The state can be restored from a state file other than the default file
+at any time by selecting the {\it File/Restore state from ...} menu item.  This
+makes the \aipspp\ catalog tool visible and allows you to select
+a file name to retrieve the state information from.  Once you have made your
+selection and the state retrieved from that file, that file becomes the default
+state file until changed with {\it Save state as ...} or 
+{\it Restore state from ...}.
+\item Restore the state to the default initial DISH state by selecting the
+{\it Reset to default state} menu item.
+\item The default behavior of saving the state when \verb!dish.done()! is 
+invoked (which 
+happens which you exit glish) can be turned off by toggling that option
+in the {\it Options} menu.
+\item The default behavior of restoring from the default state file when
+DISH is first started can be turned off by setting the aipsrc variable
+``dish.restorestate'' to F (for False).  To turn it back on, set this
+variable to (T) or remove it from your \verb!.aipsrc! file.
+\item The default state file can be set before DISH starts by setting
+the aisprc variable dish.statefile to whatever file you wish to designate
+as the default state file.  This is always the state file used when
+DISH starts up.  Its default value is \verb!$HOME/aips++/dishstate/default!
+\end{itemize}
+
+\section{Dish at the \glish\ Command Line}
+
+All of the values in the DISH results manager can be manipulated at the
+\glish\ command line. These results can then be returned to the DISH results
+manager. Please see Recipe 1 for an example.
+
+\section{The Dish Plotter}
+
+\input{dishplotter.latex}
+
+\section{SDImager}
+
+\input{sdimager.latex}
+
+\section{Recipes}
+
+\subsection{Recipe 1: Reduce an ON/OFF Total Power scan}
+
+Goal: To reduce an on/off total power scan pair by extracting the 'on'
+and the 'off' source scans from an opened data set, constructing a
+difference scan from them, and inserting the result into the DISH results
+manager.
+
+Assume: You have a data set named rawdata opened and available in the dish
+results manager. An 'on' scan is located at the first record in rawdata and
+an 'off' scan is located at the third record in rawdata.
+
+\begin{verbatim}
+
+AIPS++/Glish commands and results   Purpose and Background 
+
+rawdata.setlocation(1)              Move the rawdata pointer so that it 
+                                    points at the first record, where the
+                                    'on' scan is located.
+
+on:=rawdata.get()                   Get that scan and assign it to a variable
+                                    named on. on is a glish record having a 
+                                    known structure. For example, the data and
+                                    its description (axis type, value, etc.) is
+                                    in a subrecord, data, and a subfield of
+                                    that, arr, contains the data array.
+
+rawdata.setlocation(3)              Move the pointer to point at the 'off'
+                                    scan location.
+
+off:=rawdata.get()                  Get it and assign it to 'off'.
+
+result:=off;			    Set result initially to 'off' so that it
+				    is a complete SDRECORD. Now adjust the
+				    the data array...
+
+result.data.arr:=(on.data.arr -     Subtract the 'on' data array from the 'off'
+       off.data.arr)/off.data.arr   data array and divide the result by the 
+                                    'off' data array. Additional operations to 
+                                    appropriately scale the data and adjust
+                                    relevant header words would be done here.
+
+dish.rm().add('result','Difference  Add this result to the DISH results
+       of rows 1 and 3',result,     manager. The final argument tells the
+       'SDRECORD')                  results manager that this is an SDRECORD
+                                    something the results manager knows how
+                                    to display and interact with.
+
+\end{verbatim}
+
+\subsection{Recipe 2: Perform a gaussian fit on a spectral line.}
+
+Currently, the gaussian fit operation is available only as a command line
+option. For this example, we use data obtained at the NRAO-12 meter telescope
+of methanol emission from Comet Hale-Bopp (the resultant figure of this
+operation may be seen in Figure~\ref{fig:plotter}.
+
+Goal: To apply multiple gaussian fits to observed lines. 
+
+\begin{verbatim}
+- field_names(dish)
+done dismiss gui rm gaufit ops addop normalcursor busycursor savestate restorestate debug open showscript message plotter
+- dish.gaufit()
+How many gaussians to fit?
+>> 3
+please enter:
+ height, width and center (separated by commas), for gaussian  1
+>> 0.08,1100.,-42048.
+please enter:
+ height, width and center (separated by commas), for gaussian  2
+>> 0.045,1500.,-29794.
+please enter:
+ height, width and center (separated by commas), for gaussian  3
+>> 0.02,1100.,-22484.
+[0.08 0.045 0.02]  [1100 1500 1100]  [-42048 -29794 -22484]
+lengths of others are  3 3 3
+Warning: fit has not converged		# Note the lines in this case appear
+					# to be non-gaussian, hence the fit
+					# doesn't converge with our initial
+					# estimates. Errors in the fit are
+					# presented below.
+
+fit result:
+-----------
+[converged=F, currentIteration=0, maxIter=15, criteria=0.00100000005, height=[0.08 0.045 0.02] , center=[-42048 -29794 -22484] , width=[1100 1500 1100] , height_error=[0.91675759 0.780412991 0.912533633] , center_error=[40.9339062 0.216167586 274.088285] , width_error=[-5922.02412 -10144.8242 -23016.1549] , chisq=0.0108240801]
+
+mean of residuals:  -9.10550447e-05
+rms of residuals:   0.00919536679
+F
+\end{verbatim}
+
+\subsection{Recipe 3: Add a function to DISH (or fun with extensibility)}
+
+DISH is intrinsically enabled for extensibility. Currently, any files of the
+type dishops\_xxxxx.gp (where xxxxx can be any string, e.g. dishops\_cli.gp
+is used for the gaufit operation to indicate it is a command-line-interface
+operation), within the working directory will be automatically loaded. Functions
+within these files will be added to the those naturally available within 
+dish. A simple template example is the following:
+
+\begin{verbatim}
+# dishops_template.gp -- template file for adding command line operations
+#                        to dish
+# Copyright (C) 1999,2000
+# Associated Universities, Inc. Washington DC, USA.
+#
+# This library is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Library General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.
+#
+# This library is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Library General Public License
+# along with this library; if not, write to the Free Software Foundation,
+# Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+#
+# Correspondence concerning AIPS++ should be addressed as follows:
+#        Internet email: aips2-request@nrao.edu.
+#        Postal address: AIPS++ Project Office
+#                        National Radio Astronomy Observatory 
+#                        520 Edgemont Road
+#                        Charlottesville, VA 22903-2475 USA
+#
+
+pragma include once;
+
+dishops_template:=[=];
+
+dishops_template.attach := function(ref public) {
+
+        # now add whatever command line operation needed
+        # for a specific example look at dishops_cli.gp which includes
+        # the gaufit operation
+	# Add your functions here vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+        public.myfunction := function(input1='yes',input2=3.1415926) {
+                print 'This is my function and it will do whatever I want';
+                print 'My arguments are: ',input1,input2;
+                print 'If these are yes and 3.1415925 then I used the defaults';
+                print 'I can have as many arguments as needed.';
+                return;
+        }
+	# End of your function ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+	# you can add as many functions as you desire
+
+        return T; # to indicate the attachment went successfully
+
+}
+  
+\end{verbatim}
+
+Running this operation within dish looks like the following:
+
+\begin{verbatim}
+- field_names(dish)
+done dismiss gui rm ops addop normalcursor busycursor savestate restorestate debug open showscript message plotter gaufit myfunction
+- dish.myfunction()
+This is my function and it will do whatever I want
+My arguments are:  yes 3.1415926
+If these are yes and 3.1415926 then I used the defaults
+I can have as many arguments as needed.
+F
+\end{verbatim}
+
+\section{Development Plan}
+
+\begin{description}
+\item{$\bullet$} First public release of DISH in \aipspp\, October 1999. 
+Respond to user feedback.
+\item{$\bullet$} Complete generalized command line interface.
+\item{$\bullet$} Read data directly from an \aipspp\ MeasurementSet as well as 
+from an \aipspp\ Image Cube (which is itself a collection of spectra or
+SDRECORDs).
+\item{$\bullet$} Generalize data axis especially to accomodate non-linear 
+x-axis.
+\item{$\bullet$} Long range calibration plan: single dish calibration should
+follow the same model as used for calibrating synthesis data within \aipspp\. 
+This calibration will be accessible from within the DISH environment. 
+\item{$\bullet$} Imaging: single dish imaging will use the same model as that 
+used for synthesis imaging.
+\end{description}
+
+\appendix
+
+\input{sdrecord.latex}
+
+\section{sditerator}
+See the Reference Manual for information on the 
+\htmlref{Sditerator \texttt{tool}}{dish:sditerator}
+and the \htmlref{\texttt{is\_sditerator}}{dish:is_sditerator} function.
+
+\input{sdfits.latex}

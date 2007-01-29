@@ -1,0 +1,211 @@
+\clearpage
+\section{ListImage.h}
+
+\subsection*{HEADER FILE DESCRIPTION}
+ Header file for ListImage class
+  
+\subsection*{ENVIRONMENT}
+\begin{verbatim}
+#define LISTIMAGE_H
+
+#include <iostream.h>
+#include "Image.h"
+#include "K_DList.h"
+#include "Pixel.h"
+#include "ModelImage.h"
+#include "FilledImage.h"
+
+DECLARE_ONCE K_DList<Pixel>;
+
+class FilledImage;        // Needed for proper declaration order
+class ModelImage;
+\end{verbatim}
+
+\subsection*{CLASS DESCRIPTION}
+   The ListImage class: pixels (values plus coordinates) are stored
+   as a linked list.
+
+\subsection*{CLASS SUMMARY}
+\begin{verbatim}
+class ListImage : public Image
+{
+public:
+        ListImage(int m = 0, int n = 0);
+        ~ListImage();
+        ListImage(const ListImage& src);
+        ListImage(const ModelImage& src);
+        ListImage(const FilledImage& src);
+        ListImage & operator = (const ListImage&);
+        ListImage & operator = (const ModelImage&);
+        ListImage & operator = (const FilledImage&);
+        int GetNumEl() const;
+        void Scale(float);
+        void Fill(float);
+        void FillPixel(int, float);
+        int Extrema(Pixel &, Pixel &) const;
+        void SetPixel(PixelCoord, float);
+        int PixelExists(int) const;
+        int PixelExists(PixelCoord) const;
+        float GetPixel(PixelCoord) const;
+        int GetPixel(PixelCoord, float&) const;
+        void DeletePixel(int);
+        Pixel GetPixel(int) const;
+        void SetToPix(int) const;
+        Pixel GetNxtPixel() const;
+        int GetImPixelVal(const ImPixelCoord&, float&) const;
+        int GetFirstNeg() const;
+        ListImage CloneEmpty() const;
+        void SortMerge(int);
+ friend ostream& operator << (ostream&, ListImage&);
+        int ScaledAdd(float, const Image&);
+        int UCombine(float, const Image&, float, const Image&, float);
+        int XCombine(float, const Image&, float, const Image&, float);
+};
+end{verbatim}
+
+\subsection*{MEMBER FUNCTIONS}
+
+           Constructor and destructor
+\begin{verbatim}
+        ListImage(int m = 0, int n = 0);
+        ~ListImage();
+\end{verbatim}
+
+           Copy constructors
+\begin{verbatim}
+        ListImage(const ListImage& src);
+        ListImage(const ModelImage& src);
+        ListImage(const FilledImage& src);
+\end{verbatim}
+
+           Assignment operators
+\begin{verbatim}
+        ListImage & operator = (const ListImage&);
+        ListImage & operator = (const ModelImage&);
+        ListImage & operator = (const FilledImage&);
+\end{verbatim}
+
+           Return number of elements
+\begin{verbatim}
+        int GetNumEl() const;
+\end{verbatim}
+
+           Scale all pixel values by a scaling factor
+\begin{verbatim}
+        void Scale(float);
+\end{verbatim}
+
+           Replace values of all existing pixels by a new value.
+\begin{verbatim}
+        void Fill(float);
+\end{verbatim}
+
+           Fill the value of the n'th pixel with a new number.
+           n must be a valid serial pixel number (0 < n  <= 
+           number of elements)
+\begin{verbatim}
+        void FillPixel(int, float);
+\end{verbatim}
+
+           Return maximum and minimum pixels in image.
+           Returns FALSE if empty image.
+\begin{verbatim}
+        int Extrema(Pixel &, Pixel &) const;
+\end{verbatim}
+
+           Set a pixel (add a pixel to the list)
+\begin{verbatim}
+        void SetPixel(PixelCoord, float);
+\end{verbatim}
+
+           Check that pixel of serial number i exists.
+\begin{verbatim}
+        int PixelExists(int) const;
+\end{verbatim}
+
+           Check that a pixel having given Pixel Coords exists.
+\begin{verbatim}
+        int PixelExists(PixelCoord) const;
+\end{verbatim}
+
+           Retrieve the value of a pixel (scan through list). The value
+           of the FIRST pixel with matching coordinates is returned. If
+           there is no matching pixel, or if the image is empty, the
+           method exits.
+\begin{verbatim}
+        float GetPixel(PixelCoord) const;
+\end{verbatim}
+
+           Retrieve the value of a pixel (scan through list). The value
+           of the FIRST pixel with matching coordinates is returned.
+           The method returns FALSE if the image is empty or no
+           matching pixel is found, otherwise TRUE.
+\begin{verbatim}
+        int GetPixel(PixelCoord, float&) const;
+\end{verbatim}
+
+           Delete the n'th pixel in the list. The serial pixel number
+           n must be > 0 and <= the number of pixels.
+\begin{verbatim}
+        void DeletePixel(int);
+\end{verbatim}
+
+           Retrieve the n'th pixel in the list. The serial pixel number
+           n must be > 0 and <= the number of pixels.
+\begin{verbatim}
+        Pixel GetPixel(int) const;
+\end{verbatim}
+
+           Prepare to extract pixels having serial number n (and
+           greater). This is a faster access method than the
+           preceding. The number n must be in range 0 < n <= number
+           of pixels in image.
+\begin{verbatim}
+        void SetToPix(int) const;
+\end{verbatim}
+
+           Get next pixel. Must be preceded by invocation of itself,
+           or SetToPix(). Exits if one has run off end of
+           pixel list!
+\begin{verbatim}
+        Pixel GetNxtPixel() const;
+\end{verbatim}
+
+           Return value of FIRST pixel having ImPixelCoords. If there is no
+           matching pixel, it returns FALSE, otherwise TRUE.
+\begin{verbatim}
+        int GetImPixelVal(const ImPixelCoord&, float&) const;
+\end{verbatim}
+
+           Get serial pixel number of first negative pixel. Returns 
+           zero for empty image or no negative pixels.
+\begin{verbatim}
+        int GetFirstNeg() const;
+\end{verbatim}
+
+           "Clone" a new ListImage that has an empty list but all
+           other attributes of the current image
+\begin{verbatim}
+        ListImage CloneEmpty() const;
+\end{verbatim}
+
+           Merge pixels with corresponding coordinates (i = 0), and
+           merge and then sort into decreasing order of pixel value
+           (i = 1). The latter is not yet implemented.
+\begin{verbatim}
+        void SortMerge(int);
+\end{verbatim}
+
+           Print out a ListImage object. Note that a CoordSys must be defined!
+\begin{verbatim}
+ friend ostream& operator << (ostream&, ListImage&);
+\end{verbatim}
+
+           Union and intersection combine and scaled-add.
+           All methods used to implement these must be virtual methods!
+\begin{verbatim}
+        int ScaledAdd(float, const Image&);
+        int UCombine(float, const Image&, float, const Image&, float);
+        int XCombine(float, const Image&, float, const Image&, float);
+\end{verbatim}
+

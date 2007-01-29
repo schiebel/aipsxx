@@ -1,0 +1,131 @@
+\section{Basic Calibration Fundamentals}
+\label{GRsyncalbasics}
+
+Calibration and imaging responsibilities are divided between the
+\calibrater\ and \imager\ tools. The \calibrater\ tool handles
+visibility-plane calibration while the \imager\ tool deals with image
+formation, deconvolution and image-plane calibration.
+
+In a typical synthesis observation, a number of calibrators of known
+structure (usually point sources, and at least one of known flux
+density) are observed in addition to the scientific target(s) in order
+to obtain a measure of the systematic properties of the instrument
+and, if relevant, the corrupting media above it.  The effects of these
+systematic properties are then removed from the data for the
+scientific target.  This technique is often referred to as {\em
+cross-calibration} and its success depends implicitly on the
+relationship between: 1) the true brightness distribution of the
+observed radio sources (what we are after); 2) the formal response of
+the instrument and its variety of imperfections of varying importance
+(what we are calibrating); 3) and the data that is actually recorded
+(what we have measured).
+
+The \aipspp\ Measurement Equation, originally defined by Hamaker,
+Bregman, \& Sault (1996a, 1996b), is an explicit description of this
+relationship.  The Measurement Equation (in the visibility plane) for
+a spectral line polarization calibration is given by
+
+\begin{equation}
+\vec{V}_{ij}~=~B_{ij}~G_{ij}~D_{ij}~P_{ij}~T_{ij}~\vec{V}_{ij}^{\mathrm{~IDEAL}}
+\end{equation}
+
+\noindent
+where:
+\begin{description} 
+\item $\vec{V}_{ij}~=~$ cross-correlations between two polarizations
+  for each of two feeds ($i,j$) which characterize an individual
+  baseline (e.g. the measured visibilities). 
+\item $\vec{V}_{ij}^{\mathrm{~IDEAL}}~=~$ visibilities measured by an ideal 
+  interferometer (e.g. no instrumental errors or calibration effects). 
+  $\vec{V}_{ij}^{\mathrm{~IDEAL}}~=~$ is directly related to the Fourier 
+  Transform of the true polarized sky brightness, $\vec{I} = (I,Q,U,V)$.
+\item $T_{ij}~=~$ Complex gain effects which are polarization-independent, 
+  e.g. tropospheric effects, high-frequency opacity corrections, 
+  antenna gain as a function of elevation, baseline corrections.
+\item $P_{ij}~=~$ Parallactic angle. 
+\item $D_{ij}~=~$ Instrumental polarization response.  "D-terms" 
+  describe the polarization leakage between feeds (e.g. how much the 
+  R-polarized feed picked up L-polarized emission, and vice versa).  
+\item $G_{ij}~=~$ Electronic gain response due to components in the signal  
+  path between the feed and the correlator.  This complex gain term 
+  $G_{ij}$ includes the scale factor for absolute flux density calibration,
+  and may include phase and amplitude corrections due to changes 
+  in the atmosphere (in leiu of $T_{ij}$).
+\item $B_{ij}~=~$ Bandpass response. 
+\end{description}
+
+Note that the Measurement Equation is a matrix equation.
+$\vec{V}_{ij}$ and $\vec{V}_{ij}^{\mathrm{~IDEAL}}$ are 4-vectors with
+elements for each correlator product, and the $T_{ij}$, etc., are
+4$\times$4 matrices that `corrupt' the correlator products according
+to the properties of the specific term.  The order of the corrupting
+terms from right-to-left, for the most part, is the order in which the
+errors affect the incoming wavefront.  \aipspp\ hardwires the
+Measurement Equation order and all of the specific algebra associated
+with the individual terms.  As such, it is usually possible to ignore
+the fact that the Measurement Equation is a matrix equation, and treat
+the different terms as labeled `components' (black boxes) along the
+signal path.
+
+In practical calibration, it is often best to begin the calibration
+process by determining solutions for those terms which affect the data
+most.  Thus, the user would normally determine gain solutions ($G$)
+first (applying pre-computed parallactic angle corrections $P$ if doing
+polarization calibration), then bandpass solutions ($B$) and/or
+polarization solutions ($D$).  Errors which are
+polarization-independent ($T$) can be determined at any point in the
+calibration process.  $T$ has nearly identical form to $G$ but it
+located at a different point in the Measurement Equation.  A practical
+advantage to this factorization is the ability to store
+polarization-independent effects which are characterized by a certain
+timescale or a particular parametrization (e.g., tropospheric opacity)
+as a separate calibration factor, thus isolating them from electronic
+gain effects which may vary on a different timescale and/or with
+different systematics.  Although most data reduction sequences will
+probably proceed in this order, the user has complete freedom and
+flexibility to determine the order in which calibration effects are
+solved for.  Self-calibration, the process by which an improved model
+of the target source is used to obtain improved solutions for the
+calibration, is also not limited to just the electronic gain ($G$)
+corrections, as has been traditionally the case.  Improved solutions
+for, say, the instrumental polarization ($D$) may be obtained by
+self-calibration as well.  In general, decision-making along the
+calibration path is a process of determining which effects are 
+dominating the errors in the data and deciding how best to converge
+upon the optimal set of calibration solutions (for all relevant components)
+and source models which best describe the observed data.   
+
+Once the calibration solutions have been determined, the \aipspp\
+software applies the solutions according to the order defined by
+the Measurement Equation.  The individual calibration components
+represented in the Measurement Equation are described in detail in the
+\htmlref{Synthesis Calibration}{GRcalibration} chapter of {\tt Getting
+Results}.  The generalization of the Measurement Equation to image
+plane effects is also described there.
+
+% For standard continuum and spectral line observations (e.g. the VLA or
+% ATCA), the unknown properties of the instrument can usually be treated
+% entirely in the visibility plane in the \calibrater\ tool.  Knowledge of
+% the observed data and brightness distribution models for the
+% calibrators enable solutions for the gains, which may be applied to
+% the data for the scientific target.  The corrected data for the
+% scientific target is then Fourier transformed and deconvolved to
+% obtain a brightness distribution model.  The method of {\em
+% self-calibration} extends this process to iterative improvement of the
+% gains and brightness distribution model of a single source.
+
+The observed data, $\vec{V}_{ij}$, are stored in the DATA column in
+the MAIN table of the MS; these are the raw data as loaded by the
+filler tool or imported from a UVFITS file.  Associated with the DATA
+column are related columns to hold the most recent version of the
+calibrated data (CORRECTED\_DATA), and the latest visibility plane
+representation of the source or field model, $\vec{V}_{ij}^{IDEAL}$,
+(MODEL\_DATA).  The latter two columns are filled in by the
+\calibrater\ and \imager tools,
+respectively.  The actual calibration information is stored in
+separate calibration tables.  The observed DATA column does not
+change during reduction, but the related columns do.  When plotting
+the data using a tool such as \msplot, the data
+sub-types ({\tt observed, corrected, and model}) can be selected
+individually.
+

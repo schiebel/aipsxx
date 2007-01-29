@@ -1,0 +1,202 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road                                 
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: gauss1dfitter.help,v 19.2 2004/08/25 01:44:00 cvsmgr Exp $
+
+\begin{ahobject}{gauss1dfitter}{Non-linear least-squares fit multiple 1-D Gaussians to vector}
+
+\ahinclude{gfitgauss.g}
+
+\ahcategory{mathematics}
+
+\ahkeyword{fit}{}
+\ahkeyword{gaussian}{}
+\ahkeyword{least-squares}{}
+\ahkeyword{non-linear}{}
+
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+{\tt gauss1dfitter} is a tool which allows the user to fit
+a Gaussian or multiple Gaussians to a vector given a vector
+of coordinate values (x).  It remembers the state of the most recent fit.  
+Repeated calls to the fit functions start from the current state.
+The tool also provides a function for evaluating the
+Gaussian parameters along a vector of x values.
+
+At present, only fits to real data without constraints are supported.
+
+The fits are carried out with double precision.
+
+The form of a Gaussian is: $h\exp{(-4\ln2((x-x_0)/w)^2)}$ where
+$h$ is the \texttt{height}, $x_0$ is the \texttt{center} 
+and $w$ is the full \texttt{width} at half maximum.  Multiple Gaussians are
+simply summed together to determine the best fit.
+
+\begin{ahexample}
+\begin{verbatim}
+- fitter := gauss1dfitter()
+- x := [1:100]
+- y := 5*exp(-4*ln(2)*(((x-40)/25)^2)) + 15*exp(-4*ln(2)*(((x-50)/8)^2))
+- guess := [=]
+- guess.height := [4.0,16.0]
+- guess.center := [37.0, 55.0]
+- guess.width := [28.0, 10.0]
+- guess.maxiter := 15;
+- fitter.setstate(guess)
+- state := fitter.fit(x, y)
+- print state.converged
+T
+\end{verbatim}
+\begin{ahcomments}
+This example begins by first constructing a gauss1dfitter tool.
+Then a vector is constructed which is the sum of 2 Gaussians
+extending over the given x range.  The fitter needs an
+initial guess.  This guess also sets the number of of components
+which will be fit.  This is obviously contrived here since we
+know what the Gaussian parameters are.  The maximum interations
+per invocation of fit is set to be 15.  The setstate function is
+used to set the state as this initial guess and maxiter.  We could have
+also used the setheight, setcenter, setwidth, and setmaxiter functions
+to change the state.  The fit function is called with the
+given x and y values.  This returns a state record. The
+state record indicates that this fit has converged.
+\end{ahcomments}
+
+\end{ahdescription}
+
+\begin{ahconstructor}{gauss1dfit}{Construct a gauss1dfit tool}
+\ahreturns{object}
+\end{ahconstructor}
+
+\begin{ahfunction}{fit}{Fit Gaussian(s) to y vector given x vector}
+\begin{ahargs}
+\ahaddarg{x}{X coordinate at y values}{}{vector double}
+\ahaddarg{y}{Y values to fit. Must be the same length as x.}{}{vector double}
+\end{ahargs}
+\ahreturns{record}
+\begin{ahdescription}
+Fit a sinusoid to y values given the x coordinate values.
+The state of the fit is indicated in the returned record.
+\begin{ahrecord}{state}{The gauss1dfitter state record}
+\ahdatum{converged}{has the fit converged?}{F}{boolean}
+\ahdatum{curriter}{The number of iterations actually used in the most recent fit.}{0}{integer}
+\ahdatum{maxiter}{The maximum number of iterations tried by fit.}{30}{integer}
+\ahdatum{criteria}{The convergence criteria.}{0.001}{double}
+\ahdatum{chisq}{The $\chi^2$ for this fit.}{}{double}
+\ahdatum{height}{The heights of the Gaussians}{}{vector double}
+\ahdatum{center}{The centers of the Gaussians}{}{vector double}
+\ahdatum{width}{The widths of the Gaussians}{}{vector double}
+\ahdatum{heighterror}{The 1-sigma errors in the heights.}{}{vector double}
+\ahdatum{centererror}{The 1-sigma errors in the centers.}{}{vector double}
+\ahdatum{widtherror}{The 1-sigma errors in the widths.}{}{vector double}
+\end{ahrecord}
+The fit function first checks that \texttt{x} and \texttt{y} have the
+same length and that each of the parameter vectors have the same
+length.  A fit is said to have converged when the fractional change
+in $\chi^2$ in two succeessive interations is less than the convergence 
+criteria value.
+This value can be set in the setcriteria or setstate functions.  If the
+fit has not converged after maxiter iterations, the fit function will
+stop and return the current state of the fit and the current $\chi^2$ value.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{eval}{Evaluate a sum of Gaussians (usually the result of a fit)}
+\begin{ahargs}
+\ahaddarg{x}{The coordinate values at which the function will be evaluated}{}{vector double}
+\end{ahargs}
+\ahreturns{vector double}
+\begin{ahdescription}
+Evaluate the current Gaussian parameters indicated by the current state of the fitter
+at the x values supplied to this function.  The result is the return value.
+Normally this is the most recent result of the use of \texttt{fit}, however you
+may use the setstate function to evaluate any sum of Guassians.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getstate}{Get the state of the fitter}
+\ahreturns{record}
+\begin{ahdescription}
+The state record is returned.  It is the same state record 
+returned by the fit function with the exception that no
+\texttt{chisq} value is present.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setstate}{Set the state of the fitter}
+\begin{ahargs}
+\ahaddarg{state}{Part or all of a state record}{}{record}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The following fields can be set by setting their values in
+the state record argument: \texttt{maxiter, criteria, height,
+width, center}.  If any fields are not present in this record,
+their state will not be changed.  These can all be set
+individually through use of the appropriate function.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setheight}{Set the height state}
+\begin{ahargs}
+\ahaddarg{height}{New vector of heights}{}{vector double}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setcenter}{Set the center state}
+\begin{ahargs}
+\ahaddarg{center}{New vector of center}{}{vector double}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setwidth}{Set the width state}
+\begin{ahargs}
+\ahaddarg{width}{New vector of widths}{}{vector double}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setmaxiter}{Set the maximum number of iterations}
+\begin{ahargs}
+\ahaddarg{maxiter}{New maxiter}{}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setcriteria}{Set the convergence criteria}
+\begin{ahargs}
+\ahaddarg{criteria}{New criteria}{}{double}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\end{ahobject}
+
+
+

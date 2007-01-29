@@ -1,0 +1,767 @@
+%% Copyright (C) 2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road                                 
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: sditerator.help,v 19.1 2004/08/25 01:51:08 cvsmgr Exp $
+
+\begin{ahobject}{sditerator}{A \tool\ for interacting with single dish data.}
+
+\ahinclude{sditerator.g}
+
+\ahkeyword{dish}{}
+\ahkeyword{sdrecord}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+This \tool\ is intended to be used with the
+\ahlink{dish \tool\ }{dish:dish}.
+It provides access to single dish data sets.  One can step
+(iterate) through a data set with this \tool\ .  Two types of single
+dish data sets are supported: 
+\htmladdnormallink{MeasurementSet}{../../notes/229/229.html} and a flat 
+\ahlink{table}{table:table} modeled on the
+SDFITS convention.  Data is copied to and from an SDRecord, which is a \glish\
+record structure with a set of fixed fields plus a few optional fields which
+vary depending on the data source.  Data can only be saved back to an sditerator
+using a flat table as the underlying data source.  Selection is supported either
+through a constructor or through the 
+\ahlink{select function}{dish:sditerator.select}.
+
+\medskip
+\noindent{\bf The SDRecord structure}
+
+The SDRecord is the fundamental data atom of this \tool\  as well as of 
+\ahlink{dish}{dish:dish}.
+An SDRecord is a \glish\ record having the following fields:
+
+\begin{description}
+\item[data] A \glish\ record containing the data and things which describe
+that data (axes, units, flags, weights, etc.).  The following fields are found in {\bf data}:
+\begin{description}
+\item[arr] The data array.  Its dimensions are (nstokes, nchan) where nchan
+is the number of frequency channels and nstokes is the
+number of stokes pixels (polarizations).  The type may be real or complex.
+\item[flag] A boolean array with the same shape as {\bf arr}.  A value of
+{\tt T} (true) for any pixel here means the corresponding pixel in {\bf arr}
+has been flagged as bad.
+\item[sigma] An array of floats having the same shape as {\bf arr}.
+\item[weight] An array of floats having the same shape as {\bf arr}.
+\item[desc] A \glish\ record describing {\bf arr} (axes and units).  The
+following fields are found in {\bf desc}:
+\begin{description}
+\item[chan\_freq] A vector of quantities giving each frequency value along
+the first axis of {\bf arr}. See the \ahlink{quanta \tool\ }{quanta:quanta} 
+for a description
+of how to extract the values from a quantity as well as how to work
+with quantities.
+\item[refframe] A string indicate the frequency measures reference frame
+for the {\bf chan\_freq} values.
+\item[reffrequency] A reference frequency for the frequency axis.  This has 
+the same units as the {bf chan\_freq} values do.
+\item[chan\_width] The channel width at {\bf reffrequency} for use in
+selection.  This has 
+the same units as the {bf chan\_freq} values do.
+\item[restfrequency] A rest frequency associated with this data. This has 
+the same units as the {bf chan\_freq} values do.
+\item[corr\_type] A vector of strings giving the polarization type for
+each pixel of the stokes axis in {\bf arr}.
+\item[units] The units of {\bf arr}.
+\end{description}
+\end{description}
+\item[header] A \glish\ record containing associated header information
+common to all sditerators. The following fields are found in {\bf header}:
+\begin{description}
+\item[time] An epoch measure giving the midpoint of this integration.
+See the \ahlink{measures \tool\ }{measures:measures} 
+for a description
+of how to extract the values from a measure as well as how to work
+with measures.
+\item[scan\_number] An integer.
+\item[source\_name]
+\item[direction] A direction measure showing where the telescope was pointed
+during this integration.
+\item[refdirection] A direction measure for any reference (off) direction if 
+position switched data has been calibrated.
+\item[veldef] The velocity definition appropriate to this data.
+\item[transition] A string describing the transition, if available.
+\item[exposure] The effective integration time, in seconds.
+\item[duration] The total time, including any blanking time, spent taking
+this data, in seconds.
+\item[observer]
+\item[project]
+\item[resolution] The channel resolution at the {\bf reffrequency} in Hz.
+\item[bandwidth] The total bandwith in Hz.
+\item[tcal] A vector of CAL temperatures - one for each pixel on the stokes
+axis, in K.
+\item[trx] A vector of receiver temperatures - one for each pixel on the stokes
+axis, in K.
+\item[tsys] A vector of system temperatures - one for each pixel on the stokes
+axis, in K.
+\item[telescope]
+\item[telescope\_position] A position measure holding the location of the
+telescope.
+\item[pressure] The atmospheric pressure in hPa.
+\item[dewpoint] The dewpoint in K.
+\item[tambient] The ambient temperature in K.
+\item[wind\_dir] The wind direction in radians.
+\item[wind\_speed] The wind speed in $m/s$.
+\item[azel] A direction measure holding the azimuth and elevation for this
+integration (at {\bf time}).
+\end{description}
+\item[hist] A vector of strings holding the history of operations on this data.
+\item[other] A \glish\ record containing other information from the data
+set not found elsewhere in this structure.  The contents of this field depend
+on the data source.  If the source is a MeasurementSet, this record contains
+sub-records holding the appropriate values for the various sub-tables in
+that MeasurementSet.  There will be one sub-record for each sub-table and the
+fields in each sub-record are the same as the column names in that sub-table.
+If the source is a flat table following the SDFITS convention, then any field
+not used in the {\bf header} or {\bf data} records is copied to an {\bf sdfits}
+sub-record of the {\bf other} record.
+\end{description}
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+sdit := sditerator('dishdemo2')
+nrecords := sdit.length()
+scans := array(0,nrecords)
+sources := array("",nrecords)
+count := 1
+rec := sdit.get()
+scans[count] := rec.header.scan_number
+sources[count] := rec.header.source_name
+while (sdit.more()) {
+   sdit.next();
+   rec := sdit.get()
+   count +:= 1
+   scans[count] := rec.header.scan_number
+   sources[count] := rec.header.source_name
+}
+# or alternatively ...
+vec := sdit.getheadervector("scan_number source_name")
+scans := vec.scan_number
+sources := vec.source_name
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+The first line makes an sditerator \tool\  from a file.  
+The next several lines show how the scan numbers and
+source names for each sdrecord in that iterator can be retrieved by
+iterating through the entire sditerator.  The final three lines show how
+all of that could be done using the getheadervector function.
+\end{ahcomments}
+
+\begin{ahseealso}
+\htmlref{dish reference manual}{dish:dish}
+\htmladdnormallink{Using Dish}{../../notes/225/225.html}
+\end{ahseealso}
+
+\begin{ahconstructor}{sditerator}{An sditerator from an existing file on disk.}
+\begin{ahdescription}
+This constructor is used to open an already existing single dish data
+set.  The type of data set (flat-table or MeasurementSet) is automatically
+determined.  MeasurementSets can only be opened read-only.  The lockoptions
+are the same as those appropriate for the table \tool\ .  The selection record
+follows the same structure as that used by the 
+\ahlink{select function}{dish:sditerator.select}.  The
+CORRECTED\_DATA column is only available for MeasurementSet-based sditerators.
+When CORRECTED\_DATA is requested, the type of the {\bf arr} field in the sdrecord
+will be complex.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{filename}{Name of SDFITS file on disk}{}{String}
+\ahaddarg[in]{readonly}{Open Read-only?}{T}{Bool}
+\ahaddarg[in]{selection}{Record describing any selections to do on opening}{[=]}{\glish\  record}
+\ahaddarg[in]{lockoptions}{locking to be used}{auto}{String}
+\ahaddarg[in]{correcteddata}{Use the CORRECTED\_DATA column?}{F}{Bool}
+\end{ahargs}
+\ahreturns{sditerator \tool\ }
+
+\begin{ahexample}
+\begin{verbatim}
+  sdit := sditerator("a302_SP",correcteddata=T);
+  r := sdit.get();
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+The first line opens an existing data set, using the CORRECTED\_DATA column
+to supply the values for the {\bf arr} field in the returned sdrecord.  The second
+line fetches the first sdrecord found in that sditerator.  The type of
+r.data.arr is complex.
+\end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahconstructor}{newsditerator}{Make a new, empty sditerator.}
+\begin{ahdescription}
+Create a new, empty data set of the indicated type on disk and attach
+an sditerator to it.  Currently, only flat-tables can be created.  In
+the future, other types will be available.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{filename}{Name of new data set on disk.}{}{String}
+\ahaddarg[in]{type}{The type of data set.}{'Table'}{String}
+\ahaddarg[in]{lockoptions}{locking to be used}{auto}{String}
+\end{ahargs}
+\ahreturns{sditerator \tool\ }
+\begin{ahexample}
+\begin{verbatim}
+  sdit := sditerator("a302_SP",correcteddata=T);
+  newit := newsditerator("a302_SP.copy");
+  for (i in 1:sdit.length()) {
+     newit.appendrec(sdit.get());
+     sdit.next();
+  }
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This example shows how a new sditerator is created and sdrecords from
+a existing sditerator are copied to it.  The first line opens the existing
+data set.  The second line creates a new data set.  The loop copies each
+record from the existing sditerator to the new one.
+\end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahconstructor}{sditfromsdit}{An sditerator from another sditerator.}
+\begin{ahdescription}
+This constructor is equivalent to the 
+\ahlink{select function}{dish:sditerator.select}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{sdit}{An sditerator}{}{sditerator \tool\ }
+\ahaddarg[in]{selection}{Record describing any selections to do on opening}{[=]}{\glish\  record}
+\end{ahargs}
+\ahreturns{sditerator \tool\ }
+
+\begin{ahexample}
+\begin{verbatim}
+  sdit := sditerator("a302_SP");
+  selrec := [=];
+  selrec.header := [=];
+  selrec.header.source_name := "My source";
+  sditSource := sditfromsdit(sdit,selrec)
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+The first line opens an existing data set.  The rest make
+another sditerator by making and applying a selection record to the first
+iterator.  In this example, sources matching the indicated name
+are selected.  The resulting iterator will only have sdrecords
+which match that selection criteria.
+\end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahfunction}{appendHistory}{Add a history element to the global sditerator history.}
+\begin{ahdescription}
+This adds the argument to the global history associated with this sditerator.
+That global history is returned by the 
+\ahlink{history function}{dish:sditerator.history}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{newHistory}{The history string to append.}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{appendrec}{Put an sdrecord at the end of the sditerator.}
+\begin{ahdescription}
+Appends this sdrecord to the end of the sditerator.  The length of
+the sditerator is increased by 1 as a result of this operation.
+The sditerator must be writable.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rec}{The sdrecord to append to this sditerator.}{}{sdrecord}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{correcteddata}{Is the CORRECTED\_DATA column being used?.}
+\begin{ahdescription}
+Determine if the CORRECTED\_DATA or FLOAT\_DATA column is being used.  When
+the return value is T, the CORRECTED\_DATA are being copied to the 
+{\bf arr} field.  
+Otherwise, the
+FLOAT\_DATA values are being copied to the {\bf arr} field.  This only works
+with MeaurementSet based data sets.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{deepcopy}{Make a true copy of this data set.}
+\begin{ahdescription}
+This functions copies the underlying table to a new table on
+disk.  The \ahlink{select function}{dish:sditerator.select}
+only returns a reference to
+the selected portion of the data set (no copy is made).  This
+function can be used to make a copy of that selected portion
+of the data set.  An sditerator \tool\  will then need to be 
+constructed using this new data set.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  # sdit is an already existing data set
+  sdit.deepcopy("newCopy");
+  copyOfSdit := sditerator("newCopy");
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg[in]{newname}{The name of the disk file to hold the new copy}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{deleterec}{Delete the sdrecord at the current location pointer.}
+\begin{ahdescription}
+The sdrecord at the current location pointer is removed from the data set.
+The length of the sditerator is descreased by one.  The sditerator must
+be writable.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{Close this sditerator and disconnect it from the data set.}
+\begin{ahdescription}
+When invoked, any unwritten data is flushed to disk, the connection with the
+underlying data set is closed and the \tool\  is left unusable.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{get}{Get an sdrecord.}
+\begin{ahdescription}
+Get the sdrecord at the location of the current location pointer.
+\end{ahdescription}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getempty}{Get an empty sdrecord.}
+\begin{ahdescription}
+Get an empty sdrecord with default values for all of the fields and the
+shapes of the array fields consistent with the indicated shape.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[out]{rec}{the requested empty sdrecord}{}{sdrecord}
+\ahaddarg[in]{nchan}{The number of channels}{}{Integer}
+\ahaddarg[in]{nstokes}{The number of pixels along the stokes axis}{}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getdata}{Get the data part of the sdrecord.}
+\begin{ahdescription}
+Get the {\bf data} part of the sdrecord at the location of the current location pointer.
+If all you want is information from the {\bf data} record, this may be faster
+than getting the full record and picking out that information.
+\end{ahdescription}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getdesc}{Get the desc part of the field of the sdrecord.}
+\begin{ahdescription}
+Get the {\bf desc} part of the {\bf data} field of the sdrecord at the location of the current location pointer.
+If all you want is information from the {\bf desc} record, this may be faster
+than getting the full record and picking out that information.
+\end{ahdescription}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getdescvector}{Get a vector of values from the desc record.}
+\begin{ahdescription}
+This allows you to get all of the values for any scalar fields in the {\bf desc}
+portion of an sdrecord in the
+sditerator with a single function call.  This uses the 
+\ahlink{getvectors function}{dish:sditerator.getvectors}
+but is simpler to use if all of the fields are from the desc record.  Here,
+you only give a vector of field names to extract from the sditerator.
+The returned value is a record where the field names are the requested
+fields.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{fieldNames}{A vector of desc fields to fetch.}{}{string vector}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{getheader}{Get the header part of the sdrecord.}
+\begin{ahdescription}
+Get the {\bf header} part of the sdrecord at the location of the current location pointer.
+If all you want is information from the {\bf header} record, this may be faster
+than getting the full record and picking out that information.
+\end{ahdescription}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getheadervector}{Get a vector of values from the header record.}
+\begin{ahdescription}
+This allows you to get all of the values for any scalar fields in the 
+{\bf header}
+portion of an sdrecord in the
+sditerator with a single function call.  This uses the 
+\ahlink{getvectors function}{dish:sditerator.getvectors}
+but is simpler to use if all of fields are from the {\bf header} record.  Here,
+you only give a vector of field names to extract from the sditerator.
+The returned value is a record where the field names are the requested
+fields.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+   vec := sdit.getheadervectors("scan_number source_name");
+   scans := vec.scan_number;
+   sources := vec.source_name;
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg[in]{fieldNames}{A vector of header fields to fetch.}{}{string vector}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{getother}{Get the other part of the sdrecord.}
+\begin{ahdescription}
+Get the {\bf other} part of the sdrecord at the location of the current location pointer.
+If all you want is information from the {\bf other} record, this may be faster
+than getting the full record and picking out that information.
+\end{ahdescription}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getvectors}{Get a vector of values for the fields in the template.}
+\begin{ahdescription}
+This allows you to get all of the values for any scalar fields in an
+sditerator with a single function call.  The template has the same
+structure as an sdrecord except that you only supply those fields that
+you want extracted.  The returned value has the same structure as the
+template, but the field values are filled in with a vector containing
+each value from each sdrecord in the sditerator, in order.  This function
+is tuned for a few fields so that they can be retrieved relatively quickly
+if they are the only fields in the template. These tuned fields are
+those used in the dish selection GUI: {\bf source\_name}, {\bf scan\_number}, 
+{\bf time},
+{\bf chan\_width}, and {\bf restfrequency}.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+   # tediously extract the individual values
+   sdit.origin();
+   nrecords := sdit.length();
+   scans := array(0,nrecords);
+   sources := array("",nrecords);
+   restfqs := array(0.0,nrecords); 
+   count := 1;
+   rec := sdit.get();
+   scans[count] := rec.header.scan_number;
+   sources[count] := rec.header.source_name;
+   restfqs[count] := rec.data.desc.restfrequency;
+   while (sdit.more()) {
+      sdit.next();
+      rec := sdit.get()
+      count +:= 1
+      scans[count] := rec.header.scan_number;
+      sources[count] := rec.header.source_name;
+      restfqs[count] := rec.data.desc.restfrequency;
+   }
+
+   # or alternatively using getvectors
+   template := [data=[desc=[restfrequency=0.0]],
+                header=[scan_number=0,source_name=""]];
+   vec := sdit.getvectors(template);
+   scans := vec.header.scan_number;
+   sources := vec.header.source_name;
+   restfqs := vec.data.desc.restfrequency;  
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg[in]{template}{The template indicating which fields to fetch.}{}{record}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{history}{Get the global history associated with all sdrecords}
+\begin{ahdescription}
+This history describes the creation of this sditerator and any selection and 
+other global operations done on this sditerator.  This history is appended to
+the sdrecord {\bf hist} field when each sdrecord is fetched.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{id}{Return the ID record of this sditerator.}
+\begin{ahdescription}
+Used by the \ahlink{sdaverager tool}{dish:sdaverager} 
+to determine which sditerator is being used.
+\end{ahdescription}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{iswritable}{Can sdrecords be stored (written) to this sditerator?}
+\begin{ahdescription}
+This returns the value of the readonly argument used at construction for this
+sditerator.  Currently, only flat-table based sditerators can be written to.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{length}{Get the total number of sdrecords in this sditerator.}
+\begin{ahdescription}
+Returns the total number of sdrecords that are found in this sditerator.
+Note that for the flat-table data set, this may require examining each
+row of the table to see if there is more than one sdrecord stored in
+that row hence this may be an expensive operation for that type of table.
+Using 
+\ahlink{more}{dish:sditerator.more} and 
+\ahlink{next}{dish:sditerator.next} 
+is always a faster way to step through (iterate)
+an sditerator (rather than using 
+length and
+\ahlink{setlocation}{dish:sditerator.setlocation} in a for loop).
+\end{ahdescription}
+ahreturns{Integer}
+\end{ahfunction}
+
+\begin{ahfunction}{location}{Get the value of the location pointer.}
+\ahreturns{Integer}
+\end{ahfunction}
+
+\begin{ahfunction}{more}{Are there more sdrecords after this location?}
+\begin{ahdescription}
+This function returns T if the location pointer is pointing at
+the last sdrecord in this sditerator.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{name}{What is the name of the underlying data on disk.}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{next}{Set the location pointer to the next record.}
+\begin{ahdescription}
+This function advances the location pointer by one unless the
+pointer is already at the end.  A subsequent use of the get function
+would return the sdrecord at that location.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{unlock}{Release the lock on all associated tables.}
+\begin{ahdescription}
+This function releases any table locks that may exist on the tables
+that are associated with this sditerator.  Normally this isn't necessary
+but if you are trying to work directly with the associated tables through
+a table tool using unlock and lock should make the interaction happen
+faster since the the auto-locking mechanism won't need to periodically check
+to see if a lock needs to be released.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{lock}{Set the appropriate lock on all associated tables.}
+\begin{ahdescription}
+This function set table locks on the tables
+that are associated with this sditerator.  Normally this isn't necessary
+but if you are trying to work directly with the associated tables through
+a table tool using unlock and lock should make the interaction happen
+faster since the the auto-locking mechanism won't need to periodically check
+to see if a lock needs to be set.  The nattempts argument is used to indicate
+how many additional attempts to acquire the locks the tool should make 
+before giving up.
+Each additional attempt happens after about a 1 second pause.  If nattempts is
+0, only the initial attempt will be made.  If the locks can't be set, the return
+value will be false (F).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{nattempts}{The number of times to attempt to set the lock.}{}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{origin}{Set the location pointer to the first record.}
+\begin{ahdescription}
+This function resets the location pointer to the first record
+in the sditerator.  A subsequent use of the get function would return
+the sdrecord at that location.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{previous}{Set the location pointer to the previous record.}
+\begin{ahdescription}
+This function decrements the location pointer by one unless the
+pointer is already at the origin.  A subsequent use of the get function
+would return the sdrecord at that location.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{put}{Put an sdrecord at the current location pointer.}
+\begin{ahdescription}
+Replaces the sdrecord at the current location pointer with this sdrecord.
+The sditerator must be writable.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rec}{The replacement sdrecord}{}{sdrecord}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{reselect}{Re-apply the previous selection to the parent data set.}
+\begin{ahdescription}
+This function re-applies the previous selection record to the
+parent data set of this iterator.  If there is no previous selection,
+this function does nothing.  This function is useful if the data
+set has changed since the last selection.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{resync}{Resynchronize with the data on disk.}
+\begin{ahdescription}
+This function resynchronizes the internals of the sditerator to 
+the data on disk.  The default locking mode does that automatically
+and so this normally will not need to be used.  Some locking modes
+do not do that.  In that case, another process (e.g. an on-line
+filler) can write to the data on disk.  In that case, the sditerator
+will not see those changes until this function is called.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{flush}{Flush the contents to disk.}
+\begin{ahdescription}
+This function flushes the internals of the sditerator to 
+the data on disk.  The default locking mode does that automatically
+and so this normally will not need to be used.  Some locking modes
+do not do that.  In that case, another process (e.g. an the table client) 
+may read data written through the sditerator.  In that case, the 
+data in the sditerator may not be available to that other process
+until it has been explicitly flushed to disk.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{select}{Make a new sditerator by applying a selection criteria record}
+\begin{ahdescription}
+A new sditerator is constructed by applying the indicated selection criteria
+record to this sditerator.  The returned sditerator is an sditerator which
+references this sditerator.  Only sdrecords which match the criteria are
+found in the returned sditerator.  The returned sditerator may be empty.
+The structure of the selection criteria record follows the structure of
+an sdrecord.  Only fields which are to be selected on need be included in
+the selection criteria record.  Only scalar fields (strings and numeric
+fields) in the sdrecord can be part of the criteria.  Fields which are
+measures or quanta records in the sdrecord can be selected if they are
+single valued.  The values used in the selection record should be in the
+same units as the first sdrecord in this sditerator.  For string fields, the
+selection criteria value for that field should be a vector of values to 
+match during the selection.  A simple wildcard can be indicated using an
+asterisk.  For numeric fields, the selection criteria should be a 2-dimensional
+array of values having dimensions (2, nranges).  In other words, this is
+a set of range pairs.  Values in this sditerator for that field which fall
+within that range or are equal to the range endpoints are considered to match
+this criteria.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{selection}{Selection criteria record}{[=]}{\glish\  record}
+\end{ahargs}
+\ahreturns{sditerator \tool\ }
+\begin{ahexample}
+\begin{verbatim}
+   sdit := sditerator('a302_SP');
+   sel := [header=[scan_number=array(0,2,3),source_name="UGC1*"]];
+   sel.header.scan_number[,1] := [-1, 10];
+   sel.header.scan_number[,2] := [15,15];
+   sel.header.scan_number[,3] := [50,9999999];
+   s2 := sdit.select(sel);
+\end{verbatim}
+\end{ahexample}
+In this example, scan numbers which are less than or equal to 10 or equal to
+15 or greater than or equal to 50 are selected, so long as the source name
+matches the one given in the example (a wild card is used here).
+\end{ahfunction}
+
+\begin{ahfunction}{sel2string}{Convert a selection record to a string.}
+\begin{ahdescription}
+This function converts a selection record to a string so that it can
+be stored in the history record associate with that iterator.
+This is used by the constructors and will likely not be used by the
+average user.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{selrec}{Selection criteria record}{}{\glish\  record}
+\end{ahargs}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{setlocation}{Set the location pointer to the indicated record.}
+\begin{ahdescription}
+This function sets the location pointer to the indicated
+record number.  Valid record numbers run from 1 to the length of the 
+sditerator.  If the location argument is outside this range, the
+location pointer is set to the appropriate end point.
+A subsequent use of the 
+\ahlink{getfunction}{dish:sditerator.get} would return the sdrecord at that location.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{location}{The desired record number.}{}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{stringfields}{Returns a record indicating which fields in the sditerator are strings.}
+\begin{ahdescription}
+This is used in various places as a way of ensuring that the dish selection mechanism 
+does the appropriate thing.
+\end{ahdescription}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of the underlying data.}
+\begin{ahdescription}
+Returns either ``MeasurementSet'' or ``Table'' to indicate the
+type of data underlying this sditerator.
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{usecorrecteddata}{Use the CORRECTED\_DATA column?.}
+\begin{ahdescription}
+Toggle the use of the CORRECTED\_DATA or FLOAT\_DATA column.  When
+T, the CORRECTED\_DATA are copied to the 
+{\bf arr} field.  Otherwise, the
+FLOAT\_DATA values are copied to the {\bf arr} field.  This only works
+with MeaurementSet-based data sets.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{correcteddata}{Use the CORRECTED\_DATA column?}{}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+
+
+\end{ahobject}

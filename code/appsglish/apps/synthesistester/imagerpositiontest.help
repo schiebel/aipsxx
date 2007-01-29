@@ -1,0 +1,1173 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+
+\begin{ahobject}{imagerpositiontest}{Testing of imager using resulting
+source positions}
+
+\ahinclude{imagerpositiontest.g}
+
+\begin{ahdescription} 
+
+{\tt imagerpositiontest.g} provides an interface for testing the
+capabilities of imager and pimager.  It essentially creates a
+simulated dataset and images it, comparing the positions of the imaged
+sources with the positions of the known components.
+
+\subsubsection*{Overview of {\tt imagerpositiontest} tool functions:}
+
+\begin{description}
+        \item[]
+        \ahlink{cleanup}
+        {imagerpositiontest:imagerpositiontest.cleanup}
+        \ahlink{done}
+        {imagerpositiontest:imagerpositiontest.done}
+        \ahlink{dotests}
+        {imagerpositiontest:imagerpositiontest.dotests}
+        \ahlink{findsource}
+        {imagerpositiontest:imagerpositiontest.findsource}
+        \ahlink{get\_beam}
+        {imagerpositiontest:imagerpositiontest.get\_beam}
+        \ahlink{get\_center\_position}
+        {imagerpositiontest:imagerpositiontest.get\_center\_position}
+        \ahlink{get\_componentlisttable}
+        {imagerpositiontest:imagerpositiontest.get\_componentlisttable}
+        \ahlink{get\_corresponding\_comps}
+        {imagerpositiontest:imagerpositiontest.get\_corresponding\_comps}
+        \ahlink{get\_rms}
+        {imagerpositiontest:imagerpositiontest.get\_rms}
+        \ahlink{get\_seed}
+        {imagerpositiontest:imagerpositiontest.get\_seed}
+        \ahlink{get\_source\_box}
+        {imagerpositiontest:imagerpositiontest.get\_source\_box}
+        \ahlink{make\_default\_cl}
+        {imagerpositiontest:imagerpositiontest.make\_default\_cl}
+        \ahlink{make\_default\_simulator}
+        {imagerpositiontest:imagerpositiontest.make\_default\_simulator}
+        \ahlink{make\_image}
+        {imagerpositiontest:imagerpositiontest.make\_image}
+        \ahlink{make\_model\_image}
+        {imagerpositiontest:imagerpositiontest.make\_model\_image}
+        \ahlink{make\_ms}
+        {imagerpositiontest:imagerpositiontest.make\_ms}
+        \ahlink{set\_clean\_mask}
+        {imagerpositiontest:imagerpositiontest.set\_clean\_mask}
+        \ahlink{set\_clean\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_clean\_parms}
+        \ahlink{set\_componentlisttable}
+        {imagerpositiontest:imagerpositiontest.set\_componentlisttable}
+        \ahlink{set\_deconvolution\_function}
+        {imagerpositiontest:imagerpositiontest.set\_deconvolution\_function}
+        \ahlink{set\_imaging\_data\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_imaging\_data\_parms}
+        \ahlink{set\_imaging\_options}
+        {imagerpositiontest:imagerpositiontest.set\_imaging\_options}
+        \ahlink{set\_imaging\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_imaging\_parms}
+        \ahlink{set\_imaging\_tool\_type}
+        {imagerpositiontest:imagerpositiontest.set\_imaging\_tool\_type}
+        \ahlink{set\_mem\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_mem\_parms}
+        \ahlink{set\_mfcontrol\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_mfcontrol\_parms}
+        \ahlink{set\_pimager\_numprocs}
+        {imagerpositiontest:imagerpositiontest.set\_pimager\_numprocs}
+        \ahlink{set\_seed}
+        {imagerpositiontest:imagerpositiontest.set\_seed}
+        \ahlink{set\_sim\_parms}
+        {imagerpositiontest:imagerpositiontest.set\_sim\_parms}
+        \ahlink{set\_simulator}
+        {imagerpositiontest:imagerpositiontest.set\_simulator}
+        \ahlink{set\_tolerance}
+        {imagerpositiontest:imagerpositiontest.set\_tolerance}
+        \ahlink{sourcecompare}
+        {imagerpositiontest:imagerpositiontest.sourcecompare}
+        \ahlink{view}
+        {imagerpositiontest:imagerpositiontest.view}
+\end{description}
+
+\end{ahdescription}
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{imagerpositiontest}{tool for testing the validity of
+imager and pimager results}
+\begin{ahdescription}
+{\tt imagerpositiontest} is a tool for testing the validity of results
+from imager and pimager.  It does this by generating a simulated
+dataset (so the source distribution is known), imaging that dataset,
+and then comparing the positions of the imaged sources with their
+known positions.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{imagerpositiontest}{Construct an imagerpositiontest tool}
+\begin{ahdescription}
+This is used to construct an {\tt imagerpositiontest} tool.
+A Glish variable containing the tool functions of
+imagerpositiontest is returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{testdir}{sub-directory of the current directory where
+imagerpositiontest will create datasets and other
+files}{'imager\_position\_test'}{String} 
+\ahaddarg{clean}{Delete files from under testdir which have been left
+from a previous run}{T}{Boolean}
+\end{ahargs}
+\ahreturns{imagerpositiontest tool}
+\begin{ahexample}
+\begin{verbatim}
+# construct an imagerpositiontest tool
+ipt := imagerpositiontest('scratchdir');
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{cleanup}{Clean up from a previous run.}
+\begin{ahdescription}
+Clean up from a previous run.  This
+removes the contents of the directory specified during the tool
+creation and it is run at tool creation time if {\tt clean=T} is
+passed to the constructor (this is the default behavior, so {\tt
+clean=F} must be specified if you don't want this to happen).
+\end{ahdescription}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g'
+# construct an imagerpositiontest tool
+- ipt := imagerpositiontest('scratchdir',F);
+# remove contents of scratchdir from a previous run
+- ipt.cleanup();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Release the resources used by this tool.}
+\begin{ahdescription}
+Releases the resources used by this tool by setting the private and
+public records to {\tt F}.
+\end{ahdescription}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g'
+# construct an imagerpositiontest tool
+- ipt := imagerpositiontest('scratchdir');
+# oops I didn't really want to create such a tool
+- ipt.done();
+T
+\end{verbatim}
+
+\begin{ahfunction}{dotests}{Run the tests.}
+\begin{ahdescription}
+This is the heart of {\tt imagerpositiontest}.  It creates the
+simulator and the associated ms, creates and deconvolves the image,
+compares the source positions from the image to the known component
+positions, and summarizes these comparisons.  The user may speicify
+numerous parameters prior to invoking {\tt dotests()} via the many
+{\tt set\_*} functions, or may specify none at all, in which case
+sensible defaults are used.
+\end{ahdescription}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+# a very simple, default test
+- include 'imagerpositiontest.g'
+# construct an imagerpositiontest tool
+- ipt := imagerpositiontest('scratchdir');
+- ipt.dotests(); 
+T
+# view the restored image
+- ipt.view();
+- ipt.done();
+\end{verbatim}
+Running {\tt dotests()} using all defaults takes between 4 and 5
+minutes on a Linux box with 4 500 MHz Xeon processors (only one used at a
+time in this implementation however) and 4 GB of RAM. 
+
+Here is a more elaborate test:
+\begin{verbatim}
+include 'imagerpositiontest.g';
+ipt := imagerpositiontest();
+ok := ipt.set_sim_parms(frequency='30GHz',docorrupt=F,nsources=10,nfields=4,
+                        nchan=1,scalefactor=1.2,source_spread=0.9,
+                        sourcedirection=dm.direction('J2000', '17h44m0.0', 
+                                                     '50d0m0.000'));
+ipt.set_deconvolution_function('mem');
+ipt.set_mem_parms(algorithm='mfentropy',niter=20);
+if(is_fail(ok)) {
+    print ok::message;
+    exit 1;
+}
+ok := ipt.dotests();
+if(is_fail(ok)) {
+    print ok::message;
+    exit 1;
+}
+ipt.view();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{findsource}{Locate source positions in an image}
+\begin{ahdescription}
+Locate source positions in an image.  {\tt dotests()} calls this
+function using the restored image as the target image; it is part of
+the user interface in case you might have a use for it. The task
+generates disk componentlist tables with names of the form {\tt
+clname.$<$x$>$} where {\tt x} is the channel number of the image.  
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{numsources}{The number of sources to look for}{None}{Int $>$ 0}
+\ahaddarg{imagename}{The name of the target disk image}{None}{String
+(any valid disk image table)}
+\ahaddarg{clname}{The name of the generated componentlist
+table}{None}{String (any valid filename)}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.findsource(10,'myimage.im','found_components');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_beam}{Get the restoring beam plus some extra
+info from the restored image.}
+\begin{ahdescription}
+Get the restoring beam.  The returned record has the following fields:
+major, minor, positionangle, ra, and dec.  The last two are the beam
+FWHM in right ascension and declination.  All returned fields are
+quantities; ie, they are records themselves having
+fields called value and unit.
+\end{ahdescription}
+\ahreturns{Record or fail}
+\begin{ahexample}
+\begin{verbatim}
+
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.dotests();
+- beam := ipt.beam()
+- beam;
+[major=[value=0.695572555, unit=arcsec], minor=[value=0.623729467, unit=arcsec], 
+positionangle=[value=-11.487915, unit=deg], ra=[value=0.626736009, unit=arcsec], 
+dec=[value=0.69286478, unit=arcsec]] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_center\_position}{Get the center position
+for the map that will be created.}
+\begin{ahdescription}
+This function determines the center position for the images that will
+be created by getting the PHASE\_DIR column from the MS's field table
+and averaging the max and min RA and the max and min Dec.
+\end{ahdescription}
+\ahreturns{a Direction or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.set_sim_parms(nfields=4,sourcedirection=dm.direction('J2000', 
+                                       '17h44m0.0','-10d0m0.000'));
+- ipt.make_default_simulator();
+- ipt.get_center_position();
+[type=direction, refer=J2000, m1=[value=-0.174669194, unit=rad], 
+m0=[unit=rad, value=-1.64074787]] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_componentlisttable}{Get the name of the disk
+table containing the positions of the simulated components.}
+\begin{ahdescription}
+Get the name of the disk table containing the simulated components.
+Note that for this function to return a value, the componentlist table
+doesn't need to exist yet.
+\end{ahdescription}
+\ahreturns{The table name as a string}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.get_componentlisttable();
+imager_position_test/simu_comp.cl 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_corresponding\_comps}{Return the map of
+found components in the restored image to their true component counterparts.}
+\begin{ahdescription}
+Return the map of
+found components in the restored image to their true component counterparts.
+The returned array of ints is two dimensional.  The first index
+represents the channel number and the second index represents the
+found component number.  The value represents the corresponding
+simulated component number (or the simulated component which was found
+to be nearest the found component in the restored image).
+\end{ahdescription}
+\ahreturns{A two dimensional array of ints}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.dotests();
+- ipt.get_corresponding_comps();
+[[1:1,]
+    1 3 2 3] 
+# in this case one of the tests failed; the nearest simulated
+# component to two of the components found in the restored map was
+# simulated component 3
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_rms}{Get the rms from the restored map in an
+"intelligent" fashion.}
+\begin{ahdescription}
+Get the rms from the restored map in an "intelligent" fashion.  The
+way this algorithm works is to first get the rms using the entire
+image and then create a mask, using pixels in the image within -3 to 3
+times the rms just calculated.  The algorithm then iterates in this
+fashion until the fractional difference between the previously
+calculated rms and the currently calculated rms is below some
+threshhold, currently hard wired to be 0.001.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{im}{A valid image tool from which to get the rms}
+{None}{Any valid image tool}
+\end{ahargs}
+\ahreturns{Float}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- include 'image.g';
+- myim := image('some.image');
+- rms := ipt.get_rms(myim);
+# numerous messages from image.stats() here
+# and finally
+- rms;
+0.00384885306
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_seed}{Get the seed for the random number generator}
+\begin{ahdescription}
+Get the seed for the random number generator.  Using this seed
+by invoking set\_seed allows one to repeat the trial just run.  
+\end{ahdescription}
+\ahreturns{Integer used to seed the random number generator}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.dotests();
+- seed := ipt.get_seed();
+- seed;
+997469885
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get\_source\_box}{Get the pixel coordinates of
+a box encompassing the simulated sources.} 
+\begin{ahdescription}
+Get the coordinates of a 2-D box encompassing the simulated sources.
+The pixels correspond to the restored image.  A buffer zone of 5
+pixels is applied to the max and min positions of the simulated components.
+\end{ahdescription}
+\ahreturns{A record with fields blc and trc with the 2-D pixel locations.}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.dotests();
+- box := ipt.get_source_box();
+- box;
+[blc=[274 280] , trc=[317 395] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make\_default\_cl}{Make the default simulated
+component list.}
+\begin{ahdescription}
+Make the default simulated component list.  It's usually a good idea
+just to let {\tt dotests()} do this, but if you want some more rope,
+here it is....
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{clname}{The name of the componentlist table that will be
+written to disk}{'dummy.cl'}{String (any valid file name)}
+\ahaddarg{frequency}{The reference frequency of the component list}
+{unset (will use the user-specified frequency from 
+set\_sim\_parms() or the tool's default frequency)}{String (frequency
+expressed as a quantity)}
+\ahaddarg{epoch}{The epoch of the positions}{'J2000'}{String (any
+recognized epoch)}
+\ahaddarg{nsources}{The number of components to create}{4}{Integer $>$ 0}
+\ahaddarg{phasecenter}{The phasecenter}{unset (uses the user specified
+phase center from set\_sim\_parms() or the tool's default
+phase center}{Direction}
+\ahaddarg{fluxmin}{The minimum flux a component can have in
+Jy}{3}{Float $>$ 0}
+\ahaddarg{fluxmax}{The maximum flux a component can have in
+Jy}{10}{Float =$>$ minflux}
+\ahaddarg{minsep}{The minimum separation between components in arcsec}
+{5}{Float =$>$ 0}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.make_default_cl();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make\_default\_simulator}{Create the default
+simulator.} 
+\begin{ahdescription}
+Create the default simulator.  Usually, it's a good idea just to let
+{\tt dotests()} do this, but here is some more rope for you if you
+want it....
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{frequency}{The frequency for the output ms.}
+{unset will use the tool default value or the user-specified value in
+set\_sim\_parms()}{Quantity (frequency)}
+\ahaddarg{arrayscale}{The scale (baseline lengths) of the default
+interferometer}{1}{Float $>$ 0}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.make_default_simulator();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make\_image}{Make the images}
+\begin{ahdescription}
+Make the images.  Like most make\_* tasks, this is called from
+dotests() and most of the time you will just want to run that.  This
+function creates and sets up the imager or pimager tool (imager by
+default but the user can specify via
+set\_imaging\_tool\_type()). Defaults are chosen if not specified
+by the user via other set\_* functions with deal with the
+configuration of the imaging tool.  Unless appropriate parameters have
+been set by the user, the imaging tool's advise() function is used for
+setting some parameters.  A dirty image is created, deconvolved, and
+restored if necessary.  
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ms}{The name of the MS on disk.}{unset (will use the tool
+default value)}{String (any valid name of a disk MS)}
+\ahaddarg{imagename}{The output imagename prefix (things like .dirty
+and .model will be appended to label the appropriate
+images)}{None}{String (any valid filename)}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.make_default_simulator();
+- ipt.make_default_cl();
+- ipt.make_ms();
+- ipt.make_image(imagename='sim_image');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make\_model\_image}{Make an image of the
+simulated component distribution.}
+\begin{ahdescription}
+Make an image of the simulated component distribution.  You must
+specify a template image on which to put the simulated components (for
+ease of use, it is usually best to use an image created by {\tt
+make\_image}). This function is called by {\tt make\_image()} when
+the user runs {\tt set\_clean\_mask(type='comps')}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{template}{Name of the template disk image to
+use}{None}{String: (any valid disk image name)}
+\ahaddarg{imagename}{Name of the output model
+image}{'simulimage\_orig.model'}{String (any valid file name)}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.dotests();
+- ipt.make_model_image('imager_position_test/simulimage.dirty','new_model.im');
+T
+- # and view it to see the simulated sky brightness
+- myim := image('new_model.im');
+- myim.view();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make\_ms}{Make the MS containing the simulated data}
+\begin{ahdescription}
+Make the MS containing the simulated data.  It is usually a good idea
+just to let {\tt dotests()} call this function.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{clfile}{The name of the coponentlist disk table to use for
+generating the MS}{unset (will use the tool's default or that
+specified by the user in set\_componentlisttable())}{String (a valid
+componentlist table name)}
+\ahaddarg{docorrupt}{Should noise be added to the MS data?}{F}{Boolean}
+\ahaddarg{noiselevel}{If docorrupt==T, the level of the noise that is
+passed to simulator.corrupt()}{F}{String (a valid flux density quantity)}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.make_default_simulator();
+- ipt.make_default_cl();
+# make the ms and corrupt with a noise level of 1 Jy
+- ipt.make_ms('imager_position_test/simu_comp.cl',T,'1Jy');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_clean\_mask}{Specify how the clean mask
+should be set.}
+\begin{ahdescription}
+When the test is to be carried out using clean, this specifies how the
+clean mask should be set.  There are two recognized settngs. The
+default, {\tt 'all'} means to not use a mask when cleaning.  {\tt
+'comps'} means to search only the area around the simulated components
+(a mask image corresponding to this request is created by {\tt
+make\_image()} by calling {\tt make\_model\_image()}).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{The mask type to use when cleaning}{'all'}{String:
+'all'$|$'comps'} 
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.set_deconvolution_function('clean');
+# search for clean components only in the areas around the simulated sources
+- ipt.set_clean_mask('comps');
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_clean\_parms}{Set up the parameters for a
+clean test.}
+\begin{ahdescription}
+Set up the parameters for a clean test.  The parameters set here are
+passed to {\tt (p)imager.clean()} from {\tt make\_image()}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{algorithm}{The clean algorithm to use}{'clark'}{String:
+'clark'$|$'hogbom'$|$'mfclark'$|$'mfhogbom'$|$'wfclark'$|$'wfhogbom'} 
+\ahaddarg{niter}{Number of clean iterations}{1000}{Integer $>$= 0}
+\ahaddarg{gain}{Loop gain factor}{0.1}{Float $>$ 0}
+\ahaddarg{threshold}{Residual level at which to stop
+cleaning}{'0Jy'}{Quantity (flux density)}
+\ahaddarg{displayprogress}{Display the progress during the
+clean?}{F}{Boolean}
+\ahaddarg{fixed}{Keep one or more models fixed?}{F}{Array of booleans}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a multifield clark clean test
+- ipt.set_deconvolution_function('clean');
+- ipt.set_sim_parms(nfields=4);
+- ipt.set_clean_parms(algorithm='mfclark',niter=2000,gain=0.15);
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_componentlisttable}{Set the name of the
+componentlist table.}
+\begin{ahdescription}
+Set the name of the componentlist table to use for generating the MS
+to be imaged.  Thus, the user can specify the model to use in this
+way.  If not specified, {\tt dotests()} will call {\tt
+make\_default\_cl()}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{cltablename}{The disk componentlist table name}{None}{String
+(any valid disk component list table name)}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+# do a test using a user-created component list
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.set_componentlisttable('mymodel.cl');
+T
+# set up a multifield clark clean test
+- ipt.set_deconvolution_function('clean');
+- ipt.set_sim_parms(nfields=4);
+- ipt.set_clean_parms(algorithm='mfclark',niter=2000,gain=0.15);
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_deconvolution\_function}{Set the
+decnvolution function to use.}
+\begin{ahdescription}
+Set the deconvolution function to use.  Currently, {\tt 'mem'} and
+{\tt 'clean'} are recognized.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{df}{The deconvolution function to use}{'clean'}{String:
+'clean'$|$'mem'} 
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test
+- ipt.set_deconvolution_function('mem');
+T
+- ipt.set_sim_parms(nfields=1);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_imaging\_data\_parms}{Set the MS
+parameters to be used for imaging.}
+\begin{ahdescription}
+Set the MS parameters to be used for imaging. These parameters are
+passed to {\tt (p)imager.setdata()} by {\tt make\_image()}.  You sould
+only need to call this function when you explicitly want to set these
+parameters; otherwise, sensible defaults are used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Type of processing}{'channel'}{String: 'channel'$|$'velocity'}
+\ahaddarg{nchan}{Number of channels}{Unset (will use number of
+channels in the simulated MS}{Integer $>$ 0}
+\ahaddarg{start}{Starting channel}{1}{0 $>$ Integer $>$= number of
+channels in data set}
+\ahaddarg{step}{Step in channels}{1}{Integer $>$ 0}
+\ahaddarg{msselect}{TaQL select string applied as a logical "and" with
+the other selections}{Unset}{String (valid TaQL query)}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test, dropping some baselines
+- ipt.set_deconvolution_function('mem');
+- ipt.set_sim_parms(nfields=1);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.set_imaging_data_parms(msselect='ANTENNA1 <= 20');
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_imaging\_options}{Set some general options
+for subsequent processing.}
+\begin{ahdescription}
+Set some general options for subsequent processing.  These options are
+passed to {\tt (p)imager.setoptions()} by {\tt make\_image()}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ftpmachine}{Fourier transform machine}{'gridft'}{'gridft'}
+\ahaddarg{cache}{Size of gridding cache in complex pixels}{0}{Integer
+$>$= 0}
+\ahaddarg{tile}{Size of a gridding tile in pixels (in 1
+dimension)}{16}{Integer $>$ 0}
+\ahaddarg{gridfunction}{Gridding function}{'SF'}{String: 'SF'$|$'BOX'}
+\ahaddarg{location}{Location used in phase rotations}{F}{position measure}
+\ahaddarg{padding}{Padding factor in image plane}{1.0}{Float $>$= 1.0}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test, changing the default padding
+- ipt.set_deconvolution_function('mem');
+- ipt.set_sim_parms(nfields=1);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.set_imaging_options(padding=1.7);
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_imaging\_parms}{Set the parameters
+to be used for imaging.}
+\begin{ahdescription}
+Set the parameters to be used for imaging.  These parameters are
+passed to {\tt (p)imager.setimage()} by {\tt make\_image()}.  For
+the most part, you don't have to call this function unless you want to
+explicitly set some parameters; the correct thing will be done
+otherwise.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{nx}{Number of pixels in the x direction.}{Unset. (determined
+by (p)imager.advise())}{Integer $>$ 0}
+\ahaddarg{ny}{Number of pixels in the y direction.}{Unset. (determined
+by (p)imager.advise())}{Integer $>$ 0}
+\ahaddarg{cellx}{Cell size in the x direction}{Unset. (determined
+by (p)imager.advise())}{Qunatity (angle)}
+\ahaddarg{celly}{Cell size in the y direction}{Unset. (determined
+by (p)imager.advise())}{Qunatity (angle)}
+\ahaddarg{stokes}{Stokes parameters to image}{Unset (will be set to
+'I')}{String: 'I'$|$'IV'$|$'IQU'$|$'IQUV'}
+\ahaddarg{doshift}{Use the specified phase center?}{Unset (will be set
+according to if the test is for a single field or multiple fields}{Boolean}
+\ahaddarg{phasecenter}{Direction of phase center as a measure}{Unset
+(will be set if the the test is multi field)}{MDirection}
+\ahaddarg{shiftx}{Shift in x}{'0arcsec'}{Quantity (angle)}
+\ahaddarg{shifty}{Shift in y}{'0arcsec'}{Quantity (angle)}
+\ahaddarg{mode}{Type of processing}{'channel'}{String:
+'mfs'$|$'channel'$|$'velocity'} 
+\ahaddarg{nchan}{Number of channels}{Unset (will use number of
+channels in the simulated data set)}{Integer $>$ 0}
+\ahaddarg{start}{Starting channel}{1}{0 $>$ Integer $>$= number of
+channels in data set}
+\ahaddarg{step}{Step in channels}{1}{Integer $>$ 0}
+\ahaddarg{facets}{Number of facets on each axis}{Unset (determined by
+(p)imager.advise())}{Integer $>$ 0} 
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test and shift the phase center
+- ipt.set_deconvolution_function('mem');
+- ipt.set_sim_parms(nfields=1);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.set_imaging_parms(shiftx='20arcsec',shifty='-10arcsec');
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_imaging\_tool\_type}{Set the imaging
+tool to test.}
+\begin{ahdescription}
+Set the imaging tool to test, {\tt 'imager'} or {\tt 'pimager'}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Tool to use}{'imager'}{String: 'imager'$|$'pimager}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test using pimager
+- ipt.set_imaging_tool_type('pimager');
+T
+- ipt.set_pimager_numprocs(16);
+- ipt.set_deconvolution_function('mem');
+- ipt.set_sim_parms(nfields=1,nchan=128);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.set_imaging_parms(shiftx='20arcsec',shifty='-10arcsec');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_mem\_parms}{Set parameters to be used in a
+mem deconvolution.}
+\begin{ahdescription}
+Set parameters to be used in a mem deconvolution.  These parameters
+are passed to {\tt (p)imager.mem()} by {\tt make\_image()}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{algorithm}{MEM algorithm to
+use}{'entropy'}{String:'entropy'$|$'emptiness'$|$'mfentropy'$|$'mfemptiness'}
+\ahaddarg{niter}{Number of mem iterations}{20}{Integer $>$= 0}
+\ahaddarg{sigma}{Image sigma to try to achieve}{'0.001Jy'}{Quantity
+(flux density)}
+\ahaddarg{targetflux}{Target flux for final image}{'1.0Jy'}{Quantity
+(flux density)}
+\ahaddarg{constrainflux}{Constrain image to match target flux? else
+targetflux used only to initialize model}{F}{Boolean}
+\ahaddarg{displayprogress}{Display the progress of the
+deconvolution}{F}{Booean}
+\ahaddarg{fixed}{Keep model fixed?}{F}{Vector of booleans}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test 
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='emptiness',niter=25,sigma='0.15Jy');
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_mfcontrol\_parms}{Set control parameters
+for multi-field imaging tests.}
+\begin{ahdescription}
+Set control parameters for multi-field imaging tests.  These
+parameters are passed to {\tt (p)imager.setmfcontrol()} by {\tt
+make\_image} when there is more than one field being imaged.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{cyclefactor}{Cycle threshold = this * max sidelobe * max
+resid}{3.0}{Float}
+\ahaddarg{cyclespeedup}{Cycle threshold doubles in this number of
+iterations}{-1}{Float} 
+\ahaddarg{stoplargenegatives}{Stop the multiscale cycle for the first
+n cycles when a negative comp is found on the largest scale}{2}{Intger}
+\ahaddarg{stoppointmode}{Stop multiscale altogether if the smallest
+scale recieves this many consecutive components}{-1}{Integer}
+\ahaddarg{scaletype}{mage plane flux scale type}{"NONE'}{String:
+'SAULT'$|$'NONE'}
+\ahaddarg{minpb}{Minimum PB level to use}{0.1}{Float $>$ 0}
+\ahaddarg{constpb}{In Sault weighting the flux scale is constant above
+this PB level}{0.4}{0 $>$ Float $>$ 1}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a multi field clean test using the Sault flux plane scale
+- ipt.set_sim_parms(nfields=4);
+- ipt.set_deconvolution_function('clean');
+- ipt.set_clean_parms(algorithm='mfclark',niter=2000);
+- ipt.set_mfcontrol_parms(cyclefactor=2.5,scaletype='SAULT',constpb=0.2);
+T
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_pimager\_numprocs}{Set the number of
+processors available to pimager.}
+\begin{ahdescription}
+Set the number of processors available to pimager.  This value gets
+passed to the pimager tool constructor by {\tt make\_image()} when the
+user has requested to test pimager by calling {\tt
+set\_imaging\_tool\_type(pimager)}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{numprocs}{The number of processors available to
+pimager}{1}{Integer $>$ 0}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem test using pimager with 16 available processors
+- ipt.set_imaging_tool_type('pimager');
+- ipt.set_pimager_numprocs(16);
+T
+- ipt.set_deconvolution_function('mem');
+- ipt.set_sim_parms(nfields=1,nchan=128);
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_seed}{Set the seed used by the random number
+generator for creating the simulated components.}
+\begin{ahdescription}
+Set the seed used by the random number generator for creating the
+simulated components.  The seed is initially set to the value of {\tt
+time()} when the tool is created.  However, the user may reset it
+before a call to {\tt make\_default\_cl()} is made (or before the call to
+{\tt dotests()} which calls this function).  In this way, the user can
+reproduce the model generated by {\tt make\_default\_cl()}, assuming of
+course s/he runs on the same machine.  Note that if {\tt
+set\_sim\_parms()} is called with {\tt docorrupt=T}, the seed for the
+noise generator must be set during this call for total reproducability
+since the simulator tool uses it's own random number generator for
+corrupting data.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{seed}{The value to use for seeding the random number
+generator}{None (is set initially during tool construction)}{Float}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem that can be repeated by using the same
+# random number generator seeds for the ipt tool and it's simulator tool
+- ipt.set_sim_parms(docorrupt=1,seed=426);
+- ipt.set_seed(-829.76);
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_sim\_parms}{Set up the parameters to be
+used when creating the default simulator.}
+\begin{ahdescription}
+Set up the parameters to be used when creating the default
+simulator. These parameters are used at various stages of the
+processing by {\tt dotests}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{frequency}{The observing frequency}{'22GHz'}{Quantity (frequency)}
+\ahaddarg{docorrupt}{Add noise to the simulated data by calling
+simulator.corrupt()?}{F}{Boolean} 
+\ahaddarg{scalefactor}{The array scale factor.  Controls the size of
+the baselines (and hence the resolution in the images)}{1.0}{Float $>$ 0}
+\ahaddarg{nchan}{Number of channels in the simulated
+dataset}{1}{Integer $>$ 0}
+\ahaddarg{nsources}{Number of sources to simulate}{4}{Integer $>$ 0}
+\ahaddarg{noiselevel}{The level of the noise to add when
+docorrupt==T}{'1Jy'}{Quantity (flux density)}
+\ahaddarg{nfields}{The number of fields to simulate}{1}{Integer $>$ 0
+and non prime if $>$ 2}
+\ahaddarg{deltafreq}{Channel seperation}{'1MHz'}{Quantity (frequency)}
+\ahaddarg{freqresolution}{Frequency resolution}{'1MHz'}{Quantity (frequency)}
+\ahaddarg{sourcedirection}{Direction of source}
+{dm.direction('J2000', '16h00m0.0', '50d0m0.000')}{MDirection}
+\ahaddarg{source\_spread}{Determines over how large of field the sources
+will be dispersed, in multiples of the field of view}{1.0}{Float $>$ 0}
+\ahaddarg{minflux}{The minimum flux density for a source.  Flux
+densities are determined using a uniform distribution between minflux
+and maxflux}{3.0}{0 $<$ Float $<$= maxflux}
+\ahaddarg{maxflux}{The maximum flux density for a source.  Flux
+densities are determined using a uniform distribution between minflux
+and maxflux}{3.0}{Float $>$= minflux}
+\ahaddarg{minsep}{The minimum source separation allowed in arcsec.  No two
+sources will be closer than this.  Note that if minsep is chosen to be
+too large for the field of view, source\_spread, and nsources, a valid
+source position distribution will not be possible.  In this case,
+make\_default\_cl() (or dotests()) will fail (with an informative
+message)}{5}{Float $>$= 0}
+\ahaddarg{seed}{The value to use for the simulator random number
+generator seed}{185349251}{Float}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# set up a single field mem and corrupt the data
+# set the number of sources, flux density range, and minimum
+# separation as well.
+- ipt.set_sim_parms(scalefactor=2,docorrupt=1,seed=426,noiselevel='0.5Jy',
++ nsources=10, minflux=20,maxflux=30,minsep=10);
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_simulator}{Set an alternate simulator to be
+used for generating the MS.}
+\begin{ahdescription}
+{\bf This function is still a bit experimental in that not everything
+may work is expected, such as when you set up a simulator tool to have
+multiple fields. Depending on the demand for this functionality, this
+function can be better integrated into this tool.}
+
+Set an alternate simulator to be used for generating the MS. This
+function allows the user to override the creation of the default
+simulator with his/her own simulator tool for creating the measurement
+set.  If this function has been called successfully, {\tt dotests()}
+will will not call {\tt make\_default\_simulator()}.  If you do not
+create the associated measurement set with {\tt simulator.create()},
+this function will do that for you using what should be reasonable
+defaults (ie, shadowlimit=0.001, elevationlimit='8.0deg', 
+autocorrwt=0.0). You can create the measurement set
+yourself however, in which case the tool functions will use your
+measurement set for processing.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sim}{The user-defined simulator to use}{None}{A valid
+simulator tool}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'simulator.g';
+# specify a simulator
+- xx := [140,180,220,330,440];
+- yy := [0,-300,190,-90,60];
+- zz := [0,90,-120,40,70];
+- diam := 0*[1:5] + 6;
+- mysim := simulator();
+- mysim.settimes( integrationtime='60s', gaptime='30s', usehourangle=T, 
++ starttime='0s', stoptime='7600s');
+- mysim.setfield(row=1, sourcename='my_simulated_source', 
++ sourcedirection=dm.direction('J2000','0h20m30','66d30m29'),
++ integrations=1);
+- mysim.setconfig(telescopename='MyScope', x=xx, y=yy, z=zz,dishdiameter=diam,
++ mount='alt-az', antname='MyScope', coordsystem='local', 
++ referencelocation=dm.observatory('bima'));
+- mysim.setspwindow(row=1, spwname='8GHz', freq='8GHz',
++ deltafreq='1MHz', freqresolution='1MHz',nchannels=1,stokes='RR LL');
+# you can choose not to create the ms yourself in which case
+# set_simulator() will do it for you
+- mysim.create(newms='my.ms', shadowlimit=0.01, elevationlimit='4.0deg',
++ autocorrwt=0.0);
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+- ipt.set_simulator(mysim);
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{set\_tolerance}{Set the tolerance allowed for a
+position test to pass.}
+\begin{ahdescription}
+Set the tolerance allowed for a position test to pass.  The tolerance
+is specified in mupliples of beam widths. The beam widths in RA and Dec
+are both determined, and in order for a test to pass a found component
+in the restored image must be $<$= tolerance*beam\_ra in the RA direction
+and $<$= tolerance*beam\_dec in the Dec direction from the same
+simulated component. STILL TO COME: 
+Ultimately, a test which involves tolerance based on signal-to-noise
+should be allowed, such as the canonical position error =
+tolerance*0.5*beamwidth/(S/N).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tol}{The allowed tolerance in beam widths}{1.0}{Float =$>$ 0}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# allow a lot of slop
+- ipt.set_tolerance(5);
+T
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{sourcecompare}{Compare the found source positions
+with the true source positions.}
+\begin{ahdescription}
+Compare the found and true source positions.  This method is called by
+{\tt dotests()}. It returns an array of booleans of shape
+[nchan,nsources], the booleans representing the result of the test.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{complistfound}{The disk componentlist containing the found
+components}{None}{Name of disk componentlist}
+\ahaddarg{complisttrue}{The disk componentlist containing the simulated
+components}{None}{Name of disk componentlist}
+\end{ahargs}
+\ahreturns{2-d array of booleans of shape [nchan,number of components
+in complisttrue]}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# allow a lot of slop
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+# if you missed it the first time
+- res := ipt.sourcecompare('imager_position_test/found_comp.cl',
++ 'imager_position_test/simu_comp.cl');
+- res;
+[[1:1,]
+    T T T T] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{view}{View the restored image.}
+\begin{ahdescription}
+View the restored image by spawning a viewer.
+\end{ahdescription}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagerpositiontest.g';
+- ipt := imagerpositiontest();
+# allow a lot of slop
+- ipt.set_deconvolution_function('mem');
+- ipt.set_mem_parms(algorithm='entropy',niter=25,sigma='0.1Jy');
+- ipt.dotests();
+# you might want to actually see what you've created
+- ipt.view();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}

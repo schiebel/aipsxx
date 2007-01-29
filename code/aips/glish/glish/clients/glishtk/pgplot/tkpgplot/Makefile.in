@@ -1,0 +1,110 @@
+## $Id: Makefile.in,v 19.0 2003/07/16 05:14:32 aips2adm Exp $
+##
+
+# Current version;  used in various names.
+VERSION = 0.0
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+
+MK_LIB = @MAKE_SLIB@
+LD_LIBS =  @SLIB_LD_LIBS@
+CFLAGS = @DEFS@ @CFLAGS@ @SLIB_CFLAGS@
+LIB_SUFFIX = @GLISH_SLIB_SUFFIX@
+INSTALL_LIBRARY = $(INSTALL_DATA)
+
+CC = @CC@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ..
+
+DL_LIBS = @DL_LIBS@
+XLIB = @XLIBSW@
+XINC = @XINCLUDES@
+
+CINCLUDE = -I$(SRC) -I$(SRC)/tkpgplot @TK_INCL@ $(XINC)
+
+LIBS = $(XLIB) @LIBS@ $(DL_LIBS)
+
+OBJS=grexec.o pgxwin.o tkpgplot.o
+
+OBJS_PROXY= $(D)grexec.o $(D)pgxwin.o $(D)tkpgplot.o
+
+SRCS=grexec.o pgxwin.o tkpgplot.o
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+
+MKHIER = $(top)/config/mkhier
+
+all: make-libdir_p $(LIBDIR_P)/libgtkpgdrv$(LIB_SUFFIX)
+
+make-libdir_p:
+	$(MKHIER) $(LIBDIR_P)
+
+make-libdir:
+	$(MKHIER) $(LIBDIR)
+
+install: make-libdir $(LIBDIR)/libgtkpgdrv$(LIB_SUFFIX)
+
+libgtkpgdrv$(LIB_SUFFIX): $(OBJS_PROXY)
+	rm -f $@
+	$(MK_LIB) $@ $(OBJS) $(LD_LIBS)
+
+$(LIBDIR_P)/libgtkpgdrv$(LIB_SUFFIX): libgtkpgdrv$(LIB_SUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libgtkpgdrv$(LIB_SUFFIX) $(LIBDIR_P)
+
+$(LIBDIR)/libgtkpgdrv$(LIB_SUFFIX): libgtkpgdrv$(LIB_SUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libgtkpgdrv$(LIB_SUFFIX) $(LIBDIR)
+
+clean:
+	rm -f *.a $(OBJS_PROXY) *.o core errs *~ \#* TAGS *.E a.out errors tktest wish \
+		config.info
+
+distclean: clean
+	rm -f Makefile config.status config.cache
+
+depend:
+	makedepend -- $(CINCLUDE) $(CFLAGS) -- $(SRCS)
+
+
+# To disable ANSI-C procedure prototypes reverse the comment characters
+# on the following lines:
+PROTO_FLAGS =
+#PROTO_FLAGS = -DNO_PROTOTYPE
+
+# To turn off the security checks that disallow incoming sends when
+# the X server appears to be insecure, reverse the comments on the
+# following lines:
+SECURITY_FLAGS =
+#SECURITY_FLAGS = -DTK_NO_SECURITY
+
+EXTRA = $(PROTO_FLAGS) $(SECURITY_FLAGS)
+
+##
+## objects
+##
+$(D)grexec.o: $(SRC)/grexec.c
+	$(CC) $(CINCLUDE) $(CFLAGS) $(EXTRA) -c $(SRC)/grexec.c $(T)
+
+$(D)pgxwin.o: $(SRC)/pgxwin.c
+	$(CC) $(CINCLUDE) $(CFLAGS) $(EXTRA) -c $(SRC)/pgxwin.c $(T)
+
+$(D)tkpgplot.o: $(SRC)/tkpgplot.c
+	$(CC) $(CINCLUDE) $(CFLAGS) $(EXTRA) -c $(SRC)/tkpgplot.c $(T)
+
+INSTALL_:
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.

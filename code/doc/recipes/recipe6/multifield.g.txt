@@ -1,0 +1,37 @@
+include 'imager.g'
+
+dowait:=T
+if(!tableexists('uvdata.ms')) {
+  m:=fitstoms('uvdata.ms', 'UVDATA.TB0');m.summary(verbose=T);m.close();
+}
+
+imgr:=imager('uvdata.ms')
+if(!tableexists('clean.restored')) {
+  imgr.setimage(cellx='1.5arcsec', celly='1.5arcsec', nx=1024, ny=1024, stokes='I')
+  imgr.weight('robust')
+  imgr.uvrange(0, 60000);
+  imgr.clean(model='clean')
+  imgr.restore(model='clean')
+}
+
+im:=image('clean.restored');
+center:=im.coordmeasures().direction
+other :=im.coordmeasures([591,303]).direction
+im.done()
+
+imgr.setimage(cellx='0.15arcsec', celly='0.15arcsec', nx=256, ny=256, stokes='I',
+              phasecenter=center);
+imgr.make('center.clean')
+imgr.weight('robust')
+imgr.setimage(cellx='0.15arcsec', celly='0.15arcsec', nx=256, ny=256, stokes='I',
+              phasecenter=other);
+imgr.make('other.clean')
+imgr.clean(algorithm='mf', model=['center.clean', 'other.clean'])
+imgr.restore(model=['center.clean', 'other.clean'])
+imgr.close()
+imgr.done()
+
+
+
+
+

@@ -1,0 +1,282 @@
+%% viewercanvasmanager.help: help file for viewercanvasmanager tool
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: viewercanvasmanager.help,v 19.2 2005/06/15 18:10:56 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{viewercanvasmanager}{Tool for managing the canvases of \VdisplaypanelTs}
+
+\ahinclude{viewercanvasmanager.g}
+
+\ahkeyword{canvas}{}
+\ahkeyword{margins}{}
+\ahkeyword{paper}{}
+\ahkeyword{colors}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This \tool\ provides services to manage and manipulate the drawing
+canvases of \VdisplaypanelTs.  At present, this means adjusting margin 
+spacing (to make room for axis labels, for example), selecting the
+number of panels for channel maps, selecting screen
+or paper colors (that is, white-on-black or black-on-white), and
+adjusting the number of colors used by colormaps on the
+\VdisplaypanelTs.
+
+The \guilong\ provided by the \VcanvasMT\ is shown in
+Figure~\ref{fig:vcamintr}.  A \VcanvasMT\ \guishort\ for a
+\VdisplaypanelT\ can be placed on the screen by selecting {\gif Canvas
+manager} from the {\gif File} menu of the \VdisplaypanelT, or by
+invoking the
+\ahlink{newcanvasmanagergui}{viewer:viewerdisplaypanel.newcanvasmanagergui}
+function of the \lkVdisplaypanelT.  A single \VcanvasMT\ can have
+multiple \guishorts\ on the screen at any one time, but this can
+become confusing to the user.  The \VcanvasMT\ \guishort\ makes use of
+an \ahlink{autogui}{widgets:autogui} to allow modification of the
+various canvas parameters.
+\end{ahdescription}
+
+\subsubsection*{Graphical User Interface}
+\label{viewer:vcmgui}
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=vcamintr.ps,width=4.5in}
+\caption{The \VcanvasMT\ \guilong}
+\label{fig:vcamintr}
+\end{center}
+\end{figure}
+
+The \guilong\ consists of three rollups:
+\begin{itemize}
+\item{\gif Geometry}
+This rollup controls the margins around the image. These are reserved
+for axis labels. If you don't use labelling you can set them to 0.
+
+\item{\gif Layout} 
+This rollup is only of interest to you if you want to create channel
+maps, i.e. draw frames of consecutive channels of a data cube on one
+display. These will be arranged from top-left to right-bottom,
+starting at the frame selected in the animator.  The sliders control
+the number of displays in x and y as well as the space between
+them. Note that this space is on top of the margins in {\gif Geometry}. To
+use these appropriately set all margins to zero.
+This rollup won't show up if a viewercanvasmanager tool is associated
+with a viewerslicedp tool.
+\item{\gif Basic settings}
+Basic settings  control the numer of colors (index mode) and the
+background color of the display. The background color by default is
+black, but the options {\tt Use paper colors} can be set to true so
+that it would look like a PS print out. The orientation of Color
+Wedges can also be selected here.
+\end{itemize}
+
+Canvas settings can be saved to and restored from the \aipspp\
+``inputs table'' using the {\gif Save} and {\gif Restore}
+buttons.
+
+The viewercanvasmanager tool is context sensitive to some degree. A
+\vdp\ in RGB mode for example has a slightly different interface and on
+a True Color display in RGB mode you won't get an option to modify the
+number of colors.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{viewercanvasmanager}{Create a \VcanvasMT}
+\begin{ahargs}
+  \ahaddarg{displaypanel}{The \VdisplaypanelT\ which will use this \VcanvasMT}{}{\VdisplaypanelT}
+\end{ahargs}
+\ahreturns{\VcanvasMT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VcanvasMTs.  It constructs
+(creates) a \VcanvasMT\ which can subsequently be used to provide
+canvas management to a \VT.
+
+{\bf This constructor should not be called by users:} it is called
+during construction of \lkVdisplaypanelTs.  The \VcanvasMT\ for a
+given \VdisplaypanelT\ can be retrieved by calling its 
+\ahlink{canvasmanager}{viewer:viewerdisplaypanel.canvasmanager} function.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{type}{Return the type of this \tool}
+\ahreturns{'viewercanvasmanager'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'viewercanvasmanager'}, 
+which can be used to identify this \tool\ as a \VcanvasMT.  It is
+generally reserved for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{viewer}{Return the \VT\ which manages this \tool}
+\ahreturns{\VT}
+\begin{ahdescription}
+
+This function simply returns the \VT\ which owns the \VdisplaypanelT\
+that constructed and uses this \VcanvasMT.  It is generally reserved
+for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close down (destroy) this \VcanvasMT}
+\ahreturns{T}
+\begin{ahdescription}
+
+If you no longer need to use this \VcanvasMT, calling this function
+will free up its resources.  Any \guilongs associated with this \tool\
+will be removed from the screen.
+
+It is unwise to close down a \VcanvasMT\ by an explicit call to this
+function.  It is generally reserved for internal use by the
+\VdisplaypanelT\ which uses this \VcanvasMT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{gui}{Create a new \guilong\ for this \tool}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame for \guishort}{F}{agent or F}
+  \ahaddarg{show}{map the \guishort\ to the screen immediately?}{T}{Boolean}
+  \ahaddarg{hasdismiss}{place a 'Dismiss' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{hasdone}{place a 'Done' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use for the \guishort}{dws}{\widgetserverT}
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+Calling this function will create and return a new \guishort\ which
+can be used to view and edit the canvas settings that are managed by
+this \VcanvasMT.  By judicious use of the function arguments, the
+\guilong\ can optionally be placed within existing frames, and left
+off-screen for later use.  The interface of the return value conforms
+to the \VstandardGI.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getoptions}{Get the current canvas settings}
+\ahreturns{autogui full-form parameter record}
+\begin{ahdescription}
+
+This function can be used to determine the current canvas settings
+according to this \VcanvasMT.  The returned record is simply a
+full-form autogui parameter record (see the \ahlink{autogui
+documentation}{widgets:autogui}).
+
+The parameters that make up the returned record are described in the
+documentation for the
+\ahlink{getoptions}{viewer:viewerdisplaypanel.getoptions} function of the
+\lkVdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setoptions}{Install new canvas settings}
+\begin{ahargs}
+  \ahaddarg{options}{autogui short-form parameter record describing the requested state}{}{record}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function should be used to set the state of the canvas managed by 
+this \tool, according to the field names of the record returned by the 
+\ahlink{getoptions}{viewer:viewercanvasmanager.getoptions} \toolfunction.
+Installing new options on a \VcanvasMT\ will generally cause the
+refresh (that is, a total re-drawing) of the \VdisplaypanelT\ which it 
+manages.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{saveoptions}{Save the state of this \tool}
+\begin{ahargs}
+  \ahaddarg{setname}{name under which to store this state}{}{string}
+\end{ahargs}
+\ahreturns{T (success) or F (failure)}
+\begin{ahdescription}
+
+This function saves the current state (options) of this
+\VcanvasMT\ in the \aipspp\ {\tt Inputs Table}.  The options are
+stored as inputs for the \VcanvasMT, with the "method name" set to 
+the {\tt setname} argument given in the call to this function.
+
+\end{ahdescription}
+\begin{ahexample}
+An example should show how this can be used:
+\begin{verbatim}
+- mv := viewer();
+- mdp := mv.newdisplaypanel();
+- mcm := mdp.canvasmanager();
+- mcm.setoptions([leftmarginspacepg=0]);
+- mcm.saveoptions('my canvas options');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{restoreoptions}{Restore a previously saved state of this \tool}
+\begin{ahargs}
+  \ahaddarg{setname}{name of state to retrieve}{}{string}
+\end{ahargs}
+\ahreturns{T (success) or F (failure)}
+\begin{ahdescription}
+
+This function tries to retrieve a previously saved state (options) of
+the given name, and if successful, applies them to this
+\VcanvasMT. The {\tt setname} argument must correspond to a previously
+saved set of options, otherwise this function will fail.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject}
+\end{document}

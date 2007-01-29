@@ -1,0 +1,507 @@
+%% Copyright (C) 1999,2000,2003,2006
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: measuresdata.help,v 19.4 2006/01/09 15:33:58 gvandiep Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+\begin{ahmodule}{measuresdata}{Methods to obtain IERS data and make tables}
+
+\ahinclude{measuresdata.g}
+
+\ahkeyword{IERS}{}
+
+
+\begin{ahdescription}
+
+Module measuresdata provides scripts to maintain and update
+global data used by the Measures system. These include predicted and final
+IERS earth orientation data, JPL planetary ephemerides, leap second data,
+observatory positions, Earth magnetic field models,  and others.
+The global data are stored as \aipspp  tables, and are required by the Measures
+system for certain coordinate conversions, or to obtain the highest possible
+precision.
+
+Scripts to convert external ephemerides (e.g. for comets and
+satellites) into a table are
+also provided (\ahlink{createcomet}{measuresdata:createcomet} and
+\ahlink{createfromnorad}{measuresdata:createfromnorad}.
+
+A separate Glish script ({\tt measuresiers.g}) is available to create and
+update all the IERS tables in one go. It could e.g. be used in a regularly
+running cron job (every 3 days) as:
+\begin{verbatim}
+	glish -l measuresiers.g
+\end{verbatim}
+
+When updating tables, the following should be observed:
+\begin{itemize}
+\item all data files, tables and scripts mentioned reside at
+\$AIPSROOT/code/trial/apps/measures and can be copied from there if necessary 
+\item all Glish scripts should be run in the directory where the tables that
+have to be upgraded or created are situated (copy them if necessary, and use
+the {\tt aipsrc} resource file to indicate to the system where they can be
+found)
+\item for the upgrades to work the table files (i.e. the {\tt Table/table.*}
+files) should be writable ({\tt chmod +644 Table/table.*} if necessary)
+\end{itemize}
+
+There are a number of main separate routines provided for the upgrade of the
+different tables. They are:
+\begin{itemize}
+\item \ahlink{taiutc}{measuresdata:taiutc}: checks if update of the
+leap seconds table is required (it changes at most once per half
+year). If a change has been possible, it
+reads the {\tt tai-utc.dat} file from the USNO, and converts it into
+a table {\tt TAI\_UTC} in the current directory. The rows in the table are
+MJD (start of the leap second change); dUTC (the leap second value as from
+the MJD); Offset (necessary for earlier dates) and Multiplier (also for early
+dates). The table in the system will in most cases be up-to-date.
+(currently ftp:maia.usno.navy.mil/ser7/tai-utc.dat).
+\item \ahlink{ierseop97}{measuresdata:ierseop97}: checks if an update of
+the final IERS Earth Orientation Parameters data is necessary (it changes
+roughly once every week). If change is feasible, it
+reads the C04 solution from the IERS, and creates/updates the {\tt
+IERSeop97} table in the current directory. It contains dUT, x, y (polar
+motion), LOD (length-of-day),
+dPsi and dEps (nutation) final values with their errors up till one to two
+weeks ago. The table in the system starts at 1962 (as will be a table created
+from scratch).
+(currently ftp:hpiers.obspm.fr/iers/eop/eopc04/eop97c04.xx).
+\item \ahlink{ierseop2000}{measuresdata:ierseop2000}: checks if an update of
+the final IERS Earth Orientation Parameters data using the IAU2000
+nutation/precession theory is necessary (it changes
+roughly once every week). If change is feasible, it
+reads the C04 solution from the IERS, and creates/updates the {\tt
+IERSeop2000} table in the current directory. It contains dUT, x, y (polar
+motion), LOD (length-of-day),
+dPsi and dEps (nutation) final values with their errors up till one to two
+weeks ago. The table in the system starts at 1962 (as will be a table created
+from scratch).
+(currently ftp:hpiers.obspm.fr/iers/eop/eopc04/eop97c04\_IAU2000.xx).
+\item \ahlink{ierspredict}{measuresdata:ierspredict}: checks if an update
+of the IERS predictions is necessary (the predictions change about once every
+three days). If appropriate it reads
+the predicted data for dUT, x and y from the USNO file {\tt mark3,out} and
+updates the {\tt IERSpredict} table. It contains dUT, x and y predicted
+for the next 3 months. Also the file {\tt gpsrapid.out} is read, providing
+predictions for the next two weeks for dEps and dPsi (in future the last data
+will be either calculated or taken from JPL data). The table in the system
+starts at early 1997. A table created from scratch will start with the
+earliest data available at the ftp site.
+(currently ftp:maia.usno.navy.mil/ser7/mark3.out and
+ftp:maia.usno.navy.mil/ser7/gpsrapid.out).
+\item \ahlink{ierspredict2000}{measuresdata:ierspredict2000}: checks
+if an update of the IERS predictions using the IAU2000 theory is
+necessary (the predictions change about once every
+three days). If appropriate it reads
+the predicted data for dUT, x and y from the USNO file {\tt mark3,out} and
+updates the {\tt IERSpredict2000} table. It contains dUT, x and y predicted
+for the next 3 months. Also the file {\tt gpsrapid.out} is read, providing
+predictions for the next two weeks for dEps and dPsi (in future the last data
+will be either calculated or taken from JPL data). The table in the system
+starts at early 1997. A table created from scratch will start with the
+earliest data available at the ftp site.
+(currently ftp:maia.usno.navy.mil/ser7/mark3.out and
+ftp:maia.usno.navy.mil/ser7/gpsrapid.out).
+\item \ahlink{jplde}{measuresdata:jplde}: checks if an update is
+necessary. The tables do not change, but to limit space, the standard table
+provided with the system is limited to the period from 1990 up to at least
+two full years after the current date. In general the system table will obey these
+rules, and an update will not be done. Tables for both DE200 (the IAU
+standard) and DE405 (the most recent ones) are in the system. If data for
+other periods is needed, the function can be run with start and end dates. The
+\aipspp system contains data for the period 1960-2020. If data outside this
+period is needed, the limits in the Glish script have to be changed. The data
+will be loaded from JPL in that case (at 5-7Mb per 20 year span). The table
+rows have an MJD and a large vector giving the Chebyshev polynomial
+coefficients for the planets. Access of the table (as for the other tables)
+can be  made using functions provided in the {\tt MeasTable class}, although,
+of course, the table can be read directly.
+(currently: ftp:navigator.jpl.nasa.gov/ephem/export/ascii/ascpxxxx.yyy)
+\item \ahlink{addobservatory}{measuresdata:addobservatory}: can add and
+delete entries in the {\tt Observatories} table. It backups the old table; sort
+the entries on the observatory name, and capitalises the name and position
+type. In principle the editing of the table can in future be done by the
+tablebrowser, although no checks on the validity of the data will then be done.
+(currently only updated by hand).
+\item \ahlink{addline}{measuresdata:addline}: can add and
+delete entries in the {\tt Lines} table. It backups the old table; sort
+the entries on the spectral name, and capitalises the name. 
+In principle the editing of the table can in future be done by the
+tablebrowser, although no checks on the validity of the data will then be done.
+(currently only updated by hand).
+\item \ahlink{addsource}{measuresdata:addsource}: can add and
+delete entries in the {\tt Sources} table manually, or using the USNO VLBI
+reference source frame. It backs up the old table; sort
+the entries on the source name, and capitalises the name and direction
+type. In principle the editing of the table can in future be done by the
+tablebrowser, although no checks on the validity of the data will then be done.
+(currently ftp:maia.usno.navy.mil/rorf/refframe.one)
+\item \ahlink{createcomet}{measuresdata:createcomet}: can create a table
+of e.g. cometary data from an input file. The input file should be (at least
+for now) in the "p120" format.
+\item \ahlink{createfromnorad}{measuresdata:createfromnorad}: can create a
+table
+of e.g. satellite data from an input file. The input file should be (at
+least
+for now) in the "TRAKSTAR" ECI format.
+\item \ahlink{igrf}{measuresdata:igrf}: checks if update of the
+International Geomagnetic Reference Field models table
+is required (it changes every 5 years, with maybe a small update in
+between).
+If a change has been possible, it
+reads the {\tt IGRF.COF} file from the Goddard data center, and converts it into
+a table {\tt IGRF} in the current directory. The rows in the table are
+MJD (start of every 5 year period); COEF, the Schmidt-normalised spherical
+harmonic coefficients of the International
+Geomagnetic Reference Field, produced
+by the International Association of Geomagnetism and Aeronomy, Working
+Group V-8: Analysis of the Global and Regional Geomagnetic Field and
+its Secular Variation,
+ in the sequence:\\
+g10, g11, h11, g20, g21, h21, g22, h22, g30, g31, h31, , g32, h32, g33, 
+h33, ..., h1010;
+dCOEF, the annual change in the coefficients.
+The table in the system will in most cases be up-to-date.
+(currently ftp:ftp.ngdc.noaa.gov/SolidEarth/MainfldMag/Models/IAGA/IGRF.COF)
+\end{itemize}
+
+The tables are used in measures calculations. The {\tt TAI\_UTC} table is
+essential for any direct or indirect (e.g. coordinate conversions) work with
+the  {\tt MEpoch} classes. The {\tt DE200} and {\tt DE405} tables are essential
+for positions within the solar system, and very accurate coordinate
+conversions. The other IERS tables are necessary for high precision
+coordinate conversion. For lower precision (at the single dish level) they
+are not necessary. The IGRF tables are used for Earth' magnetic field
+calculations.
+
+All tables described here have the following keywords:
+\begin{itemize}
+\item VS\_CREATE: the time of creation of the original table
+\item VS\_DATE: the time of the last update of the table
+\item VS\_VERSION: xxxx.yyyy, where yyyy is updated at every update; xxxx at
+every new build
+\item VS\_TYPE: a descriptive text of the table contents
+\item dMJD: the step between rows in the table in time (days), or zero if
+irregular
+\item MJD0: the date of the first row in the table - dMJD
+\end{itemize}
+and have a Type=IERS.
+
+The DE tables have a few dozen more constants, specifying data used in the
+calculations. Access is provided through the MeasTable module.
+
+The other methods provided are helper functions.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+> glish -l 'measuresiers.g'
+\end{verbatim}
+will update the existing (or create if non-existent) tables with Earth
+Orientation parameters TAI\_UTC, IERSeop97, IERSpredict,
+IERSeop2000, IERSpredict2000,  and the Solar system
+DE200 and DE404 tables.
+
+The following example will only update (create) the prediction tables:
+\begin{verbatim}
+- include 'measuresdata.g'
+- ierspredict()
+- exit
+\end{verbatim}
+\end{ahexample}
+
+\ahfuncs{}
+%
+\begin{ahfunction}{taiutc}{Get leap seconds}
+\begin{ahdescription}
+Load the leap second table TAI\_UTC from USNO database if necessary. The full
+table is loaded each time
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- taiutc()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{ierseop97}{Get Earth Orientation Parameters solution}
+\begin{ahdescription}
+Load the table with the IERS 97 C04 solution for the Earth Orientation
+Parameters. The table used is IERSeop97. The table will start at 1962, and
+run as far as calculations by the IERS have proceeded.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- ierseop97()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{ierseop2000}{Get Earth Orientation Parameters solution}
+\begin{ahdescription}
+Load the table with the IERS 97 C04 solution for the Earth Orientation
+Parameters using the IAU2000 theories. The table used is
+IERSeop2000. The table will start at 1962, and
+run as far as calculations by the IERS have proceeded.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- ierseop2000()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{ierspredict}{Get predicted Earth Orientation Parameters}
+\begin{ahdescription}
+Load the predicted Earth Orientation Parameters in the IERSpredict table.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- ierspredict()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%%
+\begin{ahfunction}{ierspredict2000}{Get predicted Earth Orientation Parameters}
+\begin{ahdescription}
+Load the predicted Earth Orientation Parameters in the
+IERSpredict2000 table using the IAU20000 theories.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- ierspredict2000()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+
+\begin{ahfunction}{jplde}{Get solar system parameter}
+\begin{ahdescription}
+Get Solar system parameters from the JPL DE databases. As
+a default the table loaded will be from 1990 till at least two years from
+now. The default is indicated by a zero end time.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- jplde(405)
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{v}{JPL table number}{200}{200 or 405}
+\ahaddarg{st}{start year}{1990}{between 1960 and 2020}
+\ahaddarg{nd}{end year}{0}{between 1960 and 2020}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{addobservatory}{Add/delete entries to the Observatories table}
+\begin{ahdescription}
+Add or delete entries from the {\tt Observatories} table. A backup table will
+be made, the entries will be sorted on the name specified (capitalised).
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- addobservatory('myplace','itrf','149.55deg','-30.1455deg','567m',
++ 'taken from AE','precision unknown')
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{nam}{name of observatory}{}{string}
+\ahaddarg{typ}{position type}{''}{known type like itrf, wgs84}
+\ahaddarg{long}{longitude or x}{''}{angle or length quantity}
+\ahaddarg{lat}{latitude or y}{''}{angle or length quantity}
+\ahaddarg{ht}{height or z}{''}{length quantity}
+\ahaddarg{src}{some comment about source of data}{''}{string}
+\ahaddarg{com}{comment, e.g. about precision}{''}{string}
+\ahaddarg{delnam}{indicate if delete in stead of add}{F}{bool}
+\ahaddarg{ctable}{indicate that an empty table should be created}{F}{bool}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{addline}{Add/delete entries to the Lines table}
+\begin{ahdescription}
+Add or delete spectral line entries from the {\tt Lines} table. A backup
+table will be made, the entries will be sorted on the name specified
+(capitalised).
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- addline('OH1720','1720.53MHz',
++ 'taken from WSRT list','precision unknown')
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{nam}{name of spectral line}{}{string}
+\ahaddarg{freq}{frequency}{''}{any wave energy quantity}
+\ahaddarg{src}{some comment about source of data}{''}{string}
+\ahaddarg{com}{comment, e.g. about precision}{''}{string}
+\ahaddarg{delnam}{indicate if delete in stead of add}{F}{bool}
+\ahaddarg{ctable}{indicate that an empty table should be created}{F}{bool}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{addsource}{Add/delete entries to the Sources table}
+\begin{ahdescription}
+Add or delete entries from the {\tt Sources} table. A backup table will
+be made, the entries will be sorted on the name specified (capitalised).
+The entries will either be manually, or, with vref set, obtained from the
+refframe.one VLBI table maintained by USNO.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- addsource('mysrc','B1950','149.55deg','-30.1455deg')
+T
+- addsource(vref=T)	# get sources from USNO
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{nami}{name of source}{unknown}{string}
+\ahaddarg{typi}{position type}{''}{known type like J2000, B1950, GALACTIC}
+\ahaddarg{longi}{longitude or x}{''}{angle quantity}
+\ahaddarg{lati}{latitude or y}{''}{angle quantity}
+\ahaddarg{srci}{some comment about source of data}{''}{string}
+\ahaddarg{comi}{comment, e.g. about precision}{''}{string}
+\ahaddarg{delnam}{indicate if delete in stead of add}{F}{bool}
+\ahaddarg{ctable}{indicate that an empty table should be created}{F}{bool}
+\ahaddarg{vref}{indicate that sources to be taken from USNO}{F}{bool}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{createcomet}{Creates an epherimis table from text input}
+\begin{ahdescription}
+Create a table with ephemeris information in the current directory, using a
+text file in (for now) the "p120" format.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- createcomet('VGEO', '../indata/vgeo.txt')
+successful readonly open of auto-locked table VGEO: 7 columns, 35 rows
+deleted table VGEO.old
+successful creation of auto-locked table VGEO: 7 columns, 0 rows
+creating table VGEO with zero rows
+VGEO table 0003.0001 now with 35 entries till 1997/12/21
+T 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{nam}{name of table to be created}{}{string}
+\ahaddarg{fil}{path to input ascii list}{}{path as string}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{createfromnorad}{Creates an ephemeris table from text
+input}
+\begin{ahdescription}
+Create a table with ephemeris information in the current directory,
+using a
+text file in (for now) the "TRAKSTAR" ECI format.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- createfromnorad('GAL','ECI21263.509')
+NORMAL: successful readonly open of default-locked table GAL:
+ 7 columns, 21 rows
+NORMAL: deleted table GAL.old
+NORMAL: successful creation of default-locked table GAL:
+ 7 columns, 0  rows
+NORMAL: created plain table GAL with zero rows
+NORMAL: GAL table 0009.0001 now with 21 entries till 2006/01/05
+<fail>: non-numeric operand in expression: ([b[i][5], b[i][6],
+b[i][7]] * [b[i][8], b[i][9], b[i][10]])
+        File:   ./measuresdata.g, Line 2541
+        Stack:                sum(), ./measuresdata.g line 2541
+                        as_double(), ./measuresdata.g line 2541
+                  createfromnorad()
+
+\end{verbatim}
+Note the error at end, due to a glish error.
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{nam}{name of table to be created}{}{string}
+\ahaddarg{fil}{path to input ascii list}{}{path as string}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\begin{ahfunction}{igrf}{Get IGRF models}
+\begin{ahdescription}
+Load the international Geomagnetic Reference Field model table IGRF (or DGRF)
+from the Goddard data center. The full table is loaded each time an update is
+necessary. The {\mf fmt} argument selects the current format available: 2 was
+until 1999; 1 is from 2000 (till 2005?).
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'measuresdata.g'
+- igrf()
+T
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{fmt}{format of table from ftp}{1}{code: 1 most recent}
+\end{ahargs}
+\ahreturns{bool}
+\end{ahfunction}
+%
+\end{ahmodule}
+\end{document}

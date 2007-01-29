@@ -1,0 +1,151 @@
+## $Id: static.in,v 19.1 2004/07/13 22:37:01 dschieb Exp $
+## Copyright (c) 1998 Associated Universities Inc.
+##
+## Makefile for glishtk
+##
+
+GLISH_LIB_SUFFIX = @GLISH_LIB_SUFFIX@
+TK_LIB = @TK_LIB@
+CLIENT_LIBS = @TK_CXX_RPATH@ @TKCLIENT_LIBS@
+
+CFLAGS = @TK_FLAGS@ @CFLAGS@
+CXXFLAGS = @TK_FLAGS@ @CXXFLAGS@
+LIB_SUFFIX = @GLISH_LIB_SUFFIX@
+
+CC = @CC@
+CPLUS = @CXX@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ../..
+H = $(SRC)/include/Glish
+GLISH_SRC = $(SRC)/../..
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+SCRIPTDIR_P = $(top)/share/glish
+SCRIPTDIRTCL_P = $(SCRIPTDIR_P)/tcl
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+BINDIR = @bindir@
+SCRIPTDIR = @SCRIPTDIR@
+
+MKHIER = $(top)/config/mkhier
+
+
+GLISH_LIBS = @MALLOC@ $(LIBDIR_P)/libglish$(LIB_SUFFIX) $(LIBDIR_P)/libsos$(LIB_SUFFIX)
+LIBS = $(CLIENT_LIBS) $(TK_LIB) @LIBS@
+
+OBJS = main.o @MALLOC@
+
+HDRS = $(INCDIR)/Glish/glishtk.h
+
+DL_LIBS = @DL_LIBS@
+XLIB = @XLIBSW@
+XINC = @XINCLUDES@
+
+INCLUDE = -I.. -I$(SRC)/include -I$(SRC) -I$(GLISH_SRC) -I$(GLISH_SRC)/include -I$(INCDIR_P) @TK_INCL@ $(XINC) $(PLUSINC)
+CINCLUDE = -I.. -I$(SRC) -I$(SRC)/include -I$(GLISH_SRC) -I$(GLISH_SRC)/include -I$(INCDIR_P) @TK_INCL@ $(XINC)
+
+CLIENTS = $(BINDIR_P)/glishtk
+
+SCRIPTS = $(SCRIPTDIR_P)/glishtk.g
+
+TAR_FILE = glishtk.tar
+
+all: make-bindir_p make-scriptdir_p make-incdir_p $(CLIENTS) $(SCRIPTS)
+
+make-bindir_p:
+	$(MKHIER) $(BINDIR_P)
+
+make-bindir:
+	$(MKHIER) $(BINDIR)
+
+make-scriptdir_p:
+	$(MKHIER) $(SCRIPTDIR_P)
+
+make-scriptdir:
+	$(MKHIER) $(SCRIPTDIR)
+
+make-incdir_p:
+	$(MKHIER) $(INCDIR_P)
+
+make-incdir:
+	$(MKHIER) $(INCDIR)
+
+install:  make-bindir make-scriptdir make-incdir $(BINDIR)/glishtk $(SCRIPTDIR)/glishtk.g $(INCDIR)/Glish $(HDRS)
+
+main.o: ../main.cc $(H)/glishtk.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c ../main.cc 
+
+malloc.o: $(GLISH_SRC)/malloc.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(GLISH_SRC)/malloc.c
+
+glishtk: $(OBJS) $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o glishtk $(OBJS) $(LIBS) $(XLIB) $(DL_LIBS) @BIN_LIBS@ @EXTRA_LIBS@
+
+$(BINDIR_P)/glishtk: glishtk
+	$(INSTALL_PROGRAM) glishtk $(BINDIR_P)
+#	strip $(BINDIR_P)/glishtk
+
+$(BINDIR)/glishtk: glishtk
+	$(INSTALL_PROGRAM) glishtk $(BINDIR)
+#	strip $(BINDIR)/glishtk
+
+$(SCRIPTDIR_P)/glishtk.g: $(SRC)/glishtk.g
+	$(INSTALL_DATA) $(SRC)/glishtk.g $(SCRIPTDIR_P)
+
+$(SCRIPTDIR)/glishtk.g: $(SRC)/glishtk.g
+	$(INSTALL_DATA) $(SRC)/glishtk.g $(SCRIPTDIR)
+
+##
+## Install headers
+##
+$(INCDIR)/Glish:
+	$(MKHIER) $(INCDIR)/Glish
+
+$(INCDIR)/Glish/glishtk.h: $(H)/glishtk.h
+	@rm -f $@
+	cp $(H)/glishtk.h $@
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm tar-files
+
+tar-list:
+	@echo glish >&2
+	@ls Makefile.in config.h.in \
+		COPYING glish.init mkinit.sh *.c *.cc *.h *.l *.y \
+		*.sed doc/*.ps demos/*.g demos/*.cc demos/*.c \
+		demos/README* include/Glish/*.h | grep -v '^config.h$$'
+	@cd clients; $(MAKE) $(MFLAGS) tar-list | sed 's,^,clients/,'
+
+rcsinfo:
+	@echo glish
+	@rlog -L -S RCS/*,v
+	@echo glish/include/Glish
+	@cd include/Glish; rlog -L -S RCS/*,v
+	@cd clients; $(MAKE) $(MFLAGS) rcsinfo
+
+clean:
+	@rm -f $(CLIENT_OBJS) $(CLIENT_OBJS_PROXY) $(INTERP_OBJS) $(INTERP_OBJS_PROXY) \
+			libglishp$(LIB_SUFFIX) libglish$(LIB_SUFFIX) main.o glish errs \
+			parse.cc y.tab.h glish_init.cc scan.cc ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h config_p.h Makefile
+
+INSTALL_:
+

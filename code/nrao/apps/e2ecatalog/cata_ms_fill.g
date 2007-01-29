@@ -1,0 +1,30 @@
+#
+# Fill the MSCATALOG tables with data from a few MS files.
+#
+include 'mscatalog.g';
+#
+msc:=mscatalog('3C273XC1.ms');
+msc.makeindex();
+msc.write('tables');
+msc.done();
+#
+msc:=mscatalog('3C120AIPS.ms');
+msc.makeindex();
+msc.write('tables');
+msc.done();
+#
+msc:=mscatalog('ab973short.ms');
+msc.makeindex();
+msc.write('tables');
+msc.done();
+#
+msc:=mscatalog('NGC5921.ms');
+msc.makeindex();
+msc.write('tables');
+msc.done();
+#
+msc:=mscatalog('gbt_cygnus_800MHz.ms');
+msc.makeindex();
+msc.write('tables');
+msc.done();
+#

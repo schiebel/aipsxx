@@ -1,0 +1,1411 @@
+\def\eps@scaling{.95}
+\def\epsscale#1{\gdef\eps@scaling{#1}}
+\def\plotfiddle#1#2#3#4#5#6#7{\centering \leavevmode
+    \vbox to#2{\rule{0pt}{#2}}
+    \special{psfile=#1 voffset=#7 hoffset=#6 vscale=#5 hscale=#4 angle=#3}}
+
+\newcommand{\pullup}{\vspace{-\baselineskip}}
+
+\newcommand{\mirfiller}{\htmlref{\tt mirfiller}{mirfiller:mirfiller}}
+\newcommand{\bms}{\htmlref{\tt ms}{ms:ms}}
+\newcommand{\fitstoms}{\htmlref{\tt fitstoms}{ms:ms.fitstoms.constructor}}
+\newcommand{\btoolmanager}{\htmlref{\bf Tool Manager}{tasking:toolmanager}}
+\newcommand{\bimager}{\htmlref{\tt imager}{imager:imager}}
+\newcommand{\bmsplot}{\htmlref{\tt msplot}{ms:msplot}}
+
+\newcommand{\tipframe}[2][1]{\vspace{-0.8\baselineskip}\begin{flushright}%
+\fbox{\parbox{#1\textwidth}{
+\small\begin{description}\vspace{-1.5\topsep}\item[\bf Tip:]
+#2\vspace{-1.5\topsep}\end{description}}}\vspace{-0.8\baselineskip}\end{flushright}}
+
+
+\newcommand{\tmconstructor}[4]{
+\begin{tabular}[t]{|c|c|c|c|c|}
+\cline{1-3} \cline{5-5}
+\emph{Package}  & \emph{Module} & \emph{Tool}   && \emph{Constructor}
+\\
+\hline\hline
+{\tt #1}   & {\tt #2}  & {\tt #3}      &
+\fbox{\tt Create}& {\tt #4} \\
+\cline{1-3} \cline{5-5}
+\multicolumn{5}{l}{\footnotesize Don't understand this table?
+See \S\ \ref{fcreate}}
+\end{tabular}
+
+}
+
+
+\chapter{BIMA Data Reduction}
+\label{bima}
+
+{\em D.M. Mehringer and The LAUGH 
+Group}\footnote{Laboratory for Astronomical Imaging
+\aipspp\ Users Group and Help: members were H. Dickel, D. Fong, D.
+    Mehringer, R. Plante,  A. P. Sarma}
+
+\section{Introduction}\label{sect:1}
+
+{\em David Mehringer, Ray Plante, and Anuj Sarma}
+
+This version of the BIMA \aipspp\ Cookbook is a much abridged version
+of the full version which can be found at
+\htmladdnormallink{http://monet.ncsa.uiuc.edu/aips++/forBIMA/cook/cook.html}{http://monet.ncsa.uiuc.edu/aips++/forBIMA/cook/cook.html}.
+The abridged version essentially describes only BIMA-specific issues
+in \aipspp\ while the full version has useful chapters on using
+\aipspp\ in general.  If you discover errors or have suggestions,
+please email them to \htmladdnormallink{dmehring@astro.uiuc.edu}{mailto:dmehring@astro.uiuc.edu}.
+
+%\subsection{Basic Operations}\label{sect:2}
+
+\subsection{Starting \aipspp}
+
+To start \aipspp, issue the following commands if you are using c shell:
+
+\begin{verbatim}
+> source /appl/aips++/stable/aipsinit.sh
+> aips++
+\end{verbatim}
+
+or, if you are using bash shell:
+
+\begin{verbatim}
+> . /appl/aips++/stable/aipsinit.sh
+> aips++
+\end{verbatim}
+
+\subsection{Exiting \aipspp}
+
+There are two ways to {\bf exit} from \aipspp:
+
+\begin{itemize}
+
+\item{In the command line interface (\glish\ window),
+type after the ``$-$'' prompt:}
+\begin{verbatim}
+     exit
+\end{verbatim}
+
+\begin{tabular}{lr}
+\phantom{a}
+\begin{minipage}{0.86\textwidth}
+and press return
+\end{minipage}
+\end{tabular}
+
+\medskip
+\item{From the \btoolmanager\ GUI, \\
+select ``File $\Rightarrow$ Exit AIPS++''}
+
+\end{itemize}
+
+\section{Manipulating \aipspp\ tools}
+
+{\em H{\'e}l{\`e}ne. R. Dickel}
+
+\subsection{How do I create a tool?}
+\label{fcreate}
+
+The \btoolmanager\ window is used to create tools.  Tools and
+global
+functions are organized first by \emph{Packages} and then by
+\emph{Modules}, as illustrated by the graphical lists that make up the
+\btoolmanager.  The \mirfiller\ tool  can be used to import Miriad
+visibility data into \aipspp.
+
+%\begin{figure}[h]
+%\caption{The Tool Manager interface}
+%\end{figure}
+
+In the BIMA Data Reduction section of the \aipspp\ cookbook, 
+we use a short hand for selecting tools and
+functions in the \btoolmanager.  It looks like this:
+
+\tmconstructor{bima}{mirfiller}{mirfiller}{mirfiller}
+
+Here's what it means:
+\tipframe[0.7]{A \emph{Constructor} is a special type of function
+that returns a tool as its value; that is, it creates a tool.}
+
+\vspace{-\baselineskip}
+\begin{enumerate}
+\item Under the Packages list, click on ``bima.''
+\item Under the Modules list, click on ``mirfiller.''
+\item Under the Tools list, click on ``mirfiller.''
+\item Hit the ``Create'' button below the Tools list.  This will cause
+      the \btoolmanager\ to morph into a new GUI for constructing a
+      \mirfiller\ tool.
+% Not sure what Ray means by this - no such list on left, so will
+% omit for now - APS
+%%\item Under the list of Constructors on the left, click on
+%%      ``mirfiller''.  The GUI will again morph to provide the inputs
+%%      to that constructor.
+\end{enumerate}
+\vspace{-\baselineskip}
+
+Now that you have the constructor interface up, you need to enter
+values for its parameters.  Here are two most important parameters
+you need to provide and what they mean:
+
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt mirfiller} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\
+\hline\hline
+{\tt toolname} & {\tt mymirfiller} &
+The name by which you want to refer to this tool; this is helpful when
+you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\
+{\tt mirfile} & {\tt 3c273} &
+The name of the Miriad dataset. \\  \hline
+\end{tabular}
+
+In the BIMA Data Reduction section of the \aipspp\ cookbook, 
+a table like the one above is used to summarize the
+inputs you need to give to a function.  Usually, only the most
+important parameters are listed; all others can be left to their
+default.
+
+\tipframe[0.9]{The first time you start \aipspp, the \btoolmanager\
+will display default values for all function parameters; however, if
+change a parameter value and then run the function, the new value will
+be remembered.  To see how to return values to their default, select
+``Default'' from the wrench menu to the right of the input (see
+\S\ \ref{fwrench}).}
+
+Most likely, the ``toolname'' parameter will already be set to
+``mymirfiller;'' however, if you want to change it, move your cursor
+over the ``toolname'' input, erase its contents and type in the new
+value.
+
+\fbox{\parbox{\textwidth}{
+\small {\bf Tips for entering parameter values:}\\
+\pullup
+\begin{itemize}
+\item Here are two quick ways to erase the text in an input:
+\begin{itemize}
+\item Select ``Clear'' from the wrench menu to the right of the text
+input (see \S\ \ref{fwrench}).
+\item Triple-click on the text; that is, place your cursor over the
+text and click the left button three times in rapid succession.  The
+text will now be highlighted or ``selected''.  (If the field contains
+just one word, than double-clicking is enough.)  Next, hit the
+backspace key or just start typing.  The selected text will disappear,
+and the new text will be entered in its place.
+\end{itemize}
+\item Text that appears on top of a raised box represents a menu.  (In
+our example, the {\tt preview} and {\tt defpass} parameter values are
+presented as menus.)  Click on the box to see the other choices.
+\item A yellow box containing the label ``$<$unset$>$'' means that no
+value is set.  When the function is run, it will choose an appropriate
+default value.
+\end{itemize}
+}}
+
+When all the parameters have been set, you can execute the constructor
+and create the \mirfiller\ tool by clicking the green button
+labeled ``Create.''
+
+When the constructor finishes its work, the GUI will morph again to
+show the interface to the tool's functions.
+
+\tipframe[0.7]{One way to tell that the constructor has finished its
+work
+and the tool is ready for use is when the button on the upper right,
+which used to have only the tool's name (e.g.\ mirfiller), {\bf \em
+changes}
+to {\bf toolname:toolname-value} (e.g., {\bf mirfiller:mymirfiller}).}
+
+\subsection{How do I get rid of a tool?}
+\label{fdone}
+
+You can shut down a tool from its function view (where the
+functions appear in a list on the right; if you do not see this, press
+the ``mirfiller:mymirfiller" button along the top of the \btoolmanager.
+
+Now press the ``Done" button at the bottom, right hand corner of the
+window.  The \btoolmanager\ will morph back into its tool selection
+view.  The ``mirfiller:mymirfiller" button is now gone.
+
+Note that the ``Dismiss" button does not shut down the tool.  It
+simply returns to the tool selection view.  The
+``mirfiller:mymirfiller"
+button would remain.
+
+\section{Importing BIMA Data in \aipspp}
+
+{\em Ray Plante}
+
+\subsection{How do I import my Miriad \emph{uv}-data into \aipspp}\label{sect:3}
+\label{fmfill}
+
+Here's a summary of how to import your data it using the GUI:
+
+\pullup
+\begin{itemize}
+\item Create a \mirfiller\ tool:
+
+\tmconstructor{bima}{mirfiller}{mirfiller}{mirfiller}
+
+\item Enter the constructor parameters:
+
+\smallskip
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt mirfiller} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\
+\hline\hline
+{\tt toolname} & {\tt mymirfiller} &
+The name by which you want to refer to this tool; this is helpful when
+you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\
+{\tt mirfile} & {\tt 3c273} &
+The name of the Miriad dataset. \\  \hline
+\end{tabular}
+
+When you have filled in the above-mentioned values, \\
+press {\bf Create}.
+
+\tipframe[0.75]{During its construction, your {\tt mirfiller} tool
+will open the Miriad dataset and print a summary of its contents to
+the logger. It will also set up the default data selection depending
+on what the dataset contains.}
+
+\smallskip
+\item Run the {\tt fill} function to copy the data to an \aipspp\
+measurement set:
+
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt fill} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\
+\hline\hline
+{\tt msfile} & {\tt 3c273.ms} &
+The name of the output measurement set to fill. \\ \hline
+{\tt verbose} & True &
+Setting this to true will send messages on {\bf mirfiller's} progress
+to the logger window. \\ \hline
+\end{tabular}
+
+After filling in the above values, \\
+press {\bf Go}.
+
+\item Delete the tool when the filling is done.
+
+%\tipframe[0.7]{The tool may be deleted by clicking on the
+%red {\bf Done} button on the bottom right in the {\tt mirfiller}
+%function view (see \S\ \ref{fdone}\ for more details).}
+
+\end{itemize}
+
+\subsubsection{How do I do the same thing in \glish?}
+\label{fglish}
+
+If you have the scripter running, you can just look the scripter
+window.  You'll see exactly what was run by the GUI.
+
+Note that \aipspp\ will usually write Glish commands to the
+scripter in their most verbose form.  Here's a more compact form:
+
+\begin{verbatim}
+  include 'mirfiller.g'
+  mymirfiller := mirfiller("3c273");
+  mymirfiller.fill("3c273.ms", verbose=T);
+  mymirfiller.done();
+\end{verbatim}
+
+Parameters left to their default values do not have to be
+included.  Plus, if you give the parameter values in the order
+that they appear in the GUI (or the documentation), you don't
+have to give the parameter names.
+
+\subsection{How do I import my FITS \emph{uv}-data into \aipspp}
+\label{fffill}
+
+Loading of FITS \emph{uv}-data into \aipspp\ can be done using the
+\bms\ tool via its \fitstoms\ constructor.  Here a summary of
+how to import FITS data using the GUI:
+
+\pullup
+\begin{itemize}
+
+\item Create an \bms\ tool by selecting the following in the
+\btoolmanager\ window.
+
+\tmconstructor{general}{ms}{ms}{fitstoms}
+
+\item Choose the  \fitstoms\ constructor. To do this, click on
+\fitstoms\ on the left hand side of the \bms\ tool under
+`ms all constructors.' \\
+Now fill in the values for the parameters that appear on the right
+hand side. Sample values are given in the table below.
+
+\medskip
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt fitstoms} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\
+\hline\hline
+{\tt toolname} & {\tt myms} &
+The name by which you want to refer to this tool. \\
+{\tt msfile} & {\tt 3c273} &
+Name of the \emph{output} \aipspp\ measurement set to be created. \\
+{\tt fitsfile} & {\tt 3C273.FITS} &
+Name of your \emph{input} UVFITS file. \\ \hline
+\end{tabular}
+
+When you are done filling in the above inputs, \\
+press {\bf Create}.
+
+%\tipframe[0.7]{This constructor opens the input dataset and writes
+%out the measurement set all in one step. This process will take a
+%short time to complete.  The {\bf Progress meter} will indicate the
+%time for completion.  Output messages will also appear on the
+%{\bf Logger window}. \\
+%$ $ \\
+%When the constructor is done, the GUI will morph into the {\bf ms}
+%tool window. You can tell that the constructor is done when the
+%button on the upper right, which used to say ``ms,'' changes to
+%``{\bf ms:myms}.'' Your UVFITS file has now been converted to an
+%\aipspp\
+%measurement set (ms).}
+
+\medskip
+
+\item Delete the tool when you are done.
+
+\tipframe[0.7]{This is done by clicking on the red {\bf Done}
+button on the bottom right in the \bms\ tool function view
+(see \S\ \ref{fdone}).}
+
+\end{itemize}
+\bigskip
+The {\em glish equivalent} of the above procedure is the following:
+\begin{verbatim}
+   include 'ms.g';
+   myms := fitstoms(msfile="3c273.ms", fitsfile="3C273.FITS");
+   myms.done();
+\end{verbatim}
+
+\providecommand{\briggsURL}{http://www.aoc.nrao.edu/ftp/dissertations/dbriggs/diss.html}
+
+\section{\label{uch} Inspecting UV data}
+
+{\em David Fong}
+
+\subsection{\label{uover} Overview}
+
+This section describes how one can inspect UV data
+by means of the following questions:
+
+\begin{itemize} 
+
+\item[\ref{u3}] How do I plot the \emph{uv}-data using the \bimager\ tool?  
+\item[\ref{u5}] How do I examine the \emph{uv}-data using \bmsplot?  
+\begin{itemize}
+\item[\ref{u5.1}] How do I list the spectral parameters of the \emph{uv}-data?
+\end{itemize}
+\end{itemize}
+
+
+
+%---------------------------------------------------------------------
+\subsection{\label{u3} How do I plot the \emph{uv}-data using the \bimager\
+tool?}
+%---------------------------------------------------------------------
+
+The \bimager\ tool 
+%(see Chapter \ref{ich})
+contains the 
+functions for imaging. If you wish to have a quick look at the \emph{uv}-data
+before imaging, then follow these steps. If you wish examine the \emph{uv}-data
+in greater detail, then use \bmsplot\ (see \S\ \ref{u5}).
+
+\begin{itemize}
+
+\item Create an \bimager\ tool \\
+In the \btoolmanager\ window, select the following:
+
+\tmconstructor{synthesis}{imager}{imager}{imager}
+
+\bigskip
+
+\item Enter the constructor parameters:
+
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt Imager} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt toolname} & {\tt myimager}        &
+The name by which you want to refer to this tool; this is helpful when you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\
+{\tt filename} & {\tt cloud.ms}     &
+Name of the \aipspp\ measurement set. \\
+\hline
+\end{tabular}
+
+When you are done filling in the above inputs, \\
+press {\bf Create}.
+
+When the constructor is finished, the GUI will morph into the \bimager\ 
+tool window. 
+
+\smallskip
+
+\tipframe[0.7]{You can tell that the constructor is finished and the
+GUI has morphed into the {\bf Imager} tool window by looking at the button
+near the upper right of the \btoolmanager\ that used to say ``imager'' before
+you hit the {\bf Create} button --- this button near the upper right
+will now say ``{\bf imager:myimager}.''} 
+
+\item Make the plots.
+
+\begin{enumerate}
+
+\item If you wish to plot the \emph{uv}-coverage: 
+
+\begin{itemize}
+
+\item select $\Rightarrow$ plotting (under the ``Function group'' menu)
+
+\bigskip
+
+\tipframe[0.7]{The ``Function group'' menu is on the left side of the
+\btoolmanager\ near the middle. Left-clicking on this menu button with
+your mouse gives you a drop-down menu --- hold down the left mouse button
+and move down the drop-down menu until ``plotting'' is highlighted --- 
+click on ``plotting'' to select it, and the words ``plotting functions''
+together with a highlightable box of choices will appear below the 
+``Function group'' menu button.}
+
+\bigskip
+
+\item select $\Rightarrow$ plotuv (below plotting functions)
+
+\item press {\bf Go} --- after a while, a new pgplot screen will pop up
+and display the \emph{uv}-coverage plot. 
+
+\end{itemize}
+
+\medskip
+
+\item If you wish to plot amplitude vs.\ \emph{uv}-distance:
+
+\begin{itemize}
+
+\item select $\Rightarrow$ plotvis (below plotting functions) 
+
+\item  press {\bf Go}
+
+\end{itemize}
+
+\end{enumerate}
+
+\end{itemize}
+
+%-------------------------------------------
+\subsection{\label{u5} How do I examine the \emph{uv}-data using \bmsplot?}
+%-------------------------------------------
+
+\bmsplot provides more selection options for plotting \emph{uv}-data. 
+The GUI-based tool can make plots, displays or listings of various parts 
+of an MS (see Reference manual: general.ms.msplot for a full 
+description). 
+
+\pullup
+
+\begin{itemize}
+
+\item Create an \bmsplot tool \\
+In the \btoolmanager\ window, select the following:
+
+\tmconstructor{general}{ms}{msplot}{msplot}
+
+
+\item Enter the constructor parameters:
+
+\smallskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt msplot} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt toolname} & {\tt mymsplot}        & 
+The name by which you want to refer to this tool.  \\  \hline
+{\tt msfile} & {\tt cloud.ms}     & 
+Name of the measurement set. \\  \hline
+{\tt edit} & {\tt False}        & 
+False option only allows inspection of the \emph{uv}-data. \\
+& & True option allows interactive flagging of the \emph{uv}-data.\\
+\hline
+\end{tabular}
+
+When you are done entering the above parameters,  \\
+press {\bf Create}.
+
+When the constructor is finished, a new \bmsplot\ GUI window will start
+up.
+
+\end{itemize}
+
+\noindent {\bf Example 1:} A common plot to make is X vs Y, where the X and Y axes 
+can be time, UV-distance, amplitude, phase, etc. 
+
+\pullup
+
+\begin{itemize}
+\item select $\Rightarrow$ `Plot X vs Y' \\ 
+(default option for the menu bar the on the first row, next to `Show')
+
+For `Plot X vs Y', the X and Y axes to be plotted are chosen by selecting the 
+options found under the menu bars on the second row labeled `X Axis' and `Y Axis'. 
+
+\item select $\Rightarrow$ uvdist  (under X axis menu)
+\item select $\Rightarrow$ amplitude \\ 
+(first under `Y axis' menu, next under `data' submenu, and then under `value' subsubmenu)
+
+\item use the buttons in the third row, namely, `X, Y plot limits,'
+`Data selection,' `Spectral selection,' and `Polarization selection'
+to specify the data you want to plot. Selecting one of these buttons
+will open a panel below the button --- this panel has additional input
+parameters to control data selection
+
+\item press {\bf Go}
+
+\tipframe[0.7]{The green {\bf Go} button is on the upper right of the
+\bmsplot\ gui, next to the red {\bf Stop} button.}
+
+\end{itemize}
+
+\medskip
+
+\noindent {\bf Example 2:} Another common plot to create is the UV-coverage.
+
+\pullup
+
+\begin{itemize}
+\item select $\Rightarrow$ `Plot UV Coverage' (under the menu bar the on the first row, 
+next to `Show')
+
+\item press {\bf Go} \\
+
+\end{itemize}
+
+\pullup
+
+$ $ To individually plot the UV-coverage for each baseline:
+
+\pullup
+
+\begin{itemize}
+
+\item select $\Rightarrow$ `Antenna 1' and `Antenna2'  
+(under `Iteration selection' menu on the first row)
+
+\tipframe[0.7]{`Antenna 1' and `Antenna 2' are the elements forming a 
+baseline. \\ 
+`Antenna 1' = antenna \# 1 to ($n-1$), and \\
+`Antenna 2' = antenna \# 2 to $n$.}
+
+\item press {\bf Go}
+
+\end{itemize}
+
+
+\tipframe[0.9]{Use the `Plot flagged data points' toggle switch under the 
+`Options' menu in the \bmsplot\ gui to control whether flagged 
+\emph{uv}-data points are shown.}
+
+\bigskip
+
+%-------------------------------------------
+\subsubsection{\label{u5.1} How do I list the spectral parameters of the 
+\emph{uv}-data?}
+%-------------------------------------------
+
+\begin{itemize}
+
+\item select $\Rightarrow$ `Summarize MS in logger' \\
+(found under the menu bar on the first row, next to `Show')
+
+\item press {\bf Go}
+
+The spectral parameters will be listed in the {\bf Logger} window.
+
+\end{itemize}
+
+
+\providecommand{\briggsURL}{http://www.aoc.nrao.edu/ftp/dissertations/dbriggs/diss.html}
+
+\section{\label{ech}Editing UV data}
+
+
+{\em Anuj Sarma}
+
+\subsection{\label{eover}Overview}
+
+This section will describe how to flag/edit your \emph{uv}-data.
+
+\begin{itemize} 
+
+\item[\ref{uvflag}] How do I flag \emph{uv}-data?
+%\dotfill\ \pageref{uvflag}
+
+\item[\ref{glishFlag}] How do I carry out all the above steps to flag 
+\emph{uv}-data using glish? 
+%\dotfill\ \pageref{glishFlag}
+
+\item[\ref{wbrecalc}] How do I re-generate the wideband data after
+flagging? 
+%\dotfill\ \pageref{wbrecalc}
+\end{itemize}
+
+\bigskip
+
+\subsection{\label{uvflag} How do I flag \emph{uv}-data?}
+
+Flagging and editing of the \emph{uv}-data can be done using the 
+{\bf autoflag} tool. 
+
+To use {\bf autoflag}, go to the `Manager' view in the \btoolmanager\
+GUI and make the following selections:
+
+\begin{itemize}
+
+\item Create an autoflag tool:
+
+\tmconstructor{synthesis}{autoflag}{autoflag}{autoflag}
+
+\tipframe[0.7]{When you press the green {\bf Create} button, you will get
+an additional button to the right of the `Manager' and `Tools in use'
+buttons, and the view of the constructor shown below.}
+
+\item Enter the constructor parameters:
+
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt autoflag} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt toolname} & {\tt myautoflag} &
+The name by which you want to refer to this tool; this is helpful when you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\
+{\tt msname} & {\tt bllac.ms} &
+Name of the \aipspp\ measurement set that you wish to flag. \\  \hline
+\end{tabular}
+
+When you are done entering the above constructor parameters, \\
+press {\bf Create}.
+
+\medskip
+
+\tipframe[0.7]{To create an \aipspp\ measurement set from raw BIMA
+data (e.g., `bllac.ms' mentioned above), see \S\ \ref{fmfill} on page
+\pageref{fmfill}.}
+
+
+\medskip
+The GUI will morph into the autoflag tool window when the constructor is
+done.
+
+\medskip
+\tipframe[0.7]{You can tell the constructor is done when the button on
+the upper right in the \btoolmanager\ GUI, which used to say ``autoflag,''
+changes to ``{\bf autoflag:myautoflag}.''}
+
+\medskip
+
+\item In the list under `all functions' on the left of the autoflag tool,
+click on {\bf setselect}. On the right, you will get a list of options.
+You can choose to flag based on one or more of these options. For a
+detailed description of each of these options, see the
+User Reference Manual for {\tt autoflag.setselect}.
+
+\medskip
+
+\tipframe[0.9]{As of June 12, 2002 (version 1.7 build 419) the options
+for the setselect gui are not activated when chosen --- obviously a bug in
+the GUI! If this bug has still not been removed when you use this manual,
+see the following \S\ \ref{glishFlag}\ on page \pageref{glishFlag}\ 
+to use the glish environment to carry out all the processes described here.}
+
+\medskip
+
+When you are done filling in all the desired options in setselect, \\
+press {\bf Go}.
+
+\medskip
+
+\item Having made the selections on which you wish to flag, the next step
+is to run autoflag and apply the flags to the data. \\
+Look in the list on the left under `all functions' again, and this time \\
+click on {\bf run}.
+
+\medskip
+
+You will get the following view, go ahead and make the selections shown
+in the \emph{Sample Values}:
+
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt run} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt globparm} & {\tt [=]} &
+Record of global method parameters. Leave at default. \\  \hline
+{\tt plotscr} & {\tt F} &
+Number of plots per window in flagging report. `F' means ``do not print this
+report.'' Default is to print report. \\  \hline
+{\tt plotdev} & {\tt F} &
+Number of plots per page in hardcopy flagging report. `F' means ``do not 
+generate this report.'' \\  \hline
+{\tt devfile} &  &
+Name of hardcopy report. Leave blank if you don't want hardcopy. (Default
+is flagreport.ps/ps.) \\  \hline
+{\tt reset} & {\tt False} &
+Reset pre-existing flags. Pull-down menu. \\ 
+\hline
+\end{tabular}
+
+When you are done making the above selections for {\bf run}, \\
+press {\bf Go}.
+
+\end{itemize}
+
+The data for `bllac.ms' are now flagged. 
+
+\tipframe[0.9]{Do not flag the target source data until after the
+calibration has been performed on the phase calibrator and the calibration
+tables have been copied over to the target source (see Chapter \ref{cch}\
+on page \pageref{cch}). Otherwise, the bimacalibrator tool with exit with
+an error. This is due to a bug in the \aipspp\ code for heterogenous
+spectral windows and is under investigation.  \\
+$ $ \\
+If you are flagging a calibrator, make sure you run the {\tt reavg} routine
+in bimams after you flag and before you calibrate, so that the wideband
+data are recalculated after the flags have been applied. This is described
+in \S\ \ref{wbrecalc}.}
+
+\bigskip
+
+\subsection{\label{glishFlag} How do I carry out all the above steps to 
+flag \emph{uv}-data using glish?} 
+
+All the steps described in the last section can be done in glish.
+
+\tipframe[0.7]{Bring up the {\bf scripter} GUI when you are going through
+the steps in the last section. (See \S\ \ref{bglish}\ on page 
+\pageref{bglish}\ if you have forgotten/don't know how to bring up the
+{\bf scripter}.) All the glish commands used during the gui operations
+will then be written to the scripter. Compare the scripter output to
+the glish commands below.}
+
+Follow the steps below to flag your data using glish. The procedure
+followed is identical to that in the last section.
+
+\begin{itemize}
+
+\item First, include the autoflag script
+\begin{verbatim}
+  include 'autoflag.g'
+\end{verbatim}
+
+\item Then, create the autoflag tool. To do this, attach the tool to the 
+dataset you wish to flag. In this example, we have named the dataset 
+`bllac.ms.'
+\begin{verbatim}
+  af:=autoflag('bllac.ms')
+\end{verbatim}
+
+\item The next step is to select the data to be flagged. You can choose to
+flag based on a variety of criteria, all of which are listed in the
+User Reference Manual for {\tt autoflag.setselect}.
+Below, we choose to flag all data for antenna 3, and clip all data
+that are outside the amplitude range (0,25). 
+\begin{verbatim}
+  af.setselect(ant=2, clip=[expr='ABS YY', min=0, max=25]);
+\end{verbatim}
+
+\tipframe[0.9]{We specify ant=2 to flag all data
+for antenna 3. If you think this is weird, I do too. Some things in
+\aipspp\ are 0-numbered, others are 1-numbered. The only way to tell is
+to look at the messages later and see which antenna was flagged; in
+this case, it will say that it flagged ANT3 (which is antenna 3). This
+is obviously a bug, and will hopefully be corrected in the future. \\
+$ $ \\
+Also, to flag all data that are {\em outside} the amplitude range (0,25),
+we specify the expression given above for the clip parameter.}
+
+\medskip
+
+Once you have run the above by hitting return, you should get the
+following list. Anything other than an `F' signifies that you chose
+to flag based on that criterion, and the value you used to determine
+how to flag (except for `dtime,' which is related to `timeslot' and has
+the value dtime=10 as default). For example, ant=2 because you set that
+in setselect above; similarly for clip.
+\begin{verbatim}
+   spwid       = F
+   field       = F
+   fq          = F
+   chan        = F
+   corr        = F
+  *ant         = 2
+   baseline    = F
+   timerng     = F
+   autocorr    = F
+   timeslot    = F
+   dtime       = 10
+   quack       = F
+  *clip        = [expr=ABS YY, min=0, max=25]
+   flagrange   = F
+   unflag      = F
+\end{verbatim}
+
+\item Finally, run the autoflagger. 
+\begin{verbatim} 
+  af.run(plotscr=F, plotdev=F);
+\end{verbatim}
+
+\tipframe[0.9]{To prevent additional annoying windows from popping up,
+plotscr and plotdev have been set to `F' above; if you want these
+windows to come up, leave these out. For further details, see the
+User Reference Manual for {\tt autoflag.run}.}
+
+\end{itemize}
+
+$ $ \\
+\medskip
+
+{\bf Two cautionary notes:} Do not flag the target source data until 
+after the calibration has been done on the phase calibrator and the
+calibration tables have been copied over to the target source (see
+Chapter \ref{cch}\ on page \pageref{cch}). Otherwise, the bimacalibrator
+tool will exit with an error. This is due to a bug in the \aipspp\ code
+for heterogenous spectral windows, and is under investigation. \\
+$ $ \\ 
+If you are flagging a calibrator, make sure you run the {\tt reavg}
+routine in bimams before you calibrate, so that the wideband data for
+the calibrator are recalculated after the flags have been applied. This
+procedure is described in \S\ \ref{wbrecalc} below.
+
+\subsection{\label{wbrecalc} How do I re-generate the wideband data
+after flagging?}
+
+After flagging the calibrator data, you will have to re-generate the
+wideband data, in order to carry over the flags to the sideband 
+averages. To do this, use the {\bf reavg} routine in the {\bf bimams}
+tool.
+
+To use {\bf reavg} go to the 'Manager' view in the \btoolmanager\
+GUI and make the following selections:
+
+\begin{itemize}
+
+\item Create a {\tt bimams} tool:
+
+\tmconstructor{bima}{bimams}{bimams}{bimams}
+
+\tipframe[0.7]{When you press the green {\bf Create} button, you will get
+an additional button named `bimams' to the right of the `Manager' and
+`Tools in use' buttons, and the view of the constructor shown below.}
+
+\medskip
+
+\item Enter the constructor parameters:
+
+\begin{tabular}[t]{|l|l|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt bimams} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt toolname} & {\tt mybimams} &
+The name by which you want to refer to this tool; this is helpful when you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\
+{\tt msname} & {\tt bllac.ms} &
+Name of the flagged \aipspp\ phase calibrator measurement set 
+for which you want to
+re-generate the wideband data. \\  \hline
+\end{tabular}
+
+When you are done entering the above constructor parameters, \\
+press {\bf Create}.
+
+\medskip
+The GUI will morph into the {\tt bimams} tool window when the constructor
+is finished.
+
+\medskip
+\tipframe[0.7]{Again, you can tell the constructor is done when the button
+on the upper right in the \btoolmanager\ GUI, which used to say 
+``bimams,'' changes to ``{\bf bimams:mybimams}.''}
+
+\medskip
+
+\item Click on the `Function group' button on the left of the bimams tool
+GUI. From the drop-down list, select `spectral window'. A list of spectral
+window functions will appear below the button.
+
+\item Click on {\bf reavg} in the list of `spectral window functions'
+below the `Function group' button.
+
+\item Enter values for the function parameters:
+
+\begin{tabular}[t]{|l|c|p{0.5\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt reavg} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt out} &  &
+Output dataset --- {\bf Leave blank}. If left blank, it will modify the
+input dataset.   \\
+{\tt dosort}  &  {\tt True}  &
+Sort data when doing subqueries. Pull-down menu. Default is {\tt True}. Best
+bet is to leave at default. Set to False only if sure that data is already
+in order required by {\tt reavg}. \\
+\hline
+\end{tabular}
+
+When you are done entering the above function parameters, \\
+press {\bf Go}.
+
+%%% Bug below was corrected, APS tested that it works, hence removed.
+%\tipframe[0.9]{As of 2002 June 21, there is a {\bf bug} in the {\tt table}
+%module that makes reavg hang if {\tt dosort} is left at the default value
+%of {\tt True}. {\bf For the time being}, set {\tt dosort} to
+%{\tt False} --- mirfiller should have filled the data in the correct
+%format, so things should work.}
+%%%
+
+\end{itemize}
+
+The above procedure will re-generate the wideband data. You are now
+ready to calibrate the data.
+
+\bigskip
+
+The above procedure to re-generate the wideband data can be carried out
+in glish using the following:
+\begin{verbatim}
+  include 'bimams.g';
+  mybimams:=bimams('bllac.ms');
+  mybimams.reavg();
+  mybimams.done();
+\end{verbatim}
+
+%%% Bug below was corrected, APS tested that it works, hence removed.
+%As mentioned above, set {\tt dosort} to {\bf False} for now, until the
+%bug in the table module that makes it hang is dealt with. It works
+%because the data filled by mirfiller are in the same order as required
+%by the {\tt reavg} routine.
+%%% 
+
+\providecommand{\briggsURL}{http://www.aoc.nrao.edu/ftp/dissertations/dbriggs/diss.html}
+
+\section{\label{cch}Calibration of uv data}
+
+
+{\em Anuj Sarma}
+
+\subsection{\label{cover}Overview}
+
+This section will answer the following questions concerning
+the calibration of your uv data:
+
+% ***********************************************************************
+% Index
+%
+\begin{itemize} 
+
+\item[\ref{cabsolute}] How do I calibrate the data?
+%\dotfill\ \pageref{cabsolute}
+\item[\ref{glishCal}] How do I carry out the above steps to calibrate the 
+	data using glish? 
+%\dotfill\ \pageref{glishCal}
+%
+% Future items
+%\item[\ref{cgain}] How do I create a gain table?
+%\dotfill\ \pageref{cgain}
+%\item[\ref{cselfcal}] How do I self-calibrate the data?
+%\dotfill\ \pageref{cselfcal}
+%\item [\ref{cbandpass}] How can I apply a bandpass correction?
+%\dotfill\ \pageref{cbandpass}
+%
+\end{itemize}
+% ***********************************************************************
+
+\bigskip \noindent
+[A work in progress. Future updates will include interactive editing
+of gain tables, self-calibration, and bandpass correction.]
+
+\subsection{\label{cabsolute} How do I calibrate the data?}
+
+Calibration of BIMA data is done using the {\tt bimacalibrater} tool.
+Before using this tool, make sure that the following steps have been
+completed. 
+
+
+\begin{itemize}
+
+\item First, apply the linelength correction to the data in miriad. A
+procedure to apply the linelength correction is under development in
+\aipspp. Watch this space for updates!
+
+\item Load the data into \aipspp\ using the \mirfiller\ tool
+(see \S\ \ref{fmfill}). 
+
+\item The data may be edited and flagged using {\bf autoflag} (\S\ 
+\ref{uvflag}). Flag only the calibrator data at this stage. Do not flag
+the target source data; due to a bug in \aipspp, the
+calibration routines will not work if you flag the target source data
+before the calibration. (The target source data should be flagged after
+the calibration routines below have been run.)
+
+\item After flagging the calibrator data, use the {\tt reavg} routine in
+the bimams tool to recalculate the wideband data for the calibrator. This
+is described in \S\ \ref{wbrecalc}.
+
+\end{itemize}
+
+Now, you are ready to start calibrating the data. Below, we describe
+the steps to calibrate BIMA data based on observations of a phase
+calibrator. In the example below, the phase calibrator is named ``bllac''
+(hence the \aipspp\ measurement set is {\bf bllac.ms}) and the target
+source is named ``cepa.''
+
+\bigskip
+
+Go the the `Manager' view in the \btoolmanager\ and make the
+following selections.
+
+\begin{itemize}
+
+\item Create a {\tt bimacalibrater} tool:
+
+\tmconstructor{bima}{bimacalibrater}{bimacalibrater}{bimacalibrater}
+
+\bigskip
+
+\tipframe[0.7]{When you press the green {\bf Create} button, you will get
+an additional button named `bimacalibrater' to the right of the `Manager'
+and `Tools in use' buttons, and the view of the constructor shown (in part)
+below.}
+
+\bigskip
+
+\item Enter the constructor parameters:
+
+\medskip
+\begin{tabular}[t]{|l|l|p{0.5\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Constructor:} \tt bimacalibrater} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt toolname} & {\tt mybimacalibrater} &
+The name by which you want to refer to this tool; this is helpful when you
+want to refer to the tool from the Glish command line or if you have
+more than one tool of the same type. \\  \hline
+{\tt targets} & {\tt cepa.ms} &
+The name of the target source dataset.  \\  \hline
+{\tt phcals} & {\tt bllac.ms} &
+The name of the phase calibrator dataset.  \\  \hline
+{\tt pbcals} &  &
+The name of the passband calibrator --- leave blank. \\  \hline  
+{\tt fcals} &  &
+The name of the flux calibrator --- leave blank. \\  \hline
+{\tt targetnames} & {\tt narrow} &
+Your nickname for the target source. \\  \hline
+{\tt phcalnames} & {\tt wide} &
+Your nickname for the phase calibrator.  \\  
+\hline
+\end{tabular}
+
+\medskip
+
+When you are done entering the above parameters, \\
+press {\bf Create}. 
+
+\medskip
+The GUI will morph into the {\bf bimacalibrater} tool window when the
+constructor is done.
+
+\bigskip
+
+\tipframe[0.7]{You can tell the constructor is done when the button on
+the upper right in the \btoolmanager\ GUI, which used to say 
+``bimacalibrater,'' changes to ``{\bf bimacalibrater:mybimacalibrater}.''}
+
+\bigskip
+
+\item In the list under `all functions' on the left of the 
+{\tt bimacalibrater} tool, click on {\bf setjy}. On the right, you will
+get a list of parameters that need to be set. An example is given below.
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt setjy} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt sources} & {\tt wide} &
+Phase calibrator nickname. \\  \hline
+{\tt fluxdensity} & {\tt [1,0,0,0]} &
+Flux density for the phase calibrator in Jy. For now, you have
+to fill in this value by yourself, e.g., we have filled in a value of 1.0 for
+the I-flux. A routine to get this value automatically from a calibrator
+table is under development. \\  
+\hline
+\end{tabular}
+
+When you are done filling in all the desired options in setjy, \\
+press {\bf Go}.
+
+\tipframe[0.7]{The setjy procedure will set the specified flux values for
+the phase calibrator in each spectral window. Hence, this will take some
+time. During this time, the `Running: abort?' button next to the `Go'
+button will turn to and remain {\bf red}. When the function is done, the
+button will no longer be highlighted, and the logger window will show the
+message: ``Finished imager::setjy.''}
+
+\bigskip
+
+\item Now, you have to set the parameters to solve for the gains. Again,
+in the list under `all functions' on the left hand side, click on 
+{\bf setsolve}. Enter the values for the parameters on the right hand side.
+Sample values are given below.
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt setsolve} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt sources} & {\tt wide} &
+Phase calibrator nickname. \\  \hline
+{\tt type} & {\tt G} &
+Component type = G-Jones. This is a pull-down menu. \\  \hline
+{\tt t} & {\tt 600} &
+Solution interval in seconds. \\  \hline
+{\tt phaseonly} & {\tt True} &
+Only solve for phases. Pull-down menu. \\   \hline
+{\tt refant} & {\tt 2} &
+Reference antenna. Note {\tt bimacalibrater} has 1-based numbering, so 
+antenna 2 means antenna 2, \emph{not}\ antenna 3.  \\  \hline
+{\tt table} & {\tt gcal} &
+Output calibration table name. \\
+\hline
+\end{tabular}
+
+When you are done filling in all the desired options in setsolve, \\
+press {\bf Go}.
+
+\bigskip
+
+\item Solve for the selected calibration components that you set above.
+In the list under `all functions' click on {\bf solve}. 
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt solve} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt sources} & {\tt wide} &
+Phase calibrator nickname. \\
+\hline
+\end{tabular}
+
+press {\bf Go}.
+
+\item To look at the solutions, click on {\bf plotcal} under `all functions'
+and enter values for sources (wide) and tablename (gcal), and choose the 
+plottype (AMP or PHASE) in the list of parameters that comes up on the right.
+Pressing {\bf Go} will give you the desired plot.
+
+\item Transfer the calibration components to a new table. To do this,
+click on {\bf transfer} under `all functions' on the left hand side of
+the {\tt bimacalibrater} tool. 
+
+\bigskip
+
+\tipframe[0.7]{Transfer of the calibration components to a new table is
+required because a BIMA target source and calibrator may differ in the
+number of spectral windows. Transfer to a new table ensures that the 
+\aipspp\ gain table is set up to be consistent with the number of spectral
+windows in the target source.}
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt transfer} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt outtable} & {\tt gcal.xfer} &
+Output table in which to write calibration solutions. \\ \hline
+{\tt intable} & {\tt gcal} & 
+Input table generated by {\tt solve} step. \\  \hline
+{\tt spwmap} & {\tt [ ]} & 
+Array describing the spectral window mapping from input window to output
+window. Should be able to leave at default. The function is intelligent
+enough to figure out how spectral windows need to be mapped from input
+to output. \\  \hline
+{\tt calibratees} & {\tt narrow} & 
+Nicknames of sources to which the solutions will be applied, e.g., if you
+have more than one source, you can include them all here with their given
+nicknames (or roles, e.g., targets). If you specify more than one source
+here, then all must have the same spectral window configuration, otherwise
+run transfer multiple times. \\
+\hline
+\end{tabular}
+
+When you are done setting the above inputs, \\
+press {\bf Go}.
+
+\bigskip
+
+\item Next, set up how the calibration components will be applied to the
+target source. On the left hand side under `all functions' click on 
+{\bf setapply}. Sample inputs are given below.
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt setapply} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt sources} & {\tt narrow} & 
+Target source nickname. \\  \hline
+{\tt type} & {\tt G} &
+Component type = G-Jones; pull-down menu. \\  \hline
+{\tt t} & {\tt 0.0} &
+Interpolation interval in seconds. Leave at default (0.0). \\  \hline
+{\tt table} & {\tt gcal.xfer} &
+Input calibration table. Should be the output table given by 
+{\tt transfer}. \\  \hline
+{\tt select} &   &
+Leave at default, which is blank. \\
+\hline
+\end{tabular}
+
+When you are done setting the above inputs, \\
+press {\bf Go}.
+
+\item Finally, apply the calibration to the target source. Click on
+{\bf correct} under `all functions' on the left hand side, and fill in the
+inputs on the right hand side, like the sample below.
+
+\medskip
+\begin{tabular}[t]{|l|c|p{0.6\textwidth}|}
+\cline{1-2}
+\multicolumn{2}{|c|}{\emph{Function:} \tt correct} \\ \hline
+\emph{Parameter} & \emph{Sample Value} & \emph{What it means} \\ \hline\hline
+{\tt sources} & {\tt narrow} &
+Nicknames of target source(s) where calibration components are to be
+applied. \\
+\hline
+\end{tabular}
+
+press {\bf Go}.
+
+
+
+\end{itemize}
+
+The calibration is now done. 
+%Imaging of the data is described in Chapter \ref{ich}. 
+Remember, you must flag the target source data after calibration
+and before imaging (meaning \emph{now}, see Chapter \ref{ech}) --- this
+will continue to be the procedure until the bug in \aipspp\ is removed. 
+
+
+% *************************************************************************
+\subsection{\label{glishCal} How do I carry out the above steps to calibrate
+the \emph{uv}-data using glish?}
+
+All the steps described in the last section can be done in glish. First,
+make sure you are in the glish environment (which is started by typing
+``glish'' at the command line prompt) and that you have loaded the data
+into \aipspp, flagged only the phase calibrator data, and regenerated
+the wideband data for the flagged phase calibrator, as described 
+in the last section.
+
+\begin{itemize}
+
+\item Before using the bimacalibrater tool, define the following two
+quantities. Such a pre-definition is given here as an example; it will
+allow you to ignore the code and make changes at the top of the file
+when using glish scripts.
+\begin{verbatim}
+  RefAnt := 2; 
+  IntTime := 600;
+\end{verbatim}
+
+\tipframe[0.75]{The {\bf bimacalibrater} tool has 1-based numbering, hence
+{\tt RefAnt := 2}\ means we are choosing antenna 2 as the reference 
+antenna, and {\bf not} antenna 3.}
+
+\item Now, include the bimacalibrater script:
+\begin{verbatim}
+  include 'bimacalibrater.g';
+\end{verbatim}
+
+\item Create the bimacalibrater tool. To do this, specify the target source
+name and the name of the phase calibrator. You can also specify aliases
+for the target and calibrator, using ``targetnames'' and ``phcalnames.''
+\begin{verbatim}
+  bc := bimacalibrater(targets='cepa.ms',targetnames='narrow',
+                          phcals='bllac.ms', phcalnames='wide');
+\end{verbatim}
+
+\item As mentioned before, you have to manually set the flux density for the
+calibrator for now. An automatic way to do this is under development.
+\begin{verbatim}
+  bc.setjy(fluxdensity=[1.0,0,0,0]);
+\end{verbatim}
+
+\item Set the parameters to solve for the gains. The solutions will be written
+into a table named ``gcal.'' You have to specify the reference antenna
+and the integration time; in this example, we have set these quantities
+in the pre-definition above, so we just call these quantities below.
+\begin{verbatim}
+  bc.setsolve(type='G',refant=RefAnt,table='gcal',t=IntTime,phaseonly=T);
+\end{verbatim}
+
+\item Now solve for the selected calibration components above.
+\begin{verbatim}
+  bc.solve();
+\end{verbatim}
+
+\item You may now examine the ``gcal'' table using {\tt bc.plotcal}. If
+things look OK, transfer the calibration components from one table to
+another. As mentioned before, this is required because a BIMA target
+source may have a different number of spectral windows from the calibrator. 
+\begin{verbatim}
+  bc.transfer(outtable='gcal.xfer',intable='gcal');
+\end{verbatim}
+
+\item Set up how the calibration components will be applied to the target
+source.
+\begin{verbatim}
+  bc.setapply();
+\end{verbatim}
+
+\item Apply the calibration to the target source:
+\begin{verbatim}
+  bc.correct();
+\end{verbatim}
+
+\item The calibration is now complete. Close the tool. 
+\begin{verbatim}
+  bc.done();
+\end{verbatim}
+
+\end{itemize}
+
+
+
+
+%\section{\label{cgain} How do I create a gain table?}
+
+%\section{\label{cselfcal} How do I self-calibrate the data?}
+
+%\section{\label{cbandpass} How can I apply a bandpass correction?}
+
+
+
+
+
+

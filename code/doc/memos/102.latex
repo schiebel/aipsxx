@@ -1,0 +1,925 @@
+%              An Initial Design of Major  AIPS++ Objects
+%
+% LaTeX Document file:  
+%     /tmp_mnt/baboon/aips/pgmr/rhjellmi/aips++specs/initdesign.tex
+%
+%  Starting with hand-scribbled notes made by RMH Jan. 25, 1992
+%  First TeX version by RMH Jan. 25
+%  Rewriting and additions by RMH Jan. 26
+%  Spell checking, reorganization, and rewriting by BG Jan. 26
+%  Additions by RMH Monday morning, Jan. 27-31
+
+%  Major changes due to Jan. 31 discussions implemented
+\documentstyle[11pt]{article}  % YOUR INPUT FILE MUST CONTAIN THESE TWO LINES 
+\renewcommand{\baselinestretch}{1.0}
+\newcommand{\subsubsubsection}[1]{{\em #1}}
+\textwidth 6.25in
+\textheight 9.0in
+\topmargin -1cm 
+\oddsidemargin 0.15in
+\evensidemargin 0.15in
+\marginparwidth 0.5in
+\begin{document}          % Command prefacing all document text
+\hfill{January 31, 1992}
+\centerline{\bf An Initial Design for Major  AIPS++ Objects
+}
+\vskip 0.3cm
+\centerline{\it R.M. Hjellming and B.E. Glendenning}
+\vskip 0.3cm
+\centerline{National Radio Astronomy Observatory\footnote{ The
+National Radio Astronomy Observatory is operated by Associated
+Universities, Inc., under a cooperative agreement with the National
+Science Foundation.}}
+
+\tableofcontents
+
+\section{Introduction}
+
+  This document is intended to be a possible starting point in
+designing the object/class concepts for the AIPS++ software being
+developed by representatives of the AIPS++ consortium in
+Charlottesville, VA.  The Jan. 21-24, 1992, course in advanced C++ and
+OOP design made it clear that an overall view of the major classes in
+a design is the starting point for any object-oriented software
+system.  We hope to help this part of the design process by describing
+a tentative list and description of major and minor classes.  We
+propose extensive discussion and evolution of these descriptions
+before different sub-groups of the consortium implementors focus on
+their areas of responsibility.
+
+{\bf This document was never completed.  It was still incomplete when
+the ideas and
+approach were rapidly replaced by the work and documentation of the
+Green Bank analysis and design in early February 1992.  We are
+distributing this as is was because it provides context for the work
+that replaced it.}
+
+   These objects/classes were derived from the astronomer's point
+of view. The astronomer studies the universe based upon known
+paradigms and the universe's observables, as governed by the radiative
+transfer through emitting, absorbing and scattering matter which
+determines the radiation on the celestial sphere. This radiation is
+then measured by instruments on observing platforms like the surface
+of the Earth or space vehicles. These measurements are altered to
+attempt to correct for instrumental, atmospheric, and other
+corruptions. These measurements are then used to make arguments
+about the nature of a part of the universe.
+
+  The underlying concept of this document is the attempt to use an
+English language-oriented, verbal syntax to make initial descriptions
+of classes and their important properties. Given the diverse set of
+users and programmers who must read and modify the design, we do not
+think that it's practical to require that the design be cast into a
+more formal form, such as predicate calculus. The syntax we plan to
+use is the standard discussed in the course, and used in some form in
+most discussions of object-oriented software development:
+
+\begin{verbatim}
+     An   <X>  IsA   <Y>   that,
+        HasA  <a list of parameters and components>
+        Does  <a list of things>
+        and Uses <a list of other objects/classes>
+     Comments: <supplementary information and things to consider>
+\end{verbatim}
+
+The C++/OOP course showed that this is a useful starting point that
+can be understood by both astronomers and programmers without
+requiring a more detailed knowledge of object-oriented programming or
+the language of implementation. For this reason we believe that the
+initial design should evolve entirely in this form, leaving it to the
+programming experts to turn this into a graphical representation (such
+as PILOT) and ultimately into C++.  It will probably, however, be
+necessary at a relatively early time to express parts of the design in
+mathematics; a good example of this is the clear relation between the
+mathematical description and class definition of a visibility
+observation in the Cornwell and Shone data structures paper.
+
+  In Appendix A we briefly describe the sense in which the IsA, HasA,
+Does, and Uses corresponds to some of the object-oriented analysis and
+design constructs.
+
+  It would be useful if the user specifications could be transformed
+into a form in which as many specifications as possible are described
+in these terms.  Careful attention to using names defined in terms of
+other objects/classes should provide all the identification necessary to
+associate specification elements with the classes to be implemented.
+
+  Since this document is only a 0th order design, being put together
+in several days, we mainly try to describe major
+objects (classes) and their properties.  Lesser constructs are
+included only to give some beginning ideas on how things might
+proceed. 
+
+Note that the positioning of the following sections is not always
+based on ``IsA'' or ``HasA'' relationships, but is used to group
+logical ideas together. 
+
+\section{\bf The Observable Universe}    
+
+{\bf IsA} collection of matter and radiation  {\bf \hfill that}
+
+{\bf Has} \begin{itemize}
+\item emission, absorption, and scattering processes determined by
+the physical properties of matter consisting of
+electrons, ions, atoms, molecules and solids 
+\item the formal solution to the equation of radiative transfer 
+           \end{itemize}
+
+{\bf Does} \begin{itemize}
+\item determination of the radiation field that reaches the
+\item ``make'' observable ``objects'' defined by their appearance in the form
+of radiation appearing on the celestial sphere
+\item infer unseen ``objects'' from their effects on observable objects, or
+other theorizing
+celestial sphere
+           \end{itemize}
+
+\noindent{\bf Comments:} A goal defining the observables that are most of what the astronomer
+must observe and analyze, and indicating what the theoretician or
+interpreter must basically compute in order to make comparisons of
+models and observations.  Classes derived from these concepts will
+underly computational modeling of observables.
+
+\subsection{\bf Measurements}
+\subsubsection{\bf A Field}
+{\bf IsA} abstract class of data types
+{\bf \hfill that}
+
+{\bf Has} \begin{itemize}
+\item coordinates for each piece of data
+\item tranformation properties appropriate to the data type
+          \end{itemize}
+{\bf Does}
+contain the description of data of the appropriate type as a function
+its coordinates
+
+\noindent {\bf Comments:} Applicable to an number of coordinate dimensions.
+Data types are elementary (real, integer, character, string) or physical
+(IQUV, brightness temperature, any measured or inferred quantity)
+
+\subsection {\bf A Single Disk Sky Data Field}    
+
+{\bf IsA} field of measured total power
+{\bf \hfill that}
+
+{\bf Has} \begin{itemize}
+\item detected, but uncalibrated total power units for each field coordinate
+\item associated seconday telescope data 
+\item at least one coordinate of time
+\item optional frequency coordinate if processed by a spectrometer
+\end{itemize}
+
+{\bf Does} contain uncalibrated single dish, total power measurements
+
+\noindent {\bf Comments:}  Raw single dish data that requires calibration
+before acquiring full significance as measurements of sky surface brightness
+
+\subsubsection {\bf A Single Disk Sky Image Field}    
+
+{\bf IsA} field of measured calibrated total power
+{\bf \hfill that}
+
+{\bf Has} \begin{itemize}
+\item calibrated surface brightness measurements based on a fit to 
+a model for uncalibrated field data for a source of known properties
+\item associated seconday telescope data 
+\item at least one coordinate of time
+\item optional frequency coordinate if processed by a spectrometer
+\end{itemize}
+
+{\bf Does} describe an image of the sky as convolved with antenna
+beam and frequency bandpass functions
+
+\noindent {\bf Comments:}  Requires data processing of raw calibrator data
+to determine calibration parameters and application of these
+calbration parameters
+
+\subsubsection {\bf A pixel}    
+
+{\bf IsA} single point subset of an image field of any dimensions       
+{\bf \hfill that}
+
+{\bf Has} units appropriate to the image type
+
+{\bf Does} represent the meaning, nature, etc., of image data
+
+{\bf and Uses} IQUV, complex, real, integer, etc., data types    
+
+\noindent {\bf Comments:} The meaning of pixel data should normally be
+conserved upon ``rotation'' of the coordinate system in which these
+data are represented.
+
+
+ \subsubsection {\bf A  Sky Image}    
+
+ {\bf IsA} a field of ModeledSkyData
+
+ \noindent{\bf Comments:} A fundamental class that, on one extreme, is
+ the single pixel output of total power systems and on the other hand
+ becomes the computer-processed image of multiple pointings of
+ single dishes, arrays, etc. An image might be a pixel array (in
+ N-dimensions), a photon list, set of scans that irregularly sample a
+ part of the celestial sphere, some other measure of the radiation
+ distribution on a part of the celestial sphere, or some other system-
+or user-defined data type which is useful to process and display  with image
+handling tools.
+
+ \subsubsection {\bf Antenna Beam Pattern = Point Spread Function}
+
+ {\bf IsA} image of a point source as sampled by a single dish, {\bf or}
+
+ \noindent {\bf IsA} 
+ power distribution representation of the sensitivity pattern
+ of an antenna-feed system
+
+ {\bf \hfill that}
+
+ {\bf Has} two-dimensional angular distribution pattern with
+ half-power-beam-width, null locations, and real differences
+ between intended and real pointing positions that are major parameters
+ affecting observations
+
+  {\bf Does} \begin{itemize} 
+ \item weighting of instantaneous sampling of radiation on the celestial
+ sphere are detected by a particular telescope-feed combination
+ \item introduce image errors due to initially unknown differences between
+ true and assumed pointing positions
+	    \end{itemize}
+
+ {\bf and Uses} antenna, and feed
+
+ \noindent {\bf Comments:}  Special case of the image class that may be used to
+ correct images and which strongly limits observations of sources
+ the size of the main antenna beam, or larger.  
+
+ \subsubsection {\bf A Synthesized Beam Pattern = Point Spread Function}    
+
+ {\bf IsA} image of an unresolved source for telescope array observations
+ {\bf \hfill that}
+
+ {\bf Has} IQUV($\alpha ,\delta$) distribution largely described by
+ central beam shape/size and sidelobe pattern
+
+ {\bf Does} \begin{itemize} 
+ \item determine the instantaneous and averaging function with which
+ observed radiation is sampled by arrays
+ \item have theoretical properties for ideal instrumental conditions
+ \item have real defects when there are real instrumental defects,
+ atmospheric distortions, or time variations in sources
+	    \end{itemize}
+
+ {\bf and Uses} array geometry, observing platforms, observing situation,
+ instrumental properties
+
+ \noindent {\bf Comments:} Special and important case of the image class.
+
+ \subsubsection {\bf A Coherence Function Data Set}    
+
+ {\bf IsA} collection of correlation multiplier data from one or more
+ aperture synthesis arrays
+ {\bf \hfill that}
+
+ {\bf Has} meaning of instances of two-dimensional transforms of
+ IQUV($\alpha \delta, \nu$, t) on the celestial sphere as averaged
+ and sampled by an array of telescopes and their associated electronics
+ with delay with respect to an assumed phase reference position and 
+ correlation with specific spectral and averaging characteristics
+
+ {\bf Does} \begin{itemize} 
+ \item give data on two-dimensional fourier transform sampling of
+ radiation on the celestial sphere as weighted and selected by the
+ antenna beam pattern and properties of the feed-to-correlator
+ systems
+ \item  include effects of equipment malfunctions at both known and
+ unknown times
+ \item couple the sampling of the celestial sphere to the geometry and
+ motions of telescope observing platforms
+ \item not contain any (or good) information about radiation on the 
+ celestial sphere outside the antenna beam, or corresponding to fourier
+ components outside (or inside) the sampled u-v plane
+	    \end{itemize}
+
+ {\bf and Uses} telescopes, observing platforms, telescope arrays
+
+ \noindent {\bf Comments:} Fundamental class in which special correlation
+ sampling of radiation on the celestial sphere produces measurements
+ of fourier components with complicated dependence on instrumental,
+ atmospheric, etc., circumstances of the observations.
+
+
+\section {An Astronomer}
+
+{\bf IsA} scientist studying the universe      {\bf \hfill that}
+
+{\bf Has} ideas/models of sub-structures of the universe, and telescopes
+to gather information about these sub-structures
+
+{\bf Does} \begin{itemize} 
+\item Conception and computation of models for the behavior of 
+astronomical objects
+\item Preparation of proposals to use telescopes to gather specific data on
+astronomical objects for specific scientific projects
+\item Planning and control if the observing schedule 
+and its
+parameters for telescopes obtaining data -- sometimes using programs
+that prepare for, or guide, the observing and data collection process
+\item Analysis of data from telescopes in real-time, or thereafter, to
+determine the observable properties of ``objects'' in the observable
+universe that appear on the celestial sphere, by determining IQUV as a
+function of position ($\alpha , \delta$), frequency ($\nu$), and time
+($t$) in the form of images, spectra, spectral image cubes, time
+series sampling, or other
+useful forms of astronomical information
+\item Utilization of telescope data, and other information, from one or
+more sources and telescopes,
+to answer astronomical questions about structures and sub-structures
+of the universe
+\item Publication and other forms of communication of scientific results and
+ideas in the form of plots, pictures, and other display in the context
+of papers, books, and public presentations
+                   \end{itemize}
+
+{\bf and Uses} astronomical paradigms, new ideas, measurements of the
+observable universe, telescopes,
+and telescope arrays
+
+\noindent{\bf Comments:} This should be basically a user description
+of things that relate to the purposes that AIPS++ should serve.
+  
+
+
+\section{An Instrument}
+{\bf IsA} a device that produces measurements of the physical universe
+{\bf \hfill that}
+
+ {\bf Does} \begin{itemize}
+ \item attempts to measure one or more physical attributes of the
+ universe
+ \item records the measurements, possibly after applying some
+ instrumental corrections, averaging, {\em etc.}
+ \item produces a log of instrumental status
+ \end{itemize}
+
+{\bf and Uses} An observing schedule, source list
+
+ \noindent{\bf Comments:} This is a very general concept of an
+ instrument, meant to cover even non-radiation measurements, for
+ example electron densities returned by a space probe.
+
+ \subsection{\bf A Telescope}
+
+ {\bf IsA} an instrument that instrumentally samples radiation from
+ the celestial sphere and other nearby objects  {\bf \hfill that}
+
+ {\bf Has} total power measurement capabilities in different frequency
+ channels, a
+ control system, an observing schedule, an operations staff,
+ and data recording systems 
+
+ {\bf Does} \begin{itemize} 
+ \item sampling of radiation from the celestial sphere
+ \item determination of some of the properties of observations made by
+ the astronomer
+ \item provide total power data for selected frequencies, integration
+ times, and spectral channel output to either data recording systems or
+ array-oriented data processing hardware
+
+	    \end{itemize}
+
+ {\bf and Uses} an antenna located on an observing platform, feeds, 
+ analog signal processing, timing systems, spectrometers,
+ samplers, digitizers, and on-line data processing systems
+
+ \noindent{\bf Comments:} This class should describe the functions of
+ eye and all radio, optical, IR, UV, X-ray, etc. telescopes.
+
+ \subsubsection {\bf A Telescope Control and Data Handling System}    
+
+ {\bf IsA} control and data processing system for an antenna and its
+ electronic components
+ {\bf \hfill that}
+
+ {\bf Has} instrument control information and total power/spectrometer
+ data output
+
+ {\bf Does} \begin{itemize} 
+ \item points antenna and controls settings of optics/feeds
+ \item controls parameters of the electronics
+ \item controls the observing process using 
+ \item potential for recording of total power, spectrometer, etc. data
+  \item potential for passing total power data to array data handling systems
+  \item timing and instrumental performance data recording systems
+	     \end{itemize}
+
+ {\bf and Uses} antenna, spectrometers, timing systems, and on-line
+ computer systems
+
+  \noindent {\bf Comments:} Needs to cover both single dish observing
+  and more global use and use of antennas in arrays
+
+ \subsubsection{\bf An Antenna}
+
+ {\bf IsA} radiation collection and focusing device  {\bf \hfill that}
+
+ {\bf Has}  a collecting surface, optics, and location for feeds or detectors
+
+ {\bf Does} \begin{itemize} 
+ \item collection and focusing of radiation on feeds or detectors
+ \item determination of the principal regions from which radiation is
+ received
+ \item determination of some of the properties of observations made by
+ the astronomer
+ \item deliver focused radiation, with some efficiency and sensitivity
+ pattern, to feeds, arrays of feeds, or focal plane arrays
+	    \end{itemize}
+ 
+ {\bf and Uses} a location on an observing platform
+
+\noindent{\bf Comments:} This class should describe the certain functions
+ of the eye and all radio, optical, IR, UV, X-ray, etc. telescopes.
+
+
+  \subsubsection {\bf A Feed}    
+
+  {\bf IsA} radiation collector and transformer      {\bf \hfill that}
+
+  {\bf Has} reception solid angle, location on an antenna which is part
+  of a telescope, and
+  parameters for the reception and transformation of radiation   
+
+  {\bf Does} transformation of radiation into the form of waves
+  propagating in a wave guide
+
+  {\bf and Uses} one type of FeedDesign
+
+  \noindent{\bf Comments:} Defines the coupling between optical elements
+  of a antenna and signal in a waveguide, is the last element
+  determining antenna pattern and
+  polarization beam properties, causes selection of frequency bands,  and 
+  is starting point of subsequent signal transmission.
+
+  \subsubsection {\bf A Front End}    
+
+  {\bf IsA} RF to IF signal transformer
+  {\bf \hfill that}
+
+  {\bf Has} frequency selection range, internal calibration system,
+
+  {\bf Does} transformation of a waveguide signal to a voltage signal
+  that can be represented by V(t)
+
+  {\bf and Uses} telescopes, feeds, and other electronic systems
+
+  \noindent{\bf Comments:} 
+   Should reflect all the properties of the electronic systems
+  that affect data up to the point where samples the analog signals.
+
+  \subsubsection {\bf A Spectrometer}    
+
+  {\bf IsA} signal transformer 
+  {\bf \hfill that}
+
+  {\bf Has} number of frequency channels, channel bandwidth, spectral
+  sensitivity pattern.
+
+  {\bf Does} \begin{itemize} 
+  \item transformation of voltage signal to frequency
+  spectra as a function of time
+	     \end{itemize}
+
+  {\bf and Uses} a voltage signal V(t)      
+
+  \noindent{\bf Comments:} Applicable to single dishes and phased arrays
+  doing total power spectroscopy via filter-banks or any other technique.
+
+  \subsubsection {\bf A Fourier-Transform Spectrometer}    
+
+  {\bf IsA} spectrometer
+  {\bf \hfill that}
+
+  {\bf Has} number of frequency channels, channel bandwidth, spectral
+  sensitivity pattern.
+
+  {\bf Does} \begin{itemize} 
+  \item Fourier transform of lags with respect to a particular time
+  \item transformation of voltage signal to frequency
+  spectra as a function of time
+	     \end{itemize}
+
+  {\bf and Uses} a voltage signal V(t)      
+
+  \noindent{\bf Comments:} Specialization of the more general spectrometer.
+
+   \subsection{\bf A Telescope Array}
+
+   {\bf IsA} collection of telescopes
+   {\bf \hfill that}
+
+   {\bf Has} sets of telescope locations, control systems, data
+   transmission systems, timing systems, possibly delay/phasing,
+   and data recording or data input
+   to a central summing or correlation system, for operation as a phase
+   and/or correlation array
+
+   {\bf Does} \begin{itemize}
+   \item aperture synthesis observations of astronomical sources
+   \item production of phased array total power signals
+	      \end{itemize}
+
+   {\bf and Uses} telescopes, observing platforms, and the atmosphere
+
+
+   \noindent{\bf Comments:} Contains the properties of geometry and
+   operation of multiple telescopes whose data are directly or indirectly
+   combined for sum or correlation array operation with beam properties
+   determined by array geometry and the atmosphere over the array.
+
+  \subsubsection {\bf An Array Control and Data Handling System}    
+
+  {\bf IsA} data processing system for a number of telescopes that
+  accomplishes the phasing of total power data for phased array data and
+  the delay, sampling/digitization, correlation, averaging, and data
+  recording of visibility data
+
+  {\bf Has} 
+
+
+  {\bf Does} \begin{itemize} 
+  \item recording of total power, auto-correlation, and correlation data
+  for a system of telescopes
+  \item control the array observing process
+  \item supply timing data and instrumental performance data
+	     \end{itemize}
+
+  {\bf and Uses} telescopes, timing systems, 
+  samplers, delay systems, correlators, and on-line computer systems
+
+  \noindent {\bf Comments:} Needs to cover connected-array and VLBI
+  systems.  Needs more complexity than defined here and a clear
+  definition of input and output components.
+
+\subsubsection {\bf The Very Large Array (VLA)}    
+
+{\bf IsA} Radio Telescope Array    
+{\bf \hfill that}
+
+{\bf Has} \begin{itemize}
+\item 28 antennas with 25 m shaped parabolic reflector, rotating 
+hyperbolic sub-reflector at prime focus, 90 cm dipoles on
+sub-reflector, 20, 6, 3.6, 2. and 1.3 cm feed in circular feed ring at
+cassegrain focus
+\item circularly polarized feeds and duplicate and 50 MHz IFs for each
+frequency
+\item location between Magdelena and Datil, in New Mexico, with array
+center at latitude $34^{\circ} 04'43.497''$, longitude
+$107^{\circ}37'3.819''$ east, altitude 1800 m.
+\item antenna transporter system on twin railroad tracks with antenna
+stations for A (36 km), B (11 km), C (3.3 km), and D (1.0 km)
+configurations of 27 antennas each
+\item Cooled cryogenic receivers, mixers, etc. located in cabin
+``under'' the reflector surface, connected to feeds by waveguide, and
+converting IF, timing, and monitor data to 18-22 GHz range for
+transmission in separate wave guide channels for each of nine antennas
+on each arm
+\item array control and data handling from building at near center of
+array with monitor, timing, and control information sent via waveguide
+to each antenna for 1 millisecond out of a cycle of 52 milliseconds,
+and A \& B (RCP), C \& C (LCP) 50 MHz IF data, timing data, and
+monitor data sent remaining 51 milliseconds
+\item correlation array operation with digital delays, 2-bit sampling,
+correlation of 52 millisecond averages (with Walsh function
+correction) normally summed to 3 1/3 second or longer average
+visibilities and recorded on tape by on-line computers
+\item network of Modcomp on-line control computers with computer
+console monitoring and control by array operators, visibility and
+associated data written on magnetic tape in VLA ``archive format'',
+``monitor data'' written on magnetic tape independently
+\item Sun workstations etherneted to Modcomps for direct data access
+and nearly real-time date processing and display under development
+Jan.-July 1992
+          \end{itemize}       
+
+{\bf Does} \begin{itemize} 
+\item connected-element aperture synthesis in continuum and spectral
+line modes providing coherence function data sets and associated information
+\item phased array operation with use of 1 to 27 antennas for VLBI;
+high time resolution processing (HTRP) with special purpose polarization
+and averaging modules together with PC control and fast data sampling;
+and 3.6 cm telemetry reception from space craft
+           \end{itemize}
+
+{\bf and Uses} telescope array, array control and data handling system      
+
+\noindent {\bf Comments:} The particular properties of this array, and
+all other radio telescope arrays should be described here with
+complete parallelism matching the definition of the Telescope Array class.
+
+
+\section{Organizational}
+
+ \subsection {\bf An Astronomical Source}    
+
+ {\bf IsA} astronomer-defined region of radio emission on the celestial
+ sphere
+ {\bf \hfill that} 
+
+ {\bf Has} IQUV($\alpha,\delta,\nu$,t) characteristics that one measures
+ with telescopes telescopes and arrays, and an astronomer-defined angular geometry
+
+ {\bf Does} 
+ Display of its IQUV($\alpha,\delta,\nu$,t) properties on the
+ celestial sphere
+
+ {\bf and Uses} radiative transfer to celestial sphere, and through the
+ atmosphere
+
+ \noindent {\bf Comments:} Sources in catalogs, transient and other
+ types of source variability/motion, and other complications, should
+ all be covered in any definition of a source class.  While a fundamental
+ entity for study, the meaning of ``source" is both in the minds-eye
+ of the astronomer and heavily affected by a telescope's or telescope
+ array's spatial, frequency, and
+ time sampling capabilities.
+
+ \subsection {\bf A Calibrator}    
+
+ {\bf IsA} astronomical source
+ {\bf \hfill that}
+
+ {\bf Has} known properties in terms of IQUV distribution on the
+ celestial sphere and time stability
+
+ {\bf Does} play role of an observed source that produces data with
+ predictable characteristics that can be used to determine instrumental
+ calibration parameters
+
+ {\bf and Uses} radiative transfer to the celestial sphere, and 
+ through the atmosphere
+
+ \noindent{\bf Comments:} Calibrators will often be associated with a
+particular instrument or class of instruments.
+
+\subsection {\bf An Observational Database}    
+
+{\bf IsA} collection of measurements
+{\bf \hfill that}
+
+{\bf Has} observing schedule, source lists and qualifiers, measurement
+data, instrumental data, calibrators
+
+{\bf Does} \begin{itemize} 
+\item organizes the data by time, source name, measurement value and
+other criteria
+\item organizes the instrumental data
+\item enables data to be edited, and for calibration information to
+be applied to the raw data
+\item mechanisms for other databases to be concatenated, and for
+subsets of the database to be split off
+\item records a history of changes that are made to a database, and
+allows for some changes to be undone
+           \end{itemize}
+
+{\bf and Uses} instruments
+
+\noindent {\bf Comments:} This is an organizational structure that
+allows the astronomer access to all the measurement and instrumentals
+data from single or multiple observing sessions.
+
+\subsection {\bf An Archive}    
+
+{\bf IsA} collection of observational databases
+{\bf \hfill that}
+
+{\bf Has} measurements, information on instrumental parameters
+
+{\bf Does} \begin{itemize} 
+\item allow the astronomer to search for particular observations that
+might be of interest
+\item enable the astronomer to make and test statistical queries
+against the data contained in the archive
+           \end{itemize}
+
+{\bf and Uses} data collected from one or more instruments
+
+\noindent {\bf Comments:} This might be a complete archive of
+instrumental data, or a summary archive.
+
+\section{Positions}
+
+ \subsection {\bf An Observing Platform}    
+
+  {\bf IsA} position as a function of time {\bf \hfill that}
+
+  {\bf Has} a position in space and time 
+
+  {\bf Does} determination of the capabilities of on-board telescopes to make
+  observations at specific times for specific portions of the celestial sphere
+
+  {\bf and Uses} telescopes
+
+  \noindent{\bf Comments:} A basic abstraction should should cover the
+  properties of telescope-bearing objects like the earth, airplanes, balloons,
+  Earth-orbit space craft, solar system-orbit spacecraft, and eventually
+  the moon and more remote telescope platforms.
+
+  \subsubsection {\bf The Earth's Surface}    
+
+  {\bf IsA} observing platform      {\bf \hfill that}
+
+  {\bf Has}  latitude, longitude, and altitude parameters that determine
+  locations on the Earth that define an
+  Earth-based sidereal time and coordinate system, and the portions 
+
+  {\bf Does} determine position and observable sky for telescopes
+
+  {\bf and Uses} the Earth with its properties of rotation, nutation,
+  motion through the solar system, etc.  
+
+  \noindent{\bf Comments:} Simple in concept, but should contain all the
+  elements of geodesy that affect ground-based telescopes
+
+  \subsubsection {\bf A Space Vehicle}    
+
+  {\bf IsA} platform      {\bf \hfill that}
+
+  {\bf Has}  location and other properties determined by its position in
+  space (controlled by astronauts and/or ground-based control), and data
+  acquisition, transmission, and recording facilities      
+
+  {\bf Does} transportation telescopes for observations, local data 
+  recording, and/or transmission of
+  data to ground-based data acquisition systems
+
+  {\bf and Uses} an orbit  
+
+  \noindent{\bf Comments:} Contains all the positional and operational
+  capabilities of space telescopes, particularly orbiting VLBI telescopes.
+
+\subsection {\bf A Coordinate System}    
+
+{\bf IsA} mathematical description of position with respect to some
+reference frame
+{\bf \hfill that}
+
+{\bf Has}  geocentric, heliocentric, galactocentric, antenna-centered,
+array centered, etc., types of intrinsically triple coordinates
+
+
+{\bf Does} \begin{itemize} 
+\item specifies locations of physical objects and sources on the sky
+with respect to a reference frame
+\item allows conversions between coordinate systems, generally with a
+well-defined rotation matrix
+\item used for specification of antenna and array observing positions
+on the sky, and specification of pixel locations in an image
+\item used for specification of telescope locations in arrays
+           \end{itemize}
+
+{\bf and Uses} an astronomer or instrument selected default system
+
+\noindent {\bf Comments:} Many of coordinate systems are angular
+and confined to a surface (the celestial sphere). Some instruments
+have natural coordinate systems, all are defined by geodetic
+coordinate systems.
+
+\section{Radiation Propagation}
+
+  \subsection {\bf The Celestial Sphere}    
+
+  {\bf IsA} an apparent emitting surface for radiation       {\bf \hfill that}
+
+  {\bf Has} definition in terms of a apparent two-dimensional coordinate
+  system ($\alpha ,\delta$) with respect to a location on an observing
+  platform    
+
+  {\bf Does} determination of the apparent angular geometry of the
+  observable universe
+
+  {\bf and Uses} the radiative transfer properties of the universe and an
+  observing platform
+
+  \noindent{\bf Comments:} The focal point of the geometry of the
+  observing process that couples telescope location to the observational
+  coordinate system. For far-field measurements, will need a
+  representation for near-field.
+
+  \subsection {\bf The Earth's Atmosphere}    
+
+  {\bf IsA} special structure of absorbing, emitting, and scattering matter      {\bf \hfill that}
+
+  {\bf Has} radiative transfer properties and changing structure 
+
+  {\bf Does} \begin{itemize} 
+  \item Determination of ground-based observing windows for radiation
+  \item Introduction of changes in radiation observed by telescopes that
+  affect the apparent resolution and imaging properties of telescopes
+  and arrays of telescopes
+  \item Is a environment that can be studied by telescopes through
+  observations of sources with known properties
+	     \end{itemize}
+
+  {\bf and Uses} atmospheric structure, frequency, location on the
+Earth's surface and a time
+
+\noindent{\bf Comments}: Can be based on a model, observations, or
+both. 
+
+
+ \section {\bf A Data Analysis System}    
+
+{\bf IsA} combination of computer hardware and software for processing
+data from telescopes and optionally comparing these data and their
+products with theoretical models and results from other telescopes
+{\bf \hfill that}
+
+{\bf Has} flexible data input and output, and a powerful, flexible,
+easily programmable, and user-oriented software system
+
+{\bf Does} \begin{itemize} 
+\item serve the data processing needs of the Astronomer class
+\item provide data analysis capabilities at telescopes or telescope
+arrays whenever feasible
+\item support the operation, de-bugging, and maintenance of telescopes
+and arrays of telescopes
+\item support remote telescope observing and data analysis
+\item provide data reduction facilities for users at their diverse
+universities, institutes, etc.
+           \end{itemize}
+
+{\bf and Uses} telescope data handling systems, array telescope data
+handling systems, computers, software tools, and the ideas
+of astronomers
+
+\noindent {\bf Comments:} Describes general data analysis needs
+
+
+\subsubsection {\bf AIPS++}    
+
+{\bf IsA} data analysis system
+{\bf \hfill that}
+
+{\bf Has} user interface, tools, tasks, displays, etc.
+
+{\bf Does} what consortium members, and users want
+
+{\bf and Uses} telescope, telescope array data, software libraries,
+and compatible computer hardware
+
+\noindent {\bf Comments:}  Describes the specific functionality of
+AIPS++ with respect to data sources, users, and its role in the
+software for consortium members and users. 
+
+\section{Appendix A}
+
+   For those interested in the translation of the {\bf IsA, HasA, Does, and
+Uses} syntax to the definition of classes and related constructs, 
+it is worth cross-referencing these to terminology used
+by other authors. 
+
+   The initial idea for this syntax came from the course (and course
+notes) presented to us by Tom Murphy for Semaphore Training.  In this course he
+used an abbreviated form of the graphical language described by
+Ackroyd and Daum (1991) that matched well with the this terminology.
+However, an even closer corespondence is found with the analysis and 
+graphical notation of Coad and Yourdon (1991).  In the Coad-Yourdon
+system the basic triad is
+Class-Attributes-Services, which is essentially the same as the
+Class-HasA-Does syntax we are using, but the latter is more naturally
+suitable to English language ``sentences''.
+
+   In order to have more complete information we have added the Uses
+construct, making a quartet of {\bf Class-HasA-Does-and Uses}, so
+there is a way to indicate that the object/class being discussed 
+makes use of the properties of
+other objects/classes.  
+
+   Finally, we add {\bf Comments} so extra
+information that does not initially fit into this syntax can be
+supplied.  Particularly because these definitions will evolve, we want
+people to concentrate more on what the objects/classes represent than
+on whether all the details of the words and syntax are ``right''.
+Eventually they need to be agreed upon, but at these early stages of
+the project discussions of content are more important.
+
+   Figures 1 and 2 use the Coad-Yourdon diagrammatic scheme to related
+some of the ``classes" discussed in this document. 
+\section{References}
+
+\noindent Ackroyd, M. and Daum, D. 1991, {\it Journal of
+Object-Oriented Programming}, {\bf 3}(5), 18-28.
+
+\noindent Coad, P. and Yourdon, E. 1991, {\it Object-Oriented
+Analysis}, Second Edition {Prentice-Hall: Englewood Cliffs)
+
+\end{document}            % Last command in LATEX document file
+
+
+
+
+
+
+
+
+
+
+

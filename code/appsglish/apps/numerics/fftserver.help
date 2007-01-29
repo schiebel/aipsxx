@@ -1,0 +1,357 @@
+%% Copyright (C) 1999,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: fftserver.help,v 19.2 2004/08/25 01:43:34 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{fftserver}{FFTs and related operations}
+
+\ahinclude{fftserver.g}
+
+\ahcategory{mathematics}
+
+\ahkeyword{FFT}{}
+\ahkeyword{Fourier}{}
+\ahkeyword{transform}{}
+\ahkeyword{convolve}{}
+\ahkeyword{correlation}{}
+\ahkeyword{cross-correlation}{}
+\ahkeyword{auto-correlation}{}
+\ahkeyword{shift}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This tool does Fourier transforms and related operations like cross
+and auto-correlations and frequency domain based shifting. The
+computation is performed in a pre-compiled executable. It is not
+interpreted by Glish.
+
+Throughout this module the following definitions will be used for the
+Fourier transform. A \emph{forward} transform is one where the
+exponent is negative and no scaling is done of the result. ie., given
+a 1-dimensional array, $x[t]$, the Fourier transform, X[f], is given
+by\footnote{For clarity I have assumed that $x[t]$ \& $X[f]$ have
+indices between $\frac{-N}{2}$ and $\frac{N}{2}-1$ although in
+practice the indices will be between $1$ and $N$.}:
+\[
+  X[f] = \sum_{t=-N/2}^{t=N/2-1} x[t] \exp(\frac{-2\pi i f t}{N})
+\]
+A \emph{backward} transform is one where the exponent is positive and
+the result is scaled by $\frac{1}{N}$. ie., given a 1-dimensional array,
+$X[f]$, the Fourier transform, x[t], is given by:
+\[
+  x[t] = \frac{1}{N}\sum_{f=-N/2}^{f=N/2-1} X[f] \exp(\frac{2\pi i f t}{N})
+\]
+
+The transforms described above follow the radio-astronomical
+convention of having the origin of the transform as the centre
+pixel. This means that if the vector $x[t]$ is symmetric about the
+centre pixel then the result of a forward transform will also be a
+real vector. The centre pixel is the one at the $(N+1)/2$ location,
+using integer division, with the first element at index 1.
+
+The length of the Fourier transform is not restricted to a power of
+two. Any length transform can be done.
+
+Similarly the input data can be an $N$-dimensional array and
+$N$-dimensional transforms will be performed.
+
+\end{ahdescription}
+
+\begin{ahexample}
+
+To use the functions in this tool we have to firstly (1) load the
+definition of the fftserver tool and (2) construct a server tool
+that will actually perform the computations.
+
+\begin{verbatim}
+  include 'fftserver.g'     # 1
+  server := fftserver()     # 2
+\end{verbatim}
+
+Step 2 above starts the 'numerics' process if it is not already running.
+
+After creating the server a full complex to complex in-place FFT can
+be performed:
+\begin{verbatim}
+  server.complexfft(a, 1)     # forward (+1) fft on complex array "a"
+  server.complexfft(a, -1)    # reverse (-1) fft on complex array "a"
+\end{verbatim}
+
+If you know that you have real-valued arrays, you can perform a real
+to complex FFT. Here the FFT is not done in place, so the original
+array is preserved:
+\begin{verbatim}
+  b := server.realtocomplexfft(a)
+\end{verbatim}
+Note that the output array has the same shape as the input array so
+that half of the output array is the conjugate of the other half.
+
+FFT-based convolution is available using the convolve function.
+\begin{verbatim}
+  c := server.convolve(a,b)
+\end{verbatim}
+The input arrays must have the the same number of dimensions, but they
+do not have to be the same shape, the padding is handled for you. The
+output array is the size of the larger of the input arrays.  These
+convolutions are ``linear'' ie., the effects of the convolution at one
+edge do not reflect onto the opposite side of the array.
+
+Auto and cross-correlations of real arrays can also be done.
+\begin{verbatim}
+  c := server.autocorr(a)
+  c := server.crosscorr(a,b)
+\end{verbatim}
+For cross-correlations, the arrays must have the same shape. The
+correlations are circular, meaning that effects near one edge of the
+array reflect to the opposite side. If this is not what you want, you
+should zero-pad the arrays first.
+
+The finally the fftserver tool can do an an FFT-based shift of
+an array. For example, if {\tt a} is a 1-dimensional array, then:
+\begin{verbatim}
+  b := server.shift(a, 3.5) 
+\end{verbatim}
+would shift the array 3.5 pixels towards the end of the array. This is
+equivalent to a band-limited, or sinc interpolation of the array.
+
+Once you have finished doing transforms you can shut down the numerics
+process, assuming nothing else needs it, using the done function.
+
+\begin{verbatim}
+  server.done()
+\end{verbatim}
+
+\end{ahexample}
+
+\begin{ahseealso}
+\ahlink{fftserverdemo}{mathematics:fftserverdemo}
+\ahlink{fftservertest}{mathematics:fftservertest}
+\end{ahseealso}
+
+\begin{ahconstructor}{fftserver}{Construct an fftserver tool}
+\begin{ahdescription}
+
+Use this constructor to construct an fftserver tool. If it is not
+already running this this will start the numerics process on your
+computer.  You can construct as many fftserver tools as you like and
+they all share the same numerics process.
+\end{ahdescription}
+
+\ahreturns{An fftserver tool}
+
+\begin{ahexample}
+Look at the example for the mfft function.
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{complexfft}{Complex in-place Fourier transform.}
+\begin{ahargs}
+\ahaddarg{a}{Complex array to transform}{}{}
+\ahaddarg{dir}{Direction of the transform}{}{+1 forward, -1 reverse}
+\end{ahargs}
+\ahreturns{Nothing}
+\begin{ahdescription}
+This function does a complex $N$-dimensional Fourier transform of the
+supplied array. The transformed array is the same shape as the input
+array and is returned in the same variable. 
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{mfft}{mutiple Fourier transforms.}
+\begin{ahargs}
+\ahaddarg{a}{Complex array to transform}{}{}
+\ahaddarg{axes}{axes to transform}{}{Vector of Booleans}
+\ahaddarg{forward}{Direction of the transform}{T}{T=forward, F=reverse}
+\end{ahargs}
+\ahreturns{Complex array the same size as the input array}
+\begin{ahdescription}
+This function does a complex Fourier transform along user selected
+axes of an $N$-dimensional array. Transforms are done along the axes
+where the axes vector is True. The axes vector must have the same
+number of elements as the number of dimensions in the input array.
+
+Backward transforms are specified by setting the forward argument to
+False. The default is to do forward transforms.
+
+The returned (transformed) array is the same shape as the input array.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'fftserver.g'
+server := fftserver();
+a := array(0,3,4);
+a[,] := 1;                   # set all elements to 1
+b1 := server.mfft(a, [T,F]); # transform along axis 1 
+b2 := server.mfft(a, [F,T]); # transform along axis 2
+b := server.mfft(a, [T,T]);  # transform along both axes, ie., a 2-D transform.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{realtocomplexfft}{Real to complex forward Fourier 
+transform.}
+\begin{ahargs}
+\ahaddarg{a}{Any real array}{}{}
+\end{ahargs}
+\ahreturns{complex array}
+\begin{ahdescription}
+This function does a real-to-complex $N$-dimensional forward Fourier
+transform of the supplied real array. The transformed array is
+returned as a complex, Hermition array. It is the same shape as the
+input array.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{convolve}{Convolve two arrays.}
+\begin{ahargs}
+\ahaddarg{a}{Real array}{}{}
+\ahaddarg{b}{Real array}{}{}
+\end{ahargs}
+\ahreturns{Real array}
+\begin{ahdescription}
+Convolve the two input arrays. The arrays do not have to be the same
+size, but must have the same number of dimensions.  The output array
+is the size of the larger of the input arrays.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{crosscorr}{Cross-correlate two arrays}
+\begin{ahargs}
+\ahaddarg{a}{Real array}{}{}
+\ahaddarg{b}{Real array}{}{}
+\end{ahargs}
+\ahreturns{Real array}
+\begin{ahdescription}
+Cross correlate two real arrays. The arrays must be the same size. At
+present this is a circular correlation --- if this is not what you
+want you must pad the arrays yourself.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{autocorr}{Auto-correlate an array}
+\begin{ahargs}
+\ahaddarg{a}{Real array}{}{}
+\end{ahargs}
+\ahreturns{Real array}
+\begin{ahdescription}
+Correlate a real with itself. At present this is a circular
+correlation --- if this is not what you want you must pad the array
+yourself.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{shift}{Shift an array a non-integral number of pixels.}
+\begin{ahargs}
+\ahaddarg{a}{Real array}{}{}
+\ahaddarg{shift}{How much to shift on each axis. $>0$ means
+towards the end of the array, $<0$ means towards the beginning of the
+array.}{}{}
+\end{ahargs}
+\ahreturns{Real array}
+\begin{ahdescription}
+
+The units of the shift, which need not be integral, are pixels. The
+length of {\tt shift} must be the same as the number of dimensions of
+{\tt a}. So, if {\tt a} is a 1-dimensional array, then {\tt shift} is
+a scalar.
+
+This function shifts an array by; Fourier transforming it, multiplying
+each element of the transform by a complex phase factor, inverse
+Fourier transforming the result. 
+
+Multiplication by a linear phase gradient in the spectral domain
+corresponds to a shift in the image domain, so this process will shift
+the original array. If the shift is a non-integral number of pixels
+then a band-limited, or sinc interpolation is done.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete the fftserver tool}
+  \begin{ahdescription}
+    The done function frees up all the memory associated with a
+    fftserver tool. After calling this function the fftserver 
+    tool cannot be used. This function will shut down the
+    server process if no other tools are using the numerics
+    server. 
+  \end{ahdescription}
+  \ahreturns{T}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'fftserver.g'
+      server := fftserver();
+      # ... manipulate the server as you see fit ...
+      server.done(); # shut down the fftserver tool
+    \end{verbatim}
+  \end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%% Global functions
+
+\begin{ahfunction}{fftserverdemo}{Demonstrate the use of functions in fftserver}
+
+\ahinclude{fftserver.g}
+
+\begin{ahdescription}
+Demonstrate the use of the functions in fftserver. Inputs and results
+are sent to the logger.
+\end{ahdescription}
+\begin{ahseealso}
+\ahlink{fftserver}{mathematics:fftserver}
+\ahlink{fftservertest}{mathematics:fftservertest}
+\end{ahseealso}
+\ahreturns{Bool: T for success}
+\end{ahfunction}
+
+\begin{ahfunction}{fftservertest}{Test the fftserver class}
+
+\ahinclude{fftserver.g}
+
+\begin{ahdescription}
+This class purports to test the fftserver class. In fact, all it does
+currently is run fftserverdemo.
+\end{ahdescription}
+\begin{ahseealso}
+\ahlink{fftserver}{mathematics:fftserver}
+\ahlink{fftserverdemo}{mathematics:fftserverdemo}
+\end{ahseealso}
+\ahreturns{Bool: T for success}
+\end{ahfunction}
+
+
+\end{document}

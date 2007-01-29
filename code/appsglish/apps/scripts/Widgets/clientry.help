@@ -1,0 +1,266 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: clientry.help,v 19.2 2004/08/25 02:12:27 cvsmgr Exp $
+\begin{ahobject}{clientry}{Tool for generating functions for type-in of a cli}
+
+\ahinclude{clientry.g}
+
+\ahcategory{subsequences}
+
+\ahkeyword{subsequences}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This tool generates subsequences for the entry of various types of Glish
+variables. This tool is used in the \ahlink{autocli}{autocli}. 
+
+The exact behavior of the generated subsequence depends upon the type of
+entry but in general:
+
+\begin{itemize}
+\item The user may type in a value or a variable. 
+\item A value can entered as a number in the entry field.
+\item A variable is entered by name only.
+\item Values may also be inserted via the \ahlink{insert}{insert}
+function. Either a value ({\em e.g.} 0.7), a string ({\em e.g.}
+'0.7'),  or a variable ({\em e.g.} {\tt x} or {\tt sqrt(y)}) may be
+entered.
+\item Once initialized, a given subsequence can be used only for one
+type of argument ({\em i.e.} integer, double, complex). An
+attempt to enter a value of another type will generate an error.
+\item The subsequence always returns a variable of the appropriate
+type via the get function.
+\item Entry of a valid value by any means generates a
+\ahlink{value}{value} event that has as an argument the value
+entered.
+\item The subsequence can be constructed so that the user cannot
+enter values directly ({\tt editable=F}). This is used in the
+\ahlink{autocli}{autocli} for output-only values.
+\end{itemize}
+
+The various functions of clientry generate a subsequence that can be used
+to interact with the subsequence. The function and events supported by
+the subsequence are:
+
+\begin{description}
+\item[{\tt .get()}] Function to get the current value. WYSIWYG applies.
+\item[{\tt ->insert(entry)}] Event to insert a value into the subsequence.
+\item[{\tt ->value(entry)}] Event to designate that a user entered a
+new value.
+\end{description}
+
+Parsing of entries is performed using the \ahlink{entryparser}{entryparser} 
+tool.
+
+\end{ahdescription}
+
+\begin{ahconstructor}{clientry}{Make a clientry tool}
+\begin{ahdescription}
+Constructs a clientry according to the specified construction
+arguments, and returns a ref to the tool. Use of this constructor
+should be unnecessary since the default clientry (called
+defaultclientry or dge) can nearly always be used.
+\end{ahdescription}
+\end{ahconstructor}
+ 
+\begin{ahfunction}{scalar}{Make a subsequence for a scalar entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of scalar values. The subsequence can
+determine the type of the first entry (integer, double or complex) and
+ensure that the type doesn't change.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{String or unset}
+  \ahaddarg{default}{Default value used to determine type of cli}{}{String}
+  \ahaddarg{type}{Type of argument: unset means to evaluate}{unset}{String}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{array}{Make a subsequence for an array entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of array values. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{boolean}{Make a subsequence for a boolean entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of boolean values. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{choice}{Make a subsequence for a choice entry}
+\begin{ahdescription}
+Constructs a subsequence for the choice of one string from many.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{Possible choices}{}{Vector of strings}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\begin{ahexample}
+\begin{verbatim}
+include 'clientry.g'   
+f := dws.frame();
+r := dws.clientry(f, value=30.0);
+whenever r->value do {
+  print 'Cli selected is ', r.get();
+}
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{check}{Make a subsequence for a check entry}
+\begin{ahdescription}
+Constructs a subsequence for the choice of many strings from many.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{Possible choices}{}{Vector of strings}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{file}{Make a subsequence for a file entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of files. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{quantity}{Make a subsequence for a quantity entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of measure values. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{type}{Type of argument: unset means to evaluate}{unset}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{range}{Make a subsequence for a range entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of range values.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{0}{Value or unset}
+  \ahaddarg{default}{Default value}{0}{Value}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{rmin}{Minimum value}{0.0}{Number}
+  \ahaddarg{rmax}{Maximum value}{1.0}{Number}
+  \ahaddarg{rresolution}{Resolution of selection}{0.1}{Number}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{Record}{Make a subsequence for a Record entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of record values.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{region}{Make a subsequence for a region entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of region values. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{string}{Make a subsequence for a string entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of string values. 
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+
+\begin{ahfunction}{untyped}{Make a subsequence for a untyped entry}
+\begin{ahdescription}
+Constructs a subsequence for the entry of untyped values.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+\end{ahargs}
+\ahreturns{clientry subsequence}
+\end{ahfunction}
+ 
+\end{ahobject}

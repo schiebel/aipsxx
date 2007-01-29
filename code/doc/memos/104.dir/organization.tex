@@ -1,0 +1,73 @@
+\def\~{{\char'176}}
+
+\chapter{System management}
+\bigskip
+
+   With the dissemination of two papers, {\it System management for \aipspp -
+Part 1: organization and distribution} and {\it Part 2: activation,
+generation, and verification} the design of \aipspp system management is now
+well advanced.  The final part of the trilogy {\it Part 3: networking} is
+scheduled for release by Jun/30, and will cover the area of network services.
+
+   Implementation of the system design has been driven by necessity.  Creation
+of the empty \aipspp directory tree was a trivial operation, belying a great
+deal of thought which had been put into its design.
+
+   Code management has, in the first instance, been implemented by using
+{\it RCS}.  Each of the code directories has an {\it RCS} repository attached
+to it.  Plain-text copies of the code are kept in the code area itself.
+Programmers can create their own "shadow" representation of the \aipspp code
+directory tree by using the {\it mktree} utility which creates symbolic links
+to the {\tt \~aips++} {\it RCS} directories.  Programmers then appear to have
+their own private workspace with a window into the master {\it RCS}
+repositories, and can check code in and out of the {\it RCS} repository as
+though it were their own.  This mechanism has served us extremely well.
+
+   A generic GNU makefile works together with the {\it RCS} mechanism
+described above to compile classes, class test programs, and the kernel
+library, and also has several other functions.  With a dozen programmers
+contributing 1000 lines of code per day on average, the system has grown in
+complexity at an accelerating rate, and the makefile is now proving to be
+indispensible.  The makefile allows programmers to compile code without
+having to check it out of {\it RCS} and thereby minimizes the number of files
+that need to be present in their private workspace, with the consequent
+possibility that these may be "stale".  It uses the search path mechanisms
+which are part of GNU {\it make}, searching for files first in the
+programmer's own directory, then in the standard \aipspp directories.
+However, although the makefile is logically correct, it is not particularly
+efficient in shirking unnecessary work.  In particular, it recompiles a class
+implementation file if any header file has changed.  A later generation should
+be able to do better.
+
+   \aipspp programmers may now define their \aipspp "environment" by means of
+an {\tt aipsinit.[c]sh} script.  This redefines the {\tt PATH} (and
+{\tt MANPATH}) environment variables, appending the \aipspp binary (and man
+page) directories to it.  It also defines a single environment variable,
+{\tt AIPSPATH}, which contains five space-separated character strings which
+define the root of the \aipspp directory tree, the host architecture, the
+\aipspp version, the local site name, and the local host name.  This
+information is fundamental and must be known in order to access the
+{\tt aipsrc} databases.
+
+   The {\tt aipsrc} databases have been implemented via a {\tt C}-program
+called {\it getrc}.  It looks for device and other definitions in a format
+similar to that of the {\it .Xdefaults} database used by {\tt X-windows}.  In
+resolving a reference it searches the following sequence of {\tt aipsrc}
+files:
+
+\begin{verbatim}
+      ~/.aipsrc
+      $AIPS/$ARCH/$VERS/$SITE/$HOST/aipsrc
+      $AIPS/$ARCH/$VERS/$SITE/aipsrc
+      $AIPS/$ARCH/$VERS//aipsrc
+\end{verbatim}
+
+The last of these files contains default values, and the other three allow
+these to be overridden on a user-, host-, and site-specific basis.
+
+   The first use to which the {\tt aipsrc} mechanism has been put is that of a
+simple, and easily configurable set of printer utilities, including a utility
+to print class header and implementation files in a compact and convenient
+form. 
+
+

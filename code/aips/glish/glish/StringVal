@@ -1,0 +1,676 @@
+// $Id: StringVal,v 19.13 2004/11/03 20:38:59 cvsmgr Exp $
+// Copyright (c) 1993 The Regents of the University of California.
+// Copyright (c) 1997,1998,2000 Associated Universities Inc.
+
+//**
+//** This is included by Value.cc and IValue.cc to implement
+//** Value::StringVal and IValue::StringVal resp.
+//**
+
+#ifdef CLASS
+
+static void append_buf( char* &buf, char* &buf_ptr, unsigned int& buf_size,
+		const char* a = 0, const char* b = 0, const char* c = 0, const char* d = 0 )
+	{
+	int buf_remaining = &buf[buf_size] - buf_ptr;
+	int size_of_addition =  (a ? strlen( a ) : 0) +
+				(b ? strlen( b ) : 0) +
+				(c ? strlen( c ) : 0) +
+				(d ? strlen( d ) : 0);
+
+	while ( size_of_addition >= buf_remaining - 5 /* slop */ )
+		{ // Need to grow the buffer.
+		int buf_ptr_offset = buf_ptr - buf;
+
+		buf_size *= 2;
+		buf = realloc_char( buf, buf_size );
+		if ( ! buf )
+			glish_fatal->Report( "out of memory in append_buf()" );
+
+		buf_ptr = buf + buf_ptr_offset;
+		buf_remaining = &buf[buf_size] - buf_ptr;
+		}
+
+	*buf_ptr = '\0';
+	if ( a ) strcat( buf_ptr, a );
+	if ( b ) strcat( buf_ptr, b );
+	if ( c ) strcat( buf_ptr, c );
+	if ( d ) strcat( buf_ptr, d );
+
+	buf_ptr += size_of_addition;
+	}
+
+
+static char *format_error( const recordptr attr, char sep, int max_elements,
+			   int useAttributes, const char *prefix )
+	{
+	if ( ! attr )
+		return 0;
+
+	if ( ! attr )
+		return string_dup( "<fail>" );
+
+	const Value *value1;
+	const Value *lnval;
+	int *ln = 0;
+	int lnlen = 0;
+	int len = 0;
+	char *intro = "<fail>";
+	char *msg[20] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	int cnt = 7;
+	int lines = 2;
+	int cur = 1;
+
+	if ( (value1 = (*attr)["message"]) )
+		{
+		msg[0] = value1->StringVal(sep, max_elements, useAttributes );
+		cnt += strlen(msg[0]);
+		}
+
+	if ( (lnval = (*attr)["line"]) && lnval->Type() == TYPE_INT )
+		{
+		ln = lnval->IntPtr(0);
+		lnlen = lnval->Length();
+		}
+
+	if ( (value1 = (*attr)["file"]) && value1->Type() == TYPE_STRING )
+		{
+		charptr *strs = value1->StringPtr(0);
+		int len = value1->Length();
+		int C = 0;
+		for ( int x=0; C < 5 && x < len && x < lnlen; ++x )
+			{
+			int found = 0;
+			for ( int y=0; ! found && y < x; ++y )
+				if ( ! strcmp( strs[y], strs[x] ) && ln[y] == ln[x] )
+					found = 1;
+			if ( ! found )
+				{
+				msg[cur] = alloc_char( strlen(strs[x]) + 30 );
+				sprintf( msg[cur], "\tFile:\t%s, Line %d", strs[x], ln[x] );
+				cnt += strlen(msg[cur++]);
+				++C;
+				}
+			}
+		}
+
+	if ( (value1 = (*attr)["stack"]) &&
+	     value1->Type() == TYPE_STRING &&
+	     (len = value1->Length()) )
+		{
+		charptr *stack = value1->StringPtr(0);
+		int l = strlen(stack[--len]);
+		msg[cur] = alloc_char( l+20 );
+		strcpy(msg[cur],"\tStack:\t");
+		strcat(msg[cur++],stack[len]);
+		cnt += l + 13;
+		int x=cur;
+		for ( ; x < cur+4 && len; x++)
+			{
+			++lines;
+			l = strlen(stack[--len]);
+			msg[x] = alloc_char( l+6 );
+			strcpy(msg[x],"\t\t");
+			strcat(msg[x],stack[len]);
+			cnt += l + 6;
+			}
+		if ( len )
+			{
+			msg[x] = string_dup("\t\t...");
+			cnt += 7;
+			}
+		}
+
+	if ( prefix ) cnt += lines * strlen(prefix);
+
+	// Add some for line feeds etc...
+	char *result = alloc_char( cnt + 34 );
+
+	result[0] = '\0';
+	if ( prefix ) strcat( result, prefix );
+	strcat(result, intro);
+	if ( msg[0] ) { strcat( result, ": "); strcat( result, msg[0] ); }	
+	for ( int i=1; i < 20 && msg[i]; ++i )
+		{
+		strcat(result, "\n");
+		if ( prefix ) strcat(result, prefix);
+		strcat(result,msg[i]);
+		}		
+
+	if ( msg[0] ) free_memory( msg[0] );
+	for ( LOOPDECL i=1; i < 20 && msg[i]; i++ )
+		free_memory( msg[i] );
+
+	return result;
+	}
+
+
+static void check_for_decimal( char *buf )
+	{
+	if ( ! buf || ! *buf ) return;
+	while ( *buf && *buf != '.' && *buf != 'e' && *buf != 'E' ) ++buf;
+	if ( ! *buf )
+		{
+		*buf++ = '.';
+		*buf++ = '0';
+		*buf++ = '\0';
+		}
+	}
+
+static int *collapse_shape( const Value *shape_val, int &shape_len, int &is_copy )
+	{
+	int shape_is_copy = 0;
+	int *shape = shape_val->CoerceToIntArray( shape_is_copy, shape_len );
+
+	int cur=0;
+	for ( int i=0; i < shape_len; ++i )
+		if ( shape[i] > 0 )
+			{
+			if ( cur != i ) shape[cur] = shape[i];
+			++cur;
+			}
+	if ( cur <= 1 )
+		{
+		if ( shape_is_copy ) free_memory( shape );
+		shape = 0;
+		shape_is_copy = 0;
+		}
+
+	shape_len = cur;
+	is_copy = shape_is_copy;
+	return shape;
+	}
+
+char* CLASS::StringVal( char sep, int max_elements, int useAttributes,
+			int evalable, const char *prefix, Str &err ) const
+	{
+	glish_type type = Type();
+	int length = kernel.Length();
+	int prefix_len = prefix ? strlen(prefix) : 0;
+	int quote_string = 0;
+
+	if ( IsRef() )
+		return Deref()->StringVal( sep, max_elements, useAttributes );
+	if ( type == TYPE_RECORD )
+		return RecordStringVal( sep, max_elements, useAttributes, evalable, err );
+	if ( type == TYPE_FAIL )
+		return format_error( kernel.constRecord(), sep, max_elements, useAttributes, prefix );
+
+	if ( evalable )
+		{
+		if ( length == 0 )
+			{
+			if ( type == TYPE_STRING )
+				return string_dup("\"\"");
+			else 
+				return string_dup( "[]" );
+			}
+		else if ( length == 1 && type == TYPE_STRING && ! *StringPtr(0)[0] )
+			return string_dup( "''" );
+		}
+	else
+		if ( length == 0 )
+			return string_dup( "" );
+
+	char *ns_desc = GetNSDesc( evalable );
+	if ( ns_desc ) return ns_desc;
+
+	unsigned int buf_size = prefix_len;
+
+	// Make a guess as to a probable good size for buf.
+	if ( type == TYPE_STRING )
+		{
+		charptr *sptr = StringPtr(0);
+		buf_size += (strlen( sptr[0] ) + 10) * (length + 1);
+		if ( buf_size == 0 )
+			buf_size = 8;
+		if ( evalable )
+			for ( int x=0; ! quote_string && x < length; ++x )
+				for ( const char *ptr = sptr[x]; ! quote_string && *ptr; ++ptr )
+					if ( isspace(*ptr) || *ptr == '"' )
+						quote_string = 1;
+		}
+
+	else if ( type == TYPE_COMPLEX  || type == TYPE_DCOMPLEX )
+		buf_size += length * 16 * 2 + 1;
+
+	else if ( type == TYPE_FLOAT  || type == TYPE_DOUBLE )
+		buf_size += length * 16;
+
+	else
+		buf_size += length * 8;
+
+	char* buf = alloc_char( buf_size );
+	if ( ! buf )
+		glish_fatal->Report( "out of memory in Value::StringVal()" );
+
+	char* buf_ptr = buf;
+
+	if ( prefix )
+		{
+		strcpy(buf,prefix);
+		buf_ptr += prefix_len;
+		}
+
+	if ( type == TYPE_STRING )
+		{
+		// Insert ""'s around evalable strings 
+		// which don't need individual quotes.
+		if ( evalable )
+			{
+			if ( quote_string && length > 1 )
+				*buf_ptr++ = '[';
+			else if ( ! quote_string )
+				*buf_ptr++ = '"';
+			}
+		}
+	else if ( length > 1 )
+		{
+		// Insert []'s around value.
+		*buf_ptr++ = '[';
+		}
+
+	glish_bool* bool_ptr = 0;
+	byte* byte_ptr = 0;
+	short* short_ptr = 0;
+	int* int_ptr = 0;
+	float* float_ptr = 0;
+	double* double_ptr = 0;
+	glish_complex* complex_ptr = 0;
+	glish_dcomplex* dcomplex_ptr = 0;
+	charptr* string_ptr = 0;
+	const char *flt_prec = 0;
+#ifdef DOIVAL
+	regexptr* regex_ptr = 0;
+	fileptr* file_ptr = 0;
+#endif
+
+	switch ( VecRefDeref()->Type() )
+		{
+#define ASSIGN_PTR(tag,ptr_name,accessor,extra)				\
+	case tag:							\
+		ptr_name = accessor(0);					\
+		extra							\
+		break;
+
+		ASSIGN_PTR(TYPE_BOOL,bool_ptr,BoolPtr,)
+		ASSIGN_PTR(TYPE_INT,int_ptr,IntPtr,)
+		ASSIGN_PTR(TYPE_BYTE,byte_ptr,BytePtr,)
+		ASSIGN_PTR(TYPE_SHORT,short_ptr,ShortPtr,)
+		ASSIGN_PTR(TYPE_FLOAT,float_ptr,FloatPtr,flt_prec = print_decimal_prec( AttributePtr() );)
+		ASSIGN_PTR(TYPE_DOUBLE,double_ptr,DoublePtr,flt_prec = print_decimal_prec( AttributePtr() );)
+		ASSIGN_PTR(TYPE_COMPLEX,complex_ptr,ComplexPtr,flt_prec = print_decimal_prec( AttributePtr() );)
+		ASSIGN_PTR(TYPE_DCOMPLEX,dcomplex_ptr,DcomplexPtr,flt_prec = print_decimal_prec( AttributePtr() );)
+		ASSIGN_PTR(TYPE_STRING,string_ptr,StringPtr,)
+#ifdef DOIVAL
+		ASSIGN_PTR(TYPE_REGEX,regex_ptr,RegexPtr,)
+		ASSIGN_PTR(TYPE_FILE,file_ptr,FilePtr,)
+
+#define PLACE_REGEX(indx, str_buffer)					\
+	case TYPE_REGEX:						\
+		str_buffer = regex_ptr[ indx ]->Description( );		\
+		break;
+#define PLACE_FILE(indx, str_buffer)					\
+	case TYPE_FILE:							\
+		str_buffer = file_ptr[ indx ]->Description( );		\
+		break;
+#else
+#define PLACE_REGEX(x,y)
+#define PLACE_FILE(x,y)
+#endif
+
+		default:
+			glish_fatal->Report( "bad type in Value::StringVal()" );
+		}
+
+
+// Macro to generate the text corresponding to a single element of a given type.
+#define PLACE_ELEMENT_ACTION(buffer,str_buffer,indx,FLOAT_PRECISION)	\
+	case TYPE_BOOL:							\
+		strcpy( buffer, bool_ptr[indx] ? "T" : "F" );		\
+		break;							\
+									\
+	case TYPE_BYTE:							\
+		sprintf( buffer, "%d", byte_ptr[indx] );		\
+		break;							\
+									\
+	case TYPE_SHORT:						\
+		sprintf( buffer, "%d", short_ptr[indx] );		\
+		break;							\
+									\
+	case TYPE_INT:							\
+		sprintf( buffer, "%d", int_ptr[indx] );			\
+		break;							\
+									\
+	case TYPE_FLOAT:						\
+		sprintf( buffer, FLOAT_PRECISION, float_ptr[indx] );	\
+		if ( evalable ) check_for_decimal( buffer );		\
+		break;							\
+									\
+	case TYPE_DOUBLE:						\
+		sprintf( buffer, FLOAT_PRECISION, double_ptr[indx] );	\
+		if ( evalable ) check_for_decimal( buffer );		\
+		break;							\
+									\
+	case TYPE_COMPLEX:						\
+		{							\
+		char t[64];						\
+		sprintf( t, FLOAT_PRECISION, complex_ptr[indx].r );	\
+		if ( evalable ) check_for_decimal( t );			\
+		strcpy( buffer, t);					\
+		if ( complex_ptr[indx].i >= 0.0 ) 			\
+			strcat( buffer, "+" );				\
+		sprintf( t, FLOAT_PRECISION, complex_ptr[indx].i );	\
+		if ( evalable ) check_for_decimal( t );			\
+		strcat( t, "i");					\
+		strcat( buffer, t);					\
+		}							\
+		break;							\
+									\
+	case TYPE_DCOMPLEX:						\
+		{							\
+		char t[64];						\
+		sprintf( t, FLOAT_PRECISION, dcomplex_ptr[indx].r );	\
+		if ( evalable ) check_for_decimal( t );			\
+		strcpy( buffer, t);					\
+		if ( dcomplex_ptr[indx].i >= 0.0 ) 			\
+			strcat( buffer, "+" );				\
+		sprintf( t, FLOAT_PRECISION, dcomplex_ptr[indx].i );	\
+		if ( evalable ) check_for_decimal( t );			\
+		strcat( t, "i");					\
+		strcat( buffer, t);					\
+		}							\
+		break;							\
+									\
+	case TYPE_STRING:						\
+		str_buffer = string_ptr[ indx ];			\
+		break;							\
+	PLACE_REGEX(indx, str_buffer)					\
+	PLACE_FILE(indx, str_buffer)
+
+// Generate text for an element, translating subref indices if needed.
+#define PLACE_ELEMENT(buffer,str_buffer,indx,alloced)			\
+	switch ( type )							\
+		{							\
+		PLACE_ELEMENT_ACTION(buffer,str_buffer,indx,flt_prec)	\
+									\
+		case TYPE_SUBVEC_REF:					\
+			{						\
+			VecRef* ref = VecRefPtr();			\
+			int erri = 0;					\
+			int index = ref->TranslateIndex( indx, &erri );	\
+			if ( erri )					\
+				{					\
+				err = strFail( "invalid sub-vector" );	\
+				free_memory( alloced );			\
+				return string_dup( " " );		\
+				}					\
+			switch ( ref->Type() )				\
+				{					\
+				PLACE_ELEMENT_ACTION(buffer,str_buffer,index,flt_prec)\
+									\
+				default:				\
+					glish_fatal->Report(			\
+				    "bad type in Value::StringVal()" ); \
+				} 					\
+			}						\
+			break;						\
+									\
+		default:						\
+			glish_fatal->Report(					\
+			    "bad type in Value::StringVal()" );		\
+		}
+
+
+	char numeric_buf[1024];
+
+	const attributeptr attr = AttributePtr();
+	const Value* shape_val = 0;
+	int shape_len = 0;
+
+	int shape_is_copy = 0;
+	int* shape = 0;
+
+
+	if ( ! useAttributes || ! attr || ! (shape_val = (*attr)["shape"]) || 
+	     ! shape_val->IsNumeric() || (shape_len = shape_val->Length()) <= 1 ||
+	     ! (shape = collapse_shape( shape_val, shape_len, shape_is_copy )) )
+		{ // not an n-D array.
+		for ( int i = 0; i < length && ( ! max_elements ||
+		      i < max_elements) ; ++i )
+			{
+			const char* addition = numeric_buf;
+
+			PLACE_ELEMENT(numeric_buf, addition, i, buf);
+
+			if ( quote_string )
+				append_buf( buf, buf_ptr, buf_size, "\'", addition, "\'", evalable && i != length-1 ? "," : 0 );
+			else
+				append_buf( buf, buf_ptr, buf_size, addition, type != TYPE_STRING && evalable && i != length-1 ? "," : 0 );
+
+			if ( i < length - 1 )
+				// More to come.
+				if (sep) *buf_ptr++ = sep;
+			}
+
+		if ( max_elements && length > max_elements )
+			append_buf( buf, buf_ptr, buf_size, "... " );
+		if ( type == TYPE_STRING )
+			{
+			if ( evalable )
+				{
+				if ( quote_string && length > 1 )
+					{
+					// Insert []'s around value.
+					append_buf( buf, buf_ptr, buf_size, "] " );
+					*buf_ptr = '\0';
+					}
+				else if ( ! quote_string )
+					{
+					// Insert ""'s around value.
+					append_buf( buf, buf_ptr, buf_size, "\" " );
+					*buf_ptr = '\0';
+					}
+				}
+			}
+		else if ( length > 1 )
+			{
+			// Insert []'s around value.
+			append_buf( buf, buf_ptr, buf_size, "] " );
+			*buf_ptr = '\0';
+			}
+
+		return buf;
+		}
+
+	// Okay, from this point on it's an n-D array.
+	static char indent[] = "    ";
+
+	// Later the pivots for outputting by planes can be made variable
+	int r = 0;
+	int c = 1;
+
+	// How many element have we output...
+	int element_count = 0;
+
+	// Store for setting up a plane in advance to get the proper
+	// spacing for the columns.  Note that these and the arrays
+	// created just below are static, so we don't free them on exit.
+	static int column_width_len = 64;
+	static int* column_width = alloc_int( column_width_len );
+
+	// Arrays for iterating through the matrix.
+	static int indices_len = 32;
+	static int* indices = alloc_int( indices_len );
+	static int* factor = alloc_int( indices_len );
+
+	// Resize arrays as necessary.
+	while ( shape[c] > column_width_len )
+		{
+		column_width_len *= 2;
+		column_width = realloc_int( column_width, column_width_len );
+		if ( ! column_width )
+			glish_fatal->Report( "out of memory in Value::StringVal()" );
+		}
+
+	while ( shape_len > indices_len )
+		{
+		indices_len *= 2;
+		indices = realloc_int( indices, indices_len );
+		factor = realloc_int( factor, indices_len );
+		if ( ! indices || ! factor )
+			glish_fatal->Report( "out of memory in Value::StringVal()" );
+		}
+
+	// Calculate the size and the offset for the columns.
+	int size = 1;
+	int offset = 0;
+	for ( int i = 0; i < shape_len; ++i )
+		{
+		indices[i] = 0;
+		factor[i] = size;
+		size *= shape[i];
+		}
+
+	// Check to see if the vector length and the shape jive.
+	if ( size > length ) 
+		{
+//
+//		There are some problems here:
+//
+//		- k := array('test',4,3)
+//		- s := 'my'
+//		- t := spaste(s,k[1,1])
+//		warning, "::shape"/length mismatch
+//
+//		the subvecref is not handled properly, and this warning is of no help!
+//
+//		warn->Report( "\"::shape\"/length mismatch" );
+
+		free_memory( buf );
+		if ( shape_is_copy )
+			free_memory( shape );
+		return StringVal( sep );
+		}
+
+	int max_free = shape_len-1;
+
+	if ( shape_len > 2 )
+		for ( max_free = shape_len-1; max_free > 0; --max_free )
+			if ( max_free != r && max_free != c )
+				break;
+
+	while ( indices[max_free] < shape[max_free] && ( ! max_elements ||
+			element_count < max_elements) )
+		{
+		// Output the plane label
+		for ( LOOPDECL i = 0; i < shape_len; ++i )
+			{
+			if ( i == r )
+				sprintf( numeric_buf, "1:%d", shape[r] );
+			else if ( i != c )
+				sprintf( numeric_buf, "%d", indices[i] + 1 );
+			else
+				numeric_buf[0] = '\0';
+
+			if ( i < shape_len - 1 )
+				strcat( numeric_buf, "," );
+			else
+				{
+				strcat( numeric_buf, "]\n" );
+				if ( prefix ) strcat( numeric_buf, prefix );
+				}
+
+			append_buf( buf, buf_ptr, buf_size, i==0 ? "[" : 0,
+					numeric_buf );
+			}
+
+		// Calculate column widths.
+		for ( indices[r] = 0; indices[r] < shape[r]; ++indices[r] )
+			for ( indices[c] = 0; indices[c] < shape[c] - 1;
+			      ++indices[c] )
+				{
+				offset = 0;
+				for ( LOOPDECL i = 0; i < shape_len; ++i )
+					offset += factor[i] * indices[i];
+
+				char store[256];
+				const char* addition = store;
+
+				PLACE_ELEMENT(store,addition,offset,buf)
+
+				int add_len = strlen( addition );
+				if ( indices[r] == 0 || 
+				     add_len > column_width[indices[c]] )
+					column_width[indices[c]] = add_len;
+				}
+
+		// Output plane.
+		for ( indices[r] = 0; indices[r] < shape[r] && ( !max_elements ||
+			element_count < max_elements) ; ++indices[r] )
+			{
+			for ( indices[c] = 0; indices[c] < shape[c] && ( !max_elements ||
+				element_count < max_elements); ++indices[c] )
+				{
+				offset = 0;
+				for ( LOOPDECL i = 0; i < shape_len; ++i )
+					offset += factor[i] * indices[i];
+
+				const char* addition = numeric_buf;
+				PLACE_ELEMENT(numeric_buf,addition,offset,buf);
+
+				element_count++;
+				char affix[256];
+				if ( max_elements && element_count >= max_elements )
+
+					strcpy(affix, " ... ");
+
+				else if ( indices[c] < shape[c] - 1 )
+					{
+					int n = column_width[indices[c]] -
+						strlen( addition ) + 1;
+
+					LOOPDECL i = 0;
+					for ( ; i < n; ++i )
+						affix[i] = ' ';
+					affix[i] = '\0';
+					}
+
+				else if ( offset != size - 1 )
+					{
+					affix[0] = '\n';
+					affix[1] = '\0';
+					if ( prefix ) strcat(affix, prefix);
+					}
+				else
+					affix[0] = '\0';
+
+				append_buf( buf, buf_ptr, buf_size,
+						indices[c] == 0 ? indent : 0,
+						addition, affix );
+				}
+			}
+
+		// Increment counters.
+		for ( LOOPDECL i = 0; i <= max_free; ++i )
+			{
+			if ( i == r || i == c )
+				continue;
+			else if ( ++indices[i] < shape[i] )
+				break;
+			else if ( i != max_free )
+				indices[i] = 0;
+			}
+		}
+
+	if ( shape_is_copy )
+		free_memory( shape );
+
+	append_buf( buf, buf_ptr, buf_size, "]" );
+
+	return buf;
+	}
+
+
+#endif

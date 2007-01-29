@@ -1,0 +1,1203 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: widgetserver.help,v 19.2 2004/08/25 02:22:37 cvsmgr Exp $
+
+\begin{ahobject}{widgetserver}{Tool to provide Tk widgets and \aipspp\ megawidgets}
+
+\ahinclude{widgetserver.g}
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+The basic purpose of this tool is to provide wrappers for the
+Glish/Tk widgets and the \aipspp\ megawidgets.  The wrappers implement a
+new, context-sensitive set of defaults for the {\tt relief, font,
+background} and {\tt foreground} arguments to widget constructors.  In
+one context, the {\tt widgetserver} will yield defaults which are
+identical to the standard Glish/Tk defaults; in another context, the
+{\tt widgetserver} returns widgets which by default conform to the
+\aipspp\  Graphical User Interface Guidelines (see \aipspp\ Note 2??).  As
+a programmer, you will almost always interact with {\tt
+defaultwidgetserver}, which is provided upon inclusion of {\tt
+widgetserver.g}, and is also known as {\tt dws} for brevity.
+
+The {\tt widgetserver} now provides the capability for supporting
+multiple instances of the Glish/Tk client.  If the construction
+argument {\tt widgetset} is over-ridden from its default, then the
+constructed {\tt widgetserver} will use the supplied Glish/Tk client
+instead of the default client.  The default Glish/Tk client is stored
+in the global Glish record {\tt dgtk}.  A new Glish/Tk client can 
+be made using the {\tt init\_glishtk} function.
+
+The {\tt widgetserver} has two modes:
+\begin{description}
+\item[Mode 'glish':] widgets constructed by the {\tt
+widgetserver} will have construction argument defaults that are
+identical to the "unwrapped" Glish/Tk constructors.  For example, 
+the code:
+\begin{verbatim}
+include 'widgetserver.g';
+dws.setmode('glish');
+f1 := frame();
+b1 := button(f1, 'Dismiss');
+f2 := dws.frame();
+b2 := dws.button(f2, 'Dismiss');
+\end{verbatim}
+produces two {\em identical}\/ frames with {\em identical}\/ "Dismiss" 
+buttons in them.
+\item[Mode 'app':] widgets constructed by the {\tt
+widgetserver} will have construction argument defaults set such that
+the {\tt relief, font, background} and {\tt foreground} correspond to
+the \aipspp\ GUI Guidelines for that particular widget.  The \aipspp\ GUI
+Guidelines specify, for example, that all "Dismiss" buttons should have 
+orange backgrounds.  Thus, the code:
+\begin{verbatim}
+include 'widgetserver.g';
+dws.setmode('app');
+f1 := frame();
+b1 := button(f1, 'Dismiss');
+f2 := dws.frame();
+b2 := dws.button(f2, 'Dismiss');
+\end{verbatim}
+produces two {\em identical}\/ frames, but with {\em different}\/ "Dismiss"
+buttons: the second one will have an orange background.
+
+The user is, however, able to control the {\tt relief, font,
+background} and {\tt foreground} defaults for the {\tt 'app'} mode
+using their {\tt .aipsrc} file.  In the example above, they could make
+all "Dismiss" buttons created using a {\tt widgetserver} in {\tt
+'app'} mode have a yellow (rather than orange) background by adding
+the following line to their {\tt .aipsrc} file:
+\begin{verbatim}
+gui.prefs.dismissbutton.background: yellow
+\end{verbatim}
+\end{description}
+
+Any context-sensitive default implemented by a {\tt widgetserver} is
+always over-written (ie.\ ignored) if the programmer explicitly
+specifies that construction argument.  For example, the following
+code:
+\begin{verbatim}
+include 'widgetserver.g';
+dws.setmode('glish');
+f1 := dws.frame();
+b1 := dws.button(f1, 'Dismiss', background='green');
+dws.setmode('app');
+f2 := dws.frame();
+b2 := dws.button(f2, 'Dismiss', background='green');
+\end{verbatim}
+produces two {\em identical}\/ frames, with {\em identical}\/ green
+"Dismiss" buttons.  In both cases, regardless of the mode of {\tt
+dws}, the explicit {\tt background} argument over-writes the defaults.
+
+Control of the various defaults for {\tt 'app'} mode Glish/Tk widgets
+and \aipspp\  megawidgets is provided in the {\tt .aipsrc} file.  All
+resources related to GUI {\tt relief, font, background} and {\tt
+foreground} defaults are stored in {\tt gui.prefs}.
+
+\begin{description}
+
+\item[Start-up mode:] The default start-up mode for newly constructed 
+{\tt widgetserver}s can be set in the user's {\tt .aipsrc} file as 
+follows:
+\begin{verbatim}
+gui.prefs.mode: glish
+\end{verbatim}
+or 
+\begin{verbatim}
+gui.prefs.mode: app
+\end{verbatim}
+
+\item[Fonts:] Four different fonts can be specified for use by the
+{\tt widgetserver}: {\tt small, medium, large} and {\tt bold}.  They
+can be specified using the following syntax in the {\tt .aipsrc} file:
+\begin{verbatim}
+gui.prefs.fonts.small: -*-helvetica-medium-r-normal-*-11-*
+gui.prefs.fonts.medium: -*-helvetica-medium-r-normal-*-13-*
+gui.prefs.fonts.large: -*-helvetica-medium-r-normal-*-18-*
+gui.prefs.fonts.bold: -*-helvetica-bold-r-normal-*-13-*
+\end{verbatim}
+The strings given must be valid X fonts.  You might find it useful to
+use the X program {\bf xfontsel} to create X font strings.  Glish/Tk
+does not deal particularly well with the case of ill-formed X font
+strings, or of missing fonts, so modify with these settings with
+caution.  When using a {\tt widgetserver}, fonts for particular
+widgets (eg.\ buttons, listboxes, etc.)
+can be specified using ordinary X font strings (examples above) or
+more simply the strings {\tt 'small', 'medium', 'large'} or {\tt
+'bold'}.  The {\tt widgetserver} will detect what you have given, and
+map it accordingly.
+
+\item[Frames:] The first place to start modifying your {\tt .aipsrc}
+is probably the {\tt frame} section.  Any {\tt background, foreground} 
+and {\tt font} settings applied to Glish/Tk 
+frames are automatically forwarded on to {\em all}\/ Glish/Tk widgets
+and \aipspp\ megawidgets, where they can of course be over-written by
+specific default settings.  The defaults for frames in the {\tt 'app'} 
+mode can be set as follows:
+\begin{verbatim}
+gui.prefs.frame.background: #c0d0e0
+gui.prefs.frame.foreground: white
+gui.prefs.frame.font: medium
+gui.prefs.frame.relief: flat
+\end{verbatim}
+Note that colors can be given as a string or as a hexadecimal RGB triple,
+preceded by a '\#' character.  The user is free to put any of the above 
+lines in their {\tt .aipsrc} file and view the difference in GUIs
+built using the default {\tt widgetserver}.  The user need not give
+all the settings; just those they wish to modify.
+
+To indicate the behaviour of "cascading defaults," the following code:
+\begin{verbatim}
+dws.setmode('app');
+f := dws.frame();
+b := dws.button(f, 'Orangutan');
+\end{verbatim}
+when the above four {\tt gui.prefs.frame.*} lines are installed in the 
+user's {\tt .aipsrc} file, would produce a pale blue button with white 
+text.  Since the user has not specified default {\tt font, foreground} 
+and {\tt background} parameters for buttons, either in their {\tt
+.aipsrc} file or explicitly in the Glish code, they will get the
+appropriate defaults from their {\tt .aipsrc} settings for frames.
+
+Note that the {\tt relief} default for frames is not cascaded to lower
+level widgets, since relief is the primary---and often the {\em
+only}---visual distinction between the various Glish/Tk widgets.
+
+\item[Buttons:] Three different types of buttons are known to the {\tt 
+widgetserver}: check, radio and plain buttons.  The user can set {\tt
+.aipsrc} defaults for each type, eg.:
+\begin{verbatim}
+gui.prefs.plainbutton.background: #f0f0d0
+gui.prefs.checkbutton.background: #f0f0d0
+gui.prefs.checkbutton.relief: ridge 
+gui.prefs.radiobutton.background: #f0f0d0
+gui.prefs.radiobutton.relief: ridge
+\end{verbatim}
+Those preferences that are not specified default first to the
+{\tt .aipsrc} settings for frames (for {\tt font, foreground} and {\tt 
+background}) if given, otherwise to the \aipspp\ GUI Guidelines
+specifications.
+
+\item[Special buttons:] In addition to the four standard button types
+({\tt plain, check, radio} and {\tt menu}), the {\tt widgetserver}
+knows three additional types: {\tt action, halt} and {\tt dismiss}.
+When asked to create a button of type {\tt halt}, for example, the
+{\tt widgetserver} will make the button with foreground, background
+and font according to preferences set in the user's {\tt .aipsrc}
+file.  These preferences can be set, for example, as follows:
+\begin{verbatim}
+gui.prefs.dismissbutton.background: yellow
+gui.prefs.actionbutton.font: bold
+gui.prefs.haltbutton.relief: groove
+\end{verbatim}
+The defaults, which apply when the user doesn't overwrite them in 
+their {\tt .aipsrc} file, are for {\tt action} buttons to be bold text 
+on green background, {\tt halt} buttons to be bold white text on a 
+red background and {\tt dismiss} buttons to be bold text on an orange
+background.
+
+\item[Other Glish/Tk widgets:] Most remaining Glish/Tk widgets (scale,
+text, scrollbar, label, entry, message, listbox and canvas) can have
+preferences specified in the {\tt .aipsrc} file in just the same way
+as frames and buttons.  Note that for the canvas widget, only {\tt
+background} and {\tt relief} are meaningful, and for the scrollbar
+widget, only {\tt background} and {\tt foreground} preferences are
+useful.  A summary of the syntax for the Glish/Tk widget preference
+settings in the {\tt .aipsrc} file is:
+\begin{verbatim}
+gui.prefs.widget.resource: value
+\end{verbatim}
+where {\tt widget} is one of {\tt frame, plainbutton, radiobutton,
+checkbutton, gobutton, abortbutton, dismissbutton, scale, text,
+scrollbar, label, entry, message, listbox, canvas}; {\tt resource} is
+one of {\tt font, relief, foreground, background}; and value is: one of 
+{\tt small, medium, large, bold} or an X font string for the {\tt
+font} resource; one of {\tt flat, raised, groove, ridge, sunken} for
+the {\tt relief} resource; and a valid X color for the {\tt
+foreground} and {\tt background} resources.
+
+\item[The Pgplot widget:] The pgplot widget is supplied and supported
+by the {\tt widgetserver}, but at present default preferences are not
+supported.
+
+\item[\aipspp\ megawidgets:] Most \aipspp\ megawidgets (rollup, optionmenu, 
+...), like the Glish/Tk widgets, are supported by the {\tt
+widgetserver}, and have context-sensitive defaults.  The user can
+specify them in an identical fashion to the previously listed "Other
+Glish/Tk widgets" (see above), where {\tt widget} can also be one of
+{\tt rollup, optionmenu, ...}.  The remaining \aipspp\ megawidgets
+(dialogbox, ...) are supported by the {\tt widgetserver}, but do not
+have context-sensitive defaults: they derive their defaults from the
+{\tt widgetserver}-provided base Glish/Tk widgets.
+
+\end{description}
+
+\end{ahdescription}
+
+\begin{ahconstructor}{widgetserver}{Construct a widgetserver}
+\begin{ahargs}
+  \ahaddarg{whichgtk}{Record holding interface to Glish/Tk client}{dgtk}{Record of functions}
+\end{ahargs}
+\ahreturns{widgetserver tool}
+\begin{ahdescription}
+This constructs a widgetserver tool which can then be used to build
+\aipspp\ GUIs.  The only construction argument indicates which
+Glish/Tk client should be used to supply widgets, and should only be
+specified in exceptional circumstances.
+\begin{ahexample}
+\begin{verbatim}
+include 'widgetserver.g';
+mywidgets := widgetserver();
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahfunction}{frame}{Make a frame widget}
+\begin{ahargs}
+  \ahaddarg{frame arguments}{standard Glish/Tk frame arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk frame}
+\begin{ahdescription}
+This makes a Glish/Tk frame widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame(side='left');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{button}{Make a button widget}
+\begin{ahargs}
+  \ahaddarg{button arguments}{standard Glish/Tk button arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk button}
+\begin{ahdescription}
+This makes a Glish/Tk button widget, applying context-sensitive
+defaults.  As well as the standard Glish/Tk button types ({\tt plain,
+check, radio} and {\tt menu}), the three additional types {\tt action, 
+halt} and {\tt dismiss} are provided---see the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+b := dws.button(f, 'Howdy');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{scale}{Make a scale widget}
+\begin{ahargs}
+  \ahaddarg{scale arguments}{standard Glish/Tk scale arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk scale}
+\begin{ahdescription}
+This makes a Glish/Tk scale widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+s := dws.scale(f, orient='vertical');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{text}{Make a text widget}
+\begin{ahargs}
+  \ahaddarg{text arguments}{standard Glish/Tk text arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk text}
+\begin{ahdescription}
+This makes a Glish/Tk text widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+t := dws.text(f, text='Howdy');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{scrollbar}{Make a scrollbar widget}
+\begin{ahargs}
+  \ahaddarg{scrollbar arguments}{standard Glish/Tk scrollbar arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk scrollbar}
+\begin{ahdescription}
+This makes a Glish/Tk scrollbar widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+s := dws.scrollbar(f, orient='horizontal');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{label}{Make a label widget}
+\begin{ahargs}
+  \ahaddarg{label arguments}{standard Glish/Tk label arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk label}
+\begin{ahdescription}
+This makes a Glish/Tk label widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+l := dws.label(f, 'Howdy');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{entry}{Make a entry widget}
+\begin{ahargs}
+  \ahaddarg{entry arguments}{standard Glish/Tk entry arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk entry}
+\begin{ahdescription}
+This makes a Glish/Tk entry widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+en := dws.entry(f, width=20);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{message}{Make a message widget}
+\begin{ahargs}
+  \ahaddarg{message arguments}{standard Glish/Tk message arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk message}
+\begin{ahdescription}
+This makes a Glish/Tk message widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+m := dws.message(f, 'Howdy');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{listbox}{Make a listbox widget}
+\begin{ahargs}
+  \ahaddarg{listbox arguments}{standard Glish/Tk listbox arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk listbox}
+\begin{ahdescription}
+This makes a Glish/Tk listbox widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+lb := dws.listbox(f, width=60);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{canvas}{Make a canvas widget}
+\begin{ahargs}
+  \ahaddarg{canvas arguments}{standard Glish/Tk canvas arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk canvas}
+\begin{ahdescription}
+This makes a Glish/Tk canvas widget, applying context-sensitive
+defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+c := dws.canvas(f, 400, 300);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{pgplot}{Make a pgplot widget}
+\begin{ahargs}
+  \ahaddarg{pgplot arguments}{standard Glish/Tk pgplot arguments}{}{}
+\end{ahargs}
+\ahreturns{Glish/Tk pgplot}
+\begin{ahdescription}
+This makes a Glish/Tk pgplot widget, {\em without}\/ applying 
+context-sensitive defaults described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+pg := dws.pgplot(f);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{have\_gui}{Query whether GUIs can be built}
+\ahreturns{Boolean indicated that GUIs can (T) or cannot (F) be built}
+\begin{ahdescription}
+This is a wrapper for the bare have\_gui function.  Before building a
+GUI, it is advisable to check the return value of this function.
+See the Glish manual.
+\end{ahdescription}
+
+\begin{ahfunction}{tk\_hold}{Hold Glish/Tk widget events}
+\begin{ahdescription}
+This is a wrapper for the bare tk\_hold function.  Use this function
+to "pause" visible results of Glish/Tk widget construction, resizing
+and mapping/unmapping.  See the Glish manual.
+\end{ahdescription}
+
+\begin{ahfunction}{tk\_release}{Release Glish/Tk widget events}
+\begin{ahdescription}
+This is a wrapper for the bare tk\_release function.  Use this function
+to "unpause" visible results of Glish/Tk widget construction, resizing
+and mapping/unmapping.  See the Glish manual.
+\end{ahfunction} 
+
+
+\begin{ahfunction}{tk\_iconpath}{???}
+\begin{ahdescription}
+???  See the Glish manual.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{rollup}{Make a rollup megawidget}
+\begin{ahargs}
+  \ahaddarg{rollup megawidget arguments}{standard \aipspp\ rollup megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ rollup megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{rollup}{widgets:rollup}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+rup := dws.rollup(f);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{optionmenu}{Make an optionmenu megawidget}
+\begin{ahargs}
+  \ahaddarg{optionmenu megawidget arguments}{standard \aipspp\ optionmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ optionmenu megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{optionmenu}{widgets:optionmenu} 
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+m := dws.optionmenu(f, labels="fish cats dogs", values=[0,1,2]);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{extendoptionmenu}{Make an extendoptionmenu megawidget}
+\begin{ahargs}
+  \ahaddarg{extendoptionmenu megawidget arguments}{standard \aipspp\ extendoptionmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ extendoptionmenu megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{extendoptionmenu}{widgets:extendoptionmenu} 
+megawidget, applying context-sensitive defaults.  It differes from the 
+\ahlink{optionmenu}{widgets:optionmenu} megawidget
+in that the menu can be interactively extended.  In addition, you can
+only specify {\tt labels}, {\tt names} and {\tt values} are not allowed. 
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+m := dws.optionmenu(f, labels="fish cats dogs");
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{actionoptionmenu}{Make an action optionmenu megawidget}
+\begin{ahargs}
+  \ahaddarg{actionoptionmenu megawidget arguments}{standard \aipspp\ actionoptionmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ actionoptionmenu megawidget}
+\begin{ahdescription}
+
+This makes an \aipspp\  \ahlink{actionoptionmenu}{widgets:actionoptionmenu} 
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation. It is identical to the 
+\ahlink{optionmenu}{widgets:optionmenu} megawidget.  
+The {\tt actionoptionmenu} exists only so you can use it for ``action''
+menus, where the relief (usually raised) and colors will in general be different
+from that of a ``selection'' option menu (relief is usually groove). 
+ 
+The {\tt actionoptionmenu} is implemented on top of 
+the {\tt optionmenu} in the \ahlink{widgetserver}{widgets:widgetserver} 
+tool.  This means that it is only available via the {\tt widgetserver}.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'widgetserver.g'   
+- names := ['Delete all files', 'Delete images', 'Delete measurement sets'];
+- labels := "DelAll DelIm DelMS";
+- f := dws.frame();
+- hlp := 'Delete selected files';
+- m := dws.actionoptionmenu(f, labels, names, hlp=hlp);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{checkmenu}{Make a checkmenu megawidget}
+\begin{ahargs}
+  \ahaddarg{checkmenu megawidget arguments}{standard \aipspp\ checkmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ actionoptionmenu megawidget}
+\begin{ahdescription}
+This makes an \aipspp\  \ahlink{checkmenu}{widgets:checkmenu} 
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.  
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{dialogbox}{Make a dialogbox megawidget}
+\begin{ahargs}
+  \ahaddarg{megawidget arguments}{standard \aipspp\ dialogbox megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ dialogbox megawidget}
+\begin{ahdescription}
+
+This makes an \aipspp\ \ahlink{dialogbox}{widgets:dialogbox}
+megawidget, {\em without}\/ applying context-sensitive defaults
+described in the top-level \ahlink{widgetserver}{widgets:widgetserver}
+description.  Nevertheless, the dialogbox will be produced in the
+current mode of the widgetserver.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+db := dws.dialogbox('Enter your name');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{guientry}{Make a guientry megawidget}
+\begin{ahargs}
+  \ahaddarg{guientry megawidget arguments}{standard \aipspp\ guientry megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ guientry megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{guientry}{widgets:guientry}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{messageline}{Make a messageline megawidget}
+\begin{ahargs}
+  \ahaddarg{messageline megawidget arguments}{standard \aipspp\ messageline megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\  messageline megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{messageline}{widgets:messageline}
+megawidget, applying context-sensitive defaults as described in the
+top-level \ahlink{widgetserver}{widgets:widgetserver} description as
+described in the top-level \ahlink{widgetserver}{widgets:widgetserver}
+description.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+ml := dws.messageline(f);
+ml->post('This is an informative message which is also logged.');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{scrolllistbox}{Make a scrolllistbox megawidget}
+\begin{ahargs}
+  \ahaddarg{scrolllistbox megawidget arguments}{standard \aipspp\ scrolllistbox megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\  scrolllistbox megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{scrolllistbox}{widgets:scrolllistbox}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+slb := dws.scrolllistbox(f);
+slb->insert("one two three four five six seven eight nine");
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{synclistboxes}{Make a synclistboxes megawidget}
+\begin{ahargs}
+  \ahaddarg{synclistboxes megawidget arguments}{standard \aipspp\ synclistboxes megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ synclistboxes megawidget}
+\begin{ahdescription}
+This makes an \aipspp\  \ahlink{synclistboxes}{widgets:synclistboxes}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+slb := dws.synclistboxes(f,2,"Numbers Colors");
+somevals := array(' ',2,9);
+somevals[1,] := "one two three four five six seven eight nine";
+somevals[2,] := "red orange yellow lightgrey blue brown peach mauve gold";
+slb->insert(somevals);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{combobox}{Make a combobox megawidget}
+\begin{ahargs}
+  \ahaddarg{combobox megawidget arguments}{standard \aipspp\  combobox megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ combobox megawidget}
+\begin{ahdescription}
+This makes an \aipspp\  \ahlink{combobox}{widgets:combobox}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+cb := dws.combobox(f);
+cb.insert("one two three four five six seven eight nine");
+whenever cb.agent()->select do {
+   print 'combobox select event: new selection, item ', $value;
+   print '   value at selection is : ', cb.get($value);
+}
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{blinklabel}{Make a blinklabel megawidget}
+\begin{ahargs}
+  \ahaddarg{blinklabel megawidget arguments}{standard \aipspp\ blinklabel 
+  megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ blinklabel megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{blinklabel}{widgets:blinklabel}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+fw := dws.blinklabel(f, 'Conditions changed');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{fontchooser}{Make a fontchooser megawidget}
+\begin{ahargs}
+  \ahaddarg{fontchooser megawidget arguments}{standard \aipspp\ fontchooser megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ fontchooser megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{fontchooser}{widgets:fontchooserwidget}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{multiscale}{Make a multiscale megawidget}
+\begin{ahargs}
+  \ahaddarg{multiscale megawidget arguments}{standard \aipspp\ multiscale megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ multiscale megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{multiscale}{widgets:multiscale}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+fw := dws.multiscale(f, start=-30.0, end=30.0, resolution=0.2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{popupselectmenu}{Make a popupselectmenu megawidget}
+\begin{ahargs}
+  \ahaddarg{popupselectmenu megawidget arguments}{standard \aipspp\ popupselectmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ popupselectmenu megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{popupselectmenu}{widgets:popupselectmenu}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{recordbrowser}{Make a recordbrowser megawidget}
+\begin{ahargs}
+  \ahaddarg{recordbrowser megawidget arguments}{standard \aipspp\ recordbrowser megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ recordbrowser megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{recordbrowser}{widgets:recordbrowserwidget}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{restoreregions}{Make a restoreregions megawidget}
+\begin{ahargs}
+  \ahaddarg{restoreregions megawidget arguments}{standard \aipspp\ restoreregions megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ restoreregions megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{restoreregions}{widgets:restoreregions}
+megawidget, applying context-sensitive defaultsas described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} description .
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{deleteregions}{Make a deleteregions megawidget}
+\begin{ahargs}
+  \ahaddarg{deleteregions megawidget arguments}{standard \aipspp\ deleteregions megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ deleteregions megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{deleteregions}{widgets:deleteregions}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{saveregions}{Make a saveregions megawidget}
+\begin{ahargs}
+  \ahaddarg{saveregions megawidget arguments}{standard \aipspp\ saveregions megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ saveregions megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{saveregions}{widgets:saveregions}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{selectablelist}{Make a selectablelist megawidget}
+\begin{ahargs}
+  \ahaddarg{selectablelist megawidget arguments}{standard \aipspp\ selectablelist megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ selectablelist megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{selectablelist}{widgets:selectablelist}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{tapedeck}{Make a tapedeck megawidget}
+\begin{ahargs}
+  \ahaddarg{tapedeck megawidget arguments}{standard \aipspp\ tapedeck megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ tapedeck megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{tapedeck}{widgets:tapedeck}
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{tabdialog}{Make a tabdialog megawidget}
+\begin{ahargs}
+  \ahaddarg{tabdialog megawidget arguments}{standard \aipspp\ tabdialog megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ tabdialog megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{tabdialog}{widgets:tabdialog.tabdialog} 
+megawidget, applying context-sensitive defaults as described in the top-level 
+\ahlink{widgetserver}{widgets:widgetserver} documentation.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+t := dws.tabdialog(f);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{guientry}{Make a guientry megawidget}
+\begin{ahargs}
+  \ahaddarg{guientry megawidget arguments}{standard \aipspp\ guientry megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ guientry megawidget}
+\begin{ahdescription}
+This makes an \aipspp\ \ahlink{guientry}{widgets:guientry} megawidget
+server, applying context-sensitive defaults as described in the
+top-level \ahlink{widgetserver}{widgets:widgetserver}
+description. Note that this is not a widget but itself serves widgets,
+as indicated in the example.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+ge := dws.guientry();
+s := ge.string(f, 'Initial string')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+\begin{ahfunction}{setmode}{Set the context/mode}
+\begin{ahargs}
+  \ahaddarg{mode}{Which mode to use}{}{String from 'app', 'glish'}
+\end{ahargs}
+\begin{ahdescription}
+This function is used to set the mode of a widgetserver to
+either {\tt 'app'} or {\tt 'glish'}.  Before building a GUI, you
+should set what mode you would like the widgetserver to be in,
+then build your GUI.  For example:
+\begin{verbatim}
+dws.setmode('glish');
+f := dws.frame();
+# ...
+\end{verbatim}
+would produce a GUI with standard Glish/Tk default colors, font and
+relief for the various widgets.  The widgetserver stores its previous
+mode/s, so it is recommended that after building your GUI, you restore 
+the previous mode with the {\tt unsetmode} function.  Normally, \aipspp\
+GUIs should be written with the mode set to {\tt 'app'}.
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{unsetmode}{Unset (pop) the context/mode}
+\begin{ahdescription}
+This function should be used to restore the previous context or mode
+that was in effect just prior to the most recent {\tt setmode} call.
+For example, if for some reason, you need to create a non-\aipspp\ 
+conformant GUI, you might do:
+\begin{verbatim}
+dws.setmode('glish');
+f := dws.frame();
+# build GUI ...
+# ...
+dws.unsetmode();
+\end{verbatim}
+\end{ahdescription}
+\end{ahfunction} 
+
+
+
+
+\begin{ahfunction}{resources}{Query what resources are used by various widgets}
+\begin{ahargs}
+  \ahaddarg{widget}{Which widget to query}{}{String from 'button', 'optionmenu', etc}
+  \ahaddarg{type}{Subtype of button widgets}{F}{String from 'plain', 'check',
+	'radio', 'menu', 'action', 'halt', 'dismiss'}
+\end{ahargs}
+\begin{ahdescription}
+This function is provided so that programmers can find out what 
+relief, font and foreground and background colors are used by the
+various widgets that the widgetserver delivers.  Generally, just
+the name of the widget needs to be supplied as a string argument.
+In the special case of 'button' widgets, an additional argument
+is given so that the type of the button can be specified.  The
+function returns a record whose fields (upto four of them) contain
+the resources used by the widget.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+rec := dws.resources('button', 'action');
+print rec.background;
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+\begin{ahfunction}{helpmenu}{Add a Help menu which contains the standard AIPS++ Help menu items}
+\begin{ahargs}
+  \ahaddarg{helpmenu megawidget arguments}{standard \aipspp\ helpmenu megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ helpmenu megawidget}
+\begin{ahdescription}
+This makes an \aipspp\  \ahlink{helpmenu}{widgets:helpmenu} megawidget.
+The default font, color, etc., are those for the button widget.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+# f would generally be a menubar with appropriate padding such that the
+# helpmenu frame is always all the way on the right side
+helpmenuframe := dws.frame(f,borderwidth=0,height=0,width=0,side='right');
+hm := dws.helpmenu(helpmenuframe, "Imager", "Refman:imager");
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+\begin{ahfunction}{menuframes}{Add a widget to hold named embedded frames}
+\begin{ahargs}
+  \ahaddarg{menuframes megawidget arguments}{standard \aipspp\ menuframes megawidget arguments}{}{}
+\end{ahargs}
+\ahreturns{\aipspp\ menuframes megawidget}
+\begin{ahdescription}
+This makes an \aipspp\  \ahlink{menuframes}{widgets:menuframes.menuframes} megawidget.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+f := dws.frame();
+f1 := dws.frame();
+mb := dws.button(f1, 'Windows', type='menu')
+r := dws.menuframes(f, mb, exclusive=F);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+\begin{ahfunction}{busy}{Set the busy cursor and optionally disable a frame}
+\begin{ahargs}
+  \ahaddarg{busyframe}{The frame which will appear busy}{}{Frame}
+  \ahaddarg{disable}{Should a disable event be sent to this frame?}{T}{T or F}
+  \ahaddarg{busycursor}{The new cursor}{`watch'}{String}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+This function changes the cursor of {\tt busyframe} to the {\tt busycursor}, which
+defaults to ``watch'',
+to indicate that that frame is busy.  If {\tt disable} is {\tt T}, then a
+disable event is also sent to that frame, disabling all widgets within {\tt busyframe}.
+When {\tt disable} is {\tt T} it must be matched either by a call to 
+{\tt notbusy} with {\tt enable} being {\tt T} or an enable event must be
+explicitly sent to that frame.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- f := dws.frame()
+- # some additional widgetserver calls to build the contents of f
+- # to set the busy cursor in f and disable the widgets in f
+- dws.busy(f)
+- # to set the normal cursor in f and enable its widgets
+- dws.notbusy(f)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{notbusy}{Set the normal cursor and optionally enable a frame}
+\begin{ahargs}
+  \ahaddarg{busyframe}{The frame which will appear to not be busy}{}{Frame}
+  \ahaddarg{enable}{Should an enable event be sent to this frame?}{T}{T or F}
+  \ahaddarg{normalcursor}{The new cursor}{`'}{String}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+This function changes the cursor of {\tt busyframe} to the {\tt normalcursor}
+to indicate that that frame is not busy.  The default value of {\tt normalcursor}
+will set the cursor of {\tt busyframe} to its normal (default) value.
+If {\tt enable} is {\tt T}, then an
+enable event is also sent to that frame, enabling all widgets within {\tt busyframe}.
+When {\tt enable} is {\tt T} it should be matched either by a previous call to 
+{\tt busy} with {\tt disable} being {\tt T} or a disable event should have been
+explicitly sent to that frame prior to using {\tt enable}.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- f := dws.frame()
+- # some additional widgetserver calls to build the contents of f
+- # to set the busy cursor in f and disable the widgets in f
+- dws.busy(f)
+- # to set the normal cursor in f and enable its widgets
+- dws.notbusy(f)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{popuphelp}{add popup help to a GUI}
+\begin{ahdescription}
+This function forwards all its arguments to the
+\ahlink{popuphelp}{guiutils:popuphelp} function in
+the guiutils module. See the documention in that module for a full
+description.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{addpopuphelp}{add popup help to a GUI}
+\begin{ahdescription}
+This function forwards all its arguments to the
+\ahlink{addpopuphelp}{guiutils:addpopuphelp} function in
+the guiutils module. See the documention in that module for a full
+description.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{popupmenu}{add a popup type selection help menu to a GUI}
+\begin{ahdescription}
+This function forwards all its arguments to the
+\ahlink{popupmenu}{guiutils:popupmenu} function in
+the guiutils module. See the documention in that module for a full
+description.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{popupremove}{remove popup help from a GUI}
+\begin{ahdescription}
+This function forwards all its arguments to the
+\ahlink{popupremove}{guiutils:popupremove} function in
+the guiutils module. See the documention in that module for a full
+description.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{'widgetserver'}
+\begin{ahdescription}
+This function returns in a string the type of the
+tool; 'widgetserver'.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\end{ahobject}
+
+%% Global functions
+
+\begin{ahfunction}{is\_widgetserver}{Is the argument a widgetserver tool?}
+  \ahkeyword{is\_widgetserver}{is\_widgetserver}
+  \begin{ahdescription}
+    This global function can be used to determine if the supplied
+    argument is a widgetserver tool. If so it returns True, otherwise 
+    it returns False.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{tool}{The variable that you wish to test}
+             {no default}{Any glish variable}
+  \end{ahargs}
+
+  \ahreturns{T or F, indicating if the argument is a widgetserver
+             tool or not.}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'widgetserver.g'
+      if (!is_widgetserver(dws)) {	
+        fail 'Default widgetserver not available!';	
+      }
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example shows how you can use this function to determine if
+    the supplied variable is a widgetserver.
+  \end{ahcomments}
+
+\end{ahfunction}
+

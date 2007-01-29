@@ -1,0 +1,419 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+
+\begin{ahobject}{tableplot}{Plot data from tables via Glish}
+\begin{ahdescription}
+
+{\tt tableplot} is a plotting tool for a general \aipspp\ table. Table columns
+can be plotted against each other, and can be combined using the TaQL to 
+create expressions for derived quantities, the result of which can then 
+be plotted. Data from more than one
+table can be accessed and plotted at the same time. 
+Expressions producing arrays result in overlay plots.
+The default plot style is single-panel, but if an iteration 
+axis is specified, multi-panel plots are supported. 
+Zooming and region-based 
+flagging is possible on single and multi panel plots. A GUI, adapted to
+a particular kind of table (measurement set) can call the tableplot
+functions and customize the generated plots.
+
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{tableplot}{Construct a tableplot tool}
+\begin{ahdescription}
+Create a {\tt tableplot} tool.
+\end{ahdescription}
+%%\begin{ahargs}
+%%none
+%%\end{ahargs}
+\ahreturns{tableplot tool}
+\begin{ahexample}
+\begin{verbatim}
+# create a tableplot tool
+  tp := tableplot();
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{settables}{Specify list of tables to operate on}
+\begin{ahdescription} 
+Specify a list of table names. All plots will operate on these tables.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tabnames}{List of strings : Table names}{no default}{Vector of Strings}
+\end{ahargs}
+\ahreturns{0 if tables are valid, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# create a tableplot tool and set the list of tables to plot from.
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotdata}{Plot the result of a general TaQL expression}
+\begin{ahdescription} 
+This function evaluates the specified TaQL expressions for the X and Y axes of
+a two-dimensional scatter plot, extracts the resulting columns, and plots them.
+TaQL expressions resulting in arrays result in overlay plots. If multiple
+tables are specified in {\tt settables}, then the TaQL expressions are
+applied to all tables and overlay plots are generated. Currently only single
+panel plots are supported for this function.\\
+
+Valid TaQL strings must satisfy the following conditions.
+\begin{enumerate}
+\item Each TaQL string must result in a Double scalar or array.\\
+{\tt 'AMPLITUDE(DATA[1,1])'} results in a Double scalar (valid). \\
+{\tt 'AMPLITUDE(DATA[1:2,1])'} results in a Double array (valid).\\
+{\tt 'MEAN(AMPLITUDE(DATA[1:2,1]))'} results in a Double scalar (valid).\\
+{\tt 'DATA[1,1]'} results in a Complex scalar (NOT valid).\\
+{\tt 'AMPLITUDE(DATA[1,1])<10'} results in a Bool scalar (NOT valid).
+\item All TaQL functions resulting in Double Scalars/Arrays are allowed, 
+except for those involving an explicit collapse axis (means,sums,etc..).
+Note that these functions are different from mean,sum,etc.. which
+are supported.
+\item TaQL strings must be provided as pairs of strings, with the
+X-TaQL first, followed by the Y-TaQL. There are 3 cases.\\
+X-TaQL $-$ Scalar, Y-TaQL $-$ Scalar (one-to-one single plot)\\
+X-TaQL $-$ Scalar, Y-TaQL $-$ Array (one-to-many overlay plot)\\
+X-TaQL $-$ Array, Y-TaQL $-$ Array (if the shapes are
+the same, then a one-to-one mapping is done, otherwise only the first
+X-TaQL result is used for a one-to-many mapping with the Y-TaQL Array.)
+\item For cross plots (for example amplitude vs channel plots in an MS),
+the X-TaQL must be a string containing 'CROSS'. The Y-TaQL is used to
+read out the data from the table, and the x-values are the column indices
+(channel numbers) chosen by the Y-TaQL.
+\end{enumerate}
+
+Various plotting options can be set as follows.
+\begin{verbatim}
+plotopts.nxpanels := 1;      # number of panels along the horizontal axis. 
+plotopts.nypanels := 1;      # number of panels along the vertical axis.
+plotopts.windowsize := 5;    # horizontal size of the pgplot window (inches)
+plotopts.aspectratio := 0.8; # aspect-ratio of the pgplot window (dx/dy)
+plotopts.fontsize := 1.0;    # font size of labels
+plotopts.plotcolour := 21;   # first digit : colour, second digit : colour increment (overlays)
+plotopts.plotsymbol := 5;    # plot each point with a cross
+plotopts.linewidth := 2;     # line width (all lines)
+plotopts.plotrange := [xmin,xmax,ymin,ymax] # specified plot range over-rides the data range if
+                                            # it lies within the data range.
+plotopts.useflags := 0;      # 0:plot unflagged data, 1:plot flagged data, 
+                             # 2:plot both flagged and unflagged data (different colours)
+\end{verbatim}
+Plot labelling is controlled from glish.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{poption}{Record of plot options}{nxpanels=1,nypanels=1,windowsize=6, aspectratio=0.8,fontsize=1.0, plotcolour=10, plotsymbol=1, linewidth=2, plotrange=[-1e+30,1e+30,-1e+30,1e+30],useflags=0}{Record}
+\ahaddarg{labels}{List of strings : Title,Xlabel,Ylabel}{no default}{Vector of Strings}
+\ahaddarg{datastr}{List of TaQL strings : X,Y}{no default}{Vector of Strings}
+\end{ahargs}
+\ahreturns{1 if plotting is successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# create a tableplot tool, set tables and plot amplitude vs uvdist 
+# for two Measurement Set tables.
+# Operate on channel 1 for stokes 1 and 2 using the DATA column and
+# produce an overlay plot. Use two different colours for each overlay
+# and plot both flagged and unflagged data in separate colours.
+
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+
+  plotopts.nxpanels := 1;      
+  plotopts.nypanels := 1;      
+  plotopts.windowsize := 5;    
+  plotopts.aspectratio := 0.8; 
+  plotopts.fontsize := 1.0;    
+  plotopts.plotcolour := 21;   
+  plotopts.plotstyle := 2;
+  plotopts.linewidth := 2;
+  plotopts.timeplot := 1;
+  plotopts.plotsymbol := 5;
+  plotopts.plotrange := [1000.0,2000.0,100.0,5000.0];
+  plotopts.useflags:=2;
+
+  labels := ['Amplitude vs UVdist','uvdist','amplitude'];
+  xystr := ['SQRT(SUMSQUARE(UVW[1:2]))','AMPLITUDE(DATA[1:2,1])'];
+  tp.plotdata(poption=plotopts,labels=labels,datastr=xystr);
+
+\end{verbatim}
+TaQL strings for the above example can also be written as follows.
+\begin{verbatim}
+  xystr := ['SQRT(UVW[1]*UVW[1]+UVW[2]*UVW[2])','AMPLITUDE(DATA[1:2,1])'];
+\end{verbatim}
+
+Multiple X-TaQL, Y-TaQL pairs can be given and result in an overlay plot.
+A plot of UV coverage can be obtained by an overlay plot as follows.
+\begin{verbatim}
+  plotopts.nxpanels := 1;
+  plotopts.nypanels := 1;
+  plotopts.aspectratio := 1.0;
+  labels := ['UV coverage','u','v'];
+  xystr := ['UVW[1]','UVW[2]','-1*UVW[1]','-1*UVW[2]'];
+  tp.plotdata(poption=plotopts,labels=labels,datastr=xystr);
+\end{verbatim}
+
+TaQL strings for cross plots (amplitude vs channel number) can be written as follows.
+\begin{verbatim}
+  xystr := ['CROSS','AMPLITUDE(DATA[1,1:32])'];
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{iterplotstart}{Initialize plotting with an iteration axis}
+\begin{ahdescription} 
+Begin a series of plots using subtables constructed via an iteration axes.
+In addition to plotdata parameters, set a vector string of iteration axes
+(Table column names)
+and use iterplotnext() to step through. Multi-panel plots are supported
+with this function. Only forward step through is allowed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{poption}{Record of plot options}{nxpanels=1,nypanels=1,windowsize=6, aspectratio=0.8,fontsize=1.0}{Record}
+\ahaddarg{labels}{List of strings : Title,Xlabel,Ylabel}{no default}{Vector of Strings}
+\ahaddarg{datastr}{List of TaQL strings : X,Y}{no default}{Vector of Strings}
+\ahaddarg{iteraxes}{List of strings : Iteration axes}{no default}{Vector of Strings}
+\end{ahargs}
+\ahreturns{0 if plot initialization is successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# create a tableplot tool, set the list of MS tables to plot from, 
+# and initialize a plot of Amplitude vs UV distance for 
+# channel 1 and stokes 1, iterating over Antenna1, and creating
+# two plot panels per iteration page.
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+  plotopts.nxpanels := 1;
+  plotopts.nypanels := 2;
+  plotopts.windowsize := 6;
+  plotopts.aspectratio := 1.2;
+  plotopts.fontsize := 2.0;
+  labels := ['Amplitude vs UVdist (iterating over Antenna1)','uvdist','amplitude'];
+  xystr := ['SQRT(SUMSQUARE(UVW[1:2]))','AMPLITUDE(DATA[1,1])'];
+  iteraxes := ['ANTENNA1'];
+  tp.iterplotstart(poption=plotopts,labels=labels,datastr=xystr,iteraxes=iteraxes);
+\end{verbatim}
+To iterate over baseline and plot Amplitude vs time, for stokes 1, channel 1.
+\begin{verbatim}
+  plotopts.nxpanels := 1;
+  plotopts.nypanels := 4;
+  labels := ['Amplitude vs UVdist (iterating over Baseline)','uvdist','amplitude'];
+  xystr := ['SQRT(SUMSQUARE(UVW[1:2]))','AMPLITUDE(DATA[1,1])'];
+  iteraxes := ['ANTENNA1','ANTENNA2'];
+  tp.iterplotstart(poption=plotopts,labels=labels,datastr=xystr,iteraxes=iteraxes);
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{iterplotnext}{Start/Continue plotting}
+\begin{ahdescription} 
+Start/Continue plotting by stepping through the iteration axes. 
+\end{ahdescription}
+%%\begin{ahargs}
+%%none
+%%\end{ahargs}
+\ahreturns{1 if additional iteration steps remain , 1 if last iteration has completed}
+\begin{ahexample}
+\begin{verbatim}
+# iterate through the data
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+  plotopts.nxpanels := 1;
+  plotopts.nypanels := 2;
+  plotopts.windowsize := 6;
+  plotopts.aspectratio := 1.2;
+  plotopts.fontsize := 2.0;
+  labels := ['Amplitude vs UVdist (iterating over Antenna1)','uvdist','amplitude'];
+  xystr := ['SQRT(SUMSQUARE(UVW[1:2]))','AMPLITUDE(DATA[1,1])'];
+  iteraxes := ['ANTENNA1'];
+  tp.iterplotstart(poption=plotopts,labels=labels,datastr=xystr,iteraxes=iteraxes);
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+...
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{iterplotstop}{Stop plot iterations.}
+\begin{ahdescription} 
+To be called at the end of the plot iterations, or in between if desired.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{0 if all is valid, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# iterate through and stop after 5 iterations of 2 plots per page
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+  plotopts.nxpanels := 1;
+  plotopts.nypanels := 2;
+  labels := ['Amplitude vs UVdist (iterating over Antenna1)','uvdist','amplitude'];
+  xystr := ['SQRT(SUMSQUARE(UVW[1:2]))','AMPLITUDE(DATA[1,1])'];
+  iteraxes := ['ANTENNA1'];
+  tp.iterplotstart(poption=plotopts,labels=labels,datastr=xystr,iteraxes=iteraxes);
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+  ret := tp.iterplotnext();
+  tp.iterplotstop();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{markflags}{Mark a rectangular region to flag}
+\begin{ahdescription} 
+Mark a rectangular region to be flagged. Each call to {\tt markflags} allows
+one region to be drawn. Any number of successive calls can be made. In the case
+of multi-panel plots, a panel number must be specified with each call. This
+function marks and stores a list of marked regions. To apply flags, the 
+{\tt flagdata} function must be used. The panel number corresponds to a
+row-major ordering of panels.
+
+Marking the region requires two consecutive mouse clicks at the two diagonally 
+opposite corners. A hatched rectangle will appear over the selected region. 
+(Note   mouse dragging to mark a region with an expanding box, is not supported yet).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{panel}{Panel number}{1}{Integer}
+\end{ahargs}
+\ahreturns{0 if successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# mark 2 flag regions on a multi-panel plot, one in panel 1 and one
+# in panel 2.
+  tp.markflags(panel=1);
+  tp.markflags(panel=2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{flagdata}{Flag Data for selected flag regions}
+\begin{ahdescription} 
+Set flags for all regions marked using {\tt markflags()}. The plot is
+automatically redrawn after applying flags.
+
+If reduction TaQL functions such as {\tt sum,mean} are used, flags
+corresponding to all accessed values will be modified. For example, with
+a measurement set table, flagging on the mean amplitude of stokes 1 and
+channels 1 to 5, given by 'MEAN(AMPLITUDE(DATA[1,1:5]))' results in flags
+being set for all 5 accessed channels.
+
+For a measurement set, by default, flags are set only for accessed channels
+and stokes when the DATA column is used. However all channels/stokes can be
+flagged for the marked flag regions by setting the corresponding row flag.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{diskwrite}{1 to write flags to the table on disk, 0 to set dummy flags}{0}{Integer}
+\ahaddarg{rowflag}{1 to set a row-flag in addition to individual data flags, 0 to ignore row flags if individual flags exist}{0}{Integer}
+\end{ahargs}
+\ahreturns{0 if flagging is successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# mark 2 flag regions on a multi-panel plot, one in panel 1 and one
+# in panel 2. Then apply the flags and write to disk.
+  tp.markflags(panel=1);
+  tp.markflags(panel=2);
+  tp.flagdata(diskwrite=1,rowflag=0);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{zoomplot}{Zoom/Unzoom on marked regions}
+\begin{ahdescription} 
+Allows a chosen region to expand to fill in the plot view panel. Multiple 
+zoom calls are allowed. One call to unzoom returns to the original plot. In
+multi-panel plots, zooming can be done separately on each panel.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{panel}{Panel number}{1}{Integer}
+\ahaddarg{direction}{1 to zoom, 0 to unzoom}{1}{Integer}
+\end{ahargs}
+\ahreturns{0 if region is valid and zoom successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# zoom and then unzoom on panel 2
+  tp.zoomplot(panel=2,direction=1);
+  tp.zoomplot(panel=2,direction=0);
+\end{verbatim}
+Flagging and zooming can be interleaved, i.e. flag regions can be marked
+on a zoomed plot using {\tt markflags()}, and applied using {\tt flagdata()}
+before or after unzooming.
+\begin{verbatim}
+# Zoom on panel 1 and perform flagging.
+  tp.zoomplot(panel=1,direction=1);
+  tp.markflags(panel=1);
+  tp.markflags(panel=1);
+  tp.flagdata(diskwrite=1,rowflag=0);
+  tp.zoomplot(panel=1,direction=0);
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{clearflags}{Clear all flags in the table}
+\begin{ahdescription} 
+Currently, this function clears all flags from the table. This will be modified
+to allow for selective un-flagging of previously flagged regions (specified by
+indexing into a stored history of marked flag-regions). 
+\end{ahdescription}
+%%\begin{ahargs}
+%%none
+%%\end{ahargs}
+\ahreturns{0 if successful, -1 otherwise}
+\begin{ahexample}
+\begin{verbatim}
+# clear all flags from two measurement set tables
+  tp := tableplot();
+  tp.settables(tabnames=['3c273.ms','3c48.ms']);
+  tp.clearflags();
+  tp.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{end the tableplot tool}
+\begin{ahdescription} 
+End the tableplot tool 
+\end{ahdescription}
+\ahreturns{0 if successful, -1 otherwise}
+\end{ahfunction}
+
+\end{ahobject}

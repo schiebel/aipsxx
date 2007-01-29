@@ -1,0 +1,1359 @@
+\chapter{Imaging, Deconvolution and Self-calibration}
+\label{GRimaging}
+
+{\em Tim Cornwell and Kumar Golap}
+
+
+\section{Overview}
+
+This chapter describes how to make and deconvolve images starting
+from a calibrated MeasurementSet.  There is also some
+discussion of how to do self-calibration.
+
+\subsection{Required Tools}
+
+
+The major \aipspp\ \tools\ that you will need are:
+
+\begin{description}
+
+\item[\htmlref{Imager}{imager:imager}] is used for gridding and
+Fourier transformation of a MeasurementSet, deconvolution via various 
+methods, and prediction of model visibilities from deconvolved
+images. It also has a number of support functions such as those for
+making mask images for deconvolution, for calculating point spread
+functions and sensitivity, and for plotting of visibility data.
+
+\item[\htmlref{Deconvolver}{deconvolver:deconvolver}] Instead of working
+from the visibility data, as Imager does, you may
+use a Deconvolver \tool\ to deconvolve a pre-calculated dirty image
+and point spread function. This is sometimes preferable if you need to
+experiment a lot with the deconvolution. The \htmlref{Imager.makeimage}{imager:imager.makeimage.function}
+function may be used to calculate the dirty image and point spread function.
+
+\item[\htmlref{Calibrater}{calibrater:calibrater}] performs the
+incremental calibration of visibility data that is needed for
+self-calibration.
+
+\item[\htmlref{msplot}{ms:msplot}] is used for plotting and
+editing of visibility data, and is useful for investigation and
+editing during self-calibration cycles.
+
+\item[\htmlref{Componentmodels}{componentmodels}] are used to 
+represent the sky brightness by discrete components. Such models
+may be used in imaging and self-calibration to improve the quality of
+the results. The interactive
+\htmlref{Imagefitter}{images:imagefitter} is a convenient tool
+for fitting models to images.
+
+\item[\htmlref{Simulator}{simulator}] may be useful if you
+wish to check your results via simulation.
+
+\end{description}
+
+In addition, you will need to use the \htmlref{Viewer}{viewer} to
+examine your images, and perhaps an \htmlref{MS}{ms:ms} \tool\ to load
+and save MeasurementSets. 
+
+The \htmladdnormallink{User Reference Manual}{../../user/Refman/Refman.html}
+contains the primary documentation for all these \tools\ and their
+functions. 
+ 
+\subsection{Data Requirements}
+
+To make an image, a reasonably well-calibrated MeasurementSet is
+required.  You may either import calibrated data from another system or
+calibrate the data in \aipspp.  See the
+\htmlref{Calibration}{GRcalibration} chapter for more details on the
+latter. 
+
+If the dataset was calibrated in another system then you'll need to
+load it from a \fits\ file.
+
+\begin{itemize}
+
+\item To transfer from AIPS, first split the calibrated data using 
+the task SPLAT (thus applying the calibration), and then use FITTP to
+write the various sources. Do NOT write in compressed format 
+since \aipspp\ cannot read it (yet).
+
+\item To load a \fits\ file, use the
+\htmlref{fitstoms}{ms:ms.fitstoms.constructor} constructor to create an MS
+\tool.  Use \htmlref{ms.summary}{ms:ms.summary.function} to get a
+summary of the MeasurementSet.  Using this summary, check that the
+various sources and spectral windows have loaded as expected.  Also
+use this as a reference for future selections from the MeasurementSet.
+
+\begin{verbatim}
+include 'ms.g'
+x := fitstoms('pks1331-0.ms', 'PKS1331-09.UVFITS')      # Convert from FITS
+x.summary()                                             # Summarise to logger
+x.done()                                                # Finished with tool
+\end{verbatim}
+
+\item You might wish to use the visibility plotting and editing tool
+\htmlref{msplot}{ms:msplot} to examine the data.  
+
+\end{itemize}
+
+
+\section{Setting up Imager}
+
+The \tool\ for imaging and deconvolution is
+\htmlref{Imager}{imager:imager}.  It has been designed to do everything
+that is required: gridding/degridding of visibility data, Fourier
+transforms, deconvolution using various methods, {\em etc.} A complete
+overview of the capabilities of Imager can be found in the
+\htmlref{Reference Manual}{imager}. 
+
+There are two sorts of \tool\ functions in Imager; passive and active.
+The passive functions like {\stff setimage}, {\stff setdata} etc. set
+the state of the Imager \tool.  Then, active functions such
+as {\stff makeimage}, {\stff clean} etc. act on the data according
+to the previously set state.
+
+
+\subsection{Construction}
+
+To use an Imager \tool\, one must first construct it from a
+MeasurementSet and then configure it (set its ``state'') via its
+functions.  When you are finished, you destroy the \tool\ (which 
+of course does not affect the actual MeasurementSet on disk). 
+
+\begin{verbatim}
+include 'imager.g'
+imgr := imager('/home/data/mydata.ms')         # Construct
+imgr.summary()                                 # Summarize state of tool
+imgr.done()                                    # Destroy
+\end{verbatim}
+
+The {\stff summary} function is always useful to summarize the
+current state of your Imager \tool.  You may find you have forgotten
+what functions you ran and need reminding what you state you have set.
+
+\subsection {Selecting Data}
+
+To make an image from the visibilities one needs to select the part of
+the data from the MeasurementSet that is going to be used (e.g which
+pointing or channels or spectral window etc.  that is going to be
+imaged).  This is done with the
+\htmlref{Imager.setdata}{imager:imager.setdata.function} function.  If
+you don't run this function, you get all of the data. 
+
+Here are some examples (refer to the Reference Manual for more details). 
+
+\begin{verbatim}
+imgr.setdata(mode='channel', nchan=15,                    # Select 15 channels, second
+             spwid=[2], fieldid=3)                        # spectral window  and third field
+#
+imgr.setdata(mode='channel', nchan=256, step=2,           # Select every second channel to make 256
+             spwid=[2], field=3)
+
+#
+imgr.setdata(mode='velocity', nchan=64, mstart='20km/s',  # Select data in radio velocity space
+             mstep='-100m/s', spwid=[2], fieldid=3);      #Selecting data on velocity is valid for single spectral windows
+#
+imgr.setdata(mode='opticalvelocity', nchan=64,            # Select data in optical velocity space
+             mstart='20km/s', mstep='-100m/s');
+#
+### a more complex data selection with diferent number of channels and different spectral windows
+imgr.setdata(mode='channel', spwid=[2,3], start=[4,5], nchan=[10,12], step=[1,1])
+##We are selecting 10 and 12 channels from spectra windows 2 and 3 repectively\\##The channel selection start at channel 4 and 5 repectively from each spectral window 
+\end{verbatim}
+
+Other functions can also further reduce the data selected.  For example,
+\htmlref{Imager.filter}{imager:imager.filter.function} and 
+\htmlref{Imager.uvrange}{imager:imager.uvrange.function}. 
+
+
+\subsection {Setting the Image Parameters}
+
+Now we set the actual imaging parameters via the
+\htmlref{Imager.setimage}{imager:imager.setimage.function} function. 
+This is a {\bf required} function in Imager (in fact, the only one presently). 
+This function is passive; it just sets state so that when you tell
+Imager to do something (like make an image), it knows what to do. 
+
+This function controls things like image size, cell size, spectral and
+polarization selection, sampling, phasecenter, and number of facets (for wide-field
+imaging).  Images constructed afterwards (using {\em e.g.} the
+\htmlref{Imager.clean}{imager:imager.clean.function} function) will have these
+parameters.  
+
+One important point to note is that the image size does NOT have to be a
+power of two.  Just choose some reasonably composite even number close
+to the number that you want.  {\bf Do not} use a prime number since the Fourier
+Transform will then be very slow.  
+
+\begin{verbatim}
+include 'measures.g'
+imgr.setimage(nx=600, ny=600, cellx='0.5arcsec', celly='0.5arcsec',
+              fieldid=2, mode='channel', nchan=20, start=10);
+\end{verbatim}
+
+In this example, the phase center is that of the specified field (source).
+In addition, each selected channel will be imaged as one channel of the output image.
+
+\begin{verbatim}
+include 'measures.g'
+phctr := dm.direction('J2000', '19h50m00', '50d00m00')      # Use default Measures tool
+#
+imgr.setimage(nx=600, ny=600, cellx='0.5arcsec', celly='0.5arcsec',
+              doshift=T, phasecenter=phctr, mode='mfs') 
+\end{verbatim}
+
+In this example, we specify the phase center explicitly and set {\gcf doshift=T}
+to indicate that the phase center must be taken from the {\gcf phasecenter}
+argument (Ed. note - the interface that specifies the phase center needs to be
+rationalized some).
+
+
+\subsection {Channel Selection and Combination}
+
+Functions 
+\htmlref{Imager.setdata}{imager:imager.setdata.function}
+and
+\htmlref{Imager.setimage}{imager:imager.setimage.function}
+both have arguments {\gcf nchan, start} and {\gcf step}.
+Function {\stff setdata} is used to select channels.
+Function {\stff setimage} is used to specify how
+many {\bf output} channels the image will have, and
+how the input channels should be combined (averaging,
+gridding).
+
+You should call function {\stff setdata} first.  After you have called
+this function, subsequent active Imager function calls only have
+available to them the data that you selected. 
+
+Note however, that when you call {\stff setimage}, the specification of
+the channels is still in an absolute sense.  Thus, if you set {\gcf
+nchan=10, start=20} in {\stff setdata}, and you wish to image all of
+these channels (let us say one image plane per channel), you must {\bf also}
+set {\gcf nchan=10, start=20} in function {\stff setimage}. 
+
+You might think that you have already selected the 20 channels you want
+with {\stff setdata} and therefore in function {\stff setimage} setting
+{\gcf start=1} would select the first of those 20 channels.  This is
+{\bf not} the way it works.   If you asked for, say, channel 1
+with function {\stff setimage} when you did {\bf not} select channel 1 with
+function {\stff setdata}, that channel would be imaged but empty
+in the output image.
+
+You use the channel selection parameters in function {\stff setimage} to
+specify how the selected channels will be combined and how many output
+channels the image will have.  Basically, there are two sorts of ways
+that you might like to use the channels that you have selected. 
+
+Firstly, in a multi-frequency synthesis image, all of the selected
+channels are gridded onto the uv plane to reduce band-width smearing
+(which would be incurred if you averaged the channels and then gridded). 
+In this case, the {\gcf step} argument is not generally relevant; leave
+it at 1 if explicitly 'mfs' is used.   For example:
+
+\begin{verbatim}
+imgr.setdata(mode='channel', nchan=32, start=10, step=1)
+imgr.setimage(mode='mfs', nchan=1, start=1, step=1)
+
+OR 
+
+imgr.setdata(mode='channel', nchan=32, start=10, step=1)
+imgr.setimage(mode='channel', nchan=1, start=10, step=32)
+       
+\end{verbatim}
+
+Here we have selected 32 input channels, starting with channel 10, and
+gridded them together to form one output image plane.  Using 'mfs' in
+setimage grids all data selected in setdata in one plane (nchan, start
+or step are ignored). One can achieve a similar thing in using
+'channel' mode in setimage as done in the second case.
+ 
+
+Secondly, when you make a spectral-line cube, you may wish 
+to select/combine channels in a variety of ways according 
+to the science you want to do.  Here are some examples.
+
+\begin{verbatim}
+imgr.setdata(mode='channel', nchan=200, start=10, step=1)
+imgr.setimage(mode='channel', nchan=200, start=10, step=1)
+\end{verbatim}
+
+This example selects 200 consecutive channels starting with
+channel 10.  The image formed has one image plane for each selected
+channel.
+
+\begin{verbatim}
+imgr.setdata(mode='channel', nchan=200, start=10, step=5)
+imgr.setimage(mode='channel', nchan=200, start=10, step=5)
+\end{verbatim}
+
+This example selects 200 channels by picking every fifth channel, starting with
+channel 10.  The image formed has one image plane for each selected
+channel.
+
+
+\begin{verbatim}
+imgr.setdata(mode='channel', nchan=200, start=10, step=5)
+imgr.setimage(mode='channel', nchan=100, start=10, step=10)
+\end{verbatim}
+
+This example selects 200 channels by picking every fifth channel,
+starting with channel 10.  However, the image formed only has 100
+channels.  Each output image plane (channel) is formed by averaging 2
+successively selected channels.  Thus, we have selected channels 10, 15,
+20, 25, 30.  When we image, channels 10 and 15 are averaged to form
+output image channel 1.  Channels 20 and 25 are averaged to form output
+channel 2 and so on. 
+
+Of course you could also use {\gcf mode='mfs'} when combining groups of
+channels if you want an output image of more than one channel.  In this
+case the combination is done by gridding rather than averaging. 
+
+
+Now to an example when one wants to make a cube image from multiple sectral windows
+
+\begin{verbatim}
+imgr.setdata(mode='channel', spwid=[1,2,3], nchan=200, start=1, step=1)
+imgr.setdata(mode='channel', spwid=[1,2,3], nchan=150, start=1, step=4)
+
+
+\end{verbatim}
+In the above example we select 600 data channels from 3 spectral windows (200 from each spectral window). Then in the {\tt setimage} step we make imager combine 4 channels to make one image channel.
+
+\begin{verbatim}
+myim.setdata(fieldid=[2], spwid=[1:2]) 
+myim.setimage(nx=800, ny=800, cellx='0.5arcsec', celly='0.5arcsec', mode='velocity', nchan=30, mstart='-10km/s', mstep='1.8km/s', spwid=[1,2],fieldid=2)
+ 
+\end{verbatim}
+
+
+In the above example we select all the data in spectral windows 1,2
+for the field we are interested. Then we define that the image to be
+made in velocity values, here starting from -10km/s and having 30 channels which are separated by 1.8 km/s.
+
+\subsection{Weighting}
+
+The above steps show how to set up your Imager \tool\ as desiresd.  In
+addition, before imaging one may wish to set some values in the
+MeasurementSet itself.  This is necessary for visibility weighting.  The
+visibility imaging weights are computed prior to the actual imaging and
+stored in a column of the MeasurementSet, ``IMAGING\_WEIGHT''.  
+
+The first time an Imager \tool\ is attached to a MeasurementSet it initializes
+the imaging weights to the natural weighting scheme.  Thereafter, whatever
+weighting scheme you last used, is the one you will get if you don't
+explicitly run one of the weighting functions.
+
+The values in IMAGING\_WEIGHT column are set, changed, and examined by a
+number of functions. 
+
+\begin{itemize}
+
+\item \htmlref{weight}{imager:imager.weight.function} sets the column
+using one of natural, uniform, or Briggs (robust) weighting.  For the
+latter two methods, one can specify the field of view over which the
+minimization of the sidelobes is done (thus achieving what is often
+called super-uniform weighting). 
+
+\begin{verbatim}
+imgr.weight(type='natural')                 # Natural weighting
+imgr.weight(type='uniform')                 # Uniform over entire field of view
+imgr.weight(type='uniform', npixels=300)    # Uniform over specified size
+imgr.weight(type='briggs', rmode='norm', robust=0.5)  # An example of Briggs weighting
+\end{verbatim}
+
+
+\item \htmlref{filter}{imager:imager.filter.function} applies an
+optimal filter for a given shape (often called ``tapering'').
+In the following example we apply a Gaussian filter.
+
+\begin{verbatim}
+imgr.filter(type='gaussian', bmaj='4.0arcsec', bmin='2.5arcsec',  bpa='60deg')
+\end{verbatim}
+
+
+\item \htmlref{plotweights}{imager:imager.plotweights.function} plots 
+the imaging weights either as function of uv distance or on a gridded
+plane.
+
+\item \htmlref{sensitivity}{imager:imager.sensitivity.function}
+calculates and returns the sensitivity of the resulting weighting both
+absolutely and relative to natural weighting.
+
+\item \htmlref{fitpsf}{imager:imager.fitpsf.function} calculates
+the dirty point spread function and returns the best fitting Gaussian.
+
+\end{itemize}
+
+In Imager, we have chosen separate out the calculation of the weighting
+from the gridding and Fourier transformation to give more control over
+this important step.  Note that this also gives the ability to set the
+weights by hand using \htmlref{getcol}{table:table.getcol.function} and
+\htmlref{putcol}{table:table.putcol.function} functions of the
+\htmlref{table}{table} tool.  For example, to replace the weights by
+their square root:
+
+\begin{verbatim}
+include 'table.g'
+t:=table('3C273XC1.ms', readonly=F)
+wt:=t.getcol('IMAGING_WEIGHT')
+wt[wt>0.0] := sqrt(wt[wt>0.0])
+t.putcol('IMAGING_WEIGHT')
+t.flush();
+t.close()
+\end{verbatim}
+
+Before performing such a step, one should close the imager and then
+construct it again afterwards.
+
+{\it WARNING: All the weighting schemes modify the MeasurementSet and thus
+are conserved even after destroying the Imager \tool\ and may no
+longer be suitable for subsequent imaging.   You can of course reset the
+weighting scheme with the {\stff weight} function.}
+
+
+\section{Creating and Deconvolving Images}
+
+\subsection{Creating Images}
+
+Now that your Imager \tool\ and the MeasurementSet are set up, 
+you can make an image.
+
+\begin{enumerate}
+
+\item It may be helpful to use the
+\htmlref{Imager.advise}{imager:imager.advise.function} function to
+determine the cell size automatically, as well as the number of pixels
+for a given field of view. 
+
+Imagine we want to make an image over a field of view of 10~arcmin.  The
+{\stff advise} function will return the maximum pixel size required and
+number of pixels. If the number of facets required is larger than 1 then 
+one needs a wide-field imaging algorithm as described in the 
+\htmlref{wide-field}{GRwidefield} chapter of Getting Results.
+
+
+\begin{verbatim}
+myimager.advise(fieldofview='10arcmin')
+\end{verbatim}
+
+\item It is always recommended to make a dirty image of the field before
+deconvolution.  Use the
+\htmlref{Imager.makeimage}{imager:imager.makeimage.function} function to
+make a dirty image first.  There are a number of possibilities for
+constructing the image.  Usually, you will want to make the image from
+the CORRECTED\_DATA column.  This is the column that
+\htmlref{Calibrater}{calibrater:calibrater} writes into when correcting
+the DATA column.  It is also the column that Imager initializes to a
+copy of the DATA column if the CORRECTED\_DATA column does not exist
+(e.g.  filling from a \fits\ file). 
+
+You might also like to make the point spread
+function.
+
+
+\begin{verbatim}
+imgr.makeimage(type='corrected', image='dirty.image')
+imgr.makeimage(type='psf', image='dirty.beam')
+\end{verbatim}
+
+
+\end{enumerate}
+
+
+
+\subsection{Deconvolution}
+
+At this point, you are ready to deconvolve the point spread function
+(usually called the dirty beam) from the dirty image.  The goal of this
+step is to correct the dirty image for the sidelobes in the point spread
+function, which arise from the limited Fourier plane coverage in your
+observation.  You have two choices for the deconvolution: use the
+\htmlref{Deconvolver}{deconvolver:deconvolver} \tool\ on the dirty image
+and point spread function or use the various deconvolution functions of
+Imager.  In the latter, the dirty image and point spread function are
+recomputed as needed, whereas \htmlref{Deconvolver}{deconvolver} works
+with a fixed dirty image and point spread function.  If you want to
+mosaic, or image wide- or multiple fields then you must use
+\htmlref{Imager}{imager:imager}. 
+
+The options for deconvolving are :
+
+\begin{itemize}
+
+\item CLEAN; H\"ogbom, Clark and multi-scale variants of the CLEAN algorithm are available.
+Functions that implement CLEAN are
+\htmlref{Imager.clean}{imager:imager.clean.function},
+\htmlref{Deconvolver.clean}{deconvolver:deconvolver.clean.function}, and
+\htmlref{Deconvolver.clarkclean}{deconvolver:deconvolver.clarkclean.function}.
+
+If you use a multi-scale algorithm, you should also set up the scale sizes via the
+\htmlref{Imager.setscales}{imager:imager.setscales.function} function.
+
+\item Maximum Entropy; maximum entropy and maximum emptiness methods are available.
+Functions that implement MEM are
+\htmlref{Imager.mem}{imager:imager.mem.function} and
+\htmlref{Deconvolver.mem}{deconvolver:deconvolver.mem.function}.
+
+\item Non-negative least squares  (see \htmladdnormallink{Dan Briggs' thesis}
+{http://ftp.aoc.nrao.edu/pub/dissertations/dbriggs/diss.html}).
+Functions that implement NNLSQ are 
+\htmlref{Imager.nnls}{imager:imager.nnls.function}.
+
+
+\item Pixon methods.  Functions that implement Pixon methods are
+\htmlref{Imager.pixon}{imager:imager.pixon.function} and
+\htmlref{Deconvolver.pixon}{deconvolver:deconvolver.pixon.function}. 
+
+The Pixon algorithm is available via an IDL library courtesy of the
+\htmladdnormallink{Pixon LLC}{http://www.pixon.com/}. This means that you must   
+have the library and IDL installed on your computer. The Pixon library 
+is available free of charge for your personal scientific use direct   
+from \htmladdnormallink{Pixon LLC}{mailto:info@pixon.com}. IDL is available
+commercially from \htmladdnormallink{RSI}{http://www.rsinc.com/}.
+
+\end{itemize}
+
+
+For all deconvolution approaches (except Pixons)a Componentmodel \tool\
+may be specified, in which case it is removed from the data prior to
+imaging.  Thus the resulting deconvolved image does not include the flux
+modelled by the Componentmodel. 
+
+The deconvolution methods do not keep a list of CLEAN components in
+sequence.  Instead the CLEAN components are immediately added to the
+model image.  This allows interoperability of the CLEAN, MEM and NNLS
+algorithms as well the deconvolution functions in the
+\htmlref{Deconvolver} {deconvolver:deconvolver} \tool.  It also allows
+editing of the resulting images using the Image tool. 
+
+The deconvolution functions can return the residual and restored
+images, as well as the updated model image. In addition, there are
+\htmlref{Imager.residual}{imager:imager.residual.function} and
+\htmlref{Imager.restore}{imager:imager.restore.function} functions that
+also compute residual and restored images. The distinction is that in
+the former, the residual is that calculated by the deconvolution
+method at the end of iteration, whereas the latter returns the
+residual calculated by going back to the original visibility data
+(except for the cases of multi-field and wide-field algorithms).
+
+\begin{verbatim}
+imgr.clean(algorithm='clark', niter=2000, gain=0.2, model='model_2000',
+           image='restored_2000', residual='residual_2000')
+\end{verbatim}
+
+In the above example we run a Clark CLEAN deconvolution with Imager.  2000
+CLEAN components with a gain of 0.2 are requested.  
+
+If the model image does not pre-exist it will be created and filled with
+the CLEAN delta function components found.  If it does pre-exist (it may
+be non-empty (perhaps the result of a prior deconvolution) and its
+Fourier transform is first subracted.  This is also how you would
+continue to CLEAN deeper from a prior run of {\stff clean, mem, or
+nnls}. 
+
+Note that the model image is updated when this function finishes.
+So if it was non-empty on input, you should save a copy first,
+if you wish to preserve that model.
+
+
+\subsection{Specifying the deconvolution region}
+
+In deconvolution, one must often specify the region of the dirty image
+over which the sky brightness is expected to be non-zero.  In CLEAN,
+possible components can only come from this region.  Designation of
+regions to deconvolve is done via images of the same shape as the dirty
+image.  The value of these mask images ranges from 0 to 1 (but usually
+we use 0 [no components] or 1 [allow components]).  There are a number
+of ways of making such mask images. 
+
+\begin{itemize}
+
+\item[\htmlref{Imager.make}{imager:imager.make.function}] Makes an empty
+image according to the current image size, cell size, {\em etc.}
+
+\item[\htmlref{Imager.boxmask}{imager:imager.boxmask.function}] makes a
+mask image from a specified BLC and TRC.
+
+\item [\htmlref{Imager.regionmask}{imager:imager.regionmask.function}] makes a mask
+image from an image \htmlref{region}{images:regionmanager}.
+
+\item [\htmlref{Imager.exprmask}{imager:imager.exprmask.function}] makes
+a mask image by applying an image
+\htmlref{Image.imagecalc}{images:image.imagecalc.constructor} to an image, to, for
+example, set the mask to all points where the brightness is greater than
+some limit. 
+
+\end{itemize}
+
+The most powerful approach is probably to use
+\htmlref{Imager.regionmask}{imager:imager.regionmask.function}, since regions
+have a number of advantages: they can be polygonal, they can be combined
+in various ways, they can be defined in world coordinates, and they can
+be saved to a table for later retrieval and use.  The 
+\htmlref{Regionmanager}{images:regionmanager} \tool\ allows these and other
+operations on regions. 
+
+A compound region holding the union of lots of interactively specified
+simple (boxes or polygons) regions can be made via the Viewer.
+Please see the documentation in {Viewerdisplaypanel}{viewer:vdpgui}
+to see how to do this.  
+
+NNLS requires two such masks images : one for the region where flux is to be
+allowed and one for the region to be used as constraints. Typically
+the latter region will be bigger than the former. The product of the
+pixels in the two regions should not exceed about 5-10 million.
+
+
+\begin{verbatim}
+
+# Imagine you have a Region tool called 'r1' in Glish
+
+imgr.regionmask(mask='mask_image', region=r1)            # Make mask image from region
+imgr.clean(algorithm='clark', niter=2000, gain=0.2, 
+           model='model_2000', image='restored_2000', 
+           residual='residual_2000', mask='mask_image')  # Use it !
+\end{verbatim}
+
+
+\section{Wizard interface to Imager}
+
+{\bf The wizard is no longer maintained}
+
+For a quick look at an image, one may wish to use the
+\htmlref{Imagerwizard}{imager:imagerwizard.function} function.  This is
+built using various \tools\ including Imager.  It makes many decisions,
+such as cell size, automatically, and simplifies obtaining an initial
+imaging. 
+
+\begin{verbatim}
+include 'imagerwizard.g'
+ok := imagerwizard('data.ms')
+\end{verbatim}
+
+The wizard leads you step by step through the imaging process
+via interactive GUIs.
+It also writes a \glish\ script which you can then look
+at, edit and re-run if you wish.
+
+
+\section{Component Models and Primary Beams}
+\label{GRimagingcomponentmodels}
+
+A priori, survey, or model fitting information can provide the user with
+the basis for a component model of bright, unresolved or somewhat
+resolved, confusing sources.  These sources can be removed from the
+visibilities prior to imaging mosaicing by setting them in the
+\htmlref{Imager.clean}{imager:imager.clean.function} or
+\htmlref{Imager.mem}{imager:imager.mem.function} functions. 
+These arguments take a \htmlref{Componentlist}{componentmodels:componentlist}
+table name.
+
+However, these components are assumed to be small compared to the
+primary beam, and only the primary beam value at the center of a
+component is ever applied to the Gaussian component (i.e.  a Gaussian
+component stays Gaussian after application of the primary beam, even if
+its wings extend beyond the primary beam pattern).  Hence, errors will
+result if highly extended components are included in the component list. 
+If your application requires a model with extended Gaussian components,
+for the time being you may want to turn the extended components into an
+image with the Image tool's
+\htmlref{Image.modify}{images:image.modify.function} function. 
+
+When you are imaging only single fields (i.e. not mosaicing),
+as is relevant to this chapter, the Componentlist 
+is {\em not} a true representation of the sky brightness.
+The values it holds must include the attenuation of the
+primary beam.  This is because in single field mode, Imager
+makes no primary beam corrections of any form whatsoever.
+
+If you have a Componentlist which is a true representation
+of the sky, you can apply a primary beam attenuation to it
+with the \htmlref{Imager.pb}{imager:imager.pb.function} function.
+
+\begin{verbatim}
+imgr.make('empty')
+imgr.pb('empty', operation='apply', incomps='cl.sky', 
+        outcomps='cl.attenuated.sky')
+\end{verbatim}
+
+Note that you need the input image so that Imager knows
+what telescope you are using so that it can get the
+correct model.  Alternatively, if you have used 
+\htmlref{Imager.setvp}{imager:imager.setvp.function}
+to set a Voltage pattern from an external table,
+it would use that.
+
+The Componentlists are specified by their disk file names.
+(the arguments are not Componentlist \tools).
+
+
+\section{Multi-scale CLEAN}
+
+\subsection {General}
+
+Delta function CLEAN algorithms, such as the Clark or Hogbom algorithms,
+must use a modest gain factor (traditionally 0.1) in order to
+image extended emission in a reasonable manner.  Otherwise, emissions
+and sidelobes get confused and error striping can result.
+
+Multi-scale CLEAN algorithms attempt to recognize that the emission
+in the sky usually comes on a variety of scale sizes; it
+decomposes the image into Gaussians of the specified scale sizes.  
+This means it does not spend huge amounts of time CLEANing large extended sources
+pretending that they are really collections of delta functions.
+
+Function \htmlref{Imager.setscales}{imager:imager.setscales.function}
+allows you to choose these scales, either with an automatic
+method (you say how many scales you want) or by direct specification
+of the scale sizes in pixels.
+
+Multi-scale CLEAN does not suffer from the same problems as delta function
+CLEAN and can use a larger value of the gain factor, in the range of
+0.4 and 0.8.  Sometimes an oscillatory pattern will occur in the
+total cleaned flux with the peak residuals bouncing back and forth between
+positive and negative.  If this occurs, try reducing the gain factor or try
+reducing the size of the largest scale.
+
+The progress display for multi-scale CLEAN shows the flux and peak residuals
+for each cleaning scale.   For any extended brightness distribution, there will
+be initially more flux on the large scales than on the small scales, and this
+will be reflected by much larger residuals on the large scales.  Consequently,
+the flux is built up much more quickly by CLEANing on these large scales.
+However, in the early stages of deconvolution, we may never get anywhere close
+to the stated CLEANing threshold if we are dominated by extended flux.  The
+exact manner in which the larger scales' residuals will be inflated depends upon
+the details of the brightness distribution.  
+
+\begin{verbatim}
+imgr.setscales('nscales, nscales=3)                # Specify number of scales
+imgr.setimage(nx=600, ny=600, cellx='0.5arcsec',   
+              celly='0.5arcsec', mode='mfs') 
+imgr.clean(algorithm='msclean',                    # Deconvolve
+           model='model', 
+           image='restored',
+           niter=100, gain=0.3)
+\end{verbatim}
+
+
+\subsection {The {\gcf imagermultiscale()} function}
+
+The \htmlref{imagermultiscale}{imager:imagermultiscale.function} function
+provides a different sort of packaging of multi-scale algorithms and
+works on mosaicing or single field data. 
+
+Conceptually, the {\gcf imagermultiscale()} function offers a second
+order multi-scale method, or doing multi-scale CLEAN as the
+deconvolution kernel inside of a cascade of multi-resolution CLEANs each
+working on increasingly larger images with smaller pixels.
+
+The multi-scale CLEAN algorithm addresses an essential problem in
+imaging: you often have emission on a wide range of scale sizes which
+must be imaged simultaneously.  While it is vastly superior to
+delta-function CLEAN algorithms at reconstructing extended emission, it
+is not incredibly efficient as it seeks to deconvolve very large
+structures with very small pixels.
+
+A simple scripting approach to multi-resolution imaging which overcomes
+this inefficiency is provided by the
+\htmlref{imagermultiscale}{imager:imagermultiscale.function} function. 
+The user provides a vector of image sizes and the corresponding pixel
+sizes, and the function performs a multi-scale CLEAN on the first image
+(with the largest pixels).  When the first CLEAN stops, its model is
+regridded onto the second image size and is used as a starting model for
+the next round of Multi-Scale CLEANing.  Of course, since the regridded
+model will have smaller pixels, it will be in error; but the large scale
+structure will be pretty well in place.  So, each round of Multi-Scale
+CLEANing will concentrate on the small scale structure, though each will
+also be able to make larger scale adjustments as well.  
+
+If the {\gcf imagermultiscale} function is too restrictive for
+your needs, you are encouraged to pull it out of {\gcf imager.g} and edit
+your own function.  For example, you might want to have some fine
+control over which channels to image.
+This function could also easily be converted to a multi-scale MEM function.
+
+
+\begin{verbatim}
+include 'imager.g'
+#
+ok := imagermultiscale(msname='orion.ms', imsizes=[128, 256, 512], 
+                       cellsizes=[16,8,4], scales=[0, 5, 15], 
+                       nitermult=0.15, niterpower=1.2, fields=[2],
+                       centerfield=[2],
+                       spwid=[1])
+\end{verbatim}
+
+
+
+
+
+\section{Wide-field imaging and Mosaicing}
+
+\htmlref{Wide-field}{GRwidefield} imaging and
+\htmlref{mosaicing}{GRmosaicing} are covered in separate chapters of
+this document. 
+
+
+\section {Combining single dish and interferometer images}
+
+Sometimes, the lack of total-power data in an interferometric
+observation (single- or multi-field) can result in image defects on the
+size scale of the interferometer baselines.  For example, in a maximum
+entropy algorithm with positivity constraint, the ``negative bowl'' will
+manifest itself in the model brightness distribution by a flat region of
+near zero emission surrounded by a spurious positive ``splash'' around
+the bowl; the ``splash'' artifact sometimes has small scale structure. 
+
+Currently, the only method available in Imager to combine total power
+measurements with interferometer data is via a {\em feathering}
+technique. 
+
+Since feathering is an intrinsically post-deconvolution method, it
+cannot help such a case.  However, there are two ways to help out the
+deconvolution algorithms.  First, convert the single
+dish image to the same image grid as the interferometric mosaic by
+using the \htmlref{Image.regrid}{images:image.regrid.function} function. 
+Then either rescale or deconvolve the image into units of Janskys per
+pixel.  This image can be used as a {\gcf prior} image in
+maximum entropy or maximum emptiness and will prevent small scale image
+artifacts due to the lack of total power data.  However the {\gcf prior} image
+is not elevated to the level of a hard constraint, so a subsequent pass
+of the interferometer image and the single dish image through the
+\htmlref{Imager.feather}{imager:imager.feather.function} function will
+ensure that the large scale structure in the final image is
+consistent with the single dish image. 
+
+
+\begin{verbatim}
+imgr.feather(image='feathered.image',      # Specify the single dish
+             highres='casa.vlaonly',       # voltage pattern via
+             lowres='casa.sd',             # a table
+             usedefaultvp=F, 
+             vptable='sd.vptable');
+\end{verbatim}
+
+
+
+\section{Self-calibration}
+
+Self-calibration is the process of using a model of the source to
+improve the calibration of the data.  One makes an initial model using
+perhaps componentmodels or a deconvolved image.  This is then used to
+predict the visibilities, and the antenna gains are derived by a least
+squares fit between the observed and modelled visibilities.  Once the
+antenna gains thus derived have been corrected, the model may be
+rederived and thus improved.  This process is iterated until a
+satisfactory improvement has been acheived. 
+
+In \aipspp\ this process is done with an \htmlref{Imager}{imager:imager}
+\tool\ and a  \htmlref{Calibrater}{calibrater:calibrater} \tool\ working
+together.
+
+The steps are:
+
+\begin{enumerate}
+
+\item Set up a \htmlref{Calibrater}{calibrater:calibrater} tool 
+for the MeasurementSet. Set the data selection to be consistent
+with that in the Imager \tool. The type of solution is
+set in the \htmlref{Calibrater.setapply}{calibrater:calibrater.setapply.function} 
+and \htmlref{Calibrater.setsolve}{calibrater:calibrater.setsolve.function} 
+functions. More on this below.  Be sure to set the solution time scales
+appropriately. 
+
+\item Make a deconvolution using your favored method.
+
+\item You might wish to clip the low unreliable levels of the
+model image using
+\htmlref{Imager.clipimage}{imager:imager.clipimage.function}. If you clipped the model image be sure to predict,using \htmlref{Imager.ft}{imager:imager.ft.funtion}, the new model visibilities before running \htmlref{calibrater.solve}{calibrater:calibrater.solve.function}.
+
+\item Use the \htmlref{calibrater.solve}{calibrater:calibrater.solve.function}
+function to actually perform the gain solution  and re-calibration (using \htmlref{calibration.correct}{calibrater:calibrater.correct.function}
+
+\item Remake the deconvolved image.
+
+\end{enumerate}
+
+This process (steps 3 onwards) can be repeated until the image stops
+improving. Usually it is a good idea to start with phase-only solutions
+(controlled in
+\htmlref{Calibrater.setsolve}{calibrater:calibrater.setsolve.function}) 
+and then allow amplitude solutions after the phase-only solutions have
+ceased improving.
+
+The types of solution allowed are:
+
+\begin{itemize}
+\item[T] Amplitude and phase per antenna
+\item[G] Amplitude and phase per feed
+\item[D] Leakage between polarizations
+\item[B] Bandpass per antenna
+\end{itemize}
+
+More details may be found in the \htmlref{Calibrater}{calibrater}
+documentation.
+
+Diagnosis of the success of the self-calibration is ultimately judged by
+the improvement in image quality (measured from the off-source noise
+level). One may also expect that the rms errors per time interval
+reported by
+\htmlref{Calibrater.solve}{calibrater:calibrater.solve.function} will
+decrease, and that the residual visibility as displayed by
+\htmlref{Imager:plotvis}{imager:imager.plotvis.function} will diminish.
+In addition, it is also advisable to examine the gain solutions using
+\htmlref{Calibrater.plotcal}{calibrater:calibrater.plotcal.function}.
+These should be small if the initial calibration was of good quality.
+
+
+\section{Summary of Imager functions}
+
+\subsection{Setting/seeing the basic state}
+
+\begin{itemize}
+
+\item \htmlref{Imager.advise}{imager:imager.advise.function} - give some advice on the image parameters.
+
+\item \htmlref{Imager.setdata}{imager:imager.setdata.function} - select a subset of the data from the MeasurementSet 
+
+\item \htmlref{Imager.setimage}{imager:imager.setimage.function} - define the parameters of the image(s) to be created
+
+\item \htmlref{Imager.summary}{imager:imager.summary.function} - summarize the state
+
+\end{itemize}
+
+
+\subsection{uv selection and filtering}
+
+\begin{itemize}
+
+\item \htmlref{Imager.weight}{imager:imager.weight.function} - set weighting scheme and save it in the MeasurementSet
+
+\item \htmlref{Imager.plotweight}{imager:imager.plotweights.function} - plot visibility weights 
+
+\item \htmlref{Imager.filter}{imager:imager.filter.function} - multiply the visibilities (taper) by a specified function (e.g. gaussian)
+
+\item \htmlref{Imager.uvrange}{imager:imager.uvrange.function} - select data based on 'uv' distance
+
+\end{itemize}
+
+
+\subsection{Masking}
+
+\begin{itemize}
+
+\item \htmlref{Imager.mask}{imager:imager.mask.function} - make a mask image by thresholding another image
+
+\item \htmlref{Imager.boxmask}{imager:imager.boxmask.function} - make a mask image from the blc and trc of a box
+
+\item \htmlref{Imager.regionmask}{imager:imager.regionmask.function} -  make a mask from a region
+
+\item \htmlref{Imager.exprmask}{imager:imager.exprmask.function} - make a mask image from an image LEL expression
+
+\end{itemize}
+
+
+\subsection{Create images}
+
+\begin{itemize}
+
+\item \htmlref{Imager.make}{imager:imager.make.function} - make an empty image (with the state set by functions
+{\stff setdata} and  {\stff setimage})
+
+\item \htmlref{Imager.makeimage}{imager:imager.makeimage.function} - makes dirty images or point spread function
+(with the state set by functions {\stff setdata} and  {\stff setimage})    
+from the corrected data, observed data or model  data
+
+\end{itemize}
+
+
+
+\subsection{Deconvolution}
+
+\begin{itemize}
+
+\item \htmlref{Imager.clean}{imager:imager.clean.function} - deconvolve image made from the data using one of the
+flavors of CLEAN (clark, H\"ogbom, multi-scale)
+
+\item \htmlref{Imager.setscales}{imager:imager.setscales.function} - set the scalesizes if multi-scale CLEAN algorithms is selected 
+
+\item \htmlref{Imager.mem}{imager:imager.mem.function} - decovolve images using a Maximum entropy or emptiness algorithm
+
+\item \htmlref{Imager.nnls}{imager:imager.nnls.function} - deconvolve images using the non-negative-least-squares algorithm
+
+\item \htmlref{Imager.pixon}{imager:imager.pixon.function} - experimental function to deconvolve images using the pixon
+algorithm
+
+\end{itemize}
+
+
+\subsection{Image Combination}
+
+\begin{itemize}
+
+\item \htmlref{Imager.feather}{imager:imager.feather.function} - combine low resolution (e.g. single dish) and high resolution 
+(e.g. interferometer) images
+
+\item \htmlref{Imager.pb}{imager:imager.pb.function} - apply a primary beam (Voltage pattern) correction to an image
+
+\item \htmlref{Imager.restore}{imager:imager.restore.function} - restore model images to one convolved with a Gaussian beam
+and residuals added in
+
+\item \htmlref{Imager.residual}{imager:imager.residual.function} - calculate the residual image corresponding to a given model image
+
+\item \htmlref{Imager.smooth}{imager:imager.smooth.function} - convolve a model image with a Gaussian
+
+\end{itemize}
+
+
+\subsection{Utility}
+
+\begin{itemize}
+
+\item \htmlref{Imager.sensitivity}{imager:imager.sensitivity.function} - calculate the point source sensitivity (useful
+to test different weighting and filtering schemes)
+
+\item \htmlref{Imager.setbeam}{imager:imager.setbeam.function} - Define the restoring beam to be used by the deconvolving functions
+
+\item \htmlref{Imager.plotuv}{imager:imager.plotuv.function} - plot uv-coverage of the selected visibilities
+
+\item \htmlref{Imager.plotvis}{imager:imager.plotvis.function} - plot the selected visibilities
+
+\item \htmlref{Imager.plotweight}{imager:imager.plotweights.function} - plots the imaging weights
+
+\item \htmlref{Imager.fitpsf}{imager:imager.fitpsf.function} - fit a gaussian to the main lobe of the point spread function
+
+\item \htmlref{Imager.setoptions}{imager:imager.setoptions.function} - define cache memory needed for gridding,
+ftmachine to be used for transforming, grid function to use or the
+amount of padding to reduce aliasing in gridding/FT
+
+\item \htmlref{Imager.correct}{imager:imager.correct.function} - Apply parallactic angle corrections
+
+\item \htmlref{Imager.clipvis}{imager:imager.clipvis.function} - Flag visibilities by residual amplitude. Useful in removing
+interference from the residual image
+
+\end{itemize}
+
+
+
+\subsection{Calibration and self-calibration}
+
+
+\begin{itemize}
+
+\item \htmlref{Imager.setjy}{imager:imager.setjy.function} - Set the
+right amplitude, phases of point sources in MODEL\_DATA column.  Used
+prior to point source calibration. 
+ 
+\item \htmlref{Imager.clipimage}{imager:imager.clipimage.function} -
+Zeros image pixels below a threshold.  Needed for editing a model image
+before using it to self calibrate. 
+
+\item \htmlref{Imager.ft}{imager:imager.ft.function} - Fourier Transform
+model images/components into the MODEL\_DATA column of the
+MeasurementSet.  This is used for self calibration. 
+
+\end{itemize}
+
+
+
+\section{Examples of Imaging Scripts} 
+
+\subsection {Multi-frequency synthesis image of one field}
+
+\begin{verbatim}
+include 'imager.g'
+include 'os.g'
+#
+imgr := imager('mydata.ms')                          # Construct
+#
+imgr.setdata(mode='channel', nchan=15, start=1,      # Select data (15 channels, 1 field)
+             fieldid=3)                                   
+#
+imgr.setimage(nx=512, ny=512, cellx='2arcsec',       # Set image parameters - grids
+              celly='2arcsec',  mode='mfs')          # all selected channels into 1
+#
+imgr.clean(algorithm='clark', niter=10000,           # CLEAN 10000 components
+           model='model', image='restored',
+           residual='residual')
+#
+dos.copy ('residual', 'residual_10000')              # Save copies
+dos.copy ('restored', 'restored_10000')
+#
+imgr.clean(algorithm='clark', niter=5000,            # Restart and CLEAN another 
+           model='model', image='restored',          # 5000 components. Updates
+           residual='residual')                      # images
+#
+rest1 := image('restored_10000')                     # Display restored images
+rest1.view()
+rest2 := image('restored')
+rest2.view()
+#
+resid1 := image('residual_10000')                    # Compare statistics of
+resid1.statistics()                                  # residual images
+resid2 := image('residual')
+resid2.statistics()
+
+\end{verbatim}
+
+
+\subsection{Multiple regions on the sky simultaneously}
+
+The following script demonstrate of how we can image multiple regions of
+the sky simultaneously (in {\tt AIPS} this is implemented in task MX).
+This is a technique used to deal with a source which is outside the main
+field of view being imaged but whose sidelobes are seen in the image we
+want to make. It is also sometimes useful to remove some kinds of
+interference which tend to appear as a source at the pole.
+
+It is assumed in this script that there is only one {\gcf fieldid} (i.e. one
+source).
+
+\begin{verbatim}
+imgr:=imager('mydata.ms')                             # Construct
+#
+imgr.setdata(mode='channel', nchan=25,                # Select data: 25 channels, 
+             start=4, step=1, spwid=[1,2])            # 2 spectral windows.
+#
+mydir:=dm.direction('J2000', '19h58m49', '40d45m29')  # Direction of outlier (CygnusA)
+imgr.setimage(nx=200, ny=200,                         # Set image parameters for outlier
+              cellx='19arcsec',celly='19arcsec', 
+              doshift=T, phasecenter=mydir, 
+              mode='mfs', spwid=[1,2])
+
+imgr.make('cygA')                                     # Make empty image for outlier
+#
+#
+imgr.setimage(nx=600, ny=600,                        # Set image parameters 
+              cellx='19arcsec', celly='19arcsec',    # for main field direction
+              spwid=[1,2])
+imgr.make('mainfield')                               # Make empty image for main field
+
+#
+imgr.uvrange(uvmin=10, uvmax=5000)                   # Select uv range
+imgr.weight(type='briggs', rmode='norm',             # Weighting
+            robust=0.0, npixels=300)
+
+imgr.clean(algorithm='mfclark',                      # Deconvolve 
+           niter=1000, gain=0.05,
+           model="mainfield cygA",                   # Vector of strings
+           image="mainfield.restored cygA.restored",
+           residual="mainfield.residual cygA.residual")
+#
+
+\end{verbatim}
+
+Note that the combination of {\gcf Imager.setimage} and {\gcf
+Imager.make} can be used as many times as is necessary to define all the
+outlier fields. 
+
+We had to explicitly make the empty model images 
+before passing them to {\gcf Imager.clean}.   Otherwise Imager would
+recognize only the last call to {\gcf Imager.setimage} and would thus
+fail to handle the multiple fields.
+
+In the running of the {\gcf Imager.clean} function we used the Clark
+algorithm.  In addition, we must specify {\gcf algorithm='mfclark'}
+because we are making a multi-field image.
+
+
+
+\subsection{Spectral-line imaging} 
+
+The following is an example of making a spectral-line image.  We
+demonstrate how {\gcf Imager.setdata} and {\gcf Imager.setimage} can be
+used to average data channels to make one of the spectral-line image channels.
+
+The MeasurementSet is created from a \fits\ file that comes with
+the \aipspp\ installation.
+
+\begin{verbatim}
+include 'imager.g'
+include 'ms.g'
+include 'sysinfo.g'
+#
+aipsroot:=sysinfo().root()
+fitsfile:=spaste(aipsroot, '/data/demo/BLLAC.fits')
+myms := fitstoms('mydata.ms', fitsfile)               # Generate MeasurementSet
+myms.summary()
+myms.done()
+#
+imgr:=imager('mydata.ms')                             # Construct Imager
+#
+imgr.setdata(mode='channel', nchan=40, start=4,       # Select data: 40 channels
+             step=1, spwid=[1])                       # from the first spectral window
+#
+imgr.setimage(nx=600, ny=600,                         # Set imaging parameters. We
+              cellx='19arcsec', celly='19arcsec',     # output 20 channels from the 40
+              doshift=F, spwid=[1], mode='channel',   # by combining pairs of channels
+              nchan=20, start=4, step=2 )            
+#
+imgr.weight(type='uniform')                           # Weighting
+#
+imgr.clean(algorithm='clark', niter=1000, gain=0.05,  # Deconvolve
+           model='model', 
+           image='restored', 
+           residual='residual')
+#
+imgr.done()
+
+\end{verbatim}
+
+Note that if the channel images were needed in the velocity domain, then
+argument {\gcf mode} in both functions {\gcf Imager.setdata} and {\gcf
+Imager.setimage} must be put to {\gcf velocity} and instead of the {\gcf
+start} and {\gcf step} parameters, use the {\gcf mstart} and {\gcf
+mstep} parameters. 
+
+
+\subsection{Using Clean and MEM}
+
+In this example we assume we have bright point sources and low level
+broad scale structures to image.  It is well known that CLEAN does not
+do well with large scale structures and that MEM does not do well with
+bright compact sources in presence of large scale structures.  We can
+CLEAN on the bright point sources followed by MEM on the low level
+structures.  What follows is an example of how to do that. 
+
+
+\begin{verbatim}
+
+imgr:=imager('mydata.ms')  
+imgr.setimage(nx=600, ny=600, cellx='2arcsec', celly='2arcsec',
+              doshift=F, spwid=[1])
+#
+# Use clean with a mask image around the bright point sources
+# to restrict clean to deconvolve these sources only.  Alternatively,
+# if the point sources are brightest, just CLEAN a little bit
+# to remove the bulk of them
+#
+imgr.clean(algorithm='clark', niter=1000, gain=0.1,
+           model='cleanmodel',                  
+           mask='pointsource.mask',
+           image='clean.restored', 
+           residual='clean.residual')
+#
+# Now run MEM on the data. Note that we use the model image that we 
+# have got from clean, so that the point sources will be subtracted 
+# from the visibilities and MEM will deconvolve the residual 
+#
+imgr.mem(model='cleanmodel', niter=40, sigma='0.001Jy', 
+         image='final.restored', residual='final.residual')
+#
+imgr.done()
+\end{verbatim}
+
+
+\subsection{Deconvolver and multi-scale CLEAN example}
+
+The Deconvolver \tool\ has functions which have very similar meanings to
+to those in Imager.  However, no MeasurementSet is used with the Deconvolver;
+it is based on image plane deconvolution only. It needs a point spread function
+and a dirty image.
+
+\begin{verbatim}
+deco := deconvolver('3C273XC1.dirty', '3C273XC1.psf')  
+deco.setscales(scalemethod='uservector',     # Scales of delta function, 
+               uservector=[0, 3, 10])        # 3 and 10 pixels wide
+#
+deco.clean(algorithm='msclean',              # deconvolve
+           model='3C273XC1.clean', 
+           niter=100, gain=0.3)
+deco.done()
+\end{verbatim}
+
+Note that it is not very useful to use CLEAN components that are wider
+than the largest structure in the image. 
+
+
+
+
+\subsection{Imaging and Self-Calibrating}
+
+The following is a script of a multi step CLEAN and self-calibration.
+We use here a test MeasurementSet that is in the \aipspp\ system.
+
+\begin{verbatim}
+include 'imager.g';
+include  'calibrater.g';
+include 'os.g'
+#
+imagermaketestms(msfile='3C273XC1.ms')               # Make MS
+imgr:=imager(filename='3C273XC1.ms')                 # Construct Imager tool
+imgr.summary()
+imgr.setdata(mode="channel" , nchan=1, start=1, step=1, # Data selection
+             spwid=1, fieldid=1); 
+imgr.setimage(nx=600, ny=600, cellx='0.6arcsec',        # Set image parameters
+              celly='0.6arcsec', stokes="I" )
+imgr.uvrange(uvmin=1.0, uvmax=500000); 
+#
+dos.remove('model0')
+dos.remove('restored0')
+dos.remove('residual0')
+#
+imgr.clean(algorithm="hogbom" , niter=1000,          # Deconvolve 1000
+           model="model0" , fixed=F, 
+           image="restored0" , residual="residual0")
+#
+dos.remove('model0_5000')
+dos.remove('restored0_5000')
+dos.remove('residual0_5000')
+imgr.clean(algorithm="hogbom" , niter=5000,          # Deconvolve
+           model="model0_5000" , fixed=F, 
+           image="restored0_5000" , residual="residual0_5000")
+#
+cal := calibrater(filename="3C273XC1.ms")            # Construct Calibrater tool
+cal.setsolve(type="G" , t=100, preavg=0.0,           # Set selfcal solution parameters 
+             phaseonly=T, refant=-1,                 # phaseonly
+             table="selfcal.gcal",append=F);
+
+# We want to make the model visibilities of the 1000 component model
+# above, we use imager.ft for that. The 
+# previously created Calibrater tool fits the model visibilities with 
+# the observed ones and hence calculates the necessary gains to make 
+# the best fit. The solution is applied. 
+
+ok := imgr.ft( model="model0",  complist='');  
+cal.solve();
+cal.setapply(type="G" , t=0.0, table="selfcal.gcal", # Set parameters for application of 
+             select='');                             # the calibration 
+
+cal.correct();
+cal.plotcal(plottype="PHASE", tablename="selfcal.gcal" ,           # Inspect solution
+            antennas=[], fields=[], polarization=1, spwids=[], 
+            timeslot=1, multiplot=T, nx=3, ny=3) 
+#
+dos.remove('model1')
+dos.remove('restored1')
+dos.remove('residual1')
+imgr.clean(algorithm="hogbom" , niter=2000,                        # Deconvolve 2000
+           model="model1" , fixed=F,                                
+           image="restored1" , residual="residual1")
+cal.setsolve(type="G" , t=30,                          # Setup for phase and amplitude
+             preavg=0.0, phaseonly=F, refant=-1, 
+             table="selcal.gcal" , append=F);
+#
+cal.reset(apply=T,solve=F) # donot apply while solving
+cal.solve(caltool=cal, model="model1")        # Solve and apply for a gain selfcal 
+cal.setapply(type="G" , t=0.0, table="selfcal.gcal", # Set parameters for application of 
+             select='');                             # the calibration 
+cal.correct();
+#
+dos.remove('model2')
+dos.remove('restored2')
+dos.remove('residual2')
+imgr.clean(algorithm="hogbom" , niter=5000,            # Final deconvolution, 5000
+           model="model2" , fixed=F, 
+           image="restored2" , residual="residual2")
+#
+r := drm.quarter()
+r0_1000 := image('restored0')
+r0_5000 := image('restored0_5000')
+r1_2000 := image('restored1')
+r2_5000 := image('restored2')
+#
+r0_1000.view(region=r, includepix=[-.003,.003])
+r0_5000.view(region=r, includepix=[-.003,.003])
+r1_2000.view(region=r, includepix=[-.003,.003])
+r2_5000.view(region=r, includepix=[-.003,.003])
+
+\end{verbatim}

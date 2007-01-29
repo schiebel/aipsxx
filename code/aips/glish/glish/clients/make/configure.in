@@ -1,0 +1,597 @@
+dnl
+dnl RCSid:
+dnl	$Id: configure.in,v 19.2 2005/10/19 14:44:07 dschieb Exp $
+dnl
+dnl Process this file with autoconf to produce a configure script
+dnl
+
+AC_INIT(make_client.h,../../../config)
+
+dnl##--------------------------------------------------------------------
+dnl##
+dnl## Extra command line options
+dnl##
+dnl##--------------------------------------------------------------------
+AC_ARG_ENABLE(static-binary,       [  --enable-static-binary       force binaries to be static])
+AC_ARG_ENABLE(shared,              [  --enable-shared              build shared libraries])
+AC_ARG_ENABLE(os-malloc,           [  --enable-os-malloc           do not use Lea malloc])
+AC_ARG_ENABLE(min-space,           [  --enable-min-space           delete intermediate objects])
+AC_ARG_ASSIGN(rc-dir,              [  --rc-dir=SITE_RC_DIR         directory for sitewide .glishrc])
+AC_ARG_ASSIGN(key-dir,             [  --key-dir=SITE_KEY_DIR       directory for sitewide key files])
+AC_ARG_ASSIGN(script-dir,          [  --script-dir=SCRIPT_DIR      directory for sitewide script files])
+AC_ARG_ASSIGN(script-dir-tcl,      [  --script-dir-tcl=SCRIPT_DIR  directory for sitewide tcl files])
+AC_ARG_ASSIGN(load-dir,            [  --load-dir=LOAD_DIR          directory for loadable shared objects])
+AC_ARG_ASSIGN(tcl-includes,        [  --tcl-includes=DIR           system tcl and tk include files are in DIR])
+AC_ARG_ASSIGN(tcl-libraries,       [  --tcl-libraries=DIR          system tcl and tk libraries are in DIR])
+AC_ARG_ASSIGN(pgplot-incl-flags,   [  --pgplot-incl-flags=flags    PGPLOT include flags])
+AC_ARG_ASSIGN(pgplot-link-flags,   [  --pgplot-link-flags=flags    PGPLOT link flags])
+AC_ARG_ASSIGN(pgplot-link-search,  [  --pgplot-link-search=flags   PGPLOT search flags])
+AC_ARG_ASSIGN(extra-link-libs,     [  --extra-libs=libs            libraries to add to link line])
+AC_ARG_ENABLE(strip,               [  --disable-strip              do not strip binaries])
+
+dnl##
+dnl## add extra libraries
+dnl##
+if test -n "$option_extra_link_libs"; then
+    EXTRA_LIBS="$option_extra_link_libs"
+fi
+
+dnl##
+dnl## Attempt to strip off the automounter mount point
+dnl##
+AC_DEFUN(STRIP_AUTOMOUNT,
+[case "${$1}" in
+    /tmp_mnt/*)
+	[$1]_tmp_mnt=`echo ${$1} | sed 's/^\/tmp_mnt\///'`
+	test -d "/${[$1]_tmp_mnt}" && $1="/${[$1]_tmp_mnt}"
+	;;
+esac
+])
+
+dnl##
+dnl## Do shell expansion of a particular variable
+dnl##
+AC_DEFUN(EXPAND_VAR,
+[while :
+do
+    case "${$1}" in
+	*\$\{*\}*) $1=`eval "echo ${$1}"` ;;
+	*) break ;;
+    esac
+done
+[$1]_rel_path=`echo ${$1} | sed ['s/^\([\.\/]*\).*/\1/'`]
+[$1]_rel_path=`echo $[$1]_rel_path | sed -e 's/\/\.\//\//' -e 's/^\.\///' -e 's/\/\.$//' -e 's/\/$//'`
+if test -n "$[$1]_rel_path"; then
+    [$1]_root=`cd $[$1]_rel_path; pwd`
+    STRIP_AUTOMOUNT([$1]_root)
+    [$1]_end=`echo ${$1} | sed ['s/^\([\.\/]*\)//'`]
+    $1=`echo "$[$1]_root/$[$1]_end" | sed ['s/\/$//']`
+fi
+])
+
+dnl##
+dnl## Set up $prefix (fully expanded), and patch the argument
+dnl## list where necessary
+dnl##
+AC_DEFUN(SET_PREFIX,
+[test "x$prefix" = xNONE && prefix="."
+tmp_prefix="$prefix"
+EXPAND_VAR(tmp_prefix)
+if test "$prefix" != "$tmp_prefix"; then
+    prefix="$tmp_prefix"
+    configure_args=
+    prev=
+    found_prefix=
+    for arg in $ac_configure_args; do
+	if test -n "$prev"; then
+	    prev=
+	    configure_args="$configure_args $prefix"
+	else
+	    case "$arg" in
+		-prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
+		    prev=prefix
+		    found_prefix=TRUE
+		    ;;
+		-prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
+		    configure_args="$configure_args --prefix=$prefix"
+		    found_prefix=TRUE
+		    ;;
+		*) configure_args="$configure_args $arg" ;;
+	    esac
+	fi
+    done
+    if test -n "$found_prefix"; then
+	ac_configure_args="$configure_args"
+    else
+	ac_configure_args="$configure_args --prefix=$prefix"
+    fi
+fi
+])
+
+dnl##
+dnl## Check SGI application binary interface
+dnl## for shared library linking
+dnl##
+AC_DEFUN(SGI_ABI,
+[AC_MSG_CHECKING(application binary interface)
+AC_CACHE_VAL(_cv_sgiabi,[
+SAVED_CFLAGS="$CFLAGS"
+CFLAGS="-show $CFLAGS"
+EGREP_LINK([\-o32|\-n32|\-64],,,tmp_outv)
+CFLAGS="$SAVED_CFLAGS"
+_cv_sgiabi=`echo $tmp_outv | tail -1 | sed -e ['s/^.*\(-[no]32\).*$/\1/' -e 's/^.*\(-64\).*$/\1/']`
+if test "$_cv_sgiabi" != "-o32" -a "$_cv_sgiabi" != "-n32" -a "$_cv_sgiabi" != "-64"; then
+    _cv_sgiabi=""
+fi])
+AC_MSG_RESULT($_cv_sgiabi)
+])
+
+dnl##
+dnl## Grep on the CPP output return the first line
+dnl##
+dnl##       EGREP_CPP_STDOUT(pattern, program, variable, [action-if-found, [action-if-not-found]])
+dnl##
+AC_DEFUN(EGREP_CPP_STDOUT,
+[AC_REQUIRE_CPP()dnl
+cat > $conftest.$ac_ext <<EOF
+[#]line __oline__ "configure"
+#include "$confdefs.h"
+[$2]
+EOF
+dnl eval is necessary to expand ac_cpp.
+dnl Ultrix and Pyramid sh refuse to redirect output of eval, so use subshell.
+$3=`(eval "$ac_cpp $conftest.$ac_ext") 2>&AC_FD_CC | egrep "$1" 2>/dev/null | head -1`
+if test -n "$3"; then
+  ifelse([$4], , :, [rm -rf $conftest*
+  $4])
+ifelse([$5], , , [else
+  rm -rf $conftest*
+  $5
+])dnl
+fi
+rm -f $conftest*
+])
+
+dnl##
+dnl## Grep on the link output
+dnl## EGREP_LINK(pattern, action-if-found, [action-if-not-found], [output-var])
+dnl##
+AC_DEFUN(EGREP_LINK,
+[cat > $conftest.$ac_ext <<EOF
+dnl This sometimes fails to find $confdefs.h, for some reason.
+dnl [#]line __oline__ "[$]0"
+[#]line __oline__ "configure"
+int main() { return 0; }
+EOF
+dnl eval is necessary to expand ac_link.
+dnl Ultrix and Pyramid sh refuse to redirect output of eval, so use subshell.
+if (eval "${CC-cc} -o $conftest $CFLAGS $CPPFLAGS $LDFLAGS $conftest.$ac_ext $LIBS $conftest.$ac_ext") 2>&1 |
+  egrep "$1" 2>&AC_FD_CC > $conftest.egp; then
+  ifelse([$2], , :, [ifelse([$4], , :, [$4=`cat $conftest.egp`])
+  rm -rf $conftest*
+  $2])
+ifelse([$3], , , [else
+  ifelse([$4], , :, [$4=`cat $conftest.egp`])
+  rm -rf $conftest*
+  $3
+])dnl
+fi
+ifelse([$4], , :, [$4=`cat $conftest.egp`])
+rm -f $conftest*
+])
+
+dnl##--------------------------------------------------------------------
+dnl##
+dnl## Configure authentication
+dnl##
+dnl##--------------------------------------------------------------------
+if test -z "$NO_AUTH" && test -d ../../../npd && test -f ../../../npd/config.h.in; then
+    do_npd='yes'
+else
+    do_npd='no'
+fi
+
+dnl##--------------------------------------------------------------------
+dnl##
+dnl## Initialize basic variables
+dnl##
+dnl##--------------------------------------------------------------------
+
+dnl##
+dnl## Locate "mkhier" based on $cache_file...
+dnl## probably bad, but how else? top_off is used
+dnl## to bump top a few directories up.
+dnl##
+conf_root=`echo $cache_file | sed ['s/^\([\.\/]*\).*/\1/'`]
+conf_root=`echo $conf_root | sed -e 's/\/\.\//\//' -e 's/^\.\///' -e 's/\/\.$//' -e 's/\/$//'`
+if test -z "$conf_root"; then
+    conf_root=.
+    top_off=""
+else
+    top_off="/$conf_root"
+fi
+mkhier="${conf_root}/config/mkhier"
+
+dnl##
+dnl## Make sure basic values are set
+dnl##
+SET_PREFIX
+test "x$exec_prefix" = xNONE && exec_prefix='${prefix}'
+
+dnl##
+dnl## Fully qualified library path needed for
+dnl## shared library flags.
+dnl##
+full_libdir="$libdir"
+EXPAND_VAR(full_libdir)
+
+full_libdir_p=`cd $conf_root; pwd`
+STRIP_AUTOMOUNT(full_libdir_p)
+full_libdir_p="$full_libdir_p/lib/$ARCH"
+
+AC_CONFIG_HEADER($ARCH/config.h:config.h.in)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_LANG_C
+
+dnl Check for OS problems
+AC_AIX
+AC_MINIX
+AC_ISC_POSIX
+dnl Executable suffix - normally empty; .exe on os2.
+AC_SUBST(ac_exe_suffix)dnl
+
+dnl
+dnl AC_C_CROSS
+dnl
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_HEADER_DIRENT
+AC_CHECK_HEADERS(ar.h ranlib.h fcntl.h paths.h sys/select.h sys/time.h unistd.h string.h )
+
+dnl Both *BSD and Linux have sys/cdefs.h, most do not.
+dnl If it is missing, we add -I${srcdir}/missing to CFLAGS
+AC_CHECK_HEADER(sys/cdefs.h,AC_EGREP_CPP(YESITISTHERE,
+[#include <sys/cdefs.h>
+#ifdef __P
+YESITISTHERE
+#endif
+],,CPPFLAGS="${CPPFLAGS} -I\${SRC}/missing"),CPPFLAGS="${CPPFLAGS} -I\${SRC}/missing")
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_BIGENDIAN
+AC_C_CONST
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_DECL_SYS_SIGLIST
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+dnl Checks for library functions.
+AC_TYPE_SIGNAL
+AC_FUNC_VFORK
+AC_FUNC_VPRINTF
+AC_FUNC_WAIT3
+AC_CHECK_FUNCS(getcwd getwd putenv select strdup strerror strtod strtol setenv getenv)
+dnl AC_REPLACE_FUNCS(setenv getenv)
+AC_REPLACE_FUNCS(getenv)
+
+AC_CHECK_LIB(bsd, main)
+AC_CHECK_LIB(socket, main)
+AC_CHECK_LIB(inet, main)
+AC_CHECK_LIB(nsl, main)
+
+dnl##
+dnl## defeat use of Lea's malloc
+dnl##
+if test "$enable_os_malloc" = "yes"; then
+	MALLOC=""
+	AC_CHECK_LIB(malloc, main, [changequote(, )dnl
+	  ac_tr_lib=HAVE_LIB`echo $1 | tr 'abcdefghijklmnopqrstuvwxyz' 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'`
+	  changequote([, ])dnl
+	  AC_DEFINE_UNQUOTED($ac_tr_lib)
+	  BIN_LIBS="-lmalloc"
+	])
+else
+	MALLOC="malloc.o"
+fi
+AC_SUBST(MALLOC)
+
+dnl
+dnl Structures
+dnl
+AC_HEADER_STAT
+AC_STRUCT_ST_RDEV
+
+
+dnl##--------------------------------------------------------------------
+dnl##
+dnl## Check on C++ issues
+dnl##
+dnl##--------------------------------------------------------------------
+AC_LANG_CPLUSPLUS
+AC_MSG_CHECKING(C++ details)
+AC_MSG_RESULT()
+
+AC_REQUIRE_CPP()
+AC_MSG_CHECKING(C++ library path)
+EGREP_CPP_STDOUT(/iostream\.h,[#include <iostream.h>],cxx_include_path)
+if `echo $cxx_include_path | sed ['s/\/[^/]*include\//X/'] > /dev/null 2>&1`; then
+    ##
+    ## must handle lines like:
+    ##
+    ##    # 1 "/opt/local/compilers/gcc-2.7.2.3/lib/g++-include/iostream.h" 1 3
+    ##
+    cxx_library_path=`echo $cxx_include_path | sed -e ['s/^[^\/]*//'] -e ['s/\/[^/]*include\/.*/\/lib/'] -e 's/\/lib\/.*/\/lib/' -e 's/\n$//'`
+fi
+AC_MSG_RESULT($cxx_library_path)
+if test -n "$cxx_library_path"; then
+    cxx_lpath="-L$cxx_library_path"
+    cxx_rpath=":$cxx_library_path"
+fi
+
+AC_MSG_CHECKING(Are we using the KAI compiler)
+AC_EGREP_CPP(yes,
+[#ifdef __KCC
+  yes
+#endif
+], [KAI=yes], [KAI=no])
+AC_MSG_RESULT($KAI)
+
+dnl##
+dnl## Find the scope of 'for' loop variables. Define
+dnl## LOOPDECL accordingly.
+dnl##
+AC_MSG_CHECKING('for' scope)
+AC_TRY_COMPILE(,[
+for ( int i=0; i < 1; i++ ) { ; }
+for ( int i=0; i < 1; i++ ) { ; }
+],[AC_MSG_RESULT(local); AC_DEFINE(LOOPDECL,int)],
+[AC_MSG_RESULT(non-local); AC_DEFINE(LOOPDECL,)])
+
+dnl##
+dnl## Set flag for EGCS g++ compiler
+dnl##
+if test "$ac_cv_prog_egcs_gxx" = yes; then
+    CXXFLAGS="$CXXFLAGS -D__EGCS__"
+fi
+
+dnl##- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+   ##	Derived from the Tk configure.in...
+dnl##
+dnl##	There are two different types of variables discussed here. The
+dnl##	first group is exported to the makefiles. The second group is
+dnl##	*not* exported to the makefiles, but is used for configuration
+dnl##	or record keeping.
+dnl##
+dnl##	GLISH_LIB_SUFFIX - the suffix to stick onto all of the static libraries
+dnl##			which are a part of a given Glish release.
+dnl##	CLIENT_LIBS -	The libraries needed to link a Glish client indicated
+dnl##			by SHARED_BIN & STATIC_BIN (so both should not be set)
+dnl##
+dnl##	---  ---  ---  ---  ---  ---  ---  ---  ---  ---  ---  ---  ---  ---
+dnl##
+dnl##	GLISH_LD_SEARCH - Flags to pass to ld, such as "-R /usr/local/tcl/lib",
+dnl##			that tell the run-time dynamic linker where to look
+dnl##			for shared libraries such as libtcl.so.  Depends on
+dnl##			the variable LIB_INSTALL_DIR in the Makefile.
+dnl##                   The Tk runtime path is broken off with flags for
+dnl##                   CXX and LD treated separately because the client
+dnl##			(glishtk) is built with C++ using an RPATH and
+dnl##			any loadable objects (gPgplot.so) are built with
+dnl##			LD using an RPATH, on some systems C++ and LD
+dnl##			take different flags...
+dnl##
+dnl##- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+dnl##
+dnl## Find the hostname, if we haven't already
+dnl##
+if test -z "$host_os"; then
+    AC_CANONICAL_HOST()
+fi
+
+dnl##
+dnl## Set up configuration options based on system name and version.
+dnl##
+GLISH_LIB_SUFFIX=""
+LIB_VERSIONS_OK=ok
+GLISH_LD_SEARCH=""
+GC_LOW_OPT=""
+GC_MACH_DEP=""
+case $host_os in
+    aix*)
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-L$full_libdir_p $cxx_lpath -L$full_libdir"
+	fi
+	;;
+    hpux8.*|hpux9.*|hpux10.*|hpux11.*)
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-Wl,+b,$full_libdir_p$cxx_rpath:$full_libdir:."
+	fi
+	;;
+    irix4.*)
+	GLISH_LD_SEARCH=""
+	GC_MACH_DEP=mips_sgi_mach_dep.o
+	;;
+    irix5.*)
+	if test $ac_cv_prog_gcc != yes; then
+	    SGI_ABI	
+	fi
+
+	if test -n "$cxx_library_path"; then
+	    AC_MSG_CHECKING([C++ library path (again)])
+	    case $_cv_sgiabi in
+		-n32)
+		    if test -d "${cxx_library_path}32"; then
+			cxx_library_path="${cxx_library_path}32"
+			cxx_lpath="-L$cxx_library_path"
+			cxx_rpath=":$cxx_library_path"
+		    fi
+		    ;;
+		-64)
+		    if test -d "${cxx_library_path}64"; then
+			cxx_library_path="${cxx_library_path}64"
+			cxx_lpath="-L$cxx_library_path"
+			cxx_rpath=":$cxx_library_path"
+		    fi
+		    ;;
+	    esac
+	    AC_MSG_RESULT($cxx_library_path)
+	fi
+
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-Wl,-rpath,$full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+	;;
+    irix6.*)
+	if test $ac_cv_prog_gcc != yes; then
+	    SGI_ABI	
+	fi
+
+	if test -n "$cxx_library_path"; then
+	    AC_MSG_CHECKING([C++ library path (again)])
+	    case $_cv_sgiabi in
+		-n32)
+		    if test -d "${cxx_library_path}32"; then
+			cxx_library_path="${cxx_library_path}32"
+			cxx_lpath="-L$cxx_library_path"
+			cxx_rpath=":$cxx_library_path"
+		    fi
+		    ;;
+		-64)
+		    if test -d "${cxx_library_path}64"; then
+			cxx_library_path="${cxx_library_path}64"
+			cxx_lpath="-L$cxx_library_path"
+			cxx_rpath=":$cxx_library_path"
+		    fi
+		    ;;
+	    esac
+	    AC_MSG_RESULT($cxx_library_path)
+	fi
+
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-rpath $full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+	;;
+    linux*)
+	dnl##
+	dnl## After problems with shared libraries/objects and undefined
+	dnl## symbols (stat and lstat), -lc was added and seems to fix
+	dnl## the problem.
+	dnl##
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-Wl,-rpath,$full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+	;;
+    MP-RAS-02*)
+	GLISH_LD_SEARCH=""
+	;;
+    MP-RAS-*)
+	GLISH_LD_SEARCH=""
+	;;
+    netbsd*|freebsd*)
+	GLISH_LD_SEARCH=""
+
+	# FreeBSD doesn't handle version numbers with dots.  Also, have to
+	# append a dummy version number to .so file names.
+
+	GLISH_LIB_SUFFIX='`echo ${VERSION} | tr -d .`.a'
+	LIB_VERSIONS_OK=nodots
+	GC_MACH_DEP=mach_dep.o
+	;;
+    nextstep*)
+	GLISH_LD_SEARCH=""
+	GC_MACH_DEP=mach_dep.o
+	;;
+    osf1.[[012]])
+	# OSF/1 1.[012] from OSF, and derivatives, including Paragon OSF/1
+	GLISH_LD_SEARCH=""
+	GC_LOW_OPT="-Wo,-notail"
+	;;
+    osf1.*)
+	# OSF/1 1.3 from OSF using ELF, and derivatives, including AD2
+	GLISH_LD_SEARCH=""
+	GC_LOW_OPT="-Wo,-notail"
+	;;
+    osf3.*)
+        # Digital OSF/1
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-Wl,-rpath,$full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+
+	GC_LOW_OPT="-Wo,-notail"
+	;;
+    osf4.*)
+        # Digital OSF/1
+
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-rpath $full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+
+	GC_LOW_OPT="-Wo,-notail"
+	;;
+    riscos*)
+	GLISH_LD_SEARCH=""
+	;;
+    sco_sv3.2*)
+	GLISH_LD_SEARCH=""
+	;;
+     sinix*5.4*)
+	GLISH_LD_SEARCH=""
+	;;
+    sunos4*)
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="-L$full_libdir_p $cxx_lpath -L$full_libdir"
+	fi
+	;;
+    solaris2*)
+	if test "$KAI" = yes; then
+	    LDI="--backend "
+	else
+	    LDI=""
+	fi
+
+	if test -z "$static_binary"; then
+	    GLISH_LD_SEARCH="${LDI}-R ${LDI}$full_libdir_p$cxx_rpath:$full_libdir"
+	fi
+	;;
+    ultrix4.*)
+	GLISH_LD_SEARCH=""
+	;;
+    unix_sv*)
+	GLISH_LD_SEARCH=""
+	;;
+    darwin*)
+	GLISH_LD_SEARCH=""
+	;;
+esac
+
+dnl##
+dnl## Select the binary to build
+dnl##
+if test "$static_binary" = "yes"; then
+    CLIENT_LIBS="\${LIBDIR_P}/libglish$GLISH_LIB_SUFFIX \${LIBDIR_P}/libsos$GLISH_LIB_SUFFIX"
+    if test "$do_npd" = "yes"; then
+	CLIENT_LIBS="$CLIENT_LIBS \${LIBDIR_P}/libnpd$GLISH_LIB_SUFFIX"
+    fi
+else
+    CLIENT_LIBS="$GLISH_LD_SEARCH -L\${LIBDIR_P} $cxx_lpath -lglish -lsos"
+    if test "$do_npd" = "yes"; then
+	CLIENT_LIBS="$CLIENT_LIBS -lnpd"
+    fi
+fi
+
+AC_SUBST(top_off)
+AC_SUBST(BIN_LIBS)
+AC_SUBST(CLIENT_LIBS)
+AC_SUBST(EXTRA_LIBS)
+
+AC_OUTPUT($ARCH/Makefile:Makefile.in)

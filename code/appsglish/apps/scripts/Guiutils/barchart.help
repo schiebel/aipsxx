@@ -1,0 +1,161 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: barchart.help,v 19.2 2004/08/25 01:57:48 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{barchart}{Record values and display as a barchart}
+
+\ahinclude{barchart.g}
+
+\ahkeyword{gui}
+\ahkeyword{barchart}
+\ahkeyword{bar chart}
+
+\begin{ahdescription}
+
+{\tt barchart} tools are used to record name and value pairs, and to 
+optionally display them in barchart form in a GUI.
+
+If enough colors are available, the GUI display will use green bars if 
+the size is below a specifiable ``large'' value, and red if the value
+is above the large value.
+
+If there are not enough colors, the bars are always drawn as
+outlines in black and white.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- bc := barchart('My Title', large=30);    
+- bc.chart('small', 10)
+- bc.chart('large', 50)   # Red, because it is >30
+- bc.chart('small', 20)   # Update with new value
+- bc.large(15)            # Turn small to Red by changing threshold
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahseealso}
+\begin{enumerate}
+\item \ahlink{Glish/PGPLOT}{pgplot}
+\item \ahlink{pgplotter}{plotter:pgplotter}
+\item \ahlink{pgplotwidget}{plotter:pgplotwidget}
+\end{enumerate}
+\end{ahseealso}
+
+\begin{ahconstructor}{barchart}{Create a barchart tool}
+\begin{ahdescription}
+Note that after construction of the barchart, even if {\tt show} is
+{\tt T}, the barchart will not be visible on the screen until at least one
+value is charted.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{title}{title for the barchart frame}{\aipspp\ Bar Chart}{string}
+\ahaddarg{width}{width of the barchart in pixels}{400}{integer}
+\ahaddarg{height}{height of the barchart in pixels}{200}{integer}
+\ahaddarg{large}{charted values larger than this are displayed in red if enough colors are available}{1.0e+38}{real}
+\ahaddarg{show}{show charted values?}{T}{boolean}
+\end{ahargs}
+\ahreturns{barchart tool or fail}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{chart}{Chart a new name,value pair}
+\begin{ahdescription}
+This function adds a new name,value pair to the barchart. It does not matter 
+if the name already exists or not, and value can increase or decrease.
+
+If {\tt name} and {\tt value} are arrays, you can update many values at once
+(of course the arrays must be the same length).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{name of the barchart item}{}{string}
+\ahaddarg{value}{new value for ``name''}{}{real}
+\end{ahargs}
+\ahreturns{T on success or F on error}
+\end{ahfunction}
+
+\begin{ahfunction}{remove}{Remove an item from the barchart}
+\begin{ahdescription}
+This function removes a named item from the barchart.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{name}{name of the barchart item}{}{string}
+\end{ahargs}
+\ahreturns{T on success or F on error}
+\end{ahfunction}
+
+
+\begin{ahfunction}{values}{Return all values from the barchart as a record}
+\begin{ahdescription}
+It is occasionally useful to retrieve all the values from a barchart. This
+function allows you to do that.
+\end{ahdescription}
+\ahreturns{record of name=value pairs}
+\end{ahfunction}
+
+\begin{ahfunction}{nogui}{Do not display the barchart any more (until gui() is called)}
+\begin{ahdescription}
+This function removes the barchart GUI from the screen if it is being displayed,
+and prevents it from being displayed until {\tt gui()} is called.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Display the barchart if possible}
+\begin{ahdescription}
+This function causes the barchart to be displayed in a GUI if possible (that is,
+if the glish builtin {\tt have\_gui()} is {\tt T}. If enough colors are
+available (4) a color display is used, otherwise white on black.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{large}{Display and optionally modify the ``large'' value}
+\begin{ahdescription}
+
+If called with no arguments, this function merely returns the current value of
+the ``large'' value (the value at which bars will be drawn in red if enough
+colors are available).
+
+If called with a value, the large value will be changed as well as returned. If
+the GUI is being displayed the color of displayed bars will be changed to red
+if necessary.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{newval}{new large value}{unset}{real}
+\end{ahargs}
+\ahreturns{real (large value)}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete the barchart tool from memory}
+\begin{ahdescription}
+This function removes the barchart GUI from memory. After calling {\tt done},
+the tool is destroyed and cannot be accessed.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}

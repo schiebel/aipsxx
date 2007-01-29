@@ -1,0 +1,641 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: checkmenu.help,v 19.2 2004/08/25 02:12:17 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{checkmenu}{Tk widget to provide a flat check button menu}
+
+\ahinclude{checkmenu.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This Tk widget enables you to create a flat (i.e.  no submenus) menu in
+a specified frame where all the menu items are check buttons.
+You can associate a name (that which appears in the menu list) and a
+value (whatever you like, it may be different from the name) for each
+menu item.  
+
+It can be treated like any of the built in Tk widgets, and has almost all of
+the same construction arguments as the button Tk widget. 
+
+Whenever a selection is made, this widget emits an event called {\tt
+select}.  In the \$value of this event, you can find a record with
+fields {\tt name}, {\tt value}, {\tt state} (T or F) and {\tt index}
+(index of item in menu) containing that information for the selected
+item.  
+
+Whenever the menu is replaced with the
+\ahlink{replace}{widgets:checkmenu.replace} tool function, this
+widget emits an event called {\tt replaced} (it has no value).  Note
+that the tool function \ahlink{extend}{widgets:checkmenu.extend}
+invokes the {\tt replace} function, so a {\tt replaced} event is
+generated then as well. 
+
+\end{ahdescription}
+
+
+
+\begin{ahconstructor}{checkmenu}{Construct a checkmenu}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Widget}
+  \ahaddarg{label}{The label of the menu}{``checkmenu''}{String}
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+  \ahaddarg{hlp}{Short popuphelp text}{No help}{String}
+  \ahaddarg{hlp2}{Long popuphelp text}{No help}{String}
+  \ahaddarg{padx}{Horizontal padding around text}{7}{Integer}
+  \ahaddarg{pady}{Vertical padding around text}{3}{Integer}
+  \ahaddarg{width}{Width in character units}{0 [Auto-scale]}{Integer}
+  \ahaddarg{height}{Height in character units}{1}{Integer}
+  \ahaddarg{justify}{Justification of text}{`center'}{String from `center', 'left', 'right'}
+  \ahaddarg{font}{Font of text }{}{X font}
+  \ahaddarg{relief}{Edge relief}{`groove'}{String from `flat', `ridge', 
+                                           `raised', `sunken', `groove'}
+  \ahaddarg{borderwidth}{Border width}{2}{Integer}
+  \ahaddarg{foreground}{Color of text}{`black'}{X color}
+  \ahaddarg{background}{Background color}{`lightgrey'}{X color}
+  \ahaddarg{disabled}{Is inactivated ?}{F}{Boolean}
+  \ahaddarg{anchor}{Location of text}{`c'}{String  from 'c', 'n', 's', 'e', 'w', 'ne',
+                                           'nw', 'se', 'sw'}
+  \ahaddarg{fill}{How to expand when resized}{'none'}{String from `x', `y', `both', `none'}
+  \ahaddarg{widgetset}{The widget server to use}{dws}{widgetserver tool}
+\end{ahargs}
+\ahreturns{Agent}
+\begin{ahdescription}
+\end{ahdescription}
+
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'checkmenu.g'   
+- f := frame();
+- hlp := 'Select type of model to fit';
+- m := checkmenu(f, 'Models', "gaussian disk point", [1,2,3], hlp);
+\end{verbatim}
+
+The values vector, if not given, defaults to the names vector.
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+\begin{ahfunction}{extend}{Extend the menu with more items}
+\begin{ahargs}  
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function extends the menu with the supplied items.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point");
+- m.getnames();
+gaussian point
+- m.extend(names="disk")
+- m.getnames();
+gaussian point disk
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{replace}{Replace the menu with the provided items}
+\begin{ahargs}  
+  \ahaddarg{label}{The label of the menu}{``checkmenu''}{String}
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+  \ahaddarg{width}{Width in character units}{0 [Auto-scale]}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function replaces the menu with the supplied items.  If you
+set {\tt width=-1} then the menu button width will be left as it is.
+Thus if you constructed with {\tt width=0}, the
+button will resize itself to accomodate the new text.  If you used a
+specific non-zero width at construction time, setting {\tt width=-1} now
+will leave the button at that width. Setting {\tt width=0} will
+now force a resize and setting {\tt width}  to some positive integer
+will resize to that width.
+
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point", [1,2])
+- m.getnames();
+gaussian point
+- m.getvalues();
+[1 2]
+- m.replace('Animals', "cat dog fish");
+- m.getnames();
+cat dog fish
+- m.getvalues();
+cat dog fish
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{selectindex}{Select an item in the menu by index}
+\begin{ahargs}  
+  \ahaddarg{idx}{The menu item index}{}{Integer}
+  \ahaddarg{state}{The state for the check box}{Opposite state}{T of F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function selects a menu item by its index. It is equivalent
+to selecting the item with the GUI interface.  If the index is
+invalid, it returns {\tt F}.  If you don't specify the {\tt state}
+variable, the check button is given the opposite state to
+its current state.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point");
+- m.getstates()
+[F F]
+- m.selectindex(2);
+- m.getstates()
+[F T]
+- m.selectindex(2, T);
+[F T]
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectname}{Select an item in the menu by name}
+\begin{ahargs}  
+  \ahaddarg{name}{The menu item name}{}{String}
+  \ahaddarg{state}{The state for the check box}{Opposite state}{T of F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function selects a menu item by its name. It is equivalent
+to selecting the item with the GUI interface.  If the name is
+invalid, it returns {\tt F}.  If you don't specify the {\tt state}
+variable, the check button is given the opposite state to
+its current state.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point");
+- m.getstates()
+[F F]
+- m.selectname('gaussian');
+- m.getstates()
+[T F]
+- m.selectname('gaussian', T);
+[T F]
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{selectvalue}{Select an item in the menu by value}
+\begin{ahargs}  
+  \ahaddarg{value}{The menu item value}{}{Same type as at construction}
+  \ahaddarg{state}{The state for the check box}{Opposite state}{T of F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function selects a menu item by its value. It is equivalent
+to selecting the item with the GUI interface.  If the value is
+invalid, it returns {\tt F}.  If you don't specify the {\tt state}
+variable, the check button is given the opposite state to
+its current state.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point", [10,20])
+- m.getstates()
+[F F]
+- m.selectvalue(10)
+- m.getstates()
+[T F]
+- m.selectvalue(10, T);
+[T F]
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{getlabel}{Get the label of the menu button}
+\ahreturns{String or F}
+
+\begin{ahdescription}
+
+This tool function recovers the label of the menu button.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f);
+- m.getlabel();
+checkmenu
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{getnames}{Gets all of the names associated with the menu}
+\ahreturns{Vector of Strings}
+
+\begin{ahdescription}
+
+This tool function recovers the names associated with each item in 
+the menu.  If the menu is empty, it returns an empty array.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point", [1,2])
+- m.getnames();
+gaussian point
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getvalues}{Gets all of the values associated with the menu}
+\ahreturns{The  ``values'' array given (explicitly or implicitly) in the constructor}
+
+\begin{ahdescription}
+
+This tool function recovers the values associated with each item in 
+the menu.  If the menu is empty, it returns an empty array.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point", [1,2])
+- m.getvalues()
+[1 2]
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getstate}{Get the state of the specified check button}
+\begin{ahargs}  
+  \ahaddarg{idx}{The index of the menu item}{}{Integer}
+\end{ahargs}
+\ahreturns{T or F or fail}
+
+\begin{ahdescription}
+
+This tool function recovers the state of the specified check button.
+A fail is generated for an empty checkmenu or invalid index.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian disk");
+- m.getstate(1);
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getstates}{Get the states of all of the check buttons}
+\ahreturns{T or F}
+
+\begin{ahdescription}
+
+This tool function recovers the states of all of the check buttons.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian disk");
+- m.getstates();
+[F F]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getonstates}{Get the indices of the items which are checked}
+\ahreturns{Vector of integers}
+
+\begin{ahdescription}
+
+This tool function recovers the indices of the check menu items
+which are checked.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian disk point");
+- m.selectindex(1,T);
+- m.selectindex(3,T);
+- m.getstates();
+[T F T]
+- m.getonstates();
+[1 3]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{getoffstates}{Get the indices of the items which are not checked}
+\ahreturns{Vector of integers}
+
+\begin{ahdescription}
+
+This tool function recovers the indices of the check menu items
+which are not checked.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian disk point");
+- m.selectindex(1,T);
+- m.selectindex(3,T);
+- m.getstates();
+[T F T]
+- m.getoffstates();
+[2]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{findname}{Find the index of the item with the given name}
+\begin{ahargs}  
+  \ahaddarg{name}{The menu item name}{}{String}
+\end{ahargs}
+\ahreturns{Integer or F}
+ 
+\begin{ahdescription}
+ 
+This tool function find the index in the menu of the item specified by
+its name.  If you give an invalid name, {\tt F} is returned. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point");
+- m.findname('point');
+2
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{findvalue}{Find the index of the item with the given value}
+\begin{ahargs}  
+  \ahaddarg{value}{The menu item value}{}{Same type as the array ``value'' used in 
+construction}
+\end{ahargs}
+\ahreturns{Integer or F}
+ 
+\begin{ahdescription}
+ 
+This tool function find the index in the menu of the item specified by
+its value.  If you give an invalid value, {\tt F} is returned. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Models', "gaussian point", [10,20]);
+- m.findvalue(20);
+2
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setlabel}{Set the label of the checkmenu}
+\begin{ahargs}  
+  \ahaddarg{label}{The label}{}{String}
+  \ahaddarg{width}{Width of button}{-1}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the label of the checkmenu.  If you set {\tt
+width=-1} then the menu button width will be left as it is.  Thus if you
+constructed with {\tt width=0}, the button will resize itself to
+accomodate the new text.  If you used a specific non-zero width at
+construction time, setting {\tt width=-1} now will leave the button at
+that width.  Setting {\tt width=0} will now force a resize and setting
+{\tt width} to some positive integer will resize to that width. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Animals', "dog cat");
+- m.getlabel()
+Animals
+- m.setlabel('Small animals');
+- m.getlabel()
+Small animals
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{reset}{Resets the state of all check buttons to F}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function resets the state of all check buttons to F.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setforeground}{Set the color of the foreground of the checkmenu button}
+\begin{ahargs}  
+  \ahaddarg{color}{The color}{}{Any X color encoded as a String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the color of the foreground of the checkmenu
+button.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setbackground}{Set the color of the background of the checkmenu button}
+\begin{ahargs}  
+  \ahaddarg{color}{The color}{}{Any X color encoded as a String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the color of the background of the checkmenu
+button.
+
+\end{ahdescription}
+\end{ahfunction}
+ 
+
+
+
+
+\begin{ahfunction}{disabled}{Disable or enable the checkmenu widget}
+\begin{ahargs}  
+  \ahaddarg{disable}{Disable the widget}{T}{T or F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function disables or enables the checkmenu.  
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{isenabled}{Is the checkmenu widget enabled ?}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function indicated whether the checkmenu has been disabled or
+not.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := checkmenu(f, 'Animals', "dog cat");
+- m.disable();
+- m.isenabled()
+F
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+

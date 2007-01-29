@@ -1,0 +1,136 @@
+%% Copyright (C) 1999,2000,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: printer.help,v 19.2 2004/08/25 02:03:42 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{printer}{Print files}
+
+\ahinclude{printer.g}
+
+\ahkeyword{print}{}
+\ahkeyword{postscript}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+The printer class provides access to ``printing'' text and postscript
+files both to a printer or to ghostview. The printing can take place
+in a number of formats (portrait, landscape, two-up) and paper formats
+(letter, A3, A4). The actual work is carried out behind the scenes by
+the {\tt pri} shell script, which in turn calls {\tt lwf\_a}. Both of
+these are documented in the system manual.
+
+A GUI control panel is also provided by this class -- this is suitable
+for use both by users directly, and through a ``Print...'' item on a GUI.
+
+The major change that is needed is that defaults should be pulled in
+from aipsrc rather than assumed (printer.default is used though if the
+PRINTER environment variable is not set).
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := printer()
+- p.gui()
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{printer}{Create a printer access tool}
+\begin{ahargs}
+  \ahaddarg[in]{printername}{Device name of the printer. Defaults to PRINTER environment variable or printer.default aipsrc variable.}{F}{}
+  \ahaddarg[in]{mode}{How to print the file}{p}{p=portrait,l=landscape,80=two-up width=80,72=two-up width=72}
+  \ahaddarg[in]{paper}{Paper format}{l}{l=US letter, A4, A3}
+  \ahaddarg[in]{display}{Print to ghostview instead of print?}{F}{boolean}
+  \ahaddarg[in]{printernote}{The note function to use to log our messages.}{note}{a note function}
+\end{ahargs}
+\ahreturns{Printer tool}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{reinit}{Reset the printing parameters}
+\begin{ahargs}
+  \ahaddarg[in]{printername}{Device name of the printer. Defaults to PRINTER environment variable.}{F}{}
+  \ahaddarg[in]{mode}{How to print the file}{p}{p=portrait,l=landscape,80=two-up width=80,72=two-up width=72}
+  \ahaddarg[in]{paper}{Paper format}{l}{l=US letter, A4, A3}
+  \ahaddarg[in]{display}{Print to ghostview instead of print?}{F}{boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{print}{Send some files to the printer}
+\begin{ahargs}
+    \ahaddarg[in]{files}{List of file names (text or postscript)}{}{string array}
+\end{ahargs}
+\begin{ahdescription}
+This routine prints files (in the background), optionally removing
+them after printing them. It uses reports information via note about
+what it has done, whether some of the files don't exist, and so on.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Send some files to the printer using a GUI}
+\begin{ahargs}
+    \ahaddarg[in]{files}{List of file names (text or postscript)}{""}{string array}
+    \ahaddarg[in]{landscape}{Default to landscape printing?}{F}{boolean}
+\end{ahargs}
+\begin{ahdescription}
+While this routine is intended to be attached to a ``Print...'' menu
+item, it may also be called directly. If the list of files is set (not
+empty), then the user may-not edit the list, it will only print the
+files which are passed in.
+
+Probably there should be a preview button as well, and the ability to
+``freeze'' other items besides the file list - in particular the
+``delete'' button.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{printvalues}{Print some Glish values}
+\begin{ahargs}
+    \ahaddarg[in]{values}{Glish variable to be printed}{}{any}
+    \ahaddarg[in]{needcr}{Do we need carriage returns at the end of every line?}{T}{boolean}
+    \ahaddarg[in]{usegui}{Use the GUI?}{F}{boolean}
+\end{ahargs}
+\begin{ahdescription}
+This function formats a Glish variable (which might be an array),
+writes it into a temporary file, and prints it and then removes the
+temporary file. {\tt needcr} normally needs to be True, the only time
+it doesn't is if you are printing a Glish string which already has
+embedded new lines.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- p := printer(display=T)  # use ghostview
+- p.printvalues(1:100)     # show 1 2 ... 100 in it
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}
+

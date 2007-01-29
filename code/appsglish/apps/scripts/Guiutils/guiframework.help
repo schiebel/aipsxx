@@ -1,0 +1,454 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: guiframework.help,v 19.2 2004/08/25 01:59:22 cvsmgr Exp $
+\begin{ahobject}{guiframework}{Standard framework for Glish based 
+\aipspp Graphical User Interfaces (GUI's)}
+\ahinclude{guiframework.g}
+\begin{ahdescription}
+The guiframework (gf) provides a framework for constructing consistent
+graphical user interfaces.  It handles the overhead of the standard set of
+widgets that most GUI's should have, menubars, command buttons, status lines.
+Customization of the menu bar is fairly straight forward with the use of 
+Glish records.
+
+A menu record consists of 
+\begin{verbatim}
+menu_name::text               #! Text appearing on the Menu Button
+menu_name.menu_item
+menu_name.menu_item.text      #! Text appearing on the Menu Item
+menu_name.menu_item.relief
+menu_name.menu_item.action
+menu_name.menu_item.type
+menu_name.menu_item.state
+\end{verbatim}
+
+An action record consists of
+\begin{verbatim}
+action_name.text
+action_name.action
+\end{verbatim}
+
+The functions, addactions and addmenus, expect the action and menu records to
+live off a root menu or action tree (i.e. menu\_root.menu\_name.menu\_item).
+Any valid glishTk button attribute maybe set for each menu or action item.
+
+The following member functions illustrate how to construct the menu/action
+records.
+\begin{description}
+\item[default\_filemenu] make a simple menu,
+\item[default\_options] make a menus with cascading menus
+\item[defaultmenus] put together a menus record
+\item[defaulthelp] put together a help record
+\item[default\_actions] create an actions record
+\end{description}
+
+\begin{verbatim}
+
+self.default_filemenu := function()
+{  wider public;
+   file := [=];
+   file::text := 'File';
+   file.open := [=];
+   file.open.text := 'Open...';
+   file.open.relief := 'flat';
+   file.open.action := function(){ 
+                return filechooser(title='AIPS++ Filechooser -- Open File');}
+   file.save := [=];
+   file.save.text := 'Save...'
+   file.save.relief := 'flat';
+   file.save.action := function(){ 
+                return filechooser(title='AIPS++ Filechooser -- Save File');}
+   file.blank := [=];
+   file.blank.text := '';
+   file.blank.relief :='flat';
+   file.blank.disable :=T;
+   
+   file.bug := [=];
+   file.bug.text :='Report Bug...';
+   file.bug.relief :='flat';
+   file.bug.action := bug; 
+   
+   file.blank1 := [=];
+   file.blank1.text := '';
+   file.blank1.relief :='flat';
+   file.blank1.disable :=T;
+
+   file.close := [=];
+   file.close.text := 'Close';
+   file.close.relief := 'flat';
+   file.close.action := public.dismiss;
+
+   return ref file ;
+}
+
+self.default_options := function()
+{
+   options := [=];
+   options::text := 'Options'
+   options.browser := [=];
+   options.browser::text := 'Browser'
+   options.browser.text := 'Browser'
+   options.browser.type := 'menu'
+   options.browser.relief := 'flat'
+#
+   options.browser.menu := [=];
+   options.browser.menu.netscape := [=];
+   options.browser.menu.netscape.text := 'Netscape';
+   options.browser.menu.netscape.type := 'radio';
+   options.browser.menu.netscape.relief := 'flat';
+   options.browser.menu.netscape.action := function(){ global helpsystem;
+                                         helpsystem::browser := 'netscape';}
+#
+   options.browser.menu.mosaic := [=];
+   options.browser.menu.mosaic.text := 'Mosaic';
+   options.browser.menu.mosaic.type := 'radio';
+   options.browser.menu.mosaic.relief := 'flat';
+   options.browser.menu.mosaic.action := function(){global helpsystem;
+                                         helpsystem::browser := 'mosaic';}
+#
+   options.browser.menu.other := [=];
+   options.browser.menu.other.text := 'Other';
+   options.browser.menu.other.type := 'radio';
+   options.browser.menu.other.relief := 'flat';
+   options.browser.menu.other.action := function(){ global helpsystem;
+                                         helpsystem::browser := 'other';}
+   return ref options;
+}
+
+   # Returns a reference to the default menus, file and options
+
+public.defaultmenus := function()
+{  wider self;
+   menus := [=];
+   menus.file := self.default_filemenu();
+   menus.options := self.default_options();
+   return ref menus;
+}
+
+   # Returns a reference to the default help menu
+
+public.defaulthelp := function()
+{
+   hmenu := [=];
+   hmenu::text := 'Help';
+   hmenu.about := [=];
+   hmenu.about.text := 'About';
+   hmenu.about.relief := 'flat';
+   hmenu.about.action := about;
+#
+   hmenu.refman := [=];
+   hmenu.refman.text := 'Reference Manual';
+   hmenu.refman.relief := 'flat';
+   hmenu.refman.action := function()
+                         { help('Refman:'); }
+#
+   hmenu.gstart := [=];
+   hmenu.gstart.text := 'Getting Started';
+   hmenu.gstart.relief := 'flat';
+   hmenu.gstart.action := function()
+                          { help('gettingstarted:'); }
+
+   return ref hmenu;
+}
+
+   # Returns a reference to the default actions
+
+public.defaultactions := function()
+{  wider public;
+   action := [=];
+   action.apply := [=];
+   action.apply.text := 'Apply';
+   action.apply.action := function(){print 'Apply Pressed'};
+   action.reset := [=];
+   action.reset.text := 'Reset';
+   action.reset.action := function(){print 'Reset Pressed'};
+   action.cancel := [=];
+   action.cancel.text := 'Cancel';
+   action.cancel.action := public.dismiss;
+   return ref action;
+}
+
+\end{verbatim}
+
+Here are a couple of simple examples that illustrate the use of guiframework.
+First we construct a simple message window with a dismiss button.
+\begin{verbatim}
+
+# Info dialog
+
+infowindow := function( some_text='Your slogan here.',
+                        title='AIPS++ Infomation Window')
+{   
+       #  Create the default action button, Dismiss
+
+    action := [=];
+    action.dismiss.text := 'Dismiss';
+
+       #  Create the guiframework, title sets the title of the frame,
+       #   the first F, tells the constructor not to use the default menus
+       #   the second F, tells the constructor not to use the default help menu
+       #   action, says create the action buttons (there's only one)
+
+    a := guiframework(title, F, F, action);
+
+       # We need set the dismiss handler after we create the tool otherwise
+       # it wouldn't know how to dismiss itself.
+
+    a.addactionhandler('dismiss', a.dismiss);
+
+       # Now get the frame that will be the parent of all our application
+       # gui components
+
+    wf := a.getworkframe();
+
+       # Attach a message to the work frame
+
+    m := message(wf, some_text, width=600);
+
+       # Return a reference to the info window.
+    return ref a;
+}
+\end{verbatim}
+
+Here's a more sophisticated example.  It implements a choices window.
+\begin{verbatim}
+choicewin := function(question, choices, interactive=have_gui(), timeout=150)
+{
+    if (!is_string(question) || !is_string(choices)) {
+        fail '::choice(description,choices) : description and choices must be strings'
+    }
+
+    if (!interactive || !have_gui()) {
+        return choices[1]
+    }
+
+       #  Setup up the buttons, the default action procedure for each button
+       #  is to return its value.
+
+    action := [=];
+    for(choice in choices){
+       action[choice] := [=];
+       action[choice].text := choice;
+    }
+       # Create the guiframework, no menus, but as many actions as buttons
+
+    a := guiframework("AIPS++ Please make a choice", F, F, action);
+    wf := a.getworkframe();
+
+       # Display the query in the workframe
+
+    m := message(wf, question, width=600);
+
+       # Now we setup the timing loop and do a blocking wait for a response
+
+    done := F;
+    timer := client("timer", 0.2);
+    choiceIs := choices[1];
+
+       # Put the amount of time left to choose in the status loop
+
+    a.updatestatus(spaste('Time left to choose: ', timeout/5, ' s')); 
+
+       #  Wait for an answer or until we timeout
+    while(!done){
+          # Check if a handler has returned
+       if(a.handle::returned){
+            # Yup set the choice a break the loop
+          choiceIs := a.handle::value;
+          break;
+       }
+          # Nope, wait for the timer
+       await timer->ready 
+       if ($name == "ready") {
+	  timeout -:= 1;
+	  done := timeout <= 0;
+          timestring := '     ';
+          if(!(timeout%5)){
+                # Update the status line with the timeleft, count down seconds
+             timestring := spaste('Time left to chose: ', timeout/5, ' s');
+	     a.updatestatus( timestring);
+          }
+        }
+    }
+
+      # All done, cleanup timer and window and return the choice
+
+    send timer->terminate();
+    a.dismiss();
+    return choiceIs;
+}
+\end{verbatim}
+
+\end{ahdescription}
+\ahfuncs{}
+\begin{ahconstructor}{guiframework}{Constructs the GUI framework, menus, work area, etc...}
+\begin{ahargs}
+\ahaddarg{title}{Window title}{\aipspp Window}{Any string}
+\ahaddarg{menus}{menu records}{Default file and options menus}{Glish menus records}
+\ahaddarg{helpmenu}{help record}{Default help menus}{Glish help menu record}
+\ahaddarg{actions}{Action record}{Default action buttons}{Glish action record}
+\ahaddarg{guiframenote}{note function}{note}{any note function}
+\ahaddarg{parent}{Parent frame}{F}{Frame to attach guiframework}
+\end{ahargs}
+\begin{ahdescription}
+
+The guiframework provides a consistent look and feel GUI for gui applications
+that use it.  With it you can specify standard menus, help and actions.
+
+If the parent frame is \texttt{F} guiframe work will generate the top-level
+frame.
+
+Often we need to change the state of button, grey it, change a button label or
+the like.  Rather than provide lots of guiframework functions to do these
+things, there is a backdoor using the app record. The app datamember of
+guiframework contains all the GUI elements defined by a guiframework.  The
+scheme
+
+The record \texttt{app.mb.btns} contain all the buttons in the menubar, a
+button is identified by the menu name and the menu item name.  For example
+the 'file' menu is identified \texttt{app.mb.btns.file}, the open option on
+file is \texttt{app.mb.btns.fileopen}, menu items concatinated the menu name
+and menu item name to identify themselves.  
+
+Action buttons belong to the \texttt{app.cmd.b} record.  A go action would be 
+\texttt{app.cmd.b.go}.
+\end{ahdescription}
+\ahreturns{A standard \aipspp GUI framework window}
+\end{ahconstructor}
+%
+\begin{ahfunction}{busy}{Turns the icon into a watch or pointer. Disables the guiframework frame.}
+\begin{ahargs}
+\ahaddarg{busyFlag}{Busy Flag}{T}{T or F, T for busy, F for not busy}
+\end{ahargs}
+\end{ahfunction}
+%
+\begin{ahfunction}{dismiss}{Dismisses the main window.}
+\ahreturns{Removes the window from the display}
+\end{ahfunction}
+%
+\begin{ahfunction}{defaultmenus}{Returns the default menus.}
+\ahreturns{Returns a record of the default menus, file \& options}
+\end{ahfunction}
+%
+\begin{ahfunction}{defaulthelp}{Returns the default help menu.}
+\ahreturns{Returns a record of the default help menu.}
+\end{ahfunction}
+%
+\begin{ahfunction}{defaultactions}{Returns the default actions for command buttons.}
+\ahreturns{Returns a record of the default action buttions, Apply, Reset, and Cancel.}
+\end{ahfunction}
+%
+\begin{ahfunction}{addmenus}{Add menus to the menubar.}
+\begin{ahargs}
+\ahaddarg{menus}{Record, containing menus}{}{Any Glish menu record }
+\end{ahargs}
+\ahreturns{Nothing}
+\end{ahfunction}
+%
+\begin{ahfunction}{addhelp}{Add help menus to the menubar.}
+\begin{ahargs}
+\ahaddarg{helpmenu}{Help menu record}{}{Glish menu record}
+\end{ahargs}
+\ahreturns{Nothing}
+\end{ahfunction}
+%
+\begin{ahfunction}{addactions}{Add buttons to command area.}
+\begin{ahargs}
+\ahaddarg{actions}{Action buttons}{}{Glish action record}
+\end{ahargs}
+\ahreturns{Nothing}
+\end{ahfunction}
+%
+\begin{ahfunction}{getworkframe}{Returns a reference to the frame where most GUI components are found.}
+\ahreturns{A reference to frame which you use for the parent of GUI components. }
+\end{ahfunction}
+%
+\begin{ahfunction}{updatestatus}{Updates the status line on the window.}
+\begin{ahargs}
+\ahaddarg{status}{Status line}{}{Any string}
+\end{ahargs}
+\ahreturns{Nothing}
+\end{ahfunction}
+%
+\begin{ahfunction}{updatetitle}{Updates the title line on the frame/window.}
+\begin{ahargs}
+\ahaddarg{status}{Status line}{}{Any string}
+\end{ahargs}
+\ahreturns{Nothing}
+\end{ahfunction}
+%
+\begin{ahfunction}{addactionhandler}{Sets the handler for a menu or command buttion}
+\begin{ahargs}
+\ahaddarg{button}{button name}{Valid button name}{String}
+\ahaddarg{action}{action functions}{Valid function}{Glish function}
+\end{ahargs}
+\ahreturns{Nothing}
+\begin{ahdescription}
+Sometimes it's not possible to prescribe a button/menu action before
+construction of the framework. Addactionhandler allows you do this after the
+tool is created.  A typical example is a menu exit or an action dismiss
+button. 
+
+The following code excerpt illustrates adding a command action.
+\begin{verbatim}
+action := [=];
+action.dismiss := [=];
+action.dismiss.text = 'Dismiss';
+
+a := guiframework('My window', F, F, action);
+a.addactionhandler('dismiss', a.dismiss());
+\end{verbatim}
+
+This code excerpt illustrates adding a menu action.  Note that for menus
+we concatenate the menu button names to produce the proper button name. So,
+the dismiss option of the file menu has a name of filedismiss.  If you have
+cascading menus, you just keep concatenating names, i.e. options, browser,
+netscape becomes optionsbrowsernetscape.
+\begin{verbatim}
+menus := [=];
+menus.file := [=];
+menus.file::text := 'File';
+.
+.
+.
+menus.file.dismiss := [=];
+menus.file.dismiss.text := 'Dismiss'
+menus.options := [=];
+.
+.
+.
+a := guiframework('My app', menus, T, T)
+a.addactionhandler('filedismiss', a.dismiss);
+
+\end{verbatim}
+
+
+\end{ahdescription}
+\end{ahfunction}
+%
+\begin{ahfunction}{cleanup}{removes agents generated by guiframework}
+\ahreturns{Nothing}
+\end{ahfunction}
+\end{ahobject}

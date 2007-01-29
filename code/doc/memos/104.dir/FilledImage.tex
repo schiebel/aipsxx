@@ -1,0 +1,176 @@
+\clearpage
+\section{FilledImage.h}
+
+\subsection*{HEADER FILE DESCRIPTION}
+   This file contains the interface to the FilledImage class.
+  
+\subsection*{ENVIRONMENT}
+\begin{verbatim}
+#define FILLED_IMAGE_H
+
+#include "Array2d.h"
+#include "Image.h"
+#include <assert.h>
+#include <iostream.h>
+#include "ListImage.h"
+#include "ModelImage.h"
+
+DECLARE_ONCE Array2d<float>;
+DECLARE_ONCE Array2d<double>;
+
+class ModelImage;
+class ListImage;
+\end{verbatim}
+
+\subsection*{CLASS DESCRIPTION}
+   The FilledImage class is a two dimensional image (of float) class with
+   access via the various coordinate type.
+
+\subsection*{CLASS SUMMARY}
+\begin{verbatim}
+class FilledImage  : public Image
+{
+public:
+    FilledImage();
+    FilledImage(int m, int n, float v=0.0);
+    FilledImage(const FilledImage& src);
+    FilledImage(const ListImage& src, float);
+    FilledImage(const ModelImage& src);
+    FilledImage &operator=(const FilledImage& src);
+    FilledImage &operator=(const ModelImage& src); 
+    int GetNumEl() const;
+    Array2d<double> GetStorage();
+    void SetStorage(const Array2d<double> &);
+    void Scale(float);
+    void Fill(float);
+    int Extrema(Pixel &maxpix, Pixel &minpix) const;
+    void SetPixel(PixelCoord, float);
+    float &operator() (int,int);
+    float GetPixel(PixelCoord) const;
+    int GetImPixelVal(const ImPixelCoord&, float&) const;
+    virtual int UCombine (float, const Image&, float, const Image&, float);
+    virtual int XCombine (float, const Image&, float, const Image&, float);
+    virtual int ScaledAdd (float, const Image&);
+    FilledImage SubImage(PixelCoord &, ImPixStep &, ImageDim &) const;
+    void Display();
+    void Write(Char *File);
+    ~FilledImage();
+    friend ostream &operator<<(ostream &os, const FilledImage &im);
+};
+\end{verbatim}
+
+\subsection*{MEMBER FUNCTIONS}
+
+       Default constructor makes 0 sized image.
+\begin{verbatim}
+    FilledImage();
+\end{verbatim}
+
+       Make a FilledImage of a given size (possibly with a set value)
+\begin{verbatim}
+    FilledImage(int m, int n, float v=0.0);
+\end{verbatim}
+
+       Copy constructors 
+\begin{verbatim}
+    FilledImage(const FilledImage& src);
+\end{verbatim}
+
+       Copy constructor (from ListImage) - needs "fill" value
+\begin{verbatim}
+    FilledImage(const ListImage& src, float);
+\end{verbatim}
+
+       Copy constructor (from ModelImage)
+\begin{verbatim}
+    FilledImage(const ModelImage& src);
+\end{verbatim}
+
+       Assignment operators
+\begin{verbatim}
+    FilledImage &operator=(const FilledImage& src);
+\end{verbatim}
+
+       The following will fail if the existing FilledImage does not
+       have enough storage allocated!!
+\begin{verbatim}
+    FilledImage &operator=(const ModelImage& src); 
+\end{verbatim}
+
+       Accessors
+\begin{verbatim}
+    int GetNumEl() const;
+\end{verbatim}
+
+       Put all the values in memory, which this function allocates
+\begin{verbatim}
+    Array2d<double> GetStorage();
+\end{verbatim}
+
+       Fill the image with the values in memory, optionally delete that memory
+\begin{verbatim}
+    void SetStorage(const Array2d<double> &);
+\end{verbatim}
+
+      Data operations.
+\begin{verbatim}
+   void Scale(float);
+   void Fill(float);
+   int Extrema(Pixel &maxpix, Pixel &minpix) const;
+   void SetPixel(PixelCoord, float);
+\end{verbatim}
+
+      Set/get pixel values by direct indexing
+\begin{verbatim}
+   float &operator() (int,int);
+\end{verbatim}
+
+      If PixelCoord is non-integral or lies outside image range,
+      method exits.
+\begin{verbatim}
+   float GetPixel(PixelCoord) const;
+\end{verbatim}
+
+      The following returns FALSE if corresponding PixelCoord is non-
+      integral or lies outside image.
+\begin{verbatim}
+   int GetImPixelVal(const ImPixelCoord&, float&) const;
+\end{verbatim}
+
+      Union/Intersection operators
+\begin{verbatim}
+  virtual int UCombine (float, const Image&, float, const Image&, float);
+  virtual int XCombine (float, const Image&, float, const Image&, float);
+  virtual int ScaledAdd (float, const Image&);
+\end{verbatim}
+
+      Extract sub-image with the TLC specified (as a Pixel coordinate), the 
+      step in pixels specified (by an ImPixStep object), and desired dimension 
+      specified. Exits if no image is possible (e.g. TLC doesn't lie within
+      the parent image). Desired dimension will shrink to get maximum sub-image
+      allowed.
+\begin{verbatim}
+   FilledImage SubImage(PixelCoord &, ImPixStep &, ImageDim &) const;
+\end{verbatim}
+
+      Display Function (uses PGPLOT to present a grey-scale representation
+      of the image)
+\begin{verbatim}
+   void Display();
+\end{verbatim}
+
+      Write Function (ASCII)
+\begin{verbatim}
+   void Write(Char *File);
+\end{verbatim}
+
+      Destructor.
+\begin{verbatim}
+   ~FilledImage();
+\end{verbatim}
+
+      Output an image's attributes and contents. Note that a CoordSys must
+      be defined.
+\begin{verbatim}
+   friend ostream &operator<<(ostream &os, const FilledImage &im);
+\end{verbatim}

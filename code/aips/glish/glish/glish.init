@@ -1,0 +1,286 @@
+ # @(#) $Id: glish.init,v 19.12 2004/11/03 20:38:59 cvsmgr Exp $
+
+pi := 3.141592653589793238462643
+e  := 2.718281828459045235360287
+
+func to_lower( str )	tr('[A-Z]','[a-z]',str)
+func to_upper( str )	tr('[a-z]','[A-Z]',str)
+
+func min(...)		range(...)[1]
+func max(...)		range(...)[2]
+
+func abs(val x)
+	{
+	if ( is_complex(x) || is_dcomplex(x) )
+		return sqrt(real(x)^2 + imag(x)^2)
+
+	else
+		{
+		mask := x < 0
+		x[mask] := -x[mask]
+		return x
+		}
+	}
+
+func conj(x)
+	{
+	if ( is_complex(x) || is_dcomplex(x) )
+		return complex(real(x), -imag(x))
+	else
+		return x
+	}
+
+func arg(x)
+{
+	if ( is_complex(x) || is_dcomplex(x) )
+		{
+		ret := atan(as_double(imag(x)) / as_double(real(x)))
+		real_lt := real(x) < 0.0
+		one := imag(x) >= 0.0 & real_lt
+		two := imag(x) < 0.0 & real_lt
+		ret[ one ] := pi - abs(ret[ one ])
+		ret[ two ] := -pi + abs(ret[ two ])
+		return ret
+		}
+	else
+		{
+		if ( is_numeric(x) )
+			{
+			mask := x < 0
+			x[mask] := pi
+			x[!mask] := 0
+			return x
+			}
+		else
+			print 'error: arg() takes a numeric argument'
+		}
+	return F
+	}
+
+func all(x) sum(!x) == 0
+func any(x) sum(as_boolean(x)) > 0
+
+len := length
+ceil := ceiling
+
+func ind(x) { if ( len(x) > 0 ) 1:len(x); else [] }
+
+func paste(...,sep=' ')
+	internal_paste(sep, ...)
+
+func stat( file, bytes=100, follow=F )
+	internal_stat( file, bytes, follow )
+
+func is_asciifile( f, bytes=100 )
+	{
+	if ( len(f) )
+		len(tmp:=stat(f,bytes)) > 0 && tmp["type"] == 'ascii'
+	else
+		F
+	}
+
+func write( file, ..., sep='\n' )
+	internal_write(file, sep, ' ', ...)
+
+func read( file, num=1, what='l' )
+	internal_read(file, num, what)
+
+func fprintf( file, ... )
+	internal_write( file, '', '', sprintf(...) )
+
+func printf(...)
+	internal_printf(sprintf(...))
+
+func readline(prompt='>> ')
+	internal_readline(prompt)
+
+func spaste(...)
+	paste(...,sep='')
+
+func has_field( const x, const field )
+	{
+	if ( is_record(x) )
+		sum(field_names(x) == field) > 0
+	else
+		F
+	}
+
+func shell( ..., id=F, host=F, async=F, ping=F, suspend=F, input=F )
+ 	create_task( id, host, F, async, ping, suspend, input, F, F, F, F, ... )
+
+func client( ..., id=F, host=F, async=F, ping=F, suspend=F, input=F, shm=F, sock=F, transcript=F )
+ 	create_task( id, host, T, async, ping, suspend, input, shm, sock, transcript, F, ... )
+
+func dl_client( ..., id=F, async=F, suspend=F, input=F, transcript=F )
+ 	create_task( id, F, F, async, F, suspend, input, F, F, transcript, T, ... )
+
+func full_type_name( const x )
+	{
+	if ( type_name(x) == "record" )
+		{
+		full_name := 'record ['
+		first_field := field_names(x)[1]
+		for ( f in field_names(x) )
+			{
+			if ( f != first_field )
+				full_name := spaste(full_name, ', ')
+			full_name := spaste(full_name, f, "=",
+						full_type_name(x[f]))
+			}
+
+		spaste(full_name, "]")
+		}
+	else
+		{
+		if ( length(x) != 1 )
+			spaste(type_name(x), ' [', length(x), "]" )
+		else
+			type_name(x)
+		}
+	}
+
+func relay( src, src_name, ref dest, dest_name="*" )
+	{
+	if ( dest_name == "*" )
+		link src->[src_name] to dest->*
+	else
+		link src->[src_name] to dest->[dest_name]
+	}
+
+func relay_event( src, ref dest, name )
+	{
+	relay( src, name, dest, "*" )
+	}
+
+func relay_all( src, ref dest )
+	{
+	whenever src->* do
+		dest->[$name]( $value )
+	}
+
+func birelay_event( ref agent1, ref agent2, name )
+	{
+	relay( agent1, name, agent2 )
+	relay( agent2, name, agent1 )
+	}
+
+func birelay_all( ref agent1, ref agent2 )
+	{
+	relay_all( agent1, agent2 )
+	relay_all( agent2, agent1 )
+	}
+
+func sort(x)
+	{
+	if ( len(x) <= 1 )
+		return x
+
+	pivot := x[random(1,len(x))]
+	return [sort(x[x < pivot]), x[x == pivot], sort(x[x > pivot])]
+	}
+
+func unique( s, sorted=F )
+	{
+	if ( ! sorted ) s := sort(s)
+	l := len(s)
+	if ( l > 1 )
+		return s[[T, s[2:l] != s[1:(l-1)]]]
+	else
+		return s
+	}
+
+func sort_pair(x, y)
+	{
+	if ( len(x) <= 1 )
+		return y
+
+	pivot := x[random(1,len(x))]
+	below := x < pivot
+	equal := x == pivot
+	above := x > pivot
+
+	return [sort_pair(x[below], y[below]), y[equal],
+			sort_pair(x[above], y[above])]
+	}
+
+func order(x)	sort_pair(x, 1:len(x))
+
+func sync(ref c)	{ return c->["*sync*"]() }
+
+func shape(x)
+	{
+	if ( has_field(x::,'shape') )
+		x::shape
+	else
+		len(x)
+	}
+
+func array(init, ...)
+	{
+	if ( num_args(...) == 0 )
+		return init
+
+	if ( length(init) <= 0 && ! is_string(init) )
+		{
+		print "bad initializer"
+		return F
+		}
+
+	if ( ! all(length(...) == 1) )
+		{
+		print "error non scalar parameter"
+		return F
+		}
+
+	shape := as_integer([...])
+	if ( min(shape) <= 0 )
+		{
+		print "error 0 or negative parameter"
+		return F
+		}
+
+	p := prod(shape)
+	value := []
+
+	if ( length(init) > 0 )
+		{
+		if ( p % length(init) != 0 )
+			value := [rep(init, as_integer(p / length(init))),
+					init[1:(p % length(init))]]
+		else
+			value := rep(init, as_integer(p / length(init)))
+		}
+	else
+		value := rep(init, p);
+
+	if ( len(shape) > 1 )
+		value::shape := shape
+
+	return value
+	}
+
+
+# Given an ASCII table in "tbl" with the same number of columns in
+# each row, returns a record of arrays with the given names, each
+# array corresponding to a column in the table.
+func table_to_arrays(tbl, array_names)
+	{
+	num_elements := len(tbl)
+	num_arrays := len(split(tbl[1]))
+
+	if ( num_arrays != len(array_names) )
+		{
+		print "mismatch between", len(array_names), "array names and",
+			num_arrays, "arrays in table_to_arrays()"
+		exit
+		}
+
+	arrays := as_double(split(tbl))
+	mask := seq(0, len(arrays)-1, num_arrays)
+	result := [=]
+
+	for ( i in 1:num_arrays )
+		result[array_names[i]] := arrays[mask + i]
+
+	return result
+	}

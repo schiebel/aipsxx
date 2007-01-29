@@ -1,0 +1,521 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or%
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: iramcalibrater.help,v 19.0 2003/07/16 06:10:29 aips2adm Exp $
+\documentclass{article}
+\usepackage{aips2help, html, epsfig}
+\begin{document}
+
+\begin{ahmodule}{alma}{Module for clic emulation functionalities}
+\ahinclude{iramcalibrater.g}
+
+\begin{ahdescription} 
+
+{\tt iramcalibrater} provides the functionalities and algorithm
+implementation to calibrate millimetric interferometer data as done by
+GILDAS.
+
+\subsubsection*{iramcalibrater tool}
+
+This tool provides some of the functionalities of IRAM's calibration
+package (CLIC) for data from Plateau de Bure observatory. Some of the
+algorithms as used by IRAM's CLIC have been re-implented here.
+
+
+
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{iramcalibrater}{tool to perform calibration on data ( a la GILDAS) }
+\begin{ahdescription}
+
+
+\subsubsection*{Overview of {\tt iramcalibrater} tool functions:}
+
+Functions that have been implemented in the {\tt iramcalibrater} tool are:
+
+\begin{description}
+\item[Data selection] \ahlink{phcor}{iramcalibrater:iramcalibrater.phcor}
+\item[Bandpass calibration] \ahlink{rf}{iramcalibrater:iramcalibrater.rf}
+\item[Phase calibration] \ahlink{phase}{iramcalibrater:iramcalibrater.phase}
+\item[Flux calibration] \ahlink{flux}{iramcalibrater:iramcalibrater.flux}
+\item[Amplitude calibration] \ahlink{amp}{iramcalibrater:iramcalibrater.amp}
+\item[UV data extraction/combination] \ahlink{uvt}{iramcalibrater:iramcalibrater.uvt}
+
+\end{description}
+
+
+\begin{ahexample}
+The following example illustrates a typical iramcalibrater tool session
+
+\begin{verbatim}
+
+# Include the iramcalibrater functionality
+include 'iramcalibrater.g'
+
+# Create a iramcalibrater tool
+myic:=iramcalibrater(msname='07feb97-g067.ms');
+
+# Do a selection of the better data between the online radiometric
+# corrected data and the non-corrected data 
+myic.phcor(trial=F);
+
+# Perform the  bandpass calibration
+myic.rf(fieldname='0528+134', freqgrp='3mm-LSB', visnorm=F, bpnorm=T, 
+          gibb= 2, drop=0);
+
+# Perform the phase calibration
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB');
+
+# Perform the flux calibration
+myic.flux(fieldnames=['0528+134', '0415+379', 'MWC349'], freqgrp='3mm-LSB', plot=T);
+
+# Perform the amplitude calibration
+myic.amp(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+
+# Extract the calibrated target source and append it to another ms 
+myic.uvt(fieldname='GG_TAU', spwid=7, filename='ggtau3mm.ms', option='append');
+
+\end{verbatim}
+\end{ahexample}
+
+
+The {\tt iramcalibrater} tool needs to be constructed with an associated ms.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{iramcalibrater}{Construct an iramcalibrater tool}
+\begin{ahdescription}
+This is used to construct a {\tt iramcalibrater} tool. This tool can then
+be used to perform the different calibration routines needed and/or
+extract a given source and spectral window uv-data for combination
+with other days of previously calibrated data.
+
+If restarting a calibration of existing data, set {\tt initcal=T} to
+initialize the scratch columns of the dataset.
+
+It can be used as {\tt iramcalibrater('mydata.ms')} to construct 
+the iramcalibrater tool associated with the given data 
+
+This returns a Glish variable containing the tool functions of
+{\tt iramcalibrater}.
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{ms}{Measurementset to calibrate}{''}{String}
+\ahaddarg{initcal}{Initialize calibration?}{'T'}{Boolean}
+\end{ahargs}
+\ahreturns{iramcalibrater tool}
+
+\begin{ahexample}
+\begin{verbatim}
+
+myic:=iramcalibrater(ms='10feb97-g067.ms',initcal=T) ;     
+
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+
+
+\begin{ahfunction}{phcor}{Select data atmospheric corrected data or not}
+
+\begin{ahdescription}
+This function examines the calibrators and compares the amplitude of
+the atmospheric/radiometric-corrected data with that of the
+non-corrected data and then performs a per scan and per antenna
+selection on all the data which is going to be used subsequently.
+This needs to be run once, and is the first thing that is needed on a
+new measurement set.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{trial}{Execute in trial mode or not}{T}{Bool}
+\end{ahargs}
+
+\ahreturns{}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor(F)
+\end{verbatim}
+This function prints out the scans for which the atmospheric
+correction will be rejected 
+
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{rf}{perform phase and amplitude bandpass calibration}
+
+\begin{ahdescription}
+
+This function will perform a bandpass calibration on the selected
+data.  The solutions are antenna based polynomials.  The desired
+degree for the amplitude and phase polynomials may be specified in the
+{\tt degamp} and {\tt degphase} parameters.  The defaults are usually
+adequate here, but observations with unusually wide bandwidths might
+benefit from user input here.  
+
+Plots of the solutions are returned to the disk as a postscript file
+with a name consistent with the ms file name and the bands/sidebands
+solved for.
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{fieldname}{Field name of (single) calibrator to be used}{}{String}
+\ahaddarg{freqgrp}{spectral windows to be used in the bandpass
+calibration}{'3mm-LSB'}{'3mm-LSB' || '3mm-USB' || '1mm' || '1mm-LSB' || '1mm-USB'}
+\ahaddarg{visnorm}{Do an auto calibration in time before integrating}{F}{Bool}
+\ahaddarg{bpnorm}{normalize bandpass solution}{T}{Bool}
+\ahaddarg{refant}{Reference antenna}{1}{Int}
+\ahaddarg{gibb}{number of central channels to reject in solve}{2}{Int}
+\ahaddarg{drop}{percentage of channels to ignore on edges of band}{5}{Int} 
+\ahaddarg{degamp}{Degree of amplitude polynomial in fit}{6}{Int} 
+\ahaddarg{degphase}{Degree of phase polynomial in fit}{12}{Int} 
+\end{ahargs}
+
+\ahreturns{Bool}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor()
+myic.rf(fieldname='0528+134', refant=1, freqgrp='3mm-LSB')
+myic.done()
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{phase}{perform phase calibration on the data}
+
+\begin{ahdescription}
+This function performs a phase calibration using the selected
+calibration sources and spectral window ids. Previously bandpassed 
+calibrated data, averaged in the spectral domain, are used to find the 
+phase solution. The solutions are antenna based cubic splines. 
+
+A plot of the solution is returned to the disk as a postscript file
+with a name consistent with the ms file name and bands/sidebands
+solved for.
+
+For less-than-well-behaved data with phasewraps, the {\tt npointaver}
+and {\tt phasewrap} parameters may be used to tune the phase tracking
+algorithm.  {\tt npointaver} sets the number of consecutive time
+points that are averaged for comparison with the next point to see
+if it has slipped a cycle.  {\tt phasewrap} is the phase difference
+required in the comparison to indicate a cycle slip.  When a cycle
+slip is detected, the current point and all future points will be
+shifted by $+/-360$ before the solution.  Such slip corrections will
+accumulate for every detected slip.  For well-behaved data, the defaults
+should be adequate.  
+\end{ahdescription}
+
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fieldnames}{Field names of calibrators to be used}{}{Vector of Strings}
+\ahaddarg{freqgrp}{frequency group to solve for phase}{'3mm-LSB'}{'3mm-LSB' || '3mm-USB' || '1mm' || '1mm-LSB' || '1mm-USB'}
+\ahaddarg{refant}{Reference antenna}{1}{Int}
+\ahaddarg{phasetransfer}{type of transfer for 1mm solution}{'raw'}{'raw' || 'curve' || 'none' }
+\ahaddarg{rawspw}{spectral window used in case of raw phase transfer}{-1}{Int}
+\ahaddarg{npointaver}{Number of consecutive time points averaged for phase tracking}{10}{Int}
+\ahaddarg{phasewrap}{Phase difference that indicates a cycle slip in phase tracking}{'250deg'}{Quantity}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor(F)
+myic.rf(fieldname='0528+134', freqgrp='3mm-LSB')
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.rf(fieldname='0528+134', freqgrp='1mm')
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='1mm',
+phasetransfer='raw', rawspw=3)
+myic.done()
+\end{verbatim}
+In the example above we used 0528+134 to do the bandpass
+calibration and 0528+134 and 0415+379 to do the phase calibration at
+3mm. Then the bandpass is done on the 1mm (both side bands) with a
+phasetranfer from the spw=3 as raw phase reference at 3mm.
+
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{flux}{perform flux calibration on the data}
+
+\begin{ahdescription}
+
+This function performs a flux density scale calibration using the
+selected calibration sources and spectral windows. Previously
+bandpassed and phase calibrated data are used to find the flux
+calibration needed.  If {\tt fixed} is unspecified, the function will
+execute in interactive mode, and the user will be queried for names
+and flux densities of known calibrators (at least one of the fields
+specified in {\tt fieldnames} must be specified).  The flux densities
+of the remaining fields and the efficiencies of the antennas will be
+derived and reported.  In this mode, the user can iteratively change
+the flux density(ies) of the fixed-flux density calibrators to achieve
+the efficiencies expected.
+
+If {\tt fixed} is specified with any flux densities, this function
+will run in NON-interactive mode, and the user will have no
+opportunity to iterate as described above.  This mode is useful if
+flux densities are confidently known a priori.  In {\tt fixed},
+specify flux densities as a vector of string quantities (i.e., with
+units, e.g., '5Jy', or "5Jy 3.4Jy").  The values will be matched
+one-for-one with the field names in {\tt fieldnames}.  If only a
+subset of fields have known flux densities which the user desires
+fixed, list these fields first in {\tt fieldnames}, or specify '-1Jy'
+for the flux densities of fields that should be derived.  This mode
+assumes that the user is confident in the specification of known flux
+densities, and the fixed and derived flux densities/efficiencies will
+be automatically applied.
+
+Timerange(s) may be specified to limit the range of data used in the
+calculation by using the {\tt timerange} parameter.  Specify these as
+pairs of times in a string.  The format for the times can be:
+YYYY/MM/DD/hh:mm:ss, hh:mm:ss, hh:mm, or HH.xxh.  In the
+latter two cases, the date will be assumed from the dataset.  Note
+that the trailing 'h' in the third option specifies units of hours
+(e.g., 19:30:00 is the same as 19.5h ; in fact any appropriate time
+quantity (as string) may be specified).  The number of time values
+specified must be even, with each pair representing a different
+timerange.
+
+Use the {\tt numchancont} parameter to specify (if necessary) the number
+of channels in the spectral window(s) that should be used for determining
+the flux scale. 
+
+\end{ahdescription}
+
+\ahreturns{A list of flux densities in Jy.}
+
+\begin{ahargs}
+\ahaddarg{fieldnames}{Field names of calibrators to be used}{}{Vector of Strings}
+\ahaddarg{fixed}{Fixed flux densities for known calibrators (as string quantities)}{}{Vector of Strings}
+\ahaddarg{freqgrp}{spectral windows to be used in the bandpass
+calibration}{'3mm-LSB'}{'3mm-LSB' || '3mm-USB' || '1mm' || '1mm-LSB' || '1mm-USB'}	
+\ahaddarg{timerange}{Timerange(s) specified in pairs}{' '}{String}
+\ahaddarg{plot}{Display flux renormalized amplitudes}{F}{Bool}
+\ahaddarg{gibb}{number of central channels to reject in solution}{2}{Int}
+\ahaddarg{drop}{percentage of channels to ignore on edges of band}{5}{Int} 
+\ahaddarg{numchancont}{Number of channels in continuum spectral window}{64}{Int}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor(F)
+myic.rf(fieldname='0528+134', freqgrp='3mm-LSB')
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.flux(fieldnames=['0528+134', '0415+379', 'MWC349'], 
+          fixed=['2.92Jy','6.25Jy'],
+          freqgrp='3mm-LSB', 
+          timerange='18:30 19:00 21.25h 21.5h',
+          plot=T)
+myic.done()
+\end{verbatim}
+
+In the example, data for three fields in the 3mm lower sideband during
+the time intervals 18:30-19:00 and and 21:15-21:30 are used in the
+flux density scale calibration, and only the first two fields have
+fixed flux densities specified (the third will be derived).
+
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{amp}{perform amplitude calibration on the data}
+\begin{ahdescription}
+This function performs a phase calibration using the selected
+calibration sources and spectral window ids. Previously bandpass,
+phase and flux calibrated data are averaged in the spectral domain,
+are used to find the amplitude solution. The solutions are antenna
+based cubic splines.  A plot of the solution is returned to the disk as a
+postscript file with a name consistent with the ms file.
+
+\end{ahdescription}
+
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fieldnames}{Field names of calibrators to be used}{}{Vector of Strings}
+\ahaddarg{freqgrp}{frequency group to use}{'3mm-LSB'}{'3mm-LSB' || '3mm-USB' || '1mm' || '1mm-LSB' || '1mm-USB'}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('mynew.ms')      
+myic.phcor(F);
+myic.rf(fieldname='0528+134', freqgrp='3mm-LSB')
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.flux(fieldnames=['0528+134', '0415+379', 'MWC349'], freqgrp='3mm-LSB', plot=T)
+myic.amp(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.done()
+\end{verbatim}
+
+In the example above we used 0528+134 to do the bandpass
+calibration and fields 0528+134 and 0415+379 to do the phase and
+amplitude calibration, while using '0528+134', '0415+379', 'MWC349'
+for flux.
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{uvt}{to extract calibrated and combine it into another ms}
+
+\begin{ahdescription}
+Usually once the calibration of several days of data has been
+performed,  the target source is to be extracted and combined into
+a single ms for imaging. the {\tt uvt} function is used to perform
+this task.
+\end{ahdescription}
+
+\ahreturns{Bool}
+
+\begin{ahargs}
+\ahaddarg{fielname}{Name of source to be extracted}{}{String}
+\ahaddarg{spwid}{spectral window for which data is to be extracted}{1}{Int}
+\ahaddarg{filename}{name of new ms into which data is to written}{}{String}
+\ahaddarg{option}{'new' ms or 'append' to an existing one}{'new'}{String}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor(F)
+myic.rf(fieldname='0528+134', freqgrp='3mm-LSB')
+myic.phase(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.flux(fieldnames=['0528+134', '0415+379', 'MWC349'], freqgrp='3mm-LSB', plot=T)
+myic.amp(fieldnames=['0528+134', '0415+379'], freqgrp='3mm-LSB')
+myic.uvt(fieldname='GG_TAU', spwid=7, filename='ggtau3mm.ms', option='append')
+myic.done()
+\end{verbatim}
+In the above example after the standard calibration, data from the
+spectral window 3 for the field GG\_TAU is extracted.
+
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{Close the iramcalibrater tool}
+
+\begin{ahdescription}
+This is used to totally close the {\tt iramcalibrater} tool. 
+\end{ahdescription}
+
+\ahreturns{Bool}
+
+\begin{ahexample}
+\begin{verbatim}
+myic:=iramcalibrater('10feb97-g067.ms')      
+myic.phcor(F)
+myic.done()
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+\end{ahobject}
+
+\begin{ahfunction}{resample}{Does a simple 3 point Hanning on spectral
+MS }
+\begin{ahdescription}
+
+This is a simple function that just does a Hanning smoothing on the 
+channels in the MS. The weighting scheme is 0.125(chan-1)+ 0.75chan + 0.125(chan+1).
+
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahargs}
+\ahaddarg{infile}{Name of input ms}{No Default}{String}
+\ahaddarg{outfile}{Name of output ms, '' output in the input}{''}{String}
+
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+
+resample('ggtau_1mm_256chan.ms', 'ggtau_1mm_256chan_hann.ms');
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{shadow}{Check and flag for antenna shadowing}
+\begin{ahdescription}
+
+This function is run to check and flag data when antennas are
+shadowed. If run with argument trial=T, then it does not flag but just 
+report the scans that are shadowed. The argument minsep is  the minimum
+projected seperation acceptable. No shadowing occurs if seperation is
+more than antenna diameter.
+
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahargs}
+\ahaddarg{msname}{Name of input ms}{No Default}{String}
+\ahaddarg{trial}{ trial run, if T, no flagging }{T}{Bool}
+\ahaddarg{minsep}{ Minimum acceptable seperation}{14.0}{Double}
+\end{ahargs}
+
+
+\begin{ahexample}
+\begin{verbatim}
+
+shadow('10feb97-g067.ms', trial=F, minsep=13.0);
+
+\end{verbatim}
+
+In the above example, flag all data for which  any antenna is 
+shadowed by any other antenna which is 13m or closer in projection. 
+
+\end{ahexample}
+\end{ahfunction}
+\end{ahmodule}
+
+\end{document}
+
+
+
+
+
+
+
+
+

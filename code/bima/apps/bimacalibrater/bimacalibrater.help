@@ -1,0 +1,1080 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+\documentclass{article}
+\usepackage{aips2help}
+\begin{document}
+\begin{ahmodule}{bimacalibrater}{Module for calibrating BIMA data}
+\ahinclude{bimacalibrater.g}
+
+\begin{ahdescription}
+
+The {\tt bimacalibrater} module provides functions for calibrating
+BIMA data.
+
+The facilities of the {\tt bimacalibrater} module are made available
+in Glish by issuing the following command:
+
+\begin{verbatim}
+- include 'bimacalibrater.g'
+T
+\end{verbatim}
+
+where a hyphen precedes user input. The Glish response is indicated
+without the prompt.
+
+A {\tt bimacalibrater} tool is created and attached to a specified
+set of measurement sets as indicated in the following example:
+
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],'1733-130.ms',
++ targetnames=['sgrb','sgra'],phcalnames='1733')
+\end{verbatim}
+
+Many functions of {\tt bimacalibrater} are wrappers around
+corresponding functions in
+\htmlref{{\tt calibrater}}{calibrater:calibrater}.  One important exception 
+is \htmlref{{\tt transfer()}}{transfer} which transfers the solutions
+from one calibration table (usually the one written by 
+\htmlref{{\tt solve()}}{solve}) to another table (generally the one
+that will be
+applied to the target source with 
+\htmlref{{\tt correct()}}{correct}).  This is generally a necessary
+step because, for BIMA 
+data, the calibration solutions are determined for a small set of
+spectral windows (e.g., the two sideband averages [the wideband data
+in miriad parlence]), but these solutions must be applied to all the
+windows in the target datasets.  The only way to do this in \aipspp\ is 
+to create a new calibration table which reflects the number of
+spectral windows in the target sources.
+
+Essentially, a {\tt bimacalibrater} tool creates (on demand) and
+stores {\tt calibrater} tools attached to the Measurement Sets
+specified in the {\tt bimacalibrater} tool constructor.  This tool's
+various functions manipulate these {\tt calibrater} tools.  In
+general, the functions take a parameter called {\tt sources} which
+tells the function which {\tt calibrater} tools it should manipulate.
+The {\tt sources} parameter 
+takes a vector of strings.  The strings are source nicknames (see
+below) and/or source roles.  Recognized roles are {\tt 'all'} (all
+sources), {\tt 'targets'} (target sources), {\tt 'phcals'} (phase
+calibrators), {\tt 'pbcals'} (passband calibrators), and {\tt 'fcals'}
+(flux calibrators). The source roles are specified by the user when
+the tool is constructed (see below).
+
+Here is an example of what a typical calibration session using {\tt
+bimacalibrater} might look like:
+
+\begin{verbatim}
+bc := bimacalibrater('sgrb2.ms','1733-130.ms',targetnames='narrow',
+   phcalnames='wide');
+bc.setjy(fluxdensity=[5,0,0,0]);
+bc.setsolve(type='G',refant=4,table='gcal',t=600);
+bc.solve();
+bc.fit();
+bc.transfer('gcal.xfer','gcal');
+bc.setapply();
+bc.correct();
+\end{verbatim}
+
+Here, a {\tt bimacalibrater} tool is constructed by specifying a list
+of target sources ('sgrb2'), nicknames for these sources ('narrow'), a 
+list of phase calibrators ('1733-130.ms'), and a list of nicknames for 
+these calibrators ('wide').  The nicknames are optional and are meant
+to provide an easy way of referring to datasets (sometimes the names
+of measurement sets can be long, especially when fully qualified paths
+must be specified).
+The nicknames need not be provided, in which case they are set to the
+names of the corresponding measurement sets.  
+
+The flux density scale of the calibrater is set with {\tt setjy}
+(which is actually a wrapper of the {\tt imager} function of the same
+name).  This function will optinally look up the flux density of the
+calibrator from the BIMA calibrator flux density table and write the
+flux desnity nearest in time to the observations to the measurement set.
+Next, the solver is set up using {\tt setsolve()} and
+solutions are generated using {\tt solve()}.  Both are wrappers around
+{\tt calibrater} functions of the same names.
+
+The {\tt fit()} function launches the {\tt gainpolyfitter} GUI which
+allows one to interpolate the solutions by fitting polynomials to them.
+
+The {\tt transfer()} function is the reason bimacalibrater exists.  The
+usual procedure of calibrating BIMA data is to generate solutions for
+the sideband average data of the calibrator.  Solutions from these two 
+windows are then applied to all the windows of target source.
+However, in \aipspp\ the number of windows in the calibration table
+must be the same as the number in the dataset to which it is being
+applied.  Therefore, the solutions in the {\tt gcal} table, which
+contains only two windows, must be transferred to a new table {\tt
+gcal.xfer} which has the same number of windows as the target source
+dataset (e.g. 10 [2 sideband average windows + 8 channel data
+windows]).  Once this is done, further information on how to apply the 
+solutions can be provided with {\tt setapply()} and finally the
+solutions can be applied with {\tt correct()}.
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{bimacalibrater}{Calibration of BIMA data}
+\begin{ahdescription}
+A {\tt bimacalibrater} tool performs all the necessary steps for
+calibrating BIMA data.  It is meant to be a "track-based" tool; that
+is, it can hold all the datasets observed in a track and use them
+appropriately in various calibration steps.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{bimacalibrater}{Construct a bimacalibrater tool
+from a set of MeasurementSets}
+\begin{ahdescription}
+Create a {\tt bimacalibrater} tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{targets}{Target source measurement set names}{' '}{Vector
+of strings} 
+\ahaddarg{phcals}{Phase calibrator measurement set names}{' '}{Vector
+of strings} 
+\ahaddarg{pbcals}{Passband calibrator measurement set names}{' '}{Vector
+of strings} 
+\ahaddarg{fcals}{Flux density calibrator measurement set names}{' '}{Vector
+of strings} 
+\ahaddarg{targetnames}{Target source nicknames}{unset (will set to
+targets)}{Vector of strings} 
+\ahaddarg{phcalnames}{Phase calibrator nicknames}{unset (will set to
+phcals)}{Vector of strings}
+\ahaddarg{fcalnames}{Flux density calibrator nicknames}{unset (will set to
+fcals)}{Vector of strings}
+\ahaddarg{pbcalnames}{Passband calibrator nicknames}{unset (will set to
+pbcals)}{Vector of strings}
+
+
+\end{ahargs}
+\ahreturns{bimacalibrater tool}
+\begin{ahexample}
+\begin{verbatim}
+# the '+' is printed by glish, not typed by you
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{getsourcenames}{get a list of source nicknames}
+\begin{ahdescription} 
+
+The {\tt getsourcenames} function returns a list of source nicknames
+associated with the specified roles.  The {\tt roles} parameter should 
+be a vector of strings, recognized values being {\tt 'all', 'targets', 
+'phcals', 'pbcals', 'fcals'} for all sources, target sources, phase
+calibrators, passband calibrators, and flux density calibrators,
+respectively. This function is meant to help users remember how they
+have named their sources (it is also used internally by other
+functions of {\tt bimacalibrater}).
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{roles}{Return nicknames of sources of these
+roles}{none}{Vector of strings.  Recognized values are 'all' (all nicknames),
+'targets' (target source nicknames), 'phcals' (phase calibrators),
+'pbcals' (passband calibrators), and 'fcals' (flux density calibrators)}
+\end{ahargs}
+\ahreturns{array of corresponding nicknames or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.getsourcenames('all')
+sgrb sgra 1733
+- bc.getsourcenames(['phcals','targets'])
+1733 sgrb sgra
+- bc.getsourcenames('targets')
+sgrb sgra
+- bc.getsourcenames('phcals')
+1733
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setjy}{Set the flux density of the specified sources}
+\begin{ahdescription}
+
+The {\tt setjy} function is a wrapper around the {\tt imager} tool's
+\htmlref{setjy function}{imager:imager.setjy.function}.  It sets the flux
+density (by modifying the MODEL 
+column) of the specified measurement sets.  A list of nicknames (as
+well the the special groupings allowed in {\tt getsourcenames}) can be 
+given.  If the specified flux density is $<$0, this function will
+attempt to find the calibrator in the BIMA calibrator flux density
+table and if successful, will use the flux density nearest in time (no
+attempt to adjust the flux density for frequency is currently made,
+nor is any interpolation in time attempted).
+In this case, there can only be a single source per measurement set.
+In the case where the user sets the flux density explicitly by passing
+a $>$ 0 value to this function, only single model can be specified 
+(it will be used
+for all the specified sources).  Thus, you must run this function
+multiple times if you have calibrators of different flux densities
+when running in this mode.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources to which to set the flux
+densities}{'phcals'}{Vector of strings (nicknames or roles of sources)}
+\ahaddarg{fieldid}{Field Id (1-relative)}{-1 (all)}{Int}
+\ahaddarg{spwid}{Spectral Window Id. (1-relative)}{-1 (all)}{Int}
+\ahaddarg{fluxdensity}{Specified flux density (I,Q,U,V) in
+Jy, if $<$ 0, attempt to look up flux density in BIMA calibrator flux
+density table}{-1}{Vector of Doubles} 
+
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- # all of these are equivalent for setting the I flux density to 5 Jy.
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setjy('1733',fluxdensity=[5,0,0,0]);
+T
+- bc.setjy('phcals',fluxdensity=[5,0,0,0]);
+T
+- bc.setjy(spwid=-1,fluxdensity=[5,0,0,0]);
+T
+# here we allow a lookup in the BIMA calibrator flux density table
+- bc.setjy();
+NORMAL: Using 2.79999995 Jy at 86.1999969 GHz measured on 1998/01/04/00:00:00.000
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setdata}{Set the data parameters selection for
+subsequent processing}
+\begin{ahdescription} 
+This function is a wrapper around the {\tt calibrater} tool's
+\htmlref{{\tt sedata} function}{calibrater:calibrater.setdata.function}.  The
+difference being that multiple sources can be specified, although the
+specified data selection will be the same for all of them. The {\tt
+sources} parameter takes a list of source nicknames and/or a list of
+roles (acceptable roles are {\tt
+'all','targets','phcals','pbcals','fcals'}; see
+\htmlref{{\tt getsourcenames}}{getsourcenames} for details). The {\tt
+sourcenames} parameter allows selection of sources in multisource
+datasets.  These names are read from the SOURCE subtable of the
+Measurement Set and the appropriate FIELD\_ID selection is appended to
+the {\tt msselect} string.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.setdata()}
+{'phcals'}{Vector of strings (nicknames or roles of sources)}
+\ahaddarg{mode}{Type of processing: channel or
+velocity}{}{'channel'$|$'velocity'} 
+\ahaddarg{nchan}{Number of channels to select}{1}{Int}
+\ahaddarg{start}{Start channel (1-relative)}{}{Int}
+\ahaddarg{step}{Step in channel number}{}{Int}
+\ahaddarg{mstart}{Start velocity (e.g. '20Km/s')}{}{Quantity}
+\ahaddarg{mstep}{Step in velocity (e.g. '100m/s'}{}{Quantity}
+\ahaddarg{uvrange}{UV range (in klambda) (e.g. [0, 50])}{0 (all
+data)}{Vector of Doubles} 
+\ahaddarg{sourcenames}{List of sources to select (only useful for
+multisource datasets; see above}{' '}{Vector of strings}
+\ahaddarg{msselect}{TAQL selection string}{}{String}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel',uvrange=[10,50]);
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setsolve}{Set up what calibration component is to
+be solved for and how the solution should be determined.}
+\begin{ahdescription}
+
+The {\tt setsolve} function is a wrapper around the {\tt calibrater}
+tool's 
+\htmlref{{\tt setsolve} function}{calibrater:calibrater.setsolve.function}.  
+It allows the user to
+specify what calibration component is to be solved for as well as how
+the solution should be determined. 
+
+If the default value for the solution is specified, the following
+algorithm is used.  The table is given the name {\tt $<$solution
+type$>$cal} (e.g. {\tt gcal} for {\tt G} solutions).  If this table
+already exists, then a number is appended (e.g., {\tt gcal.2}).  The
+table name is stored internally in the tool for use with other functions.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.setsolve()}
+{'phcals'}{Vector of strings (nicknames or roles of sources)}
+\ahaddarg{type}{Component type}{''}{"G","T","B","D"}
+\ahaddarg{t}{Solution interval (in sec)}{0.0}{Float}
+\ahaddarg{preavg}{Pre-averaging interval (in sec)}{0.0}{Float}
+\ahaddarg{phaseonly}{Phase only solution ?}{False}{Bool}
+\ahaddarg{refant}{Reference antenna}{-1}{Int}
+\ahaddarg{table}{Output calibration table}{'' (see above for default
+naming scheme)}{Table name}
+\ahaddarg{append}{Append flag (set to T if you have multiple calibraters
+and want solutions in a single table)}{False}{Bool}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahexample}
+\begin{verbatim}
+# a single calibrater
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+
+# for two calibraters, putting all solutions in a single table
+- bc := bimacalibrater('g34.3.ms',['1751+096.ms','2148+069.ms'],
+  targetnames='src',phcalnames=['cal1','cal2']);
+T
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+# solutions for both calibraters will go in table gcal2
+- bc.setsolve(type='G',refant=4,table='gcal2',t=600,append=T);
+T
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{solve}{Solve for the selected calibration components}
+\begin{ahdescription}
+
+The {\tt solve} function wraps the {\tt calibrater} tool's
+\htmlref{{\tt solve} function}{calibrater:calibrater.solve.function}. Solutions
+are generated and a 
+calibration table is written for the specified sources.  In addition,
+a keyword called {\tt SPW\_INFO} is written to the calibration table.
+This keyword contains information on the spectral window configuration 
+of the source being solved for.  This information is then read by the
+{\tt transfer} function to help it make an educated guess about how
+the windows in the calibration written by {\tt solve} map to the
+spectral windows in the sources to which the calibration will be
+applied. 
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.solve()}
+{'phcals'}{Vector of strings (nicknames or roles of sources)}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- # bc.solve('phcals') or bc.solve('1733') are equivalent to the following
+- bc.solve()
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fit}{Interpolate gain solutions by fitting
+polynomials}
+\begin{ahdescription}
+
+The {\tt fit()} function creates a {\tt gainpolyfitter} tool which allows
+the user to interpolate calibration solutions by fitting polynomials
+to them. This function lauches the GUI and then returns, which means
+you must be sure to complete the fits you want before proceeding to
+the next calibration step.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{table}{The calibration table for which solutions are to be
+interpolated}{unset (uses the table specified in setsolve())}{Table name}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.fit()
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{transfer}{Transfer calibration solutions from one
+table to another.}
+\begin{ahdescription}
+
+The {\tt transfer()} function is the reason {\tt bimacalibrater}
+exists. It transfers solutions from one calibration table with {\tt m}
+spectral windows to another table with {\tt n} spectral windows (in
+general, {\tt m != n}). 
+
+Here's how the function determines how to map the windows in the input
+table to those in the output table. It first checks the (optional)
+user specified {\tt spwmap} parameter.  With this parameter, the user 
+describes the window mapping.  For example, assume the input table has 
+two windows representing solutions for the lower and upper sidebands
+(windows 1 and 2). Assume the target source has the following spectral
+window configuration: 
+\begin{verbatim}
+window    description
+---------------------------------
+  1       lower sidebnad average
+  2       upper sideband average
+ 3-6      lower sideband channel data
+ 7-10     upper sideband channel data
+\end{verbatim}
+In order to calibrate these data correctly, the user would specify
+{\tt spwmap=[1,2,1,1,1,1,2,2,2,2]}. Note that for this example, {\tt
+transfer} is smart enough to determine this mapping without having the 
+{\tt spwmap} parameter specified (see below).  Furthermore, the user
+can opt not to have solutions for some or all windows copied by
+specifying a value of {\tt 0} in the correct window slot of {\tt
+spwmap}.  If {\tt spwmap} is not specified, {\tt transfer} uses the
+following algorithm.  If there is only a single spectral window in the
+input table, its solutions are copied to all windows of the output.  If
+there are two windows, {\tt transfer} assumes they represent lower and 
+upper sideband solutions.  It tries to determine which sideband
+corresponds to which window by reading the {\tt SPW\_INFO} keyword
+written by the {\tt solve()} function of {\tt bimacalibrater}.  If it
+cannot find this information (e.g. if the input calibration table was
+written by {\tt calibrater.solve()}), it assumes the first window
+contains the lower sideband solutions and the second contains the
+upper sidenbad solutions.  It then reads the {\tt SPECTRAL\_WINDOW} table
+of the dataset to be corrected to determine in which sidebands its
+windows lie.  For three or more spectral windows in the input
+calibration table with {\tt spwmap} unspecified, this function will
+fail since there is no normal way to transfer solutions in this case.
+It is up to the user in this case to specify how the solutions are to
+be mapped. 
+
+Although effort has been made to try to make the best guesses
+possible, the best way to make sure you are getting what you want is
+to specify {\tt spwmap}.
+
+If the default value of {\tt outtable} is specified, the output table
+name will be called {\tt $<$intable$>$.xfer} (e.g., {\tt gcal.xfer} if
+the input table is named {\tt gcal}.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{outtable}{Name of the calibration table to which to
+write solutions}{''}{Any valid table name} 
+\ahaddarg{intable}{Name of the calibration table from which to
+transfer solutions}{'' (will use the table written by
+solve)}{Any valid table name} 
+\ahaddarg{spwmap}{Array describing the spectral window mapping from
+the input to the output (see above). The spectral windows are 1-based, 
+and a value of 0 means not to transfer solutions for the specified
+window (GAINS are filled in with 0's)}{unset (transfer will do its best
+to guess how this should be done; see above)}{Vector of Ints $>=$ 0}
+\ahaddarg{calibratees}{Nicknames or roles of sources to which the
+solutions will be applied (if more than one source is specified they
+all should have the same spectral window
+configuration)}{'targets'}{Vector of strings}
+\ahaddarg{forcecopy}{Force a copy of the input to output table when
+the input could be used to apply solutions}{T}{Boolean}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.transfer('gcal.xfer','gcal',[1,2,1,1,1,1,2,2,2,2],'sgrb');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setapply}{Set how solutions should be applied}
+\begin{ahdescription}
+
+The {\tt setapply} function is a wrapper around the {\tt calibrater}
+tool's 
+\htmlref{{\tt setapply} function}{calibrater:calibrater.setapply.function}. 
+It is used to set
+calibration component information for applied calibration. Each
+calibration component represents a separate calibration matrix
+correction included in the measurement equation.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.setapply()}
+{'targets'}{Vector of strings (nicknames or roles of sources)}
+\ahaddarg{type}{Component type}{'G'}{"G","T","B","D"}
+\ahaddarg{t}{Interpolation interval (in sec)}{0.0}{Float}
+\ahaddarg{table}{Input calibration table}{unset (will use table
+written by transfer(), or if transfer() hasn't been run, the table
+written by solve()}{String}
+\ahaddarg{select}{TAQL selection string}{" "}{String}
+\end{ahargs}
+\ahreturns{Boolean or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.transfer('gcal.xfer','gcal',[1,2,1,1,1,1,2,2,2,2],'sgrb');
+T
+- # bc.solve() is equivalent to the next line for this example
+- bc.solve('sgrb','G',0,'gcal.xfer');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{correct}{Apply calibration}
+\begin{ahdescription}
+
+This function is a wrapper around the {\tt calibrater} tool's
+\htmlref{{\tt correct()} function}{calibrater:calibrater.correct}.  It
+applies existing calibration data to the specified measurement sets,
+with initial table names and interpolation intervals set by the {\tt
+setapply} function. 
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.correct()}
+{'targets'}{Vector of strings (nicknames or roles of sources)}
+\end{ahargs}
+\ahreturns{Boolean or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.transfer('gcal.xfer','gcal',[1,2,1,1,1,1,2,2,2,2],'sgrb');
+T
+- bc.solve('sgrb','G',0,'gcal.xfer');
+T
+# bc.correct() is equivalent to the next line
+- bc.correct('sgrb');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Get the type of this tool, namely 'bimacalibrater'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'bimacalibrater'}.
+
+\end{ahdescription}
+%\begin{ahargs}
+%\end{ahargs}
+\ahreturns{'bimacalibrater'}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.type();
+bimacalibrater
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{addtargets}{Add target sources}
+\begin{ahdescription}
+
+This function adds target sources to the list of targets.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mss}{Names of the target MSs}{None}{Vector of strings}
+\ahaddarg{names}{Nicknames for the target MSs}{unset (will use the
+values supplied in the mss parameter}{Vector of strings}
+\end{ahargs}
+\ahreturns{Boolean or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater([,,'1733-130.ms',phcalnames='1733');
+- bc.setjy();
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.addtargets('sgrb2.ms','sgrb2');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Done with this tool}
+\begin{ahdescription}
+
+Release resources used by this tool.
+
+\end{ahdescription}
+%\begin{ahargs}
+%\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.done();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{Close the calibrater tools associated with
+the specified measurement sets.}
+\begin{ahdescription}
+
+This function is a wrapper around the {\tt calibrater} tool's
+\htmlref{{\tt close()} function}{calibrater:calibrater.close}. It
+closes the calibrater tools (if they exist) associated with the
+specifed measurement sets.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.close()}
+{none}{Vector of strings (nicknames or roles of sources)}
+\end{ahargs}
+\ahreturns{Boolean T or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.transfer('gcal.xfer','gcal',[1,2,1,1,1,1,2,2,2,2],'sgrb');
+T
+- bc.solve('sgrb','G',0,'gcal.xfer');
+T
+- bc.correct('sgrb');
+T
+- bc.close('sgrb');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotcal}{Plot a calibration table(s)}
+\begin{ahdescription}
+
+This function is a wrapper around the {\tt calibrater} tool's
+\htmlref{{\tt plotcal()} function}{calibrater:calibrater.plotcal}
+which plots calibration tables.  {\tt calibrater.plotcal()} is run
+seperately on each source specified by the {\tt sources} parameter.
+
+The following plottype choices are currently available for
+all types of solutions:
+\begin{description}
+\item[AMP] Gain Amplitude vs. Time
+\item[1/AMP] Inverse Gain Amplitude vs. Time (useful for
+comparing with classic AIPS)
+\item[PHASE] Gain Phase vs. Time
+\item[RI] Gain Real vs. Imaginary
+\item[RLPHASE] Right/Left Gain phase difference (if polarizations are R,L)
+\item[XYPHASE] X/Y Gain phase difference (if polarizations are X,Y)
+\end{description}
+
+The following plottype choices are currently available for D solutions:
+\begin{description}
+\item[DAMP] Cross-polarized Gain Amplitude vs. Time
+\item[DPHASE] Cross-polarized Gain Phase vs. Time
+\item[DRI] Cross-polarized Gain Real vs. Imaginary
+\end{description}
+
+The quality of the solutions can be examined with the following plottype
+choices:
+\begin{description}
+\item[FIT] Fit per spectral window
+\item[FITWGT] Fit weight per spectral window
+\item[TOTALFIT] Total fit
+\end{description}
+
+By default, all antennas (as specified in the antennas argument) will
+appear on the same plot. Separate plots (all with the same scale)
+for each antenna can be activated by setting multiplot=T.  The multiplot
+argument only separates plots by antenna (not, e.g., by the field\_id(s)
+specified in the fields argument).  If multiplot=T, the nx and ny
+arguments can be used to specify the number of plots per page.
+
+At the moment, only one polarization can be plotted per execution.
+This restriction will be relaxed in the near future.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sources}{Nicknames of sources on which to run calibrater.plotcal()}
+{none}{Vector of strings (nicknames or roles of sources)}
+\ahaddarg{plottype}{Plot type}{'AMP'}{String}
+\ahaddarg{tablename}{Calibration table name}{''}{String}
+\ahaddarg{antennas}{Antennas to plot}{False}{Vector of Ints}
+\ahaddarg{fields}{Fields to plot}{False}{Vector of Ints}
+\ahaddarg{polarization}{Polarization to plot}{1}{Integer}
+\ahaddarg{spwids}{Spectral windows id.'s to plot}{False}{Vector of Ints}
+\ahaddarg{timeslot}{Timeslot index for B Jones}{1}{Integer}
+\ahaddarg{multiplot}{Turn on separate antenna plots}{F}{Bool}
+\ahaddarg{nx}{If multiplot=T, number of plots on horizontal axis}{1}{Integer}
+\ahaddarg{ny}{If multiplot=T, number of plots on vertical axis}{1}{Integer}
+\ahaddarg{psfile}{name of output PostScript file to write plot
+to}{empty string, causing plot to be sent to the screen}{String}
+\end{ahargs}
+\ahreturns{Boolean or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.setjy(fluxdensity=[5,0,0,0]);
+T
+- bc.setdata('1733',mode='channel');
+T
+- bc.setsolve('1733','G',60,refant=4,table='gcal');
+T
+- bc.solve()
+T
+- bc.plotcal('1733',plottype='phase',table='gcal',antennas=[1,3]);
+T
+- bc.close('1733');
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{summary}{Print a summary of this tool.}
+\begin{ahdescription}
+
+This function prints a summary of the current state of the tool.
+
+\end{ahdescription}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- bc := bimacalibrater(['sgrb2.ms','sgra.ms'],
++ '1733-130.ms',targetnames=['sgrb','sgra'],phcalnames='1733'); 
+- bc.summary()
+<lots of state information gets printed>
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+\end{ahobject}
+
+\begin{ahobject}{bimacalfluxtable}{Tool to retrieve information from
+the BIMA calibrator tables}
+\begin{ahdescription}
+A {\tt bimacalfluxtable} allows for retrieval of information from the
+BIMA calibrator flux tables in the \aipspp\ data repository.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{bimacalfluxtable}{Construct a bimacalfluxtable tool}
+\begin{ahdescription}
+Create a {\tt bimacalfluxtable} tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{bimacalfluxtable tool}
+\begin{ahexample}
+\begin{verbatim}
+# the '+' is printed by glish, not typed by you
+- bcft := bimacalfluxtable();
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{contains}{does the table contain the specified calibrator?}
+\begin{ahdescription} 
+
+This function returns true if the specified calibrator is contained in
+the position (J2000) table.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{calname}{The calibrator to determine the existance of}{none}{String}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- bcft.contains('1733-130');
+T
+- bcft.contains('somedummycal');
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fluxlist}{Get the flux history for the specified calibrator}
+\begin{ahdescription}
+
+This function retrieves, as a record, the flux history for the
+specified calibrator.  The fields in the resulting record are {\tt
+obsdate} (in fiducial days), {\tt flux} (in Jy), {\tt rms} (in Jy), 
+and {\tt freq} (in GHz).  
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{calname}{Name of the calibrator for which to get the flux
+history}{none}{String}
+\end{ahargs}
+\ahreturns{a record containing the history or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- r := bcft.fluxlist('1733-130');
+- r.flux;
+[5.5999999 6.30000019 5.5 5.5999999 6 4.5999999 6 5.69999981 6.4000001
+6.80000019 8.19999981 8.69999981 11.6000004 11 9.5 10 11 10 10.1999998
+10.3000002 11.6000004 6.5 2.79999995 3.20000005 2.5999999 2.5
+2.20000005 2.0999999 2.29999995 2.5 2.5999999 2.9000001 2.79999995
+3.4000001 3.5 3.20000005 4.30000019 4.30000019] 
+- r.obsdate[5];
+49250
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fluxtable}{Get the table containing the flux
+histories of calibrators}
+\begin{ahdescription} 
+
+This function returns as a table tool the table containing calibrator
+flux density history.
+
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- fluxtable := bcft.fluxtable();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{nearestflux}{Get the flux nearest in time to the
+specifed date of the specified calibrator.}
+\begin{ahdescription}
+
+This function returns, as a record, information about the specified
+calibrator closest to the specified date.  The field names of the
+record returned are {\tt obsdate} (in fiducial days), {\tt flux} (in
+Jy), {\tt rms} (in Jy), and {\tt freq} (in GHz).
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{calname}{The calibrator for which to retrieve information}
+{None}{String} 
+\ahaddarg{date}{The date to which to get the nearest-in-time record}
+{None}{Quantity} 
+\end{ahargs}
+\ahreturns{Record or fail}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- bcft.nearestflux('1733-130',dq.quantity('today'));
+[obsdate=52328, flux=4.30000019, rms=0.600000024, freq=86.1999969] 
+- bcft.nearestflux('1733-130',dq.quantity('01jan2000'));
+[obsdate=51605, flux=2.0999999, rms=0.5, freq=86.1999969] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{positiontable}{Get, as a table tool, the position
+table (J2000)}
+\begin{ahdescription}
+
+This function returns as a table tool the position table of BIMA calibrators.
+
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Table tool}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- postable := bcft.positiontable();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Get the type of this tool, namely 'bimacalfluxtable'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'bimacalfluxtable'}.
+
+\end{ahdescription}
+%\begin{ahargs}
+%\end{ahargs}
+\ahreturns{'bimacalfluxtable'}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- bcft.type();
+bimacalfluxtable
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Done with this tool}
+\begin{ahdescription}
+
+Release resources used by this tool.
+
+\end{ahdescription}
+%\begin{ahargs}
+%\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- bcft.done();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{Close the table tools associated with this tool}
+\begin{ahdescription}
+
+This function closes the table tools associated with this tool.
+
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- bcft := bimacalfluxtable();
+- bcft.close();
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahfunction}{bimacalibratertest}{Test bimacalibrater}
+\begin{ahdescription}
+{\tt bimacalibratertest} is a function to test
+\ahlink{bimacalibrater}{bimacalibrater}.  It
+uses datasets in the \aipspp\ data repository.  The basic strategy of
+the tests is to fill {\tt Miriad} datasets (a target and calibrator
+source) and calibrate them.  The resulting calibration table is
+compared to a fiducial table, and similarly the {\tt MODEL\_DATA} and
+{\tt CORRECTED\_DATA} columns of the calibrated target dataset are compared
+to a fiducial dataset.  The function returns {\tt T}
+if all tests pass, {\tt F} otherwise.  The filling, reaveraging,
+calibration, and tests  
+take 10 minutes on an unloaded Linux system with a 1.5 GHz Pentium 4 
+processor and a 7200 rpm IDE hard drive (many portions of the function
+are I/O bound).  The function will create a scratch directory in the
+current directory called {\tt bimacalibratertester\_work} where it will
+write and manipulate datasets.  The datasets used are rather large,
+and so about 350 MB of disk space is required.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{verbose}{Controls the amount of logger output, 0=none,
+higher numbers=more}{1}{Int >= 0}
+\ahaddarg[in]{modelcaltable}{Use this table as the fiducial table for
+comparison with the generated calibration table}{'' (uses table in the
+data repository)}{Any valid table name}
+\ahaddarg[in]{modeldatatable}{Use this table as the fiducial table for
+comparison with the generated MODEL$\_$DATA and CORRECTED$\_$DATA columns}
+{'' (uses table in the data repository)}{Any valid table name}
+
+\end{ahargs}
+\ahreturns{Boolean or fail}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'bimacalibrater.g';
+- bimacalibratertest();
+<Lots of messages regarding filling, reaveraging, calibration, and testing>
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahmodule}
+
+\end{document}
+
+
+

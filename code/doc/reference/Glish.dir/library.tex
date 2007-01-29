@@ -1,0 +1,1675 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/library.tex,v 19.0 2003/07/16 04:18:51 aips2adm Exp $
+
+\chapter{The Glish Client Library}
+\label{client-lib}
+
+\index{client library|(}
+You make a program into a {\em Glish} client by using the {\em Glish} 
+Client Library.
+This is a C++ class library that provides four basic classes, {\em Value},
+\index{{\em Value} class}
+\index{{\em Client} class}
+\index{{\em GlishEvent} class}
+\index{{\em Proxy} class}
+\index{{\em ProxyStore} class}
+{\em Client}, {\em GlishEvent\/}, {\em Proxy}, and {\em ProxyStore}:
+\begin{description}
+
+\item[Client] encapsulates the program's connection to the {\em Glish}
+world: it
+provides methods for sending and receiving events.  It is defined in the
+\index{{\em Client.h} header}
+\index{headers!{\em Client.h}}
+\index{clients!standard header}
+header {\em Glish/Client.h}, which is the standard header included by
+a {\em Glish} client.
+
+\item[Value] encapsulates a {\em Glish} Value,
+giving access to values identical to {\em Glish} 
+variables (dynamically-typed
+vectors and records).  It is a rich, complex class.
+\index{{\em Value.h} header}
+\index{headers!{\em Value.h}}
+It is defined in the header {\em Glish/Value.h}, which is automatically
+included by {\em Glish/Client.h}.
+
+\item[GlishEvent] encapsulates a single {\em Glish} event; that is, a name and
+an associated value.  It is also defined in {\em Glish/Client.h}.
+
+\item[ProxyStore] this class is used for clients which wish to create {\em proxy
+clients}. Proxy clients allow a single client to make available multiple agents.
+Proxy clients are used by {\em glishtk} (see \xref{glishtk}) to allow it to make
+each of the Tk widgets available to a {\em Glish} script. ProxyStore is the
+repository for all of the proxy clients created in a single client process.
+This class is defined in {\em Glish/Proxy.h} which is {\em not} included
+by {\em Glish/Client.h}.
+
+\item[Proxy] this is the base class for all of the proxy clients created
+in a single client process. This class is defined in {\em Glish/Proxy.h}.
+
+\end{description}
+
+First, each class is  briefly discussed.  An example 
+is then constructed using the classes.  Following the example
+the full details of the {\em Client} and {\em Value} classes
+are presented.  ({\tt GlishEvent} is simple enough that it 
+is entirely covered in this section.)  Finally, an overview of 
+the (unfortunately few)
+{\em Glish} clients that come with the {\em Glish} system are 
+discussed.
+
+\section{An Overview of the {\em Value} Class}
+\label{value-class-overview}
+
+\index{Value class!overview|(}
+\index{Value class!constructors|(}
+{\em Value} objects can be constructed from C++ scalars or arrays.
+\index{Value class!creating {\em Value} objects}
+For example,
+\begin{verbatim}
+    Value* v = new Value( 5 );
+\end{verbatim}
+assigns to {\tt v} a {\em Value} object representing the integer~5, while
+\begin{verbatim}
+    double* x = new double[3];
+    x[0] = 1.0;
+    x[1] = 3.14;
+    x[2] = 4.56;
+    Value* v = new Value( x, 3 );
+\end{verbatim}
+assigns to {\tt v} the equivalent of the {\em Glish} value {\tt [1, 3.14, 4.56]}.
+By default, {\em Value} objects constructed from arrays ``take over"
+the array; they will {\em realloc()} the array if it grows larger and
+delete it when the {\em Value} object is destroyed.  The class library
+also provides mechanisms for specifying that an array should
+not be altered or should first be copied.  (See \xref{value-class}, below.)
+\index{Value class!constructors|)}
+
+The {\em Value} class provides a number of member functions
+for manipulating values:
+\begin{itemize}
+
+\item {\tt Type}
+\indmem{Type}{Value}
+returns the type of an object.
+
+\item {\tt Length}
+\indmem{Length}{Value}
+returns the length of an object.
+
+\item {\tt IntVal}
+\indmem{IntVal}{Value}
+interprets one element of the
+value as a single integer, performing type conversions as necessary.
+Similar functions are provided for boolean, floating-point, and string
+interpretations.
+
+\item {\tt IntPtr}
+\indmem{IntPtr}{Value}
+returns a pointer to a C++ array of integers
+that are then used for direct access to the value's underlying elements.
+A related member function,
+\indmem{CoerceToIntArray}{Value}
+{\tt CoerceToIntArray}, returns either the underlying array if already
+of type {\em integer} or else a copy of the array converted to {\tt integer}.
+Again, these functions have counterparts for the other basic {\em Glish} types.
+
+\item {\tt AttributePtr}
+\indmem{AttributePtr}{Value} 
+\indmem{ModAttributePtr}{Value}
+and {\tt ModAttributePtr} provide access to the value's attributes, the first
+returns a constant version of the attributes and the second retuns a modifiable
+version. {\tt AssignAttribute}
+\indmem{AssignAttribute}{Value}
+allows attributes to be set.
+
+\item {\tt Polymorph}
+\indmem{Polymorph}{Value}
+converts the value from its present type to a new type.
+
+\item Analogs to these functions are available for directly
+accessing and setting a record's fields.
+
+\item The
+\index{Value class!{\tt create\_record()} function}
+\indfunc{create\_record}
+(non-member) function {\tt create\_record()} returns a new,
+empty record.
+
+\item The
+\index{Value class!{\tt copy\_value()} function}
+\indfunc{copy\_value}
+(non-member) function {\tt copy\_value( Value* v )} returns a
+complete copy of the {\em Value} object {\tt v}. {\tt reference} values
+are de-referenced. All of the attributes are copied along with the {\em Value}
+itself. However, the underlying data is itself reference counted, and a
+physical copy not rendered until some operation forces it, i.e. copy on write.
+
+\end{itemize}
+
+A key point concerning the {\em Value} class is that it makes it easy to wrap
+\index{wrappers!around data structures}
+{\em Glish} values around an existing program's data structures.  These data
+structures can then be made available to other programs by sending them
+as event values.
+
+Note
+\index{memory management!{\tt Ref()} function}
+\index{memory management!{\tt Unref()} function}
+\label{ref-unref}
+\indfunc{Ref}
+\indfunc{Unref}
+also that both the {\em Value} and {\em Client} classes use
+reference-counting for memory management.  The {\tt Ref()} and {\tt Unref()}
+functions manipulate each object's reference count.  When the count
+reaches zero the object is deleted and any objects it refers to
+are {\tt Unref()}'d.  {\em You must always delete Value and Client objects
+\index{memory management!{\tt Unref()} function!instead of {\tt delete}}
+using {\tt Unref()}; never using {\tt delete}.}
+
+{\tt Unref()}'ing a {\tt record}
+\index{records!memory management}
+until its reference count is zero results in the {\tt record} being
+destroyed and each of its fields being {\tt Unref()}'d.  Individual
+{\tt record} fields should {\em not} be otherwise {\tt Unref()}'d unless
+you {\tt Ref()}'d them earlier.
+\index{Value class!overview|)}
+
+\section{An Overview of the {\em Client} Class}
+\label{client-class-overview}
+
+\index{Client class!overview|(}
+Each {\em Glish} client constructs one instance of the {\em Client} class
+\index{Client class!constructor}
+by passing the {\em Client} constructor the
+\index{{\tt argc}, passed to {\em Client} constructor}
+\index{{\tt argv}, passed to {\em Client} constructor}
+program's {\tt argc} and
+{\tt argv}.  When a {\em Glish} client is executed by a {\em Glish} 
+script {\tt argv}
+\index{clients!special arguments}
+contains special arguments telling the {\em Client} object how to connect
+the {\em Glish} interpreter.  So usually the beginning of a {\em Glish} client
+looks like:
+\begin{verbatim}
+    int main( int argc, char** argv )
+        {
+        Client c( argc, argv );
+        ...
+\end{verbatim}
+The {\em Client} constructor removes these special arguments from {\tt argv}
+(and correspondingly updates {\tt argc}) so after the {\em Client} object
+is constructed the program no longer ``sees" the arguments.
+
+The {\em Client} class provides four main member functions:
+\begin{itemize}
+
+\item {\tt NextEvent}
+\indmem{NextEvent}{Client}
+waits for the next event to arrive and
+returns its name and a corresponding {\em Value} object.  The
+event is returned as a pointer to a {\em GlishEvent} object. (See
+\xref{glishevent-class}, below.)
+
+\item {\tt PostEvent}
+\indmem{PostEvent}{Client}
+takes a string and a {\em Value} object
+and sends an event with the given name and value.
+
+\item {\tt Reply}
+\indmem{Reply}{Client}
+\label{client-class_Reply}
+replies to the most recently-received {\em request/reply} event 
+with a {\em Value} object.  (See \xref{request-reply}).
+\item {\tt ReplyPending}
+\indmem{ReplyPending}{Client}
+\label{client-class_ReplyPending}
+indicates if the most recent event has a reply pending.
+(See \xref{request-reply}.)
+
+\item {\tt Error}
+\indmem{Error}{Client}
+posts an ``error'' event.
+
+\item {\tt Unrecognized}
+\indmem{Unrecognized}{Client}
+\index{events!unrecognized}
+is used to report that the current event is not
+recognized by the {\em Glish} client.
+
+\end{itemize}
+
+The class also provides variants on {\tt PostEvent} for sending events
+with simple string values. (See \xref{client-class}, below, for details.)
+In addition, the class provides access to
+\index{Client class!access to file descriptors}
+\index{{\em select()}}
+the file descriptors from which it reads events, so the program can
+use {\em select()} to multiplex between different input sources (see
+\xref{multiplexing}).
+\index{Client class!overview|)}
+
+\section{The {\em GlishEvent} Class}
+\label{glishevent-class}
+
+\index{GlishEvent class!overview|(}
+A {\em GlishEvent} object encapsulates a single {\em Glish} event: a name
+and an associated value, represented by a pointer to a {\em Value}
+object.  Usually you do not need to create {\em GlishEvent} objects
+yourself, but only deal with those returned by {\em Client\/}'s
+{\tt NextEvent} member function.
+
+{\em GlishEvent} objects have two fields that are directly accessible:
+\index{GlishEvent class!member variables!{\em name}}
+\index{GlishEvent class!member variables!{\em value}}
+{\tt name} is a {\tt const char*} pointer to the name of the event, and
+{\tt value} is a (not {\tt const}) {\tt Value*} pointer to the event's
+associated value.  It is preferred, though, to access these using the
+member functions {\tt const char* Name()} and
+\indmem{Name}{GlishEvent}
+\indmem{Val}{GlishEvent}
+{\tt Value* Val()} instead.
+
+{\em GlishEvent} objects associate a set of {\em flags} with each
+event.  At present, the only flag of interest to the class user
+is whether the event corresponds to a {\tt request} (\xref{request-reply}).
+You can determine this by testing whether {\tt int IsRequest() const} returns
+\indmem{IsRequest}{GlishEvent}
+true or false.
+
+\index{GlishEvent class!memory management}
+{\em GlishEvent} objects are reference-counted, like {\em Value} and
+{\em Client} objects, so you should always use {\tt Unref()} to dispose
+of one rather than {\tt delete}. However, typically you should not need
+to {\tt Unref()} {\em GlishEvents} because the {\tt Client} class automatically
+{\tt Unref()}s the events returned by {\tt NextEvent()}.
+
+\index{GlishEvent class!constructor}
+If you want to construct a {\em GlishEvent} object, you do so using one of:
+\begin{verbatim}
+    GlishEvent( const char* name, const Value* value )
+    GlishEvent( const char* name, Value* value )
+    GlishEvent( char* name, Value* value )
+\end{verbatim}
+\index{GlishEvent class!memory management}
+The {\em GlishEvent} object notes which form you use and, when the object
+is destructed, will {\tt delete} the corresponding {\tt name} pointer
+and/or {\tt Unref()} the {\tt value} pointer if and only if they were
+passed in non-{\tt{}const}.  \index{GlishEvent class!overview|)}
+
+\section{An Example of a Client}
+
+\index{example!client's internals|(}
+\index{FFT server|(}
+
+%%
+%% latex2html (a) can't handle figures longer than a page
+%%            (b) needs the [t] option
+%%            (c) diddles with "baselinestretch"
+%%
+\begin{figure*}[tp]
+\begin{footnotesize}
+\begin{tgrind}[c]
+\input{fft_server.tgrind}
+\end{tgrind}
+\end{footnotesize}
+\caption{Glish Wrapper for {\em FFT} Client}
+\label{fft}
+\end{figure*}
+
+Suppose you want to create an ``FFT server": a {\em Glish} client that when
+sent a numerically-valued {\tt fft} event computes the FFT of
+the array of data and returns the result as an {\tt answer} event.
+The result consists of a record with two fields, {\tt real} and {\tt imag},
+arrays of the real and imaginary parts of the Fourier transform.
+
+\index{wrappers!around C routines}
+Assume you have a function {\em fft} available for doing the
+actual transformation and want to ``wrap" a {\em Glish} client interface
+around this function.  Figure~\ref{fft} shows how you do this.
+
+First you create a {\em Client} object using the idiom
+discussed in \S~\ref{client-class}.  You then enter the event-loop,
+\index{event loop}
+\indmemnosee{NextEvent}{Client}
+blocking until a new event is ready ({\tt NextEvent} returns a nil
+pointer when the client should terminate).
+
+If the event's name is {\tt fft} you then extact the event's value, convert it
+to {\tt double} if it is not already, and extract its length into {\em num}.
+\indmem{DoublePtr}{Value}
+You then use {\tt DoublePtr} to get a pointer to the actual array of
+double-precision elements.  In order to call {\em fft} you need to 
+also pass
+it arrays where it should put its results, so you 
+create {\em real} and {\em
+imag}.  After computing the FFT you create in {\em r} a {\em Glish} 
+record value
+to hold the two arrays, and assign them to {\em r}'s {\tt real} and {\tt
+imag} fields.  You then send this aggregate value as a {\em Glish} event with the
+name {\tt answer}.  Now that you're done with {\em r} you\indfunc{Unref}
+{\tt Unref()} it to
+reclaim its memory.  This automatically results in {\em real} and {\em
+imag}'s memory being reclaimed too.  You don't need to {\tt Unref()} the
+{\em GlishEvent} pointed to by {\tt e} because the next call to
+\indmemnosee{NextEvent}{Client}
+{\tt NextEvent} automatically does so.
+
+Finally, if the event isn't {\tt fft} then you inform the {\em Client}
+library that you don't recognize this particular event.
+
+To compile this example you use:
+\index{clients!compiling}
+\index{example!compiling a client}
+\begin{verbatim}
+    C++ -I$GLISHROOT/include -c fft_server.cc
+\end{verbatim}
+where {\tt C++} is the local C++ compiler (typically {\tt g++} or {\tt CC})
+and {\tt \$GLISHROOT} is the path to the {\em Glish} 
+installation directory.  (See \S~\ref{installation}.)
+
+You then link the example using:
+\index{clients!linking}
+\index{example!linking a client}
+\begin{verbatim}
+    C++ -o fft_server fft_server.o \
+        -L$GLISHROOT/lib/$ARCH -lglish -lsos -lm
+\end{verbatim}
+where {\tt \$ARCH} indicates the local architecture. (Again, see \S~\ref{installation}.)
+On some platforms, other libraries may be required for things like {\em sockets}, for
+example under {\em Solaris} {\tt -lsocket} and {\tt -lnsl} are also required.
+\index{FFT server|)}
+\index{example!client's internals|)}
+
+\section{The {\em Client} Class}
+\label{client-class}
+
+\index{Client class!details|(}
+As discussed in \xref{client-class-overview}, above, {\em Glish} clients should
+construct a single {\em Client} object using the {\tt argc} and {\tt argv}
+with which the client program was invoked.
+
+\subsection{Standard {\em Client} Member Functions}
+
+{\em Client} objects provide the following public member functions:
+
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt Client( int \&argc, char **argv, ShareType shared = NONSHARED )}]
+creates
+\index{Client class!constructor}
+\label{client-argv-ctor}
+a {\em Client} object
+\index{{\tt argc}, passed to {\em Client} constructor}
+\index{{\tt argv}, passed to {\em Client} constructor}
+using the given {\tt argc} and {\tt argv} variables, that upon return
+are updated to no longer include the special {\em Glish} arguments used to
+instruct the {\em Client} how to connect with the {\em Glish} interpreter.
+
+The {\tt shared} flag
+\index{{\tt argv}, passed to {\em Client} constructor}
+indicates if the client should be shared by more than one interpreter.
+By default, clients are non-shared, but this flag can be set to
+\verb+Client::USER+, \verb+Client::GROUP+ or \verb+Client::WORLD+ to
+indicate that the client should be shared among interpreters started
+by a single user, users in the same group, or all users respectively.
+
+\label{standalone}
+\index{clients!stand-alone}
+If the program was {\em not} invoked by the {\em Glish} 
+interpreter then the
+special arguments will be missing.  The {\em Client} constructor detects
+this case and knows that the program is running stand-alone.  If in this
+case the {\tt -glish} argument is given, then the {\em Client}
+\index{{\em stdin}!events for stand-alone clients}
+reads string-valued events from {\em stdin} and ``posts"
+\index{{\em stdout}!events for stand-alone clients}
+outbound events to {\em stdout\/}.  This behavior allows client
+\index{clients!debugging}
+programs to be debugged separate from running within {\em Glish}.  A line
+such as:
+\begin{verbatim}
+    hello there how are you?
+\end{verbatim}
+on {\em stdin} turns into a {\tt hello} event with a value
+of a four-element {\tt string} corresponding to {\tt "there how are you?"}.
+
+\item[{\tt virtual}] \verb+~+{\tt Client()}
+\index{Client class!destructor}
+terminates the client ``cleanly"; that is,
+it informs the {\em Glish} interpreter that the client terminated successfully
+and closes the connection between the client and the interpreter.  If
+\index{clients!indicating failure}
+you want the client to indicate ``failure" instead, leading to a
+\index{predefined events!{\tt fail}}
+{\tt fail} event (see \xref{predefined-events}), then exit the client
+program without destructing the {\em Client} object.
+
+\item[{\tt GlishEvent* NextEvent(}] {\tt const struct timeval \verb+*tv = 0+, int \&timedout = dummy)}
+waits for the next event to arrive
+\indmemnosee{NextEvent}{Client}
+\index{GlishEvent class!returned by {\tt Client::NextEvent()}}
+and returns a pointer to a {\em GlishEvent} object representing it.
+This object will be {\tt Unref()}'d on the next call to {\tt NextEvent()},
+so if you want to keep the {\em GlishEvent} pointer (or the {\em Value}
+pointer) you must {\tt Ref()} it (or its {\tt value} element).
+
+You can use the {\tt tv} parameter to pass in a pointer to a {\em timeval}
+structure that indicates how long {\tt NextEvent()} should wait for an
+event before giving up. If the call does time out, the {\tt timedout}
+parameter is set to a non-zero value. These parameters have default
+values and you do not need to worry about them.
+
+If the connection to the interpreter
+\index{interpreter!connection broken}
+\index{Client class!indication of no more events}
+is broken then {\tt NextEvent()}
+returns a nil pointer and the caller should delete the {\em Client} object
+and terminate.
+
+\item[{\tt void Unrecognized()}] must
+\indmemnosee{Unrecognized}{Client}
+\index{events!unrecognized}
+be called by any caller of
+{\tt NextEvent()} if the current event is unrecognized (its name does
+not match one that the caller knows how to respond to).
+
+\item[{\tt void PostEvent( const GlishEvent* event, const EventContext \&ctx = default )}] sends
+\indmemnosee{PostEvent}{Client}
+out an event as represented by the given {\em GlishEvent} object. In the typical
+case, the default {\em event context} is used.
+
+\item[{\tt void PostEvent(}] {\tt const char* name, const Value* value, const EventContext \&ctx = default )}
+\indmemnosee{PostEvent}{Client}
+is similar to the preceding version of {\tt PostEvent()}; it sends out an
+event with the given name and value.  {\tt value} can be nil if you know
+the event value won't be used. In the typical case, the default
+{\em event context} is used.
+
+Typically this version of {\tt PostEvent()} is more commonly used than the
+preceding version.
+
+\item[{\tt void PostEvent(}] {\tt const char* name, const char* value,
+const EventContext \&ctx = default )} sends the character string
+{\tt value} as the event value. This function is often useful for sending
+simple result values to the interpreter.
+
+\item[{\tt void PostEvent(}] {\tt const char* name, const char* fmt, const char* arg, const EventContext \&ctx = default )} sends
+\indmemnosee{PostEvent}{Client}
+out a {\tt string}-valued event with the given name,
+using a printf-style format and an associated string argument to construct
+the value of the event.  For example,
+\index{example!client indicating an error}
+\begin{verbatim}
+ client->PostEvent( "error", "couldn't open %s", file_name );
+\end{verbatim}
+sends an {\tt error} event identifying which file could not be opened. In the
+typical case, the default {\em event context} is used.
+
+\item[{\tt void PostEvent(}] {\tt const char* name, const char* fmt, const char* arg1, const char* arg2, const EventContext \&ctx = default )} is 
+\indmemnosee{PostEvent}{Client}
+quite similar, but providing two string arguments for the formatting
+instead of just one.
+
+\item[{\tt void Reply( Value* value )}] replies
+\indmemnosee{Reply}{Client}
+to the most recently-received {\em request/reply} event (see
+\xref{request-reply}) with the given value.  Note that presently each
+{\em request/reply} event {\em must} be paired with a corresponding
+{\tt Reply} call, with no other events sent or received during the interim.
+
+\item[{\tt int ReplyPending() const}] returns true if the client
+\indmemnosee{ReplyPending}{Client}
+has a received a so-far-unanswered {\em request/reply} event, false otherwise.
+
+\item[{\tt void Error( const char* msg )}] posts an
+\indmemnosee{Error}{Client}
+{\tt error} event whose value is the given string.  It is intended that
+such an event constitute a valid reply to
+the most recently-received {\em request/reply} event (see
+\xref{request-reply}), but at the moment the receipt of the {\tt error}
+event instead of a reply generates a warning from the interpreter.
+
+\item[{\tt void Error( const char* fmt, const char *arg )}] posts an
+\indmemnosee{Error}{Client}
+{\tt error} event using the format string and the {\tt arg} to create
+the error value.
+
+\item[{\tt int HasInterpreterConnection()}] returns
+\indmem{HasInterpreterConnection}{Client}
+\index{clients!stand-alone}
+true if the client was
+invoked by a {\em Glish} interpreter, false if the client is running stand-alone
+(i.e., reading {\tt string}-valued events from {\em stdin} and sending
+string representations of outbound events to {\em stdout\/}, as described
+in \xref{standalone}).
+
+\item[{\tt int HasEventSource()}] returns
+\indmem{HasEventSource}{Client}
+\index{clients!stand-alone}
+\index{noglish client argument@{\tt -noglish} client argument}
+true if the client has some sort of event source, either a connection
+to the {\em Glish} interpreter, or running stand-alone and reading events
+from {\em stdin} (\xref{standalone}), and false if there is no event
+source whatsoever (due to use of {\tt -noglish}.  (See
+\xref{suppressing-standalone}.)
+
+\end{list}
+\end{sloppy}
+
+\subsection{Multiplexing Input Sources}
+\label{multiplexing}
+
+\index{Client class!multiplexing input sources|(}
+Some {\em Glish} clients need to receive input from multiple sources, such as
+\index{{\em select()}}
+both user-interface input and event input.  The {\em Client} class
+provides three additional member functions to support input
+multiplexing.  The basic idea is that the {\em Client} class makes
+\index{{\tt fd\_set}}
+available an {\tt fd\_set} identifying which file descriptors it uses to
+receive events.  This {\tt fd\_set} is then used in a call to {\em
+select()} to determine whether any of the client's event sources are
+active.  Another {\em Client} member function takes the {\tt fd\_set}
+returned by {\em select()} and reports whether or not the modified {\tt
+\index{events!pending}
+fd\_set} indicates that an event is pending.  If so then a special version
+of {\tt NextEvent()} is called with the {\tt fd\_set} passed as an
+argument; it decodes the {\tt fd\_set} and returns the pending event.
+
+The additional member functions are:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt int AddInputMask( fd\_set* mask )}] adds
+\indmem{AddInputMask}{Client}
+to the {\tt fd\_set} {\em mask} any file descriptors used by the {\em
+Client} object to receive events.  It returns the number of file descriptors
+added (i.e., that weren't previously set but now are).
+
+Note that the collection of file descriptors in general changes dynamically,
+meaning that {\tt AddInputMask} must be called prior to each call to
+{\em select()} (or at least after every call to {\tt NextEvent}).
+Alternatively, you can override the {\tt FD\_Change} virtual member function
+(see below) to get explicit notification of changes.
+
+\item[{\tt int HasClientInput( fd\_set* mask )}] returns
+\indmem{HasClientInput}{Client}
+\index{clients!input available}
+true if the
+{\em mask} indicates that an event is pending for the {\em Client\/}.
+
+\item[{\tt GlishEvent *NextEvent( fd\_set *mask )}]
+\indmemnosee{NextEvent}{Client}
+returns the next event
+from the file descriptor indicated by {\tt mask}. It is assumed
+that one of these file descriptors has information waiting to be read. If not,
+an {\em error} is posted.
+
+\item[{\tt virtual void}] {\tt FD\_Change( int fd, int add\_flag )}
+\indmem{FD\_Change}{Client}
+is a virtual function that is called automatically whenever the Client's
+input sources change (due to newly-executed {\tt link} or {\tt unlink}
+statements).  If {\tt add\_flag} is true then the given {\tt fd} is
+a new input source; if false, then it is no longer an input source.
+
+The default version of this member function does nothing, so you
+needn't call it if you override the function in a subclass.
+
+\end{list}
+\end{sloppy}
+
+Putting these member functions together, suppose you have an {\tt fd\_set}
+called {\em mask} which already has set in it the non-{\em Glish} file descriptors
+you use for input.  The following fragment illustrates how you can
+multiplex between these input sources and the {\em Glish} sources:
+\index{example!multiplexing input sources}
+\begin{verbatim}
+    // Assume c is a pointer to our Client object.
+    // Add c's input sources into the mask.
+    c->AddInputMask( &mask );
+
+    // Now select between the different sources.
+    if ( select( FD_SETSIZE, &mask, 0, 0, 0 ) < 0 )
+        error();
+    else
+        {
+        if ( c->HasClientInput( &mask ) )
+            {
+            GlishEvent* e = c->NextEvent( &mask );
+            handle_event( e );
+            }
+
+        // Check our other input sources for activity, too.
+        ...
+        }
+\end{verbatim}
+\index{Client class!multiplexing input sources|)}
+
+\subsection{Shared Clients}
+\label{shared-clients-lib}
+\index{Client class!shared between interpreters|(}
+
+The most recent change to clients is the ability for clients to be shared
+among multiple interpreters. For this to work, the {\em glishd} must be
+running as root on the machines where shared clients will be running.
+(See \S~\ref{glishd-as-root}.) These shared clients allow multiple
+{\em Glish}
+interpreters to connect to the same {\em Client} object. The type of
+users allowed to connect is controlled by a parameter to the {\em Client}
+constructor.  (See \S~\ref{client-argv-ctor}.)  Each of the {\tt PostEvent()}
+functions take an optional parameter that specifies to which context the
+event should be sent. And the {\tt EventSources()} function provides access
+to all of the sources a given client is managing.
+
+The shared client member functions are:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt GlishEvent* NextEvent( EventSource* source )}] returns the next
+\indmemnosee{NextEvent}{Client}
+event from a particular {\em event source}. Because a single {\tt Client}
+can be shared, it can have more than one event source, represented by
+the class {\tt EventSource}. All of the {\tt EventSource}s managed by
+this {\tt Client} class are accessed with the {\tt EventSources()}
+member function.
+
+\item[{\tt ShareType Shared()}] returns
+\indmem{Shared}{Client}
+\index{clients!shared}
+the {\em share type} of the {\tt Client}, either {\tt Client::NONSHARED}
+(the typical case), {\tt Client::USER}, {\tt Client::GROUP}, or {\tt Client::WORLD}.
+
+\item[{\tt const EventContext \&LastContext()}] returns the
+\indmem{LastContext}{Client}
+{\em event context} for the most recently received event.
+
+\item[{\tt source\_list \&EventSources( )}] returns
+\indmem{EventSources}{Client}
+the list of all of the {\em event sources} managed by this client.
+\end{list}
+\end{sloppy}
+
+Below is an example of how these functions work. This client forwards events
+which it receives to all of the other sources that are connected to it. It is
+like a {\em multi-way tee} connecting its event sources.
+\label{shared-client-example}
+\begin{verbatim}
+    int main( int argc, char** argv )
+        {
+        Client c( argc, argv, Client::GROUP );
+
+        for ( GlishEvent* e; (e = c.NextEvent()); )
+            {
+            source_list &sources = c.EventSources();
+            loop_over_list( sources, i )
+                if ( sources[i]->Context() != c.LastContext() )
+                    c.PostEvent( e, sources[i]->Context() );
+            }
+        return 0;
+        }
+\end{verbatim}
+The {\em Client} {\tt c}, in this example,  only accepts connections from other
+users in the same ({\sc Unix}) group as the user group who starts this client.
+\index{Client class!shared between interpreters|)}
+\index{Client class!details|)}
+
+\section{The {\em Proxy} and {\em ProxyStore} Classes}
+\label{proxy-class}
+\label{proxystore-class}
+
+\begin{figure*}[tp]
+\begin{footnotesize}
+\begin{tgrind}[c]
+\input{proxy.tgrind}
+\end{tgrind}
+\end{footnotesize}
+\caption{Proxy Clients}
+\label{proxy-figure}
+\end{figure*}
+
+To create {\em proxy client}s, the {\em ProxyStore} class (which is derived from
+{\em Client}) is created instead of the {\em Client} class.  The {\em ProxyStore}
+object that is created then acts as a repository for {\em proxy clients}. These
+{\tt proxy clients} are simply objects derived from the {\em Proxy} base class.
+Once the initial setup is complete, the interface which is used for creating and
+managing these {\em proxy clients} is straight forward.
+
+Figure \S~\ref{proxy-figure} shows a simple example of how proxy clients can be
+created. In this case, a particular proxy client, {\tt ProxyA}, is created each time
+a {\tt make} event is is sent to the client process. Messages are printed
+when the constructor, destructor, or {\tt Create} function is called. In addition,
+any events (other than {\tt make}) are responded to with the id of the proxy
+client in question. An interaction with this client would look something like:
+\begin{verbatim}
+    - tp := client('tproxy')
+    - one := tp->make()
+    In ProxyA::Create
+    Created a ProxyA: 21014:2:1
+    - two := tp->make() 
+    In ProxyA::Create
+    Created a ProxyA: 21014:2:2
+    - three := tp->make()
+    In ProxyA::Create
+    Created a ProxyA: 21014:2:3
+    - print two->id()
+    2
+    - print three->id()
+    3
+    - two := 0
+    Deleted a ProxyA: 21014:2:2
+\end{verbatim}
+As you can see, the proxy clients behave just like any other client. Events can be
+sent to and received from them, and when they are deleted in the interpreter, their
+destructor is called in the client.
+
+\section{The {\em Value} Class}
+\label{value-class}
+
+\index{Value class!details|(}
+As noted above, the {\em Value} class is both rich and complex.  It
+provides considerable functionality for manipulating {\em Glish}-style values.
+The following discussion is divided into constructing 
+{\em Value\/}'s, basic
+operations, type conversions, manipulating records, and accessing and
+assigning elements.
+This discussion does not include all of the member 
+functions, as some of them are
+intended for use only by the {\em Glish} interpreter (which uses the {\em Value}
+class internally).
+
+\subsection{Constructing {\em Value} Objects}
+\label{value-constructors}
+
+\index{Value class!constructors|(}
+\index{scalars!creating {\em Value} objects from}
+{\em Value} objects are constructed either from single scalars,
+in which case a one-element {\em Value} is created, or from arrays,
+\index{vectors!creating {\em Value} objects from}
+in which case a multi-element {\em Value} is created.
+
+To create a scalar {\em Value\/}, use one of the following:
+\index{Value class!constructors!scalar}
+\begin{verbatim}
+    Value( glish_bool value )
+    Value( byte value )
+    Value( short value )
+    Value( int value )
+    Value( float value )
+    Value( double value )
+    Value( complex value )
+    Value( dcomplex value )
+    Value( const char* value )
+\end{verbatim}
+These create single-element {\em Value\/} objects
+that correspond to the {\em Glish} types
+\index{types!{\tt boolean}}
+\index{types!{\tt byte}}
+\index{types!{\tt short}}
+\index{types!{\tt integer}}
+\index{types!{\tt float}}
+\index{types!{\tt double}}
+\index{types!{\tt complex}}
+\index{types!{\tt dcomplex}}
+{\tt boolean}, {\tt byte}, {\tt short}, {\tt integer}, {\tt float},
+{\tt double}, {\tt complex}, {\tt dcomplex}, and {\tt string}.
+Note that in all cases (including the {\tt string} constructor) the value
+used to initialize the object is copied.
+
+The C++ {\em glish\_bool}
+\index{C++ {\em glish\_bool} type|see{{\em glish\_bool} enumerated type}}
+\index{{\em glish\_bool} enumerated type}
+type is an enumerated type with two constants, {\tt glish\_true}~(=~1) and
+\indtt{glish\_true}{enumeration constant}
+\indtt{glish\_false}{enumeration constant}
+{\tt glish\_false\/}~(=~0). This enumeration is defined in {\em Glish/glish.h}.
+This header file is automatically included by {\em Glish/Value.h}.
+
+The C++ {\em byte}
+\index{C++ {\em byte} type|see{{\em byte} type}}
+\index{{\em byte} type}
+type holds an unsigned byte.  It is also defined in {\em Glish/glish.h}.
+
+The C++ {\em complex} and {\em dcomplex}
+\index{C++ {\em complex} type|see{{\em complex} type}}
+\index{C++ {\em dcomplex} type|see{{\em dcomplex} type}}
+\index{{\em complex} type}
+\index{{\em dcomplex} type}
+types define single- and double-precision complex types.  The types
+\index{{\em Complex.h} header}
+\index{headers!{\em Complex.h}}
+are defined in the header {\em Glish/Complex.h\/}, which is automatically
+included by {\em Glish/Value.h} (see above).
+
+The {\em Value} class also has a copy constructor:
+\label{value-copy-ctor}
+\begin{verbatim}
+    Value( const Value &v )
+\end{verbatim}
+\index{copy-on-write}
+\index{values!copy-on-write}
+{\em Glish} has two systems of reference counting going on at the same time. One
+is an external sort of reference counting that  is handled by the {\tt Ref()}
+and {\tt Unref()} functions (see \S~\ref{ref-unref}). This sort of reference
+counting manages a whole value. Internally, though, the {\em Value} class has
+a second type of reference counting. This copy constructor uses this sort of
+reference counting to avoid copying the underlying data. The reference for
+the underlying data is incremented and a copy is made only  when a write
+access is made to the underlying memory. This is how {\em copy-on-write}
+is implemented in {\em Glish}.  (See \S~\ref{copy-on-write}.) In some of the
+following functions, there is a flag to indicate if the access is
+{\em read only} or {\em modify}. 
+
+To create a new, empty record use:
+\indfunc{create\_record}
+\index{records!creating empty}
+\index{Value class!creating an empty record}
+\begin{verbatim}
+    Value* create_record()
+\end{verbatim}
+The fields of the new record can then be set using the functions discussed
+in \S~\ref{record-manipulation}.
+
+\index{Value class!constructors!array}
+\index{Value class!storage}
+\indtt{array\_storage\_type}{enumerated type}
+\index{memory management}
+To create a multi-element {\em Value\/}, use one of the following:
+\begin{verbatim}
+    Value( glish_bool value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( byte value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( short value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( int value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( float value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( double value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( complex value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( dcomplex value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+    Value( const char* value[], int num_elements,
+           array_storage_type storage = TAKE_OVER_ARRAY )
+\end{verbatim}
+Each of these constructors takes a pointer (array) of one of the types
+discussed above, the number of elements in the array, and an optional
+argument indicating to what degree that array now ``belongs" to the
+{\em Value} object.
+
+\indtt{TAKE\_OVER\_ARRAY}{enumeration constant}
+This last argument defaults to {\tt TAKE\_OVER\_ARRAY}, which informs the
+{\em Value} object it can do whatever it wants  with the array,
+\index{{\em realloc()}}
+including resize it (via a call to {\em realloc()})
+\index{{\tt delete}}
+and {\tt delete} it
+when done using it.  Thus if {\tt TAKE\_OVER\_ARRAY} is used the array {\em
+must} have been dynamically allocated.  The following is erroneous:
+\index{errors!memory management|(}
+\index{memory management!errors|(}
+\begin{verbatim}
+    int foo[50];
+    Value* v = new Value( foo, 50 );
+\end{verbatim}
+because {\tt foo} is not a dynamically allocated array.  This, too,
+is illegal:
+\index{errors!memory management|)}
+\index{memory management!errors|)}
+\begin{verbatim}
+    int* foo = new int[50];
+    Value* v = new Value( foo, 50 );
+    delete foo;
+\end{verbatim}
+because {\tt foo} now belongs to {\tt v} and should not be deleted
+by anyone else.
+
+\indtt{COPY\_ARRAY}{enumeration constant}
+The {\tt storage} argument can also be {\tt COPY\_ARRAY}, in which case
+\index{copying vectors}
+the {\em Value} object uses a copy of the entire array instead of the
+original array ({\tt string} {\em Value\/}'s copy each string element
+\indtt{PRESERVE\_ARRAY}{enumeration constant}
+of the string array, too), or {\tt PRESERVE\_ARRAY}, in which case the
+{\em Value} object uses the array as is but does not attempt to grow it
+or delete it.  If the {\em Value} object needs to alter a {\tt PRESERVE\_ARRAY}
+array, it first copies it instead.
+
+Presently, {\tt COPY\_ARRAY} and {\tt PRESERVE\_ARRAY} have the same effect,
+i.e. a copy is made immediately. The intended {\tt PRESERVE\_ARRAY} functionality
+was \textbf{ not} pushed through when {\em copy-on-write} values were added. In
+the future, this may be corrected, but {\tt PRESERVE\_ARRAY} seems problematic.
+When using either {\tt COPY\_ARRAY} or {\tt PRESERVE\_ARRAY}, you must consider
+efficiency.
+\index{Value class!constructors|)}
+
+\subsection{Basic {\em Value} Operations}
+\label{basic-value-funcs}
+
+The {\em Value} class provides the following basic member functions:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt glish\_type Type() const}]
+\indtt{glish\_type}{enumerated type}
+\indmemnosee{Type}{Value}
+\index{Value class!type of value}
+returns the {\em Value\/}'s type, which is generally one of:
+\begin{verbatim}
+    TYPE_BOOL           TYPE_BYTE               TYPE_SHORT
+    TYPE_INT            TYPE_FLOAT              TYPE_DOUBLE
+    TYPE_COMPLEX        TYPE_DCOMPLEX
+    TYPE_RECORD         TYPE_STRING             TYPE_ERROR
+\end{verbatim}
+These represent the basic {\em Glish} types. {\tt TYPE\_ERROR} indicates
+a problem. In addition to these types which are generally used,
+there are a couple of other types which could be encountered:
+\begin{verbatim}
+    TYPE_REF            TYPE_SUBVEC_REF         TYPE_FAIL
+\end{verbatim}
+These types are generally only used by the {\em Glish} interpreter, but
+are accessible via the {\em Value} class member functions. The two
+remaining types in the {\tt glish\_type} enumeration are currently
+only available to the interpreter. They are:
+\begin{verbatim}
+    TYPE_AGENT          TYPE_FUNC
+\end{verbatim}
+Perhaps at some point these will be available to clients too, but
+presently neither of these types can be passed to/from a client.
+
+\item[{\tt unsigned int Length() const}]
+\indmemnosee{Length}{Value}
+\index{Value class!length of value}
+returns the number of elements
+in the {\em Value\/} (if an array), the number of fields (if a
+{\tt record}),
+or~1 (if a {\tt reference}, an {\tt agent}, or a {\tt function}).
+
+\item[{\tt int IsNumeric() const}]
+\indmem{IsNumeric}{Value}
+\index{types!{\em numeric}}
+returns true if the {\em Value}
+is {\em numeric} ({\tt boolean}, {\tt byte}, {\tt short},
+{\tt integer}, {\tt float}, or {\tt double}),
+false otherwise.
+
+\item[{\tt int IntVal( int n = 1, Str \&err = g\_err ) const}]
+\indmemnosee{IntVal}{Value}
+\label{value-intval}
+treats the {\em Value} as
+an {\tt integer} type and returns the {\tt n}'th element converted to
+\index{vectors!first element is [1]}
+the C++ {\tt int} type.  {\tt n}~=~{\tt 1} corresponds to the first
+element of the {\em Value\/}.
+
+If the {\em Value} is a reference then it is first dereferenced.
+
+If {\tt n} is out-of-bounds
+\index{errors!out-of-bounds array reference}
+(less than {\tt 1} or greater than the number of elements) then an
+error is generated and {\tt 0} returned. 
+If the {\em Value} is
+\index{errors!non-{\em numeric} treated as {\em numeric}}
+not {\em numeric} then an error is generated and {\tt 0} returned.
+
+If an error does occur, the error string is returned through the {\tt err}
+parameter. It indicates what sort of error occurred. Typically the error parameter
+is most useful for the interpreter, but can also be used by
+clients. It is  used as follows:
+\begin{verbatim}
+    Str err;
+    int start = val->IntVal(1,err);
+    if ( err.chars() )
+        {
+        ... handle error ...
+        }
+\end{verbatim}
+
+There are anaglous functions for each of the basic types, and each
+is very similar to {\tt IntVal()}:
+\indmem{BoolVal}{Value}
+\indmem{ByteVal}{Value}
+\indmem{ShortVal}{Value}
+\indmem{FloatVal}{Value}
+\indmemnosee{DoubleVal}{Value}
+\indmem{ComplexVal}{Value}
+\indmemnosee{DcomplexVal}{Value}
+\begin{verbatim}
+    glish_bool BoolVal( int n = 1, Str &err = g_err ) const
+    byte ByteVal( int n = 1, Str &err = g_err ) const
+    short ShortVal( int n = 1, Str &err = g_err ) const
+    float FloatVal( int n = 1, Str &err = g_err ) const
+    double DoubleVal( int n = 1, Str &err = g_err ) const
+    complex ComplexVal( int n = 1, Str &err = g_err ) const
+    dcomplex DcomplexVal( int n = 1, Str &err = g_err ) const
+\end{verbatim}
+You may have noted the absence of {\tt StringVal()}. This is because
+{\tt StringVal()} is different; see the next item.
+
+\item[{\tt char* StringVal(}] {\tt char sep = ' ', unsigned int max\_elements = 0, 
+int use\_attr = 0, Str \&err = glish\_errno ) const}
+\indmem{StringVal}{Value}
+\index{Value class!string representation}
+returns a string representation of the {\em Value} object regardless of
+the type of the object.  The optional {\tt sep} argument indicates what character
+should be used to separate adjacent elements. For non-{\tt string} arrays of more
+than one element the result is wrapped in {\tt []}'s.  For example, an array of
+the first three positive integers results in a string of {\tt "[1 2 3]"} being
+returned.
+
+The optional {\tt useAttr} argument indicates, if true, that the attributes
+(see \S~\ref{attributes}) of the value should be used in the formatting of the
+result. The most common example is the {\tt shape} attribute  which is
+used to format the value multi-dimensional array.
+
+The optional {\tt max\_elements} argument limits the number of
+elements used to create the result. The {\tt 0} indicates that all of the
+elements should be used, but if this is set to {\tt 3} only the first three
+elements are used. This prevents generating huge strings.
+
+The string returned is dynamically allocated and should be {\tt delete}'d
+\index{{\tt delete}}
+when done with.
+
+\item[{\tt int* IntPtr( int modify=1 ) const}]
+\indmemnosee{IntPtr}{Value}
+\label{value-intptr}
+\index{Value class!converting to C++ pointer}
+returns a pointer to the underlying
+C++ {\tt int} array of an {\tt integer} {\em Value} object. This provides
+direct access to the underlying array. The {\tt modify} argument indicates
+if the caller intends to modify the array. If {\tt modify} is set to a non-zero
+value and this data is shared with other values (see \S~\ref{value-copy-ctor}),
+then a copy is made. If {\tt modify} is set to zero, no copy is made.
+
+These elements can then be directly manipulated (there are, of course, {\em Length()}
+elements present).  {\em To modify the array though, {\tt modify} must be non-zero}.
+If the {\em Value} is not of type {\tt integer} then a fatal error results. It is
+important to realize that for {\em Values} whose type is {\tt TYPE\_SUBVEC\_REF} or
+{\tt TYPE\_SUBVEC\_CONST}, the pointer returned by {\tt IntPtr()} points to
+the Value underlying the {\em ``sub-vector''} reference.
+
+Analogous functions for numeric and {\tt string} values are:
+\indmem{BoolPtr}{Value}
+\indmem{BytePtr}{Value}
+\indmem{ShortPtr}{Value}
+\indmem{FloatPtr}{Value}
+\indmemnosee{DoublePtr}{Value}
+\indmem{ComplexPtr}{Value}
+\indmemnosee{DcomplexPtr}{Value}
+\indmem{StringPtr}{Value}
+\begin{verbatim}
+    glish_bool* BoolPtr( int modify=1 ) const;
+    byte* BytePtr( int modify=1 ) const;
+    short* ShortPtr( int modify=1 ) const;
+    float* FloatPtr( int modify=1 ) const;
+    double* DoublePtr( int modify=1 ) const;
+    complex* ComplexPtr( int modify=1 ) const;
+    double* DcomplexPtr( int modify=1 ) const;
+    charptr* StringPtr( int modify=1 ) const;
+\end{verbatim}
+
+\item[{\tt int* IntPtr( int modify=1 )}] is
+\indmemnosee{IntPtr}{Value}
+similar to the preceding {\tt IntPtr()}
+member function except that if {\em Value\/}'s type is not {\tt integer}
+\indmemnosee{Polymorph}{Value}
+then it is first {\tt Polymorph()}'d (see \xref{conversion}, below) to
+{\tt integer}.  Analogous functions are provided for the other {\em numeric}
+and {\tt string} types.
+
+\item[{\tt int IsRef() const}]
+\indmem{IsRef}{Value}
+\index{Value class!references}
+returns true if the {\em Value}
+is a {\tt reference} (either {\tt ref} or {\tt const}), false otherwise.
+
+\item[{\tt int IsVecRef() const}]
+\indmem{IsVecRef}{Value}
+\index{Value class!sub-vector!references}
+returns true if the {\em Value}
+is a ``sub-vector'' {\tt reference} (either {\tt ref} or {\tt const}),
+false otherwise.
+
+\item[{\tt int IsConst() const}]
+\indmem{IsConst}{Value}
+returns true if the {\em Value} is a constant value, false otherwise.
+
+\item[{\tt Value* Deref()}]
+\indmem{Deref}{Value}
+\index{Value class!references!dereferencing}
+\index{references!dereferencing}
+dereferences the {\em Value} until it is no
+longer a {\tt reference}.
+
+\item[{\tt const Value* Deref() const}]
+\indmemnosee{Deref}{Value}
+is the same as the previous except
+it is a {\tt const} member function returning a {\tt const} {\em Value}
+pointer (here
+\index{const!C++ constant pointers}
+{\tt const} refers to the C++ notion of ``constant pointer",
+not the {\em Glish} type of ``constant reference").
+
+\item[{\tt Value* VecRefDeref()}]
+\indmem{VecRefDeref}{Value}
+\index{Value class!sub-vector!dereferencing}
+\index{references!dereferencing}
+dereferences the {\em Value} until it is no
+longer a ``sub-vector'' {\tt reference}.
+
+\item[{\tt const Value* VecRefDeref() const}]
+\indmemnosee{VecRefDeref}{Value}
+is the same as the previous except
+it is a {\tt const} member function returning a {\tt const} {\em Value}
+pointer.
+
+\end{list}
+\end{sloppy}
+
+\subsection{Type Conversions}
+\label{conversion}
+
+\index{types!conversion|(}
+The {\em Value} class provides the following member functions for
+manipulating the type of a {\em Value} object:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt void Polymorph( glish\_type new\_type )}]
+\indmemnosee{Polymorph}{Value}
+changes the {\em Value}
+from its present type to {\tt new\_type}, which is one of the types
+\indmemnosee{Type}{Value}
+listed in the previous section for the {\tt Type()} member function.
+For example,
+\begin{verbatim}
+    v->Polymorph( TYPE_INTEGER );
+\end{verbatim}
+changes {\tt v} from its present type to {\tt integer}, coercing
+all of its elements to the C++ {\tt int} type.
+
+\index{types!compatibility}
+The {\em Value\/}'s current and new types must be compatible.  Presently
+this means that they either must be the same or both must be {\em numeric\/}.
+This restriction will be eased in the future.
+
+\item[{\tt int* CoerceToIntArray(}] {\tt int\& is\_copy, int size,
+int* result = 0 ) const}
+\indmemnosee{CoerceToIntArray}{Value}
+returns a C++ {\tt int} pointer to an integer
+representation of the {\em Value\/}'s elements.
+
+If the {\em Value\/}'s type is {\tt integer} and {\tt size} equals the
+number of elements in the {\em Value\/}, then the {\em Value\/}'s
+\indmemnosee{IntPtr}{Value}
+underlying array is returned (as though {\tt IntPtr()} had been called; see
+the preceding section) and {\tt is\_copy} will be false.  In this
+\index{{\tt delete}}
+case the returned pointer must {\em not} be {\tt delete}'d.
+
+If the type is a different {\em numeric} type, or {\tt size} differs from
+the number of elements,
+\index{values!implicit copying}
+then a {\em copy} of its first {\tt size} elements,
+coerced to {\tt int}, is returned, and {\tt is\_copy} will be true.
+In this case it is the caller's responsibility to {\tt delete} the returned
+pointer when done with it.
+
+\index{errors!conversion of non-{\em numeric} type}
+If the type is non-{\em numeric} then a fatal error is generated.
+
+If the {\em Value} has only 1 element and {\tt size} is greater than 1,
+\index{scalars!replicating to create an array}
+then {\tt size} copies of that one element coerced to {\tt int}.
+
+If {\tt result} is non-nil then the result is placed in {\tt result}
+(as well as returned by the function), and {\tt is\_copy} will always
+be true.
+
+Analogous functions for type conversions to numeric types are provided:
+\indmem{CoerceToBoolArray}{Value}
+\indmem{CoerceToByteArray}{Value}
+\indmem{CoerceToShortArray}{Value}
+\indmem{CoerceToFloatArray}{Value}
+\indmem{CoerceToDoubleArray}{Value}
+\indmem{CoerceToComplexArray}{Value}
+\indmem{CoerceToDcomplexArray}{Value}
+\begin{verbatim}
+    glish_bool* CoerceToBoolArray( int& is_copy,
+                int size, glish_bool* result = 0 ) const;
+    byte* CoerceToByteArray( int& is_copy,
+                int size, byte* result = 0 ) const;
+    short* CoerceToShortArray( int& is_copy,
+                int size, short* result = 0 ) const;
+    float* CoerceToFloatArray( int& is_copy,
+                int size, float* result = 0 ) const;
+    double* CoerceToDoubleArray( int& is_copy,
+                int size, double* result = 0 ) const;
+    complex* CoerceToComplexArray( int& is_copy,
+                int size, complex* result = 0 ) const;
+    dcomplex* CoerceToDcomplexArray( int& is_copy,
+                int size, dcomplex* result = 0 ) const;
+\end{verbatim}
+
+\item[{\tt const char* CoerceToStringArray(}] {\tt int\& is\_copy, int size,
+const char* result = 0 ) const}
+\indmem{CoerceToStringArray}{Value}
+is similar to {\tt CoerceToIntArray()}
+except that the {\em Value\/}'s type {\em must} be {\tt string}.
+This restriction will be eased in the future to allow {\em numeric} types,
+too.
+
+\end{list}
+\end{sloppy}
+\index{types!conversion|)}
+
+\subsection{Manipulating Records}
+
+\label{record-manipulation}
+\index{records!manipulating|(}
+Very often {\tt record}'s are used as {\em Glish} event values, so it's
+important that it be easy to manipulate them.  The {\em Value} class
+provides a number of member functions for accessing and setting
+{\tt record} fields.  The most commonly used ones are 
+listed first:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt Value* Field( const char field[] )}]
+\indmem{Field}{Value}
+\index{records!accessing fields}
+returns the record
+field named ``{\tt field}", or nil if either the field doesn't exist
+or the {\em Value} object is not a {\tt record}.
+
+\item[{\tt Value* Field( const char field[], glish\_type t )}] is the
+same as the preceding {\tt Field()} function except the field is
+polymorphed to type {\tt t}. (See \xref{conversion}, above.)
+
+\item[{\tt int* FieldIntPtr(}] {\tt const char field[], int\& len, int modify=1 )} returns
+\indmem{FieldIntPtr}{Value}
+a pointer to the underlying values of the given field, polymorphed
+to {\tt integer}.  The number of elements in the field is returned
+in {\tt len}.
+
+As with {\tt IntPtr()} (see \S~\ref{value-intptr}), the {\tt modify} flag
+must be set to a {\em non-zero} value if the returned array will be
+modified. Thus any necessary copies are made of the underlying data
+before any modifications are made, i.e. it does the {\em copy-on-write}
+mechanics.
+
+Analogous functions are available for the other numeric types, as well
+as {\tt string}:
+\indmem{FieldBoolPtr}{Value}
+\indmem{FieldBytePtr}{Value}
+\indmem{FieldShortPtr}{Value}
+\indmem{FieldFloatPtr}{Value}
+\indmemnosee{FieldDoublePtr}{Value}
+\indmem{FieldComplexPtr}{Value}
+\indmemnosee{FieldDcomplexPtr}{Value}
+\indmem{FieldStringPtr}{Value}
+\begin{verbatim}
+  glish_bool* FieldBoolPtr( const char field[],
+                            int& len, int modify=1 )
+  byte* FieldBytePtr( const char field[],
+                            int& len, int modify=1 )
+  short* FieldShortPtr( const char field[],
+                            int& len, int modify=1 )
+  float* FieldFloatPtr( const char field[],
+                            int& len, int modify=1 )
+  double* FieldDoublePtr( const char field[],
+                            int& len, int modify=1 )
+  complex* FieldComplexPtr( const char field[],
+                            int& len, int modify=1 )
+  dcomplex* FieldDcomplexPtr( const char field[],
+                            int& len, int modify=1 )
+  const char* FieldStringPtr( const char field[],
+                            int& len, int modify=1 )
+\end{verbatim}
+
+These functions return
+a nil pointer if the {\em Value} object is not a {\tt record}
+or doesn't contain the given field.  In these cases, {\tt len} is not modified.
+
+\item[{\tt int FieldVal(}] {\tt const char field[], int\& val, int n = 1, Str \&err = g\_err )}
+\indmem{FieldVal}{Value}
+looks for a field with the given name.  If present, returns true, and
+in the second argument ({\tt val}) returns the scalar value corresponding
+to the {\tt n}'th element of that field coerced to {\tt int}.  {\tt n=1}
+corresponds to the first element of the field.
+
+If the field is not present, returns false, and {\tt val} is unchanged.
+
+As with {\tt IntVal()} (see \S~\ref{value-intval}), if an error occurs, it
+is returned through the optional {\tt err} parameter.
+
+Analogous functions are available for the other numeric types.
+
+\item[{\tt int FieldVal(}] {\tt const char field[], char*\& val )} is
+similar to the functions described in the previous item, but rather than
+just coercing one element of the field to {\tt string}, it returns
+a string representation of the entire value (as described for the
+\indmemnosee{StringVal}{Value}
+{\tt StringVal()} member function in \xref{basic-value-funcs}, above).
+Thus the value returned in {\tt val} is a newly allocated string which
+should be {\tt delete}'d when done with.
+
+\item[{\tt void SetField(}] {\tt const char field[], int value )} sets (or
+\indmem{SetField}{Value}
+changes, if already present) the given field in a record to a scalar
+integer value.
+
+Analogous functions are available for the other numeric types, as well
+as {\tt const char*}, which copies the contents of the passed string.
+
+For example, the following:
+\index{example!setting record fields}
+\begin{verbatim}
+    Value* r = create_record();
+    r->SetField( "x", 3 );
+    r->SetField( "y", "hi there" );
+    r->SetField( "z", glish_false );
+\end{verbatim}
+is equivalent to the {\em Glish} statement:
+\begin{verbatim}
+    r := [x=3, y='hi there', z=F]
+\end{verbatim}
+
+If the {\em Value} object is not a record then a fatal error is
+generated.
+
+\item[{\tt void SetField(}] {\tt const char field[], int value[],
+int num\_elements, array\_storage\_type storage = TAKE\_OVER\_ARRAY )}
+\indmemnosee{SetField}{Value}
+is a similar member function
+for adding a multi-element field to a record.  The first argument names
+the field to be added, and the remaining arguments are identical to those
+for the {\tt integer} array constructor discussed in \xref{value-constructors},
+above.
+
+Exactly analogous member functions are available for creating arrays of
+the other numeric types, as well as {\tt string}.
+
+Again, if the {\em Value} object is not a record then a fatal error is
+generated.
+
+\end{list}
+\end{sloppy}
+
+In addition to these member functions, several others are available,
+primarily for
+when you want to deal with record fields as {\em Value} objects themselves:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt Value* Field( const char field[] )}] returns a pointer
+\indmemnosee{Field}{Value}
+to the given field of a {\em Value} object.  If the {\em Value} object
+is not a record, or does not contain the given field, the function
+returns a nil pointer instead.
+
+\item[{\tt Value* Field( const Value* index )}] is similar to the preceding
+function except that {\tt index} is itself a {\em Value} object (presumably
+{\tt string}-valued).
+
+\item[{\tt Value* Field( const char field[], glish\_type t )}] is similar
+to the first member function above except a {\em Glish} type such as {\tt TYPE\_FLOAT}
+is specified as well, and the field if present is polymorphed to that type
+prior to return.
+
+\item[{\tt void SetField( const char field[], Value* value )}] assigns
+\indmemnosee{SetField}{Value}
+the given field to the given {\em Value} object.  The assigned {\em Value}
+object may or may not be copied by the member function, but in any case
+upon return it is safe for the caller to {\tt Unref()} the assigned value
+(and the caller should do so if it will not be used further).
+
+If the called {\em Value} object is not a {\tt record} then a fatal
+error is generated.
+
+\item[{\tt Value* NthField( int n )}] returns
+\indmem{NthField}{Value}
+a pointer to the {\tt n}'th
+field in the record, with the first field that was added to the record
+numbered {\tt 1}.  Returns a nil pointer if {\tt n} is out of range or the
+{\em Value} object is not a record.
+
+\item[{\tt const Value* NthField( int n ) const}] is a {\tt const} version
+(in the C++ sense of the term) of the preceding member function.
+
+\item[{\tt const char* NthFieldName(}] {\tt int n ) const}
+\indmem{NthFieldName}{Value}
+returns a non-modifiable
+pointer to the {\tt n}'th field's name.  Returns a nil pointer under the
+same circumstances as {\tt NthField()}.
+
+\item[{\tt char* NewFieldName()}] returns
+\indmem{NewFieldName}{Value}
+\index{records!generating new field names}
+a copy of a unique field name;
+that is, a field name not already present in the given record.  Returns
+a nil pointer if the object is not a record.
+
+The name will have an embedded ``{\tt *}" character indicating it is
+an internal name.
+
+\item[{\tt const Value*}] {\tt ExistingRecordElement( const char field[] )
+const} is directly
+\indmem{ExistingRecordElement}{Value}
+analogous to the first {\tt Field()} function above except it
+\index{const!C++ constant pointers}
+works for {\tt const} (in the C++ sense) {\em Value} objects and returns
+a {\tt const} pointer.  Also available is:
+\begin{verbatim}
+    const Value*
+    ExistingRecordElement( const Value* index ) const
+\end{verbatim}
+identical to the second form of {\tt Field()}.
+
+If the field does not exist or the object is not a record then these functions
+return a {\tt fail} value, see \S~\ref{fail-stmt-1}.
+
+\end{list}
+\end{sloppy}
+\index{records!manipulating|)}
+
+\subsection{Accessing and Assigning Elements}
+
+\index{Value class!accessing and assigning elements of|(}
+\index{wrappers!around data structures}
+Usually the {\em Value} class is used to ``wrap" {\em Glish} values around
+C, C++, or {\sc Fortran} data so those values may be communicated as
+events.  As such, the emphasis in using the class is on convenient
+wrapping and unwrapping.  The following discussion involves  using 
+the class to
+manipulate {\em Value} objects similar to how they can be manipulated
+in the {\em Glish} language. I'm interested in hearing from users who
+find they would like more such functionality.
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt Value* operator[]( const Value* index ) const}] indexes
+\index{{\tt []()} member function|see{{\em Value} class, member functions}}
+the {\em Value} object with the given {\tt index}, which is itself
+a {\em Value} object.  The index should either be {\em numeric} (in
+which case it is treated as discussed in \xref{indexing}, above) or
+{\tt string} (in which case the called object should be a {\tt record},
+and is indexed as explained in \xref{record-brackets}, above).
+
+This function returns a newly created {\em Value} object representing
+the designated elements of the original object.  The caller should
+\index{memory management}
+{\tt Unref()} this new object when  done with it.
+
+Any errors result in messages being written to {\em stderr} and
+a return value of a copy of the {\tt F} constant.
+
+\item[{\tt void AssignElements(}] {\tt const Value* index, Value* value )}
+\indmem{AssignElements}{Value}
+assigns the elements designated by {\tt index} to {\tt value}.  {\tt index}
+is treated as discussed for the preceding member function.
+
+{\tt AssignElements()} will either take over (by {\tt Ref()}'ing) or
+copying what it needs from {\tt value}, so after the function returns
+\index{memory management}
+the caller should discard {\tt value} by {\tt Unref()}'ing it when 
+done with it.
+
+For example, the sequence:
+\index{example!{\tt Value::AssignElements}}
+\begin{verbatim}
+    int* x = new int[3];
+    x[0] = 3; x[1] = 5; x[2] = 7;
+    Value* xval = new Value( x, 3 );
+    Value* index = new Value( 2 );
+    Value* new_val = new Value( 10 );
+    xval->AssignElements( index, value );
+    Unref( new_val );
+\end{verbatim}
+is equivalent to the {\em Glish} statement:
+\begin{verbatim}
+    x := [3, 5, 7]
+    x[2] := 10
+\end{verbatim}
+
+\item[{\tt void TakeValue( Value* new\_value )}] discards a {\em Value}
+\indmem{TakeValue}{Value}
+\index{memory management}
+object's present value and instead uses {\tt new\_value} for its value.
+The caller should then {\tt Unref()} {\tt new\_value} when otherwise
+done using it.
+
+\end{list}
+\end{sloppy}
+\index{Value class!accessing and assigning elements of|)}
+
+\subsection{Accessing and Assigning Attributes}
+
+\index{Value class!accessing and assigning!attributes|(}
+{\em Attributes} are also accessible from the {\em Value} class. They
+are accessed using the following functions:
+
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt const Value* HasAttribute( const char label[] ) const}] returns
+\indmem{HasAttribute}{Value}
+a non-modifiable {\tt Value} pointer which points to the exsiting 
+attribute specified by {\tt label} if it exists, otherwise it returns
+{\tt 0}.
+
+\item[{\tt void AssignAttribute( const char* label, Value* value )}] assigns
+\indmem{AssignAttribute}{Value}
+the attribute specified by {\tt label} to have the value {\tt value}. Attribute
+{\tt label} is created if it didn't already exist.
+
+\item[{\tt const Value *ExistingAttribute( const char label[] ) const}] returns
+\indmem{ExistingAttribute}{Value}
+a non-modifiable {\tt Value} pointer which points to the exsiting 
+attribute specified by {\tt label}. Returns {\tt false\_value} if
+attribute {\tt label} does not exist.
+
+\item[{\tt const Value *ExistingAttribute( const Value* label ) const}] returns
+\indmem{ExistingAttribute}{Value}
+a non-modifiable {\tt Value} pointer which points to the exsiting
+attribute specified by {\tt label}. Returns {\tt false\_value} if
+attribute {\tt label} does not exist.
+
+\item[{\tt Value *GetOrCreateAttribute( const char label[] )}] returns a
+\indmem{GetOrCreateAttribute}{Value}
+modifiable {\tt Value} pointer which points to the attribute specified
+by {\tt label}. If the {\tt label} attribute didn't previously exist, it
+is created.
+
+\item[{\tt Value *GetOrCreateAttribute( const Value *label )}] returns a
+\indmem{GetOrCreateAttribute}{Value}
+modifiable {\tt Value} pointer which points to the attribute specified
+by {\tt label}. If the {\tt label} attribute didn't previously exist, it
+is created.
+
+\item[{\tt void DeleteAttribute( const char label[] )}] deletes
+\indmem{DeleteAttribute}{Value}
+the attribute specified by {\tt label} if it exists.
+
+\item[{\tt void DeleteAttribute( const Value* label )}] deletes
+\indmem{DeleteAttribute}{Value}
+the attribute specified by {\tt label} if it exists.
+
+\end{list}
+\end{sloppy}
+
+With these functions, you can manage the attributes which are
+associated with a particular {\em Value}.
+\index{Value class!accessing and assigning!attributes|)}
+
+\index{Value class!details|)}
+
+\section{Available Glish Clients}
+\label{available-clients}
+
+\index{clients!available|(}
+The {\em Glish} system comes with a very modest number of clients.\footnote{While
+a fair number of {\em Glish} clients have been written, most are either 
+special-purpose or are based on the {\em AIPS++} library, which is distributed
+separately from {\em Glish}.}  Source code for these clients resides in
+\index{clients!source code}
+the {\tt clients/} subdirectory of the {\em Glish} source tree; installing
+{\em Glish} (see \xref{installation}, below) includes installing these clients,
+so they are generally available for use.
+
+The available clients will grow with time and contributions are welcome.
+The clients presently available:
+\begin{itemize}
+
+\item {\em test\_client\/}
+\indclient{test\_client}
+simply copies its arguments to {\em stdout}
+and then reports to {\em stderr} the name and value (string representation)
+of any events it receives.
+
+\item {\em echo\_client\/}
+\indclient{echo\_client}
+``echoes" back any event it receives,
+using the same name and value.  It also generates an initial {\tt echo\_args}
+event listing the arguments with which it was invoked (if any).
+
+\item {\em timer\/}
+\indclient{timer}
+generates events at periodic intervals.  {\em timer}
+is invoked with two optional arguments, the flag {\tt -oneshot} and a
+\index{timeout}
+floating-point value indicating how long the initial timeout should last.
+{\em timer} waits this many seconds and generates a {\tt ready} event whose
+value is the number of seconds it waited.  If {\tt -oneshot} is not
+specified then {\em timer} ``rearms" itself and goes off again after the
+same number of seconds elapse.
+
+Anytime {\em timer} receives an {\tt interval} event it interprets the
+event's value as a {\tt double} value indicating the new timeout period.
+It then resets its timer and begins waiting for this new period of time.
+The original setting of {\tt -oneshot} remains in effect.
+
+If no initial time is specified when {\em timer} begins executing then
+it simply waits until it receives an {\tt interval} event.
+
+For example, the following generates a {\tt ready} event approximately
+every 1.5 seconds:
+\index{example!{\tt timer} client}
+\begin{verbatim}
+    t := client( "timer", 1.5 )
+    whenever t->ready do
+        print "timer went off after", $value, "seconds"
+\end{verbatim}
+
+\item {\em glishtk\/}
+\indclient{gtk}
+makes the Tk widgets available to {\em Glish} scripts (see \xref{glishtk}).
+
+\end{itemize}
+\index{clients!available|)}
+\index{client library|)}

@@ -1,0 +1,696 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/stmts.tex,v 19.0 2003/07/16 04:18:50 aips2adm Exp $
+
+\chapter{Statements}
+\label{statements}
+
+\index{scripts!made up of statements}
+\index{statements|(}
+{\em Glish} scripts are made up of a series of {\em statements\/}, which are
+first compiled and then executed sequentially.  Enclosing a series of
+\index{statements!block}
+\label{statement-block}
+\indoptwokey{\{\}}{grouping statements}{?9grouping}
+statements inside of braces (``{\tt \{ $\ldots$ \}}") groups them together
+into a block that is treated syntactically as a single statement. These
+statement blocks can be used to introduce local scope. (See \xref{local-stmt}.)
+As in many languages, groups of statements can be collected into functions
+to provide subroutines. (See  \cxref{functions}, and \xref{subseq}.)
+This section describes the various types of statements available
+in {\em Glish}.
+
+\index{statements!semi-colon termination}
+\index{semi-colon!as statement terminator}
+Strictly speaking, all {\em Glish} statements are terminated with semi-colons
+(``{\tt ;}").  For the most part, though, the {\tt ;} needn't be explicitly
+present, because {\em Glish} can figure out when inserting a {\tt ;} makes sense
+and does so automatically.  (See \xref{semicolons}.)  In the
+examples that follow, we omit the final {\tt ;} from statements since, in
+general, they are not necessary.
+
+\section{Expressions as Statements}
+\label{expr-statement}
+
+\index{statements!expressions as}
+\index{expressions!as statements}
+Any expression is also a legal statement.  The expression is evaluated
+and the result discard; presumably the expression has some interesting
+side-effects.  (See \cxref{expressions}, for a discussion of the
+different types of expressions.)
+
+\section{Empty Statement}
+\label{empty-statement}
+
+\index{statements!empty}
+\index{empty statement}
+\index{semi-colon!as empty statement}
+A lone ``{\tt ;}" is treated as an empty, do-nothing statement.  For
+example,
+\begin{verbatim}
+    if ( x )
+        ;
+    else
+        print "not x"
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    if ( ! x )
+        print "not x"
+\end{verbatim}
+(See \xref{conditionals}.)
+
+\section{Printing}
+
+\index{printing|(}
+\indtt{print}{statement}
+The {\tt print} statement provides a simple way of displaying (to
+{\em Glish}'s {\em stdout}) values.  Its syntax is:
+\begin{quote}
+    {\tt print {\em value$_1$}, {\em value$_2$}, $\ldots$}
+\end{quote}
+where any number of values may be listed (including none, which produces
+a blank line).
+
+\label{paged-output}
+By default, large amounts of output are sent through a pager, e.g. {\em less}
+or {\em more}. This prevents the information from being overwhelming.
+The pager to be run is determined by \verb+system.output.pager.exec+.
+The line limit where paging starts is determined by
+\verb+system.output.pager.limit+. Setting the limit to {\tt 0} causes the
+pager to always be used, and setting the limit to {\tt -1} causes it to never be
+used.
+
+At the moment printing of values is crude. Values are printed with a single
+blank between them and a final newline added at the end.
+\index{output!control|(}
+\index{print!control|(}
+There are only two ways of affecting the printing of {\em Glish}
+values. 
+These can be used either  as an attribute of a given value or 
+specified for the whole system.
+
+\subsection{Print Precision}
+\index{{\tt system} global variable!{\tt print.precision}}
+\index{attributes!system defined!{\tt print.precision}}
+\label{system-print-precision}
+The first way to affect the printing of {\em Glish} values 
+is \verb+print.precision+. It is sometimes important to increase
+the number of decimal precision used to print floating point
+values. This method  sets
+the number of significant digits that are used to 
+display floating point numbers.
+If this is set in the {\tt system} record, then the default output
+behavior changes for the entire system:
+\begin{verbatim}
+    a := 142.8767901343
+    print a
+    system.print.precision := 10
+    print a
+\end{verbatim}
+In this example, the precision is initially set to {\tt 6} but is changed to {\tt 10}
+before the second {\tt print} statement, therefore the output looks
+something like:
+\begin{verbatim}
+    142.877
+    142.8767901
+\end{verbatim}
+Note that this sets the number of {\em significant digits} not the number
+of {\em decimal places}. The print precision can also be set for individual
+values by setting attributes of the value. In this case, it only affects how
+this single value is printed. Continuing the example above:
+\begin{verbatim}
+    Pi := 3.141592653589793238462643
+    print Pi
+    Pi::print.precision := 15
+    print Pi
+    print a
+\end{verbatim}
+The output this time will look like:
+\begin{verbatim}
+    3.141592654
+    3.14159265358979
+    142.8767901
+\end{verbatim}
+This provides a very basic way of controlling the output precision of
+floating point numbers. Setting {\tt precision} to a negative integer
+resets the default printing behavior for both {\tt system} and attribute.
+
+\subsection{Print Limit}
+\index{{\tt system} global variable!{\tt print.limit}}
+\index{attributes!system defined!{\tt print.limit}}
+\label{system-print-limit}
+The second way to affect the printing {\em Glish} values 
+is \verb+print.limit+. This is used to avoid inadvertently
+printing {\em very} large values to the screen. For example:
+\begin{verbatim}
+    a := 1:1e7
+    # print a              # this would be a mistake!
+    a::print.limit := 10
+    print a
+\end{verbatim}
+By setting the print limit for {\tt a} you get this output:
+\begin{verbatim}
+    [1 2 3 4 5 6 7 8 9 10 ... ]
+\end{verbatim}
+instead of {\em many} pages of integers. As with
+\verb+print.precision+, this can be set in {\tt system} record to
+change the default print limit for the whole system, or it can be
+specified as an attribute of any value to change the limit for that
+value only. Setting {\tt limit} to be {\tt 0}
+or a negative integer resets things to the default limit, i.e. no print
+limit.
+\index{output!control|)}
+\index{print!control|)}
+
+\index{possible future changes!better printing of values}
+In the future {\tt print} must be extended to allow more sophisticated
+formatting.
+\index{printing|)}
+
+\section{Conditionals}
+\label{conditionals}
+
+\index{conditionals|(}
+\indtt{if}{statement}
+{\em Glish} provides C-style {\tt if} and {\tt if $\ldots$ else}
+conditionals:
+\begin{quote}
+    {\tt if ( {\em expression} ) {\em statement}}
+
+    {\tt if ( {\em expression} ) {\em statement$_1$} else {\em statement$_2$} }
+\end{quote}
+An {\tt if} statement evaluates {\em expression}, converts the result
+to a {\tt boolean} value, and if true executes {\em statement}.
+The \index{if statement!... else@{\tt $\ldots$ else}}
+\index{{\tt else}}
+{\tt if
+$\ldots$ else} statement is similar, executing {\em statement$_1$} 
+if the value is true
+and {\em statement$_2$} if false.  The {\em expression}
+should evaluate to a
+\index{conditionals!evaluation of condition}
+scalar value; if it is a vector then its first element is tested, though
+\index{possible misfeatures!first element of vector tested in conditionals}
+in the future an error may be generated instead.
+
+\index{else!dangling}
+\index{dangling {\tt else}}
+As in most languages, a ``{\em dangling-else}'' is associated with the nearest
+previous {\tt if}, so
+\begin{verbatim}
+    if ( x )
+        if ( y )
+            print "x and y"
+        else
+            print "either not x or not y"
+\end{verbatim}
+is interpreted as:
+\begin{verbatim}
+    if ( x )
+        {
+        if ( y )
+            print "x and y"
+        else
+            print "either not x or not y"
+        }
+\end{verbatim}
+and not as:
+\begin{verbatim}
+    if ( x )
+        {
+        if ( y )
+            print "x and y"
+        }
+    else
+        print "either not x or not y"
+\end{verbatim}
+\index{conditionals|)}
+
+\section{Loops}
+
+\index{loops|(}
+{\em Glish} supports two looping constructs, {\tt while} and {\tt for}.
+
+\subsection{While Loops}
+
+\indtt{while}{statement}
+A {\tt while} loop looks like:
+\begin{quote}
+    {\tt while ( {\em expression} ) {\em statement}}
+\end{quote}
+where {\tt statement} can be a statement block (enclosed in braces) or a
+single statement. As in C, when encountering a {\tt while} statement the
+{\em expression} is evaluated in the same way as in an {\tt if} statement.
+(See \xref{conditionals}).  If true, {\em statement} is executed and
+{\em expression} is then evaluated again and if true the process repeats.
+
+\subsection{For Loops}
+\label{for-loops}
+
+\indtt{for}{statement}
+{\em Glish} supports a different style of {\tt for} loop than~C.
+A {\em Glish} {\tt for} loop looks like:
+\begin{quote}
+    {\tt for ( {\em variable} in {\em expression} ) {\em statement}}
+\end{quote}
+When the {\tt for} is executed, {\em expression} is evaluated to produce
+a vector value.  Then {\em variable} is assigned to each of the values in
+the vector, beginning with the first and continuing to the last.
+For each assignment, {\em statement} is executed.  Upon exit from the
+loop {\em variable} keeps the last value assigned to it.
+
+\index{example!{\tt for} loops|(}
+Here, for example, is a {\tt for} loop that prints the numbers from
+{\tt 1} to {\tt 10} one at a time:
+\begin{verbatim}
+    for ( n in 1:10 )
+        print n
+\end{verbatim}
+
+Here's another example, this time looping over all the even elements of
+the vector {\tt x}:
+\begin{verbatim}
+    for ( even in x[x % 2 == 0] )
+        print even
+\end{verbatim}
+
+Here's a related example that loops over the {\em indices} of the
+even elements of {\tt x}:
+\begin{verbatim}
+    for ( even in seq(x)[x % 2 == 0] )
+        print "Element", even, "is even:", x[even]
+\end{verbatim}
+
+And one final example, looping over each of the fields in a record {\tt r}:
+\begin{verbatim}
+    for ( f in field_names(r) )
+        print "The", f, "field of r =", r[f]
+\end{verbatim}
+\index{example!{\tt for} loops|)}
+
+\index{for statement!philosophy}
+The philosophy behind providing only this style of {\tt for} loop is
+rooted in the fact that {\em Glish} is most efficient when performing operations
+on vectors.  I believe that this {\tt for} loop (which was
+taken from the {\em S} language) encourages the programmer to think
+about problems in terms of vectors, while~C's {\tt for} loop
+does not.
+
+\subsection{Controlling Loop Execution}
+
+\index{loops!controlling execution|(}
+{\em Glish} provides two ways to control the execution of a loop,
+the {\tt next}\indtt{next}{statement}
+and {\tt break}\indtt{break}{statement}
+statements, which are directly analogous to~C's
+{\tt continue} and {\tt break} (indeed,
+\index{{\tt continue}!as synonym for {\tt next}}
+{\tt continue} is allowed as
+a synonym for {\tt next}).  The syntax of these is simply:
+\begin{quote}
+    {\tt next}
+
+    {\tt break}
+\end{quote}
+
+The {\tt next} statement ends the current iteration of 
+the surrounding {\tt while}
+or {\tt for} loop and begins the next iteration, or exits the loop
+if there are no more iterations.  The {\tt break} statement 
+immediately exits the
+loop regardless of whether or not there are normally  more iterations.
+\index{loops|)}
+\index{loops!controlling execution|)}
+
+\section{{\tt return} Statement}
+\label{return-stmt}
+
+\indtt{return}{statement}
+Normally a function's execution
+proceeds until the last statement of the function, as discussed in 
+\cxref{functions}.   If that statement
+is an expression then the value of the expression becomes the result
+of the function call; otherwise the result is {\tt F}.  A function
+can also prematurely terminate using the {\tt return} statement,
+which has two forms:
+\begin{quote}
+    {\tt return}
+
+    {\tt return {\em expression}}
+\end{quote}
+The first form results in a returned value of {\tt F}; the second
+form returns the value of {\em expression}. (See \cxref{functions}, for examples.)
+
+\section{{\tt fail} Statement}
+\label{fail-stmt-1}
+
+\index{{\tt fail}!statement}
+The {\tt fail} statement is used to indicate an error and provides
+an alternate way to return from a function.  Typically a function returns 
+by either executing the last statement of the function or an
+explicit {\tt return} statement. There are two forms of {\tt fail} you can
+use to return from a function:
+
+\begin{quote}
+    {\tt fail {\em expression}}
+
+    {\tt fail}
+\end{quote}
+Typically, the {\em expression} is a string describing the error
+condition, and when no expression is provided, the last {\tt fail}
+value generated is used, if available.
+
+\index{{\tt fail}!automatic propagation}
+An additional feature of {\tt fail} values, i.e. the values produced
+and returned by {\tt fail} statements, are automatically propagated.
+This is true at two different levels. When {\tt fail} values are used
+in expressions (including function calls), the result is a {\tt fail}
+value which is immediately generated without evaluation of the expression.
+Additionally if the {\tt fail} value returned from a function call to
+an executing function, the result of the function which received the
+{\tt fail} value will in turn be a {\tt fail} value if the {\tt fail}
+is not handled. A {\tt fail} value is considered ``handled'' if its
+type has been checked, e.g. via {\tt type\_name()} or {\tt is\_fail()}.
+(See \cxref{fail-stmt-2}, for a complete description of {\tt fail}.)
+
+\section{{\tt exit} Statement}
+\label{exit-stmt}
+
+\indtt{exit}{statement}
+
+Normally a {\em Glish} program ends when the last statement of the main
+program has been executed and all tasks have terminated, as discussed
+in \xref{program-execution}.   To prematurely
+end the program, you use {\tt exit}. 
+As you can see, it  has a syntax similar to that
+of {\tt return}:
+\begin{quote}
+    {\tt exit}
+
+    {\tt exit {\em expression}}
+\end{quote}
+The first statement exits the program with a status of {\tt 0}. The second
+statement evaluates {\em expression} and converts it to an {\tt integer} scalar
+(by ignoring all but the first element), which is then used as the
+exit status.
+
+\section{{\tt local} ``Statement''}
+\label{local-stmt}
+\index{variables!declaring local}
+\index{variables!local scope|(}
+\index{scope!modifier!local}
+You declare variables as local using the {\tt local} statement:
+
+\begin{quote}
+    {\tt local {\em id$_1$}, {\em id$_2$}, $\ldots$}
+\end{quote}
+Here each {\em id} has one of the following two forms:
+\begin{quote}
+    {\em name}
+
+    {\em name} {\tt :=} {\em expression}
+\end{quote}
+\index{variables!initialization}
+The second form specifies an initial value to assign to the local
+variable.  You can use any valid expression (See \cxref{expressions}).
+The assignment is done each time the {\tt local} statement is
+executed.
+
+If {\tt local} is used outside of statement blocks and functions,
+it creates a global variable. So in this example,
+\begin{verbatim}
+    if ( x )
+        local a := 3
+\end{verbatim}
+{\tt local} is neither in a statement block nor  inside
+a function, so the variable that is created, {\tt a}, is a {\em global}
+variable.  Global variables are accessible everywhere in {\em Glish}. 
+This usage is
+equivalent to:
+\begin{verbatim}
+    if ( x )
+        a := 3
+\end{verbatim}
+If the {\tt local} declaration does not include any initializations
+then it is equivalent to an empty statement:
+\begin{verbatim}
+    if ( x )
+        local a
+\end{verbatim}
+is the same as
+\begin{verbatim}
+    if ( x )
+        ;
+\end{verbatim}
+If {\tt local} is used inside of statement blocks, then the variable that is
+created is local to that block. So in this example,
+\begin{verbatim}
+    if ( x )
+        {
+        local a := 89
+        }
+\end{verbatim}
+because {\tt local} is used inside of a statement block, the variable {\tt a} is
+local to that block. Subsequent uses of the variable {\tt a} in this block will
+refer to this {\em local} variable rather than one that might be defined in the
+{\em global} scope. If no initialization is provided, {\tt local} still
+introduces a variable that is local to the statement block. So in this example:
+\begin{verbatim}
+    a := b := c := 0
+    if ( T )
+        {
+        local a := 90, c := 90
+        local b
+        b := -90
+        {
+            local b, a := a
+            a := a - 10
+            b := 10
+            print a,b,c
+        }
+        print a,b,c
+        }
+    print a,b,c
+\end{verbatim}
+the variables {\tt a}, {\tt b}, and {\tt c} start out in the {\em global} scope
+with the value {\tt 0}. {\em Local} variables are introduced as part
+of the {\tt if}
+statement block, and finally another statement block is introduced inside the
+{\tt if} block. Variables local to this block are again declared. The variable
+{\tt a} in this case is initialized to the value that it had in a wider scope,
+the {\tt if} block in this case, and it is then modified. Because it is declared
+to be local to this block, the variable {\tt a} in 
+the {\tt if} block is not modified.
+The variable {\tt c}, on the other hand, is {\em not} local to the inner block so
+{\tt c} in the inner block is the same as the {\tt c} in the {\tt if} block.
+The final output of this code snippet is:
+\begin{verbatim}
+    80 10 90
+    90 -90 90
+    0 0 0
+\end{verbatim}
+(See  \S~\ref{scoping} where this is also discussed.)
+\index{variables!local scope|)}
+
+\section{Sending and Receiving Events}
+Sending and receiving events forms the heart of {\em Glish}, and both
+are discussed in \cxref{events}.  Here we briefly cover
+the syntax of the related statements.
+
+\subsection{Sending Events}
+\label{send-event-stmt}
+
+\index{events!sending|(}
+The event-sending statement looks like:
+\begin{quote}
+    {\tt {\em expression} -> {\em name} ( {\em arg$_1$}, {\em arg$_2$}, $\ldots$ )}
+
+    {\tt {\em expr$_1$} -> [ {\em expr$_2$ } ] ( {\em arg$_1$}, {\em arg$_2$}, $\ldots$ )}
+\end{quote}
+The {\tt expression} (or {\tt expr$_1$}) must resolve to one {\tt agent}.
+(See \xref{event-syntax} for more information.)  Each
+\index{events!sending!naming values}
+{\em arg} argument (there needn't be any, in which case an event with
+the value {\tt F} is sent) has one of two forms:
+\begin{quote}
+    {\em expression}
+
+    {\em name} {\tt =} {\em expression}
+\end{quote}
+analogous to the syntax of a function call
+(See \cxref{functions}).  If only one argument is specified and the first 
+form is used
+then {\em Glish} evaluates {\em expression} and uses the
+result as the event value.  If more than one argument is specified or
+the second form used for a lone argument then {\em Glish} constructs a record
+in a manner similar to that described in \xref{record-constants}, and
+uses that as the event value.  (See \cxref{events}, for a full
+discussion.)
+
+If an event is sent in the context of an expression, the interpreter
+waits for a result from the client.  When this result is received  
+the evaluation of
+the expression is completed. The syntax is the same, 
+but the context is different:
+\begin{verbatim}
+    my_agent->reset()
+    if ( my_agent->ready() ) print "agent is configured"
+\end{verbatim}
+In the first case, no result is required, but in the second case
+because  a result is needed
+the interpreter waits.  (See \xref{send-event-expr}.)
+\index{events!sending|)}
+
+\subsection{Receiving Events}
+
+\index{events!receiving|(}
+There are two types of statements for receiving events, {\tt whenever}
+and {\tt await}.  Both are discussed in full in \xref{whenever}, and
+\xref{await}; here is a brief overview of the related syntax.
+
+\subsubsection{Whenever Statements}
+\label{whenever-stmt}
+
+\indtt{whenever}{statement}
+A {\tt whenever} statement looks like:
+\begin{quote}
+    {\tt whenever {\em event$_1$}, {\em event$_2$}, $\ldots$ do {\em statement}}
+\end{quote}
+At least
+one {\em event} must be specified.  When any of the given events 
+are generated, execute {\em
+statement} with {\tt \$agent}, {\tt \$name}, and {\tt \$value} equal
+to the {\tt agent} that generated the event, the name of the event,
+and the event's value. (See \xref{event-syntax}, for a description of {\em event} syntax.)  
+
+\subsubsection{Await Statements}
+\label{await-statement}
+
+\indtt{await}{statement}
+{\tt await} statements have three forms:
+\begin{quote}
+    {\tt await {\em event$_1$}, {\em event$_2$}, $\ldots$}
+
+    {\tt await only {\em event$_1$}, {\em event$_2$}, $\ldots$}
+
+    {\tt await only {\em event$_1$}, {\em event$_2$}, $\ldots$ except {\em event$_1$}, {\em event$_2$}, $\ldots$}
+\end{quote}
+The first form waits for any one of the specified {\em event\/}'s to be
+received before proceeding with execution.
+If other events arrive during the interim, they are processed normally.
+The second form does not process interim events but instead drops
+them with a warning.  The third form only processes those interim events
+listed after the {\tt except} keyword.
+
+After completion of any {\tt await}, the variables {\tt \$agent}, {\tt \$name},
+and {\tt \$value} correspond to the event that caused the {\tt await} to complete.
+(See \xref{await}, for a full description.)
+\index{events!receiving|)}
+
+\subsection{{\tt activate} and {\tt deactive} Statements}
+
+\indtt{activate}{statement}
+\indtt{deactivate}{statement}
+The {\tt activate} and {\tt deactivate} statements provide a mechanism
+for turning {\tt whenever} statements ``on'' and ``off''.
+
+These  statements have the following forms:
+\begin{quote}
+    {\tt activate }
+
+    {\tt deactivate }
+
+    {\tt activate {\em expr}}
+
+    {\tt deactivate {\em expr}}
+\end{quote}
+
+The builtin function {\tt whenever\_active()} is used to see if
+a {\tt whenever} statement is active or not. (See \xref{whenever_active-func}, for
+information about {\tt whenever\_active()}, and \xref{activate-stmt}, for
+information about {\tt activate} and {\tt deactivate}.)
+
+\subsection{{\tt link} and {\tt unlink} Statements}
+
+\indtt{link}{statement}
+\indtt{unlink}{statement}
+The {\tt link} and {\tt unlink} statements provide a mechanism for
+establishing and suspending point-to-point connections between {\em Glish}
+clients.  These connections sacrifice flexibility (being able to inspect
+and modify event values) for performance.
+
+These  statements have the following form:
+\begin{quote}
+    {\tt link {\em event$_1$} to {\em event$_2$}}
+
+    {\tt unlink {\em event$_1$} to {\em event$_2$}}
+\end{quote}
+
+(See \xref{point-to-point}, for a full description.)
+
+\section{Leaving Out the Statement Terminator}
+\label{semicolons}
+
+\index{statements!semi-colon termination|(}
+\index{semi-colon!omitting|(}
+{\em Glish} has a simple rule for when the {\tt ;} terminating
+a statement can be left out.  In general, if a line ends with a
+token that suggests continuation (such as a comma or a binary operator)
+the statement continues onto the next line.  A semi-colon 
+is inserted if it ends with
+something that could come at the end of a statement.
+Those tokens that can end a statement are:
+\begin{itemize}
+\item the \verb+)+ character, unless it's part of the test in a {\tt if},
+{\tt for}, or {\tt while} statement, or the argument list in a {\tt
+function} definition;
+\item the \verb+]+ character;
+\item the {\tt break}, {\tt exit}, {\tt next} (and its alias {\tt continue}),
+and {\tt return} keywords;
+\item identifiers and constants;
+\item and the special event variables {\tt \$agent}, {\tt \$name},
+and {\tt \$value}.
+\end{itemize}
+
+{\em Glish} inserts {\tt ;}'s only at the end of a line or just before a ``{\tt
+\{}".  You {\em cannot} use these
+rules to jam two statements onto one line:
+\begin{verbatim}
+    print a b := 3
+\end{verbatim}
+is illegal, though both
+\begin{verbatim}
+    print a; b := 3
+\end{verbatim}
+and
+\begin{verbatim}
+    { print a } b := 3
+\end{verbatim}
+are perfectly okay.
+
+You can prevent {\em Glish} from inserting a {\tt ;} 
+by using an escape (\verb+\+)
+as the last character of a line.  For example,
+\begin{verbatim}
+    print a \
+        , b
+\end{verbatim}
+is okay, and equivalent to
+\begin{verbatim}
+    print a,
+        b
+\end{verbatim}
+or
+\begin{verbatim}
+    print a, b
+\end{verbatim}
+A  final \verb+\+ doesn't work after a comment.  For example:
+\begin{verbatim}
+    print a   # oops, syntax error next line \
+        , b
+\end{verbatim}
+is interpreted as two separate statements, the second statement produces
+a syntax error.
+\index{semi-colon!omitting|)}
+\index{statements!semi-colon termination|)}
+
+\index{statements|)}

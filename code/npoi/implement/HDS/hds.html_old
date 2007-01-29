@@ -1,0 +1,646 @@
+<HTML>
+
+<HEAD>
+<TITLE>hds.g</TITLE>
+<LINK rev=made href=mailto:nme@nofs.navy.mil>
+</HEAD>
+
+<BODY>
+
+<IMG SRC=./cwlogo_small.gif ALIGN="LEFT CENTER" HEIGHT=169 WIDTH=183>
+<IMG SRC=./cuttlefish_eighth.jpg ALIGN="LEFT CENTER" HEIGHT=128 WIDTH=117>
+
+<H1>
+hds.g
+</H1>
+
+<P>
+If you have any questions or comments, feel free to contact Nick.
+</P>
+
+<ADDRESS>
+Last revised: 1999 Nov 23<BR>
+Author: <A href=mailto:nme@nofs.navy.mil> Dr. Nicholas Elias</A>,
+nme@nofs.navy.mil
+</ADDRESS>
+
+<H2>
+<HR>
+</H2>
+
+<H3>
+Introduction:
+</H3>
+
+<P>
+<A href=./doc_hds.ps>HDS (Hierarchical Database System)</A> is a library of
+FORTRAN functions used to manipulate files in HDS format.  It is available free
+of charge from <A href=http://star-www.rl.ac.uk/>Starlink</A>.
+</P>
+
+<P>
+An HDS file consists of a hierarchy of <B><I>objects</I></B>, each with an
+associated <B><I>locator</I></B>.  Each object has a <B><I>name</I></B>, up to
+15 alphanumeric characters in length.  There are two classes of objects,
+<B><I>structures</I></B> and <B><I>primitives</I></B>.  A structure points to a
+lower-level object and a primitive points to data, analogous to a file system
+and files.  Also, each object has a <B><I>type</I></B>.  Primitive types must
+be one of the following:
+</P>
+
+<UL>
+<LI><B>_UBYTE</B> - unsigned byte</LI>
+<LI><B>_BYTE</B> - signed byte</LI>
+<LI><B>_UWORD</B> - unsigned word</LI>
+<LI><B>_WORD</B> - signed word</LI>
+<LI><B>_INTEGER</B> - signed integer</LI>
+<LI><B>_REAL</B> - single precision</LI>
+<LI><B>_DOUBLE</B> - double precision</LI>
+<LI><B>_LOGICAL</B> - logical/boolean</LI>
+<LI><B>_CHAR*N</B> - character string, where <B>N</B>=integer of arbitrary
+size</LI>
+</UL>
+
+<P>
+<B><I>NB: The initial underscore is NOT optional for primitive types.</I></B>
+Structure types can be anything alphanumeric (truncated to 15 characters or
+less), but in most cases structure types are just '' (null strings).  HDS
+itself does not treat non-null structure types differently than null structure
+types, but software using the HDS library may do so.
+</P>
+
+<P>
+Objects are also assigned a <B><I>shape</I></B>, or dimensionality.  A scalar
+object has a shape of 0.  The HDS library is written in FORTRAN 77, so the
+maximum number of dimensions is 7, e.g., [4,5,2,6,4,3,2].
+</P>
+
+<P>
+The CUTTLEFISH package, designed for analyzing data from the Navy Prototype
+Optical Interferometer (and hopefully others), employs the HDS library. The
+file <A href=./hds.g>hds.g</A> (part of CUTTLEFISH) contains two glish/aips++
+functions, <B><I>hdsnew( )</I></B> and <B><I>hdsopen( )</I></B>, that
+initialize the interface between glish/aips++ and the HDS library functions.
+In other words, most of the functionality of HDS is available in glish/aips++.
+Between the glish/aips++ functions and the HDS library are C++ classes, the
+most important being <A href=./HDSFile.cc>HDSFile{ }</A> (it manipulates a FILO
+stack of objects). To view all the files in the CUTTLEFISH package, click
+<A href=./>here</A>.
+</P>
+
+<P>
+To use the glish/aips++ HDS interface, type:
+</P>
+
+<P>
+include 'cuttlefish.g'
+</P>
+
+<P>
+on the glish/aips++ command line.  This file includes hds.g as well as the
+other *.g files in CUTTLEFISH.  To view an example script using hdsopen( ), click <A href=./test_vis.g>here</A>.
+This script can be easily generalized, if desired (arbitrary file, scan,
+baseline, etc.) and demonstrates the power of these simple tools.
+</P>
+
+<H2>
+<HR>
+</H2>
+
+<H3>
+Creating new HDS files (hdsnew)
+</H3>
+
+<P>
+The glish/aips++ command to create a new HDS file is <B><I>hdsnew( )</I></B>.
+It invokes the HDS library function HDS_NEW( ) through the HDSFile{ } C++
+class. The syntax is:
+</P>
+
+<P>
+<B><I>var := hdsnew( file, name, type, dims, host = '', forcenewserver = F )</I></B>
+</P>
+
+<P>
+where
+</P>
+
+<UL>
+<LI><B><I>var</I></B> - An arbitrary variable name that becomes the
+user-interface to the HDS file.  It is a structure that contains wrapper
+functions for other the HDS library functions.</LI>
+<LI><B><I>file</I></B> - The HDS file name.</LI>
+<LI><B><I>name</I></B> - The HDS top object name.  It is case insensitive.</LI>
+<LI><B><I>type</I></B> - The HDS top objec type (default = '').  It is case
+insensitive.  It should be a non-primitive type, otherwise no objects may be
+created beneath the top object.</LI>
+<LI><B><I>dims</I></B> - The HDS top object dimensions (default = 0).</LI>
+<LI><B><I>host</I></B> - The computer that will invoke <B><I>hdsnew( )</I></B>
+(default = '', the present machine).</LI>
+<LI><B><I>forcenewserver</I></B> - The force-new-server flag (default = F).</LI>
+</UL>
+
+<H2>
+<HR>
+</H2>
+
+<H3>
+Reading/updating existing HDS files (hdsopen)
+</H3>
+
+<P>
+The glish/aips++ command to read/update a new HDS file is
+<B><I>hdsopen( )</I></B>.  It invokes the HDS library function HDS_OPEN( )
+through the HDSFile{ } C++ class. The syntax is:
+</P>
+
+<P>
+<B><I>var := hdsopen( file, readonly = T, host = '', forcenewserver = F )</I></B>
+</P>
+
+<P>
+where
+</P>
+
+<UL>
+<LI><B><I>var</I></B> - An arbitrary variable name that becomes the
+user-interface to the HDS file.  It is a structure that contains wrapper
+functions for other the HDS library functions.</LI>
+<LI><B><I>file</I></B> - The HDS file name.</LI>
+<LI><B><I>readonly</I></B> - The read-only flag (default = T).
+<LI><B><I>host</I></B> - The computer that will invoke <B><I>hdsopen( )</I></B>
+(default = '', the present machine).</LI>
+<LI><B><I>forcenewserver</I></B> - The force-new-server flag (default = F).</LI>
+</UL>
+
+<H2>
+<HR>
+</H2>
+
+<H3>
+Closing HDS files
+</H3>
+
+<P>
+<B><I>var.done()</I></B>
+</P>
+
+<P>
+Pretty simple, huh?  <B><I>var</I></B> is just the user-interface variable
+created by either <B><I>hdsnew( )</I></B> or <B><I>hdsopen( )</I></B>.
+</P>
+
+<P>
+<B><I>NB:  Before you exit glish/aips++, make sure all newly created and
+updated HDS files are closed to avoid corrupting their data.</I></B>
+</P>
+
+<H2>
+<HR>
+</H2>
+
+<H3>
+Manipulating HDS files
+</H3>
+
+<P>
+In this list, we are assuming that an HDS file has been opened (cf. above
+descriptions) and that the user-interface to the HDS file is a glish/aips++
+variable called <B><I>var</B></I>.  Also, note that the commands that call HDS
+library functions have the same name, e.g., <B><I>var.alter()</B></I> <-->
+DAT_ALTER().
+</P>
+
+<UL>
+
+<LI>
+<P>
+<B><I>x := var.alter( lastdim )</I></B><BR>
+This member function alters the last dimension of the present object.  The
+object cannot be a scalar.  <B><I>lastdim</I></B> is the new size of the last
+dimension.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.annul( locatorannul = 1 )</I></B><BR>
+This member function annuls locators, i.e., goes up the FILO stack of objects.
+<B><I>locatorannul</I></B> is the number of HDS locators to annul (default = 1).
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).  If
+<B><I>locatorannul</I></B> is greater than or equal to the number of locators
+presently in use, a FAIL event is generated, i.e., this member function cannot
+be used to close the HDS file.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.cell( dims )</I></B><BR>
+This member function returns the locator for an individual <B><I>cell</I></B>
+of the present multidimensional object.  <B><I>dims</I></B> are the dimension
+numbers of the cell.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.clen( )</I></B><BR>
+This member function returns the number of characters needed to represent the
+present object and puts it into <B><I>x</I></B>.  If the present object is not
+a primitive or if another error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.copy( name, other = '' )</I></B><BR>
+This public member function recursively copies the present object to a
+<B><I>saved</I></B> locator (cf. <B><I>x := var.save( )</I></B>).  The new
+object is called <B><I>name</I></B>.  If <B><I>other = ''</I></B>, the saved
+locator is in <B><I>var</I></B>, otherwise the saved locator is in
+<B><I>object</I></B>.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.copy2file( file, name )</I></B><BR>
+This public member function recursively copies the present object to a new HDS
+<B><I>file</I></B>.  The top object of the new HDS file is called
+<B><I>name</I></B>.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.create( name, type, data, replace = F )</I></B><BR>
+This public member function creates a new <B><I>non-scalar</I></B> object
+called <B><I>name</I></B> of type <B><I>type</I></B> below the present object,
+and puts <B><I>data</I></B> into it.  <B><I>replace</I></B> is the
+replacement flag (in case an object of this name already exists; default = F).
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).  See
+the <B><I>screate</I></B> member function for creating scalar objects.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.erase( name )</I></B><BR>
+This public member function recursively erases the object <B><I>name</I></B>
+below the present object.  <B><I>x</I></B> is either T (successful) or a FAIL
+event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.file( )</I></B><BR>
+This member function returns the HDS file name and puts it into
+<B><I>x</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.find( name )</I></B><BR>
+This public member function finds the object <B><I>name</I></B> immediately
+below the present object.  <B><I>x</I></B> is either T (successful) or a FAIL
+event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.forcenewserver( )</I></B><BR>
+This member function returns the force-new-server boolean flag and puts it into
+<B><I>x</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.get( )</I></B><BR>
+This member function returns the data at the present object and puts them into
+<B><I>x</I></B>.  If the present object is not a primitive or if another error
+occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.goto( path )</I></B><BR>
+This public member function goes to the object specified by the fully resolved
+<B><I>path</I></B> (objects, begining with the top objects, separated by '.').
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.host( )</I></B><BR>
+This member function returns the host name and puts it into
+<B><I>x</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.id( )</I></B><BR>
+This member function returns the glish/aips++ object id record (used mostly in
+conjunction with <B><I>x := var.copy( name, other = var2 )</I></B> and
+<B><I>x := var.move( name, other = var2 )</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.index( index )</I></B><BR>
+This public member function finds an object below the present object according
+to its <B><I>index</I></B> number (cf. <B><I>x := var.list( )</I></B>). 
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.len( )</I></B><BR>
+This member function returns the length (in bytes) of the present object and
+puts it into <B><I>x</I></B> (if non-scalar, the length of a single element).
+If the present object is not a primitive or if another error occurs, a FAIL
+event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.locator( )</I></B><BR>
+This member function returns the present locator number in the stack and puts
+it into <B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.list( )</I></B><BR>
+This member function returns the list of objects below the present object and
+puts them into <B><I>x</I></B>.  The order of the list is such that it may be
+used to determine the object <B><I>index</I></B> number for
+<B><I>x := var.index( index )</I></B>.  If the present object is not a
+structure of if another error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.mode( )</I></B><BR>
+This member function returns the access mode ( 'READ', 'UPDATE', 'NEW', or
+'WRITE' ) and puts it into <B><I>x</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.move( name, object = '' )</I></B><BR>
+This public member function recursively moves the present object to a
+<B><I>saved</I></B> locator (cf. <B><I>x := var.save( )</I></B>).  The new
+object is called <B><I>name</I></B>.  If <B><I>other = ''</I></B>, the saved
+locator is in <B><I>var</I></B>, otherwise the saved locator is in
+<B><I>object</I></B>.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.name( )</I></B><BR>
+This member function returns the present object name and puts it into
+<B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.ncomp( )</I></B><BR>
+This member function returns the number of objects below the present object
+and puts it into <B><I>x</I></B>.  If the present HDS level is not a structure,
+a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.new( name, type, dims, replace = F )</I></B><BR>
+This public member function creates a new object called <B><I>name</I></B> of
+type <B><I>type</I></B> (primitive and structure) with dimensions
+<B><I>dims</I></B> below the present object.  <B><I>replace</I></B> is the
+replacement flag (in case an object of this name already exists; default = F).
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.obtain( name )</I></B><BR>
+This member function returns the data from object <B><I>name</I></B> (below the
+present object) and puts them into <B><I>x</I></B>.  If the present object is
+not a structure, <B><I>name</I></B> is not a primitive, or if another error
+occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.path( )</I></B><BR>
+This member function returns the fully resolved path and puts it into
+<B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.prec( )</I></B><BR>
+This member function returns the machine precision (in bytes) of the present
+object and puts it into <B><I>x</I></B>.  If the present object is not a
+primitive or if another error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.prim( )</I></B><BR>
+This member function returns the primitive flag of the present object and puts
+it into <B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.put( data )</I></B><BR>
+This public member function puts <B><I>data</I></B> into the present object.
+The dimensions of the data must match the dimensions of the object.
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.recover( )</I></B><BR>
+This public member function <B><I>recovers</I></B> the glish/aips++ variable
+<B><I>var</I></B> if an error has occurred at the present object (and possibly
+the objects above it) and was not automatically fixed.  <B><I>x</I></B> is
+either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.renam( name )</I></B><BR>
+This public member function renames the present object to <B><I>name</I></B>.
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.reset( )</I></B><BR>
+This public member function resets the present object to its unitialized data
+state.  <B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.retyp( type )</I></B><BR>
+This public member function retypes the present object to <B><I>type</I></B>.
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.save( )</I></B><BR>
+This public member function saves the present locator for use with <B><I>x :=
+var.copy(name, object = '')</I></B> or <B><I>x := var.move(name, object =
+'')</I></B>.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+This public member function creates a new <B><I>scalar</I></B> object called
+<B><I>name</I></B> of type <B><I>type</I></B> below the present object, and
+puts <B><I>data</I></B> into it.  <B><I>replace</I></B> is the replacement flag
+(in case an object of this name already exists; default = F).  <B><I>x</I></B>
+is either T (successful) or a FAIL event (unsuccessful).  See the
+<B><I>create</I></B> member function for creating non-scalar objects.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.shape( )</I></B><BR>
+This member function returns the shape of the present object and puts it into
+<B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.size( )</I></B><BR>
+This member function returns the size (the product of the dimensions; scalar =
+1) of the present object and puts it into <B><I>x</I></B>.  If an error occurs,
+a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.slice( dims1, dims2 )</I></B><BR>
+This member function returns the locator for a <B><I>slice</I></B> (a group of
+cells) of the present multidimensional object.  <B><I>dims1</I></B> are the
+lower-level dimensions and <B><I>dims2</I></B> are the upper-level dimensions.
+<B><I>x</I></B> is either T (successful) or a FAIL event (unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.state( )</I></B><BR>
+This member function returns the data state (T = initialized, F = uninitialized)
+of the present object and puts it into <B><I>x</I></B>.  If the present object
+is not a primitive or if another error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.struc( )</I></B><BR>
+This member function returns the structure flag for the present object and puts
+it into <B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.there( name )</I></B><BR>
+This public member function checks if an object called <B><I>name</I></B>
+exists below the present object.  <B><I>x</I></B> is either T (exists) or F
+(does not exist).  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.top( )</I></B><BR>
+This member function returns the glish/aips++ variable <B><I>var</I></B> to the
+top object.  <B><I>x</I></B> is either T (successful) or a FAIL event
+(unsuccessful).
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.type( )</I></B><BR>
+This member function returns the present object type and puts it into
+<B><I>x</I></B>.  If an error occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.valid( )</I></B><BR>
+This member function returns the validity (T = HDS status OK, F = HDS status
+not OK) of the present locator and put it into <B><I>x</I></B>.  If an error
+occurs, a FAIL event is generated.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>x := var.version( )</I></B><BR>
+This member function returns the hds.g version (as a string) and puts it into
+<B><I>x</I></B>.
+</P>
+</LI>
+
+<LI>
+<P>
+<B><I>var.web( )</I></B><BR>
+This member function starts lynx (a text-based web browser) with this web page.
+At present, netscape 4.5 is having difficulty with its "-remote" switch, so I'm
+using lynx temporarily.
+</P>
+</LI>
+
+</UL>
+
+</BODY>
+
+</HTML>
+

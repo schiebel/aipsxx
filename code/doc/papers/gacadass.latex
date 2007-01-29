@@ -1,0 +1,573 @@
+\documentstyle[11pt,paspconf] {article}
+
+\begin{document}
+
+\title{On AIPS++, A New Astronomical Information Processing System}
+
+\author{G. A. Croes}
+\affil{National Radio Astronomy Observatory\altaffilmark{1}, 520 Edgemont 
+       Road, Charlottesville, VA  22903-2475}
+
+\altaffiltext{1}{NRAO is operated by Associated Universities, Inc., under 
+       cooperative agreement with the National Science Foundation.}
+
+\begin{abstract}
+The AIPS system that has served the needs of the radio astronomical
+community remarkably well during the last 15 years, is showing signs of
+age, and is being replaced by a more modern system, AIPS++.  As the name
+implies AIPS++ will be developed in an object-oriented fashion, and use C++
+as its main programming language.  The work is being done by a consortium
+of seven organizations, with coordinated activities worldwide.
+
+After a review of the history of the project to this date, from management,
+astronomical and technical viewpoints and the current state of the project,
+the paper concentrates on the tradeoffs implied by the choice of
+implementation style, and the lessons we have learned, good and bad.
+\end{abstract}
+
+\section{Introduction, Pre-History}
+
+AIPS has dominated the scene of processing radio interferometer data for
+the last decade.  Although intended initially for the processing of VLA
+data only, it was subsequently extended to process data for the VLBA, the
+Australian Telescope (AT) and the British MERLIN.  It has grown into
+a fairly large system, about 600,000 lines of primarily FORTRAN77 code. 
+Its great success speaks well for the genius of the people who created it
+under the leadership of Eric Greisen and Bill Cotton.
+
+Despite its excellent track record, AIPS began to show the signs of old age
+during the last few years.  It was designed originally as a FORTRAN-based
+system on a small computer and, to this day, betrays these humble
+beginnings.  The most frequently heard complaints from its users were:
+
+\begin{itemize}
+\item AIPS is pretty buggy: when a new path through the code is taken, the
+program often fails;
+\item It takes quite a while to learn how to extend AIPS, and even when
+mastered, the job remains difficult and error-prone;
+\item AIPS is difficult to maintain: once an error has been signaled, it is
+far from easy to correct it;
+\item AIPS is somewhat old-fashioned in its user interface and does not
+exploit modern capabilities fully.
+\end{itemize}
+
+The main causes of the problems were, of course, inherent in the kind of
+machines available in the late 70's, when the AIPS architecture was laid
+down, and in the poor programming language used: FORTRAN.  The latter,
+although the language of choice for scientific programming, is notoriously
+poor for building large systems.  In particular the need to have large and
+complex collections of global data (COMMON blocks) has proven to be fatal.
+
+About five years ago, a coincidental disturbance in NRAO brought the above
+issues into focus, and the NRAO Director, Paul Vanden Bout, convened a
+committee to advise him on the course to take with regard to this
+software.  The committee, chaired by Tim Cornwell, consisted of both NRAO staff
+members and outsiders.  It recommended, in short, that:
+
+\begin{itemize}
+\item All development of data processing software in NRAO should be
+coordinated by a new Assistant Director for Computing; 
+\item AIPS should be re-designed and re-implemented following certain
+general guidelines;
+\item An equal amount of attention should be devoted to single-dish
+software.
+\end{itemize}
+
+The recommendations were accepted, Paul Vanden Bout implemented the first
+recommendation at the end of 1990, and the quest for a better AIPS began.
+
+A small team set out to define the global parameters for the project, and
+concluded quickly that the only way to avoid the problems that AIPS had,
+was to use an object-oriented approach for the new AIPS.  In order to
+understand what happened next, it is necessary to have a general
+appreciation of what that approach entails.  This will be the subject of
+the next chapter.  We will resume our account of what happened in our
+project later in the paper.
+
+\section{The Object-Oriented Approach To Programming}
+
+\subsection{Introduction}
+
+The fashionable phrase ``object-oriented" refers to a specific methodology
+for designing computer programs.  It utilizes an explicit model of the
+computational problem to be solved, defined in terms of a hierarchy of
+self-contained sub-units:  objects.  The approach uses two fundamental
+mechanisms:  encapsulation and inheritance which I will try to explain.  An
+important implementation consideration for large programs is polymorphism. 
+Finally, I will discuss design ideas.
+
+In order to implement an object-oriented design, one would prefer to use a
+programming language that provides direct support for the basic concepts
+and generally reject one that is incompatible with the approach.  You will
+find our reasons for choosing C++ as our main implementation language for
+AIPS++ at the end of this chapter.
+
+\subsection{Encapsulation}
+
+Encapsulation refers to the principle that a computational unit must be
+self-contained.  It provides a well defined functionality to its
+environment through a number of precisely defined interfaces.  The way the
+functionality comes about, i.e., the internal implementation of the unit,
+is entirely opaque to its environment.
+
+On closer examination, the computational unit is defined by a finite
+set of numbers and some functions that operate on these numbers.  A
+concrete instance of such a unit has values defined for each number
+and is called an object.  The symbolic form of the unit is called a
+class.  It has variables defined for the numbers and specific
+functions in terms of the variables.  A class defines therefore the
+set of all possible objects of a certain type and the set of all
+functions that can be applied to an object.  A simple example is the
+class of, say, integers.  The functions defined are addition,
+multiplication, etc., and objects are 5, 10, 2122.
+
+The two main reasons for using encapsulation, and hence classes and
+objects, are:
+
+\begin{itemize}
+\item The implementation of a class can be changed without affecting its
+environment.  This allows one to 
+\begin{enumerate}
+\item Construct quick ``stubs" (rough outlines) for prototyping,
+filling them out with more detailed coding later;
+\item Optimize a class for a particular computer;
+\item Change the algorithms used for the implementation of a class.
+\end{enumerate}
+
+\item The integrity and maintainability of large programs improves greatly,
+because
+\begin{enumerate}
+\item All global data have a scope limited to a finite, enumerated set of
+functions.  The existence of unscoped global data is a limiting factor for
+the size of programs that can be developed in practice;
+\item Individual classes can be tested much more thoroughly than routines
+referring to unscoped global data.  This leads to significantly more
+reliable systems for a certain size.
+\end{enumerate}
+
+\end{itemize}
+
+A note may be appropriate here with regard to the naming of classes.  In
+order to remember the kind of functionality a class provides, one tends to
+give it a name of a real-life object, such as ``manager," ``director,"
+``slave," etc.  The functionality provided by these classes must still be
+defined in a dictionary just as if they had been given names consisting of
+random sequences of characters.  This activity of having to define
+``manager," ``person," ``user," etc., has given rise to mis-understandings
+by those related only peripherally to the design effort.
+
+\subsection{Inheritance and Polymorphism}
+
+Inheritance exploits the similarities that exist between various classes
+and extracts their common aspects (data and functions).  For instance, if
+one would have cars of various makes, it would be efficient to encapsulate
+the common capabilities in a class ``car" and let specific sub-classes,
+such as ``Ford" and ``Volvo," inherit them from ``car."  One can reduce the
+amount of code that needs to be written and tested considerably by using
+inheritance.
+
+Polymorphism uses inheritance to gain a crucial improvement in
+extensibility of a given system.  A ``parent class" can contain a virtual
+function, i.e., a function that can (and in some cases must) be re-defined
+by its children.  For instance, a class ``figure" may have a virtual
+function ``draw" which is defined by all its children ``square,"
+``contours," ``graph," etc., in a very different manner.  When the
+environment specifies ``draw figure," the system determines at
+run-time which of the various draw routines to call, depending on the
+type of the figure.  The implication of this in that one can define a
+new type of figure, e.g., ``histogram," compile it and add it to the
+system without changing a single line of code in the existing system.
+
+The use of inheritance is closely related to the use of classification
+in science.  There is one subtle difference.  In science one always
+starts out with a large collection of objects which one splits into
+classes (encapsulation), which are then hung into a hierarchy of more
+and more abstract classes (inheritance).  In the design of computer
+programs, the design of classes and of the inheritance hierarchies
+occurs simultaneously.  This is one of the reasons why an
+object-oriented design must always go through a number of iterations.
+
+\subsection{Design Tools}
+
+Although the general object-oriented design methodology is now well
+understood, its application to a particular computational problem is still
+far from easy.  It requires the use of tools ranging from simple cards to
+elaborate graphical support systems.  The main purpose of these tools is to
+enable quick (and sometimes drastic) changes in a design and to communicate
+that design to othersþpotential users and implementors alike.
+
+Various researchers have been advocating their particular set of concepts,
+symbols and graphics.  We have examined and tried the approaches advocated
+by Coates and Yourdon (ref. 1), by Booch (ref. 2), and OMT proposed by
+Rumbaugh, et al. (ref. 3).  We found the first one to simplistic.  We
+settled on OMT, as the reference made the impression (confirmed later) that
+OMT had been used in a great variety of real applications, where it had
+worked well.
+
+There is a small learning curve using the OMT.  It depicts a rich
+variety of associations that can exist between objects and classes for
+which it uses a correspondingly rich variety of symbols.  Communication
+with a potential user of the system, necessary to verify the correct
+interpretation of program requirements, can only be successful if that user
+is willing to learn how to interpret the graphical depiction of a design.
+
+\subsection{Why C++}
+
+Considering what we have noted above, we had to make an early decision on
+which implementation language to use for AIPS++.  Although the decision to
+use an object-oriented design methodology was the more important one, the
+choice of the main implementation language does have an impact on the
+approach one takes.
+
+Many traditional languages now support encapsulation, i.e., a number of
+``global" data to which only a few, specified routines have access.: 
+FORTRAN 90 (ref. 4), PASCAL (i.e., MODULA II and MODULA III), LISP (i.e.,
+CLISP), C (i.e., C++ (ref. 5)), and ADA.  Even good old FORTRAN 66 or 77
+could do this if one were willing to use a pre-processor (ref. 6).  In
+addition, there are brand new languages that support this methodology, such
+as SMALLTALK and EIFEL (ref. 7).  FORTRAN still requires fairly heroic
+measures to instantiate multiple instances of objects, but it can be done.
+
+On a mixture of practicality and principle we ruled out all but C++, EIFEL,
+and FORTRAN.  The latter, of course, does not provide support for
+inheritance, and polymorphism is simply impossible.  Even so, we decided to
+try how far we could come with it  as it is the programming language of
+AIPS.  We were inclined to go with C++ as it provides full support for the
+implementation of all aspects of an object-oriented design and it comes
+with broad industry support as reflected in the availability of debuggers,
+browsers, and other CASE tools.
+
+Early in 1992 Bill Cotton did an investigation of FORTRAN (ref. 8).  It
+confirmed our earlier suspicions.  Although FORTRAN was finally not
+accepted as the language of choice for AIPS++, the investigation turned out
+to be quite useful.  It gave rise to a significant improvement in the
+programmability of AIPS and has helped to create better VLBA modules in the
+old package faster.
+
+Chris Flatters and Brian Glendenning investigated EIFEL in parallel with
+the FORTRAN effort.  It proved that EIFEL is a very powerful, elegant
+language, suitable for our purposes.  We were a bit afraid, though, of the
+rather narrow support base for EIFEL and the apparent lack of CASE tools. 
+This investigation showed that EIFEL provides an excellent training ground
+for persons who wish to become familiar with object-oriented programming.
+
+\section {A Brief History of the AIPS++ Project}
+
+Now armed with full 20/20 hindsight we can examine what actually happened
+in the AIPS++ project, in particular some of the mistakes we made.
+
+\subsection{The Early Months}
+
+Considering the fact that we are trying to develop a system that
+covered a wide variety of instruments (we are in the final stages of
+building the Very Large Base Line Array, are starting on the Green
+Bank Telescope and hopefully will be building a Millimeter Array later
+in the decade), it was pretty natural to consider the possibility of
+similar organizations joining us in this effort.  I was in Australia
+in November of 1990 on other business, and took the opportunity to
+discuss this with the local staff and management.  A rather positive
+reaction led me to further visits to the Netherlands and the UK and
+getting encouraging reactions there as well, we called a meeting in
+June of 1991 to discuss the action we should take.  The two day
+meeting covered a wide variety of subjects, and two crucial results
+emerged:
+
+\begin{itemize}
+\item The effort would be a joint effort, and
+\item It would be based on an object-oriented approach with C++.
+\end{itemize}
+Founding members of the cooperative venture at the meeting were: the Dutch
+organization (NFRA), the Australian Telescope, Jodrell Bank, the BIMA
+organization, and the NRAO.  A few months later the Canadian Herzberg
+Institute and the TATA institute of India joined as well.  An agreement was
+drawn up and signed by all parties.  It specified that
+\begin{itemize}
+\item All parties must contribute a minimum of two ManYearEqu (MYE) over a
+period of two years (NRAO to provide ten MYE) and would station at least
+one man for half a year in Charlottesville, Virginia, the NRAO
+headquarters;
+v\item There would be a steering committee consisting of members of the
+participating organizations to oversee developments; 
+\item All participants would pay their own way.
+\end{itemize}
+
+So far, so good.  We started making arrangement for housing a dozen or so
+staff and providing them with work stations, desks, etc., and asked the
+staff that was to come to Charlottesville to get some training in C++. 
+This was our first mistake.  We should have asked for a training in
+object-oriented design, this being the more difficult subject to learn and
+one that was most appropriate for the forthcoming effort.
+
+In September, a group of half a dozen scientists led by Robert M. Hjellming
+started to write the specifications for AIPS++.  They produced this
+document in early December.  It was sent around to the other participants
+with a request to produce their own requirements.  Most of them complied,
+specifying alternatives and additions to the document produced in Socorro
+by the end of 1991.  Robert Hjellming made a determined effort to combine
+these documents into a single requirements specification, but had to
+struggle with various semantic and even conceptual inconsistencies.  He
+finally, by the end of February, came up with a compromise document that
+has served as since then a definition of the scope of the work that
+needed to be done.
+
+\subsection{The Middle Months}
+
+In early January the first taskforce descended on
+Charlottesville.  It consisted of Mark Calabretta and Bob Sault of the
+Australian Telescope, Dave Shone of Jodrell Bank, Friso Onlon of The
+Netherlands, Sanjay Bhatnagar of the TATA institute, Mark Stupar and
+Peter Teuben of BIMA, Lloyd Higgs of DRAO in Canada, and Brian
+Glendenning, Robert Hjellming, Mark Holdaway, Chris Flatters, and Bob
+Payne of the NRAO.  After a first orientation on the user requirements
+and a course in advanced C++ (!), half the group took off for Green
+Bank, West Virginia, where they were joined by Tim Cornwell (NRAO),
+Roger Noble (UK), Johan Hamaker (Netherlands) and Rick Fisher (NRAO).
+They were given two weeks to come up with a first analysis and
+design for the calibration and imaging parts of AIPS++.
+
+One glaring error came to light during this session. We realized
+early on that we needed a graphical tool to communicate with one another
+on the analysis, and the only tool we could find on short notice was
+a simple one for the Coad/Yourdon method, which was therefore adopted
+by default. This was clearly the wrong way around to select a design
+methodology and cost us a few months of progress as we found the Coad/
+Yourdon method not the most suitable for our problem.
+
+The group, chaired by Lloyd Higgs, produced a report which was
+the basis of a subsequent prototype. In the mean time we had
+discovered the OMT method and a suitable graphical support tool for
+it. In the last three months of the joint effort in Charlottesville
+virtually the entire group was busy with analysis and design, until,
+when everybody went home again in July we had a reasonable basis to
+start parcelling out work.
+
+The more formal organization of the AIPS++ group had taken form,
+and Gareth Hunt had joined the group in April as the Project Manager.
+Another important development was the start of a Project Book in which
+all major decisions and considerations for the AIPS++ project were
+recorded. This has now grown, under the editorship of Brian Glendenning
+and Robert Hjellming to a volume of hundreds of pages.
+
+\subsection{The Last Six Months}
+
+In the beginning of the next six months, most people went on
+holidays and caught up on work that had accumulated in their absence.
+The AIPS++ group was visited by Walter Jaffe of Leiden University (user
+interfaces), Russell Redman of  HIA in Ottawa (single dish) and Tony
+Willis of DRAO (gridding), veach for several months.
+
+In September work started up again in earnest, the lines of
+communications were established, and detailed design and coding started.
+Later in this paper I will show the progress to date, that is as of
+December, 1992. The only thing I can say here is that the remote
+cooperation would never have worked without those first few hectic
+months of daily close contacts, and it may even be desirable to repeat
+the experience at some later date, albeit on a smaller scale.
+
+\section {Managing When the Sun Never Goes Under}
+
+The fact that the AIPS++ development involves the cooperation of many
+organizations spread over the world has important advantages, in particular
+the validation of the computational model in a wide`variety of environments
+and the contributions from experts with very different backgrounds.  It
+also has serious disadvantages.  The most important one of these is the
+need to provide for extensive communications. 
+ 
+\subsection{The AIPS++ Organization}
+
+The first consequence of this situation is that the Consortium needs a
+well-defined organization with clear roles for the staff involved in it. 
+The result was the definition of a coordinating Center, located
+incidentally in Charlottesville, Virginia, and led by three officers.  One
+of these is the Project Manager (Gareth Hunt), whose main duty is to direct
+and organize an adequate flow of information.  The other two are the
+Project Astronomer (Robert Hjellming), who decides on what needs to be
+done, and the Project Computing Scientist (Brian Glendenning) who
+decides on how things are done.  In order to be effective, each
+participating organization requires the equivalent of the Project
+Manager locally to act as a focal point for communications.  The
+organization of the center is done, that at the other sites is still
+coming into place. 
+
+There is a steering committee, consisting of one representative of each of
+the participating organizations, that provides an overview function.  One
+of its members provides for frequent contacts with and supervision of the
+officers of the Center. 
+
+\subsection{The Version Control System}
+
+Our most important means of communication is the version control system
+developed by Mark Calabretta of the Australian Telescope, discussed later. 
+It keeps everybody in the system, both at the Consortium sites and at other
+selected locations informed on all developments on a daily basis. 
+
+\subsection{Contracts}
+
+In order for all parties involved to be clearly aware of what is expected
+of them, we have set up a system of contracts.  These specify as
+unambiguously as possible the area that the participant should work on. 
+The work is specified in three stages: a design in terms of OMT diagrams, a
+programmers' interface in terms of header files, and a tested
+implementation, including the test programs used.  The end product of
+each stage is subject to a peer review.  As a consequence, the
+contract for each participant also specifies the reviews that it has
+to carry out. 
+
+Each activity in a contract has a deadline attached to it.  This allows the
+project manager to schedule progress and to draw up a TimeLine.  Most of
+the contracts are now in place, and progress in the project is
+reasonably under control. 
+
+\subsection{Email}
+
+A project like AIPS++ would be quite difficult to do without email.  We use
+it to discuss anything from user requirements to code reviews, to
+disseminate information to limited groups of people through exploders and
+discussion groups and for person to person communications.  Email does have
+one serious limitation.  Its narrow bandwidth does not support coherence in
+a group that is so far flung, and in particular at sites where there are
+only one or two persons engaged in the project a sense of aloneness is
+noticeable. 
+
+\subsection{Personal Contacts}
+
+In order to overcome the email limitations we have resorted to fairly
+regular personal contacts.  We are using telephones, but you can imagine
+the strange times at which we have to have our conversations if we want
+India, the UK, Australia and the USA talking together on a conference call!
+A more effective, but also more expensive, way is to hold work meetings. 
+We recently had one to reconcile the single dish and interferometer
+calibration models, in which Dave Shone of the UK and Russell Redman of
+Canada participated, and we will have a larger scale working meeting
+probably in April. 
+
+\section {Where Does the AIPS++ Project Stand Now}
+
+The version control system, written by Mark Callabretta of the Australian
+Telescope, has been working now for over half a year and is the lifeline on
+which all of AIPS++ depends.  It uses RCS, GNUmake, an extensive set of
+scripts and a C++ compiler to manage all of the AIPS++ source, libraries,
+executables and documentation.  It works both on Sun and IBM RS/6000
+machines.  Its function is to provide the complete AIPS++, updated daily,
+at all Consortium sites.  It does this by ``inhaling" all new material in
+order to update the master copy in Charlottesville, and ``exhaling" the
+resulting new version back to the sites.  This material will also be
+available shortly by anonymous ftp.
+
+Tim Cornwell has provided a mathematical foundation for the
+analysis and design effort. Robert Hjellming, Dave Shone and many others
+have used this to establish a model that covers both single dish and
+interferometric data. The breakdown of the model into an hierarchy of
+classes down to a fairly detailed level is proceeding apace. A number
+of AIPS++ memos have been issued to cover progress in this area.
+
+Brian Glendenning has written and tested the classes that cover vector,
+matrix and cube mathematics.  They still need to be fine tuned for
+efficiency and extended with linear algebra methods.
+
+The definition of the extensions to a regular RDBMS required for handling
+the complex data structures that represent a normal set of interferometer
+raw and derived data was developed by Allen Farris of the StSci.
+A first implementation of a table class that handles these structures was
+done by Ger van Diepen of the NFRA.  This is now part of the AIPS++ source
+database.  An investigation into efficient methods to store and retrieve
+multi-dimensional data structures to and from disk using grid files or
+related methods is being done by John Karpovitch of the Computer Science
+Department of the University of Virginia.  Finally, Allen Farris is
+currently writing a set of utilities to read and write FITS files into/from
+the above table objects.  All of these either are done or will be done
+by about the end of 1992.  They will allow us to construct a prototype
+during
+early January that can be tested with real, observed data.
+
+Classes that cover the transformation of a full range of astronomical
+coordinate systems have been defined by Mark Calabretta.  He expects to
+have them finished by the end of 1992.
+
+We expect InterViews (ref. 9) to be the basis for the development of user
+interfaces, graphics and visualization in AIPS++.  A team at the University
+of Illinois intends to re-develop their MXV system (ref. 10) in the AIPS++
+context on this basis and have a working system by the middle of 1993. 
+Paul Shannon in Charlottesville has just started on the development of a
+hypertext help facility using Texinfo, a GNU hypertext, and
+InterViews.  He expects a working system by the end of February.
+
+Tony Willis of DRAO has finished a gridding class and a FFT utility.
+
+Darrell Schiebel of Charlottesville has produced C++ coding and
+documentation standards.  He has just finished template and exception
+handling facilities and is currently writing a documentation extraction
+facility that will generate hypertext documentation for programmers from
+comments embedded in the source. 
+
+As to the somewhat longer future: we expect to begin constructing
+major applications by the middle of 1993 and to have the first sub
+systems in the hand of our users by the end of 1993.
+
+\section {Conclusions}
+
+This paper can hardly be more than a snapshot of an ongoing development. 
+Generally speaking, progress is roughly in line with what we predicted 18
+months ago, although individual events have gone quite different than
+expected.  Also, our views of the future, as listed at the end of the
+previous chapter, still appear to be realistic. Note that the AIPS++
+project has two distinct deliverables: class libraries by means of
+which new applications can be written quickly, and pre-cooked
+applications which together allow routine astronomical data processing.
+
+Although we are happy with what has transpired so far, due to the
+enthusiastic collaboration of a large number of very talented people,
+AIPS++ has not made it over the hump yet.  The crunch will come with the
+tuning of the basic data base and mathematical routines to achieve an
+efficiency comparable to that of FORTRAN.  Results reported in the
+literature are encouraging.  Thirty five years ago we faced the same
+dilemma of programmability versus efficiency with the switch from assembler
+to FORTRAN, and you all know what the outcome was.  In the long term we
+know on whose side the angels are, but in the short term we still have a
+mountain of work ahead of us. 
+
+\section {References}
+
+1. P. Coad and E. Yourdon, Object-Oriented Analysis, Second Edition,
+Yourdon Press, 1991
+
+\noindent
+2. Grady Booch, Object-Oriented Design With Applications, Brenjam/Cummings
+Publishing Company Inc., 1991
+
+\noindent
+3. James Rumbaugh et al., Object-Oriented Modeling and Design, Prentice
+Hall, 1991
+
+\noindent
+4. W. S. Brainerd, C. H. Goldberg, J. C. Adams, Programmer's Guide to
+FORTRAN90, McGraw Hill Book Company, 1990
+
+\noindent
+5. B. Stroustrup, The C++ Programming Language, Second Edition, Addiscon
+Wesley Publishing Company, 1991
+ 
+\noindent
+6. G. A. Croes, Informal Contribution to the Initial AIPS++ Project, Based
+on the FORCE Pre-Processor, DRAO, Penticton, Canada 1988
+
+\noindent
+7. Bertrand Meyer, Object-Oriented Software Construction, Prentice Hall,
+1988.  The first few chapters of this book provide an excellent
+introduction to object-oriented programming.
+
+\noindent
+8. W. R. Cotton, Jr, ``Object-Oriented Programming in AIPS FORTRAN," AIPS
+Memo 78, available from NRAO
+
+\noindent
+9. Mark A. Linton et al., InterViews Reference Manual, Version 3.1-Beta,
+Stanford University, 1992
+
+\noindent
+10. BIMA/NCSA, The Miriad X Vizualizer User Manual, Version 2.1, Sept. 1992
+
+\end{document}
+
+
+

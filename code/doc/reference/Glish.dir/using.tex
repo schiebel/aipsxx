@@ -1,0 +1,455 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/using.tex,v 19.0 2003/07/16 04:18:53 aips2adm Exp $
+
+\chapter{Using Glish}
+\label{using-glish}
+\begin{sloppy}
+
+\index{Glish!using|(}
+This chapter covers the particulars of using the {\em Glish} system, including
+the {\em Glish} interpreter and its initialization files, and how to
+debug {\em Glish}
+programs.
+
+\section{The Glish Interpreter}
+\label{interpreter}
+
+\index{interpreter|(}
+All {\em Glish} scripts are executed by the {\em Glish} interpreter.  This program
+\index{Glish!invoking}
+\index{arguments!to Glish scripts}
+is invoked as:
+\begin{quote}
+\begin{list}{}{}
+\item[{\tt glish}]
+     \mbox{{\tt [ -help ]}} \mbox{{\tt [ -version ]}} \mbox{{\tt [ -info ]}} \mbox{{\tt [ -v[1-9] ]}} \mbox{{\tt [ -vi ]}} \mbox{{\tt [ -vf ]}} \mbox{{\tt [ -w ]}} \mbox{{\tt [} {\em bindings $\ldots$} {\tt ]}} \mbox{{\tt [ -l} {\em file $\ldots$} {\tt ]}} \mbox{{\tt [} {\em file} {\tt ]}} \mbox{{\tt [ -- ] [ {\em args $\ldots$} ] }}
+\end{list}
+\end{quote}
+
+\index{help flag to Glish interpreter@{\tt -help} flag to Glish interpreter}
+\index{interpreter!help flag@{\tt -help} flag}
+\index{version flag to Glish interpreter@{\tt -version} flag to Glish interpreter}
+\index{interpreter!version flag@{\tt -version} flag}
+\index{info flag to Glish interpreter@{\tt -info} flag to Glish interpreter}
+\index{interpreter!info flag@{\tt -info} flag}
+{\tt -help}, {\tt -version}, and {\tt -info} all provide information about the
+{\em Glish} interpreter, and they are all optional. Indeed, using any of these
+flags causes the interpreter to print information and then exit. {\tt -help}
+prints out all of the standard command line options. {\tt -version} prints
+out the {\em Glish} version number. {\tt -info} prints out information
+about the {\em Glish} installation including version number and
+directory information.
+
+\index{v flag to Glish interpreter@{\tt -v} flag to Glish interpreter}
+\index{interpreter!v verbose flag@{\tt -v} verbose flag}
+\verb+-v[1-9]+ is an optional {\em verbose} flag indicating that the interpreter
+should report on its activity.   The number indicates the
+level of verboseness. For example, if {\tt -v1} is specified then it reports the
+name and value of each event it receives from a client.  If {\tt -v2} is specified
+then in addition to reporting each event as it is received from a client, {\em Glish}
+also reports each event as it is queued for ``notification'' (i.e., triggering of {\tt whenever}
+statements) and as it removes events from the notification queue to perform the
+notification (i.e., running a {\tt whenever} statement).
+
+\index{vi flag to Glish interpreter@{\tt -vi} flag to Glish interpreter}
+\index{interpreter!vi verbose flag@{\tt -vi} verbose flag}
+\verb+-vi+ is an optional {\em verbose} flag indicating that the interpreter
+should list each file that is included by the interpreter. This results in
+a list of all of the files involved in running a particular script.
+
+\index{vf flag to Glish interpreter@{\tt -vf} flag to Glish interpreter}
+\index{interpreter!vf verbose flag@{\tt -vf} verbose flag}
+\verb+-vf+ is an optional {\em verbose} flag indicating that the interpreter
+should report each {\em fail} (See \xref{fail-stmt-2}) which is not handled.
+A {\tt fail} value is considered handled if {\tt is\_fail()} or {\tt type\_name()}
+is called with the {\tt fail} value as a parameter.
+
+\index{w flag to Glish interpreter@{\tt -w} flag to Glish interpreter}
+\index{interpreter!w verbose flag@{\tt -w} verbose flag}
+\verb+-w+ is an optional {\em verbose} flag indicating that the interpreter
+should report the generation of each error string..
+
+\index{l flag to Glish interpreter@{\tt -l} flag to Glish interpreter}
+\index{interpreter!l load flag@{\tt -l} load flag}
+{\tt -l} is an optional {\em load} flag. It indicates that these files should be
+loaded initially before doing anything else. Multiple \verb+-l+ flags can be used
+to load several {\em Glish} script files before either going to interactive mode or
+running another script.
+
+\index{environment variables!command-line bindings}
+\index{interpreter!environment variable bindings}
+{\em bindings} is an optional list of environment variable bindings
+of the form:
+\begin{quote}
+    {\em var} {\tt =} {\em value}
+\end{quote}
+
+{\em file}, with no {\tt-l} flag, is the optional name of the source file
+to compile and execute. When supplied, it is the last parameter {\em Glish}
+examines. By convention such files end in a ``{\tt .g}" suffix.  When a {\em file}
+is supplied, it is executed. If there are no active clients, {\em Glish}
+exits after executing the file. If clients are active, {\em Glish} continues
+to run, processing events to and from the clients. When no {\em file} argument
+is supplied, {\em Glish} runs {\em interactively} (\xref{interactive-use}).
+
+{\em args} is an optional list of arguments to pass to the {\em Glish}
+script; if present, {\em args} may optionally
+be delimited from the preceding
+\index{\\zz@{\tt --\ } argument to Glish interpreter}
+\index{interpreter!{\tt --} argument separator}
+{\em file} using the special argument ``{\tt --}".  ``{\tt --}'' may also
+be used in lieu of an initial {\em file} to specify that the interpreter
+should run {\em interactively} (\xref{interactive-use}).
+
+The {\em Glish} interpreter adds the given {\em bindings} to the environment,
+compiles the listed {\em files}, and then executes the result with
+the given {\em args\/}.  For example,
+\index{example!environment variable bindings}
+\begin{verbatim}
+    glish host=cruncher myscript.g 10 12.5
+\end{verbatim}
+compiles the script {\em myscript.g} and runs it with {\tt argv}
+equal to {\tt "10 12.5"} (see \xref{argv-var}, for a discussion of
+the {\tt argv} global); the record field {\tt environ.host} will equal
+{\tt "cruncher"} (see \xref{environ-var}, for a discussion of the
+{\tt environ} global).
+
+Prior to compiling the specified files, the interpreter attempts to
+\index{interpreter!user-customization}
+\index{user-customization file}
+\label{glishrc}
+evaluate local customization files. The order that it evaluates these
+is as follows:
+
+\begin{description}
+
+\item[{\bf \$HOME/.glishrc.pre}]
+First {\em Glish} looks for a file called ``{\tt.glishrc.pre}'' in the
+user's home directory. If found, this file is executed.
+
+\item[{\bf \$GLISHROOT/.glishrc}]
+Next {\em Glish} looks for a local system
+wide {\tt .glishrc} file. First it tries to find this file by looking
+in the directory specified by {\tt \$GLISHROOT}
+\index{GLISHROOT@{\tt \$GLISHROOT} environment variable}.
+If this environment variable is not defined or if no {\tt .glishrc} file
+is found there, the default location for this file is checked. This location
+is established at build time. To see the default location, run \verb+glish -info+.
+If this file is found, it is executed.
+
+\item[{\bf \$GLISHRC} {\bf or} {\bf ./.glishrc} {\bf or} {\bf \$HOME/.glishrc}]
+Next {\em Glish} attempts to find a user customization file. Three locations
+are checked, and when a valid file is found, {\em Glish} does not check the
+other possible locations. {\em Glish} first checks the
+\index{GLISHRC@{\tt \$GLISHRC} environment variable}
+{\tt \$GLISHRC} environment variable. If it is set and contains the path
+to a valid file, {\em Glish} uses the file it names as the user's
+the customization file.  If the variable is not set or does not
+point to a valid file, {\em Glish} looks
+\index{glishrc@{\tt .glishrc} initialization file}
+\index{interpreter!glishrc file@{\tt .glishrc} file}
+for a ``{\tt .glishrc}" file in the current directory. If none is found,
+{\em Glish} looks in the user's home directory.
+
+\item[{\bf \$HOME/.glishrc.post}]
+finally {\em glish} tries to load a file called ``{\tt.glishrc.post}'' from the
+user's home directory.
+\end{description}
+
+Next {\em Glish} proceeds with the files specified on the command line.
+If you don't specify any arguments or if you give the ``{\tt --}'' argument
+instead of a source file name, then {\em Glish} is run {\em interactively\/},
+discussed in the next section.  \xref{program-execution} then discusses
+execution of a {\em Glish} script more generally.
+\index{interpreter|)}
+
+\subsection{Using Glish Interactively}
+\label{interactive-use}
+
+\index{interpreter!running interactively}
+When run interactively, the {\em Glish} interpreter
+\index{interpreter!prompt}
+\indoponekey{-}{Glish interpreter prompt}{+2Glish interpreter}
+prompts with a dash (``{\tt - }") for input.  At this
+prompt you may type any legal {\em Glish} statement (or expression, since
+expressions are statements).  This prompt changes
+\indoponekey{+}{Glish interpreter continuation prompt}{+1Glish interpreter}
+to a plus sign (``{\tt + }")
+if you need to type some more input to complete the statement you've
+begun.  {\em Glish} then executes the statement and prints the result, continuing
+until you type an end-of-file (usually control-D).  For example,
+\index{example!using Glish interactively}
+\begin{quote}
+    {\tt largo 130 \%} {\em glish} \\
+    {\tt Glish version 2.1.} \\
+    {\tt - } {\em 1:3 * 2:4} \\
+    {\tt [2 6 12]} \\
+    {\tt - } {\em (end-of-file)} \\
+    {\tt largo 131 \%}
+\end{quote}
+shows using {\em Glish} interactively to evaluate the product of {\tt [1, 2, 3]}
+times {\tt [2,~3,~4]} to get {\tt [2, 6, 12]}.
+
+There are no restrictions on interactive use.  In particular, you may
+create clients and execute {\tt whenever} statements, and you may execute
+scripts stored in files by {\tt include}'ing them (\xref{include-directive}).
+
+\subsection{How Glish Executes a Script}
+\label{program-execution}
+
+\index{interpreter!execution of scripts|(}
+\index{scripts!how executed|(}
+When {\em Glish} executes a script, it first attempts to read and parse the
+entire file. If this succeeds, it then executes the parsed file starting
+with the first statement and proceeding through all the statements. If
+the initial parsing fails, no part of the file is executed.
+
+When a function is encountered, the {\em Glish} interpreter compiles the function
+into a parse tree for later use, and then proceeds to the next statement.
+In this example:
+\index{example!script execution}
+\begin{verbatim}
+    func increment(x)
+        {
+        return x + 1
+        }
+
+    n := 1
+    n := increment(n)
+    print n
+\end{verbatim}
+the first statement is the definition of the {\tt increment} function.
+The interpreter processes the function, assigns {\tt 1} to
+the global {\tt n}, calls {\tt increment} with this value,
+assigns the result to {\tt n}, and then prints the result.
+
+\index{whenever statement!order of execution}
+When a {\tt whenever} is executed, {\em Glish} simply makes a note that
+in the future if it sees the indicated events it should execute
+the body of the {\tt whenever}.  But an important point is that
+whenever {\em Glish} is executing a statement block (such as when it initially
+\index{events!when read by interpreter}
+executes a script), it does {\em not} process any incoming events
+until {\em after} it is done executing the entire block.  For example, when
+\index{example!order of execution|(}
+\begin{verbatim}
+    d := client("demo")
+    d->init([5, 3])
+    whenever d->init_done do
+        print "done initializing demo"
+    do_some_other_work()
+\end{verbatim}
+is executed, it creates the client {\em demo} and sends it an {\tt init}
+event with a value of {\tt [5, 3]}.  It then sets up a {\tt whenever} for
+dealing with~{\tt d}'s {\tt init\_done} event, and finally calls
+the function {\tt do\_some\_other\_work}.  Only {\em after} this function
+returns will the {\em Glish} interpreter begin reading any events~{\tt d}
+may have generated (in particular, a {\tt init\_done} event).  Any
+events generated while {\em Glish} is executing a block of statements are
+{\em not} lost but merely queued for later processing.
+
+This rule regarding when events are read is particularly important
+\index{race conditions!avoiding}
+in an example like the one above.  It means that you do {\em not}
+have to worry about setting up a {\tt whenever} for dealing with~{\tt d}'s
+{\tt init\_done} event prior to sending an {\tt init} event to~{\tt d}
+even though perhaps {\tt d} will generate 
+this immediately after
+receiving the {\tt init} event, which may occur before the interpreter
+executes the {\tt whenever} (because~{\tt d}'s client is a process
+separate from the interpreter process).
+
+One important effect of this rule, however, is that it may have
+unintuitive consequences when dealing with subsequences.  In particular,
+the following program:
+\begin{verbatim}
+    x := 1
+
+    subseq print_x()
+        {
+        whenever self->print do
+            print x
+        }
+
+    p := print_x()
+    p->print()
+    x := 2
+    p->print()
+\end{verbatim}
+prints {\tt 2} followed by {\tt 2}, not {\tt 1} followed by {\tt 2}.
+This is because {\tt x} is assigned to {\tt 2} {\em before} the
+first {\em Glish} processes the first {\tt print} event sent to {\tt print\_x}.
+
+Changing this sequence to:
+\begin{verbatim}
+    x := 1
+
+    subseq print_x()
+        {
+        whenever self->print do
+            print $value
+        }
+
+    p := print_x()
+    p->print(x)
+    x := 2
+    p->print(x)
+\end{verbatim}
+produces the expected output of {\tt 1} followed by {\tt 2}.
+\index{example!order of execution|)}
+
+The rule of no event processing until {\em Glish} is done executing the
+statement block holds also when it is executing the body of a
+{\tt whenever} statement.  One exception to this rule is that
+\index{await statement!suspending execution}
+\index{suspending execution}
+executing an {\tt await} statement (\xref{await}) suspends
+execution of the block. Therefore {\em Glish} begins processing events again
+until the {\tt await} condition is met, at which point {\em Glish} continues
+executing the block.
+
+\index{events!order of processing|(}
+When the interpreter is processing events it first processes any
+pending events (those that have already arrived, or were generated
+by event-send's to subsequences during the last statement block's
+execution).  If processing one of these events leads to the generation
+of additional events (again, those sent to subsequences) then these
+events, too, are processed, until all pending events have been
+exhausted.
+
+At this point, the interpreter checks to see whether there are any clients
+\index{interpreter!exiting automatically}
+running.  If not, it exits because now there is no possibility of 
+further events being generated.  If, however, there are some clients
+running, then the interpreter waits for one or more of them to generate an
+event.  When this happens, the events are read and queued in an
+undetermined order and the interpreter again processes these pending events
+as described in the preceding paragraph.
+
+Because the interpreter cannot tell which clients only generate events
+in response to events they've received, it cannot detect a condition
+in which it should exit because only these sorts of clients are running
+(and therefore no new events can be created).  Usually scripts using
+\indtt{exit}{statement}
+clients with this property can be modified to use {\tt exit} statements
+(\xref{exit-stmt}) when it is clear they are finished doing their work.
+
+One final point regards the ordering of events, to which the following
+rules apply:
+\begin{itemize}
+
+\index{events!order preserved}
+\item Events generated by the same agent are processed by the interpreter
+in the same order as generated.
+
+\item Events sent to the same agent are received by it in the same order
+as generated.
+
+\item Events generated by different agents or sent to different agents
+\index{temporal event ordering}
+may lose their temporal ordering; i.e., the one sent first may arrive
+(from a clock's point of view) last.
+
+\index{whenever statement!order of execution}
+\item If an event matches more than one {\tt whenever} statement, then
+the order in which the {\tt whenever} statement bodies are executed
+is unspecified.  It is possible that in the future this will change
+and an order will be specified.
+
+\end{itemize}
+\index{events!order of processing|)}
+\index{scripts!how executed|)}
+\index{interpreter!execution of scripts|)}
+
+\section{Debugging Glish Scripts and Clients}
+
+\label{debugging-clients}
+\index{debugging|(}
+{\em Glish} provides some rudimentary tools to aid in debugging {\em Glish} scripts.
+These include the tools discussed in Chapter~\ref{debugging-logging-fail},
+reporting which events are generated with the \verb+-v+ flag (discussed in this chapter),
+the ``event monitor'' (discussed below), the use of the {\tt print} statements\footnote{
+Since {\em Glish} is interpreted, you will find that adding debugging {\tt print}
+statements to a {\em Glish} script and restarting often gives a very quick
+means of debugging.}, and use of the {\tt client} function's {\tt suspend=T}
+option (discussed below).
+
+\subsection{Debugging Clients}
+
+Debugging {\em Glish} clients is primarily done using a conventional
+\indtt{suspend=}{client argument}
+debugger and the {\tt suspend=T} option to the {\tt client}
+function (see \xref{client-func-long}).  With this option, when the
+client is executed and constructs its {\em Client} object (see
+\xref{client-class-overview}), the {\em Client} constructor will
+first announce itself, producing a message like:
+\index{example!debugging}
+\begin{verbatim}
+    tester @ myhost, pid 18915: suspending ...
+\end{verbatim}
+and then suspend itself by entering the following loop:
+\begin{verbatim}
+    suspend = 1;
+    while ( suspend )
+        sleep( 1 );
+\end{verbatim}
+\index{{\em gdb}}
+\index{{\em dbx}}
+A debugger such as {\em gdb} or {\em dbx} then can be used to attach
+to this running process.\footnote{For {\em gdb}, use the {\tt attach}
+\index{clients!suspending!attaching to}
+command; for {\em dbx}, start it with no parameters and then enter
+{\tt debug} followed by the name of the executable and the {\em pid} value.}
+Once attached, set the variable
+{\tt suspend} to {\tt 0} (or {\tt glish\_false})\footnote{To do this you
+may need to change the debugging scope after attaching to the process;
+in both {\em gdb} and {\em dbx} this is done using the {\tt up} command
+to move up the call stack until arriving in the {\tt Client::Client}
+constructor (which may have a more garbled name).}, set any breakpoints
+needed for debugging, and continue the process.
+
+In addition to the {\tt suspend=T} argument to {\tt client}, every time
+{\em Glish} creates a new client the interpreter inspects the environment
+\index{suspend list of clients to suspend@{\tt \$suspend} list of clients to suspend}
+variable {\tt \$suspend} to see whether that client's name occurs in
+{\tt \$suspend}'s (blank-separated) list of names.  For example,
+\begin{verbatim}
+    glish suspend="my_demo ./bin/camac" my_script.g
+\end{verbatim}
+executes the script {\em my\_script.g} and whenever a client
+with the name {\tt my\_demo} or {\tt ./bin/camac} is executed,
+the client will act as though {\tt suspend=T} had been specified.
+
+Note that the name here refers to the actual name of the executable
+and {\tt not} the name of the variable to which the result of the
+{\tt client()} call is assigned.  For example, the above {\tt suspend}
+list will not suspend a client created by the following:
+\begin{verbatim}
+    my_demo := client("./my_demo")
+\end{verbatim}
+
+\subsection{The Event Monitor}
+\label{event-monitor}
+
+\index{event monitor}
+\index{glish\_monitor environment variable@{\tt \$glish\_monitor} environment variable}
+If the {\tt \$glish\_monitor} environment variable is set when 
+the {\em Glish} interpreter starts running, then 
+the interpreter takes the value of
+the monitor as designating the name of a client to 
+serve as an ``event
+monitor".
+
+The event monitor is sent an event every time either the interpreter
+receives an event from a client, or sends an event to a client or a
+subsequence.  The former results in the monitor receiving an {\tt event\_in}
+\indtt{event\_in}{monitor event}
+\indtt{event\_out}{monitor event}
+event, the latter in an {\tt event\_out} event (i.e., ``in" and ``out"
+are relative to the interpreter's perspective).  The event's value
+is a {\tt record} with three fields: {\tt id}, which identifies the
+agent associated with the event; {\tt name}, the name of the event;
+and {\tt value}, the value of the event.
+
+\end{sloppy}
+\index{debugging|)}
+\index{Glish!using|)}

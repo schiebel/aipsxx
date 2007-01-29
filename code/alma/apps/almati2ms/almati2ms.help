@@ -1,0 +1,283 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: almati2ms.help,v 19.1 2004/01/02 23:18:19 kgolap Exp $
+
+\begin{ahobject}{almati2ms}
+{A tool for converting ALMA-TI format data to a measurement set}
+
+\ahinclude{almati2ms.g}
+\ahcategory{alma}
+
+\begin{ahdescription}
+  The almati2ms tool contains functions to convert data stored in
+  the ALMA-TI external format into an AIPS++ MeasurementSet (MS).
+  The ALMA-TI format is described in ALMA Computing Memo. No. 15 
+  (Lucas and Glendenning 2001)
+
+  The almati2ms tool is most easily run using the global function
+  \ahlink{almatifiller}{alma:almatifiller}.
+
+  More fine-grained control can be achieved by creating an individual
+  almati2ms tool and setting the functions on the tool directly. This 
+  may be more useful in some cases, especially scipring. The tool 
+  functions fall into the following categories:
+  \begin{enumerate}
+  \item{Create an almati2ms tool}
+  \item{Set general filler options}
+  \item{Select which data are to be filled}
+  \item{Start the filler}
+  \item{Remove the tool}
+  \end{enumerate}
+
+\end{ahdescription}
+
+\medskip\noindent{\bf Creating a almati2ms tool}
+
+  The only way to create a almati2ms tool is to use the
+  \ahlink{almati2ms}{alma:almati2ms.almati2ms} constructor. Calling
+  this function will start a precompiled executable, called almati2ms,
+  usually running on your machine. This executable executes all the
+  almati2ms functions. The almati2ms constructor requires specification
+  of the output MS file name, the input ALMA-TI FITS file and a flag
+  to indicate if the new FITS data are to be appended to or overwrite
+  an existing MS.
+
+\medskip\noindent{\bf Set general filler options}
+
+  The general filler options are specified using the function
+  \ahlink{setoptions}{alma:almati2ms.setoptions}. These parameters
+  control whether the output MS data are to be written in compressed
+  or uncompressed mode and whether the sub-band data are to be
+  combined per sideband into a common spectral window.
+
+\medskip\noindent{\bf Select which data are to be filled}
+
+  The \ahlink{select}{alma:almati2ms.select} function is provided
+  to allow selection of a subset of the input ALMA-TI data. At
+  present the options are provided to select an observing mode (as
+  stored in the ALMA-TI DATAPAR table) and which particular
+  set of channel-zero data are to be filled. 
+
+\medskip\noindent{\bf Start the filler}
+
+  Once an almati2ms tool has been created and the selection and
+  general filler options set, the data can be filled by running
+  the \ahlink{fill}{alma:almati2ms.fill} function.
+
+\medskip\noindent{\bf Removing the tool}
+
+  When you have finished with the almati2ms you should shut down the
+  process, using the \ahlink{done}{alma:almati2ms.done} function.
+  Once a tool is shut down it can no longer be used. This also closes 
+  the output measurement set.
+
+\begin{ahexample}
+  The following example shows the minimum necessary to run the
+  almati2ms tool.
+
+  The first line makes all the definitions for this tool available
+  to the user. The second line calls the constructor and specifies
+  the input and output files. The third sets a general option of
+  no compression of the output file. The fourth states that only
+  observing mode CORR and the time-averaged channel-zero continuum
+  data should be filled. The fifth line starts the copying process
+  and the sixth line closes the tool.
+
+  \begin{verbatim}
+    include 'almati2ms.g'                                              #1
+    a := almati2ms(msfile='output.ms', fitsin='ALMATI.fits', append=F) #2
+    a.setoptions(compress=F)                                           #3
+    a.select(obsmode='CORR', chanzero='TIME_AVG')                      #4
+    a.fill()                                                           #5
+    a.done()                                                           #6
+  \end{verbatim}
+
+  This example could also have been achieved direclty using the
+  almatifiller global function. This global function will execute
+  all almati2ms tool functions in the sequence indicated above and,
+  in addition, allows multiple input ALMA-TI files to be specified
+  using a directory name and file modifier pattern. This is illustrated
+  below:
+  \begin{verbatim}
+    include 'almati2ms.g'                                              #1
+    almatifiller(msfile='output.ms', fitsdir='.', pattern='ALMATI*",
+                 append=F, compress=F, obsmode='CORR', 
+                 chanzero='TIME_AVG', dophcor=F)                                  #2
+  \end{verbatim}
+\end{ahexample}
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{almati2ms}{Construct an almati2ms tool.}
+  \begin{ahdescription}
+
+    This constructor is used to create an almati2ms tool. The host
+    argument specifies on which networked machine the precompiled
+    almati2ms process should be started. The default value of unset
+    starts it on the current system. 
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msfile}{Output MS file name}
+             {''}{Table name}
+    \ahaddarg{fitsin}{Input ALMA-TI FITS file}
+             {''}{String}
+    \ahaddarg{append}{True if appending to an existing MS}
+             {F}{Boolean}
+    \ahaddarg{host}{The host on which the almati2ms should be run}
+             {unset}{string}
+    \ahaddarg{forcenewserver}{Always start a new server}
+             {F}{Boolean}
+  \end{ahargs}
+  \ahreturns{An almati2ms tool}
+
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'almati2ms.g'
+      a := almati2ms(msfile='ALMA.ms', fitsin='ALMA-TI.fits', append=F);
+      a.fill()
+      a.done() 
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+
+    This example creates an almati2ms tool, sets the data source as a
+    disk file called ALMA-TI.fits, and specifies that the data should
+    be written to an output MS called ALMA.ms. The MS will be 
+    over-written if it already exists.
+  \end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahfunction}{setoptions}{Set general filler options}
+  \ahkeyword{setoptions}{setoptions}
+  \begin{ahdescription}
+
+    This function specifies the general filler options which are
+    to be used. These concern the compression mode for the output
+    MS and whether the sub-bands should be filled to a common
+    spectral window per side-band.
+  \end{ahdescription}
+
+  \begin{ahargs}
+    \ahaddarg{compress}{True if compressed MS output required}
+             {F}{Boolean}
+    \ahaddarg{combinebaseband}{True if sub-bands are to be combined}
+             {F}{Boolean}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{select}{Input data selection}
+  \ahkeyword{select}{select}
+  \begin{ahdescription}
+
+    This function can be used to select a sub-set of the input ALMA-TI
+    data. At present this allows selection on observing mode and 
+    channel-zero type.
+  \end{ahdescription}
+
+  \begin{ahargs}
+    \ahaddarg{obsmode}{Observing mode (from ALMA-TI DATAPAR)}
+             {''}{String}
+    \ahaddarg{chanzero}{Channel-zero selection options}
+             {'NONE'}{String:'NONE'|'TIME\_AVG'|'TIME\_SAMPLED'}
+  \end{ahargs}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+  \end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+%% Global functions
+
+\begin{ahfunction}{almatifiller}{Convert ALMA-TI fits files to an MS}
+  \ahkeyword{almatifiller}{almatifiller}
+  \begin{ahdescription}
+
+    This global function packages common operations using the
+    almati2ms tool and, in addition, permits multiple ALMA-TI files to
+    be filled per run, as specified by a FITS directory name and file
+    modifier string.  
+
+    It also allows you do do a 'phcor' at the
+    end of the filling.  Usually the DATA column hold the 'atmospheric
+    phase-corrected' data.  But it does happen at times that this
+    process is not right and the non phase-corrected data amplitude is
+    higher than the one that has been corrected.  The process of
+    'phcor' compare the phase-corrected data to the non
+    phase-corrected data on calibrators (at the 3mm bands) and
+    whenever the latter is higher, data $\pm$ 20 minutes around that
+    scan is replaced with the non phase-corrected data.
+
+    This function returns T is everything went well and F otherwise.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msfile}{Output MS file name}
+             {''}{Table name}
+    \ahaddarg{fitsdir}{Input ALMA-TI FITS directory}
+             {''}{String}
+    \ahaddarg{pattern}{File modifier string e.g. 18-feb*}
+             {}{String}
+    \ahaddarg{append}{True if appending to an existing MS}
+             {F}{Boolean}
+    \ahaddarg{compress}{True if compressed MS output required}
+             {F}{Boolean}
+    \ahaddarg{combinebaseband}{True if sub-bands are to be combined}
+             {F}{Boolean}
+    \ahaddarg{obsmode}{Observing mode (from ALMA-TI DATAPAR)}
+             {''}{String}
+    \ahaddarg{chanzero}{Channel-zero selection options}
+             {'NONE'}{String:'NONE'|'TIME\_AVG'|'TIME\_SAMPLED'}
+    \ahaddarg{dophcor}{Do the phcor process after filling}
+             {F}{Boolean}
+  \end{ahargs}
+
+  \ahreturns{T or F}
+  \begin{ahexample}
+  \begin{verbatim}
+    include 'almati2ms.g'                                              #1
+    almatifiller(msfile='ALMA.ms', fitsdir='.', pattern='G067*",
+                 append=F, compress=F, obsmode='CORR', 
+                 chanzero='TIME_AVG', dophcor=T)                       #2
+  \end{verbatim}
+  \end{ahexample}
+
+  \begin{ahcomments}
+    This example fills all ALMA-TI fits files starting with
+    the file name G067 from the current working directory, and
+    creates a new MS named ALMA.ms. The output MS will not be
+    compressed. Only data from the observing mode CORR will be
+    filled and all but the time-averaged channel-zero data
+    will be rejected. Also, as the dophcor parameter is set to 'T', it
+    will do the phcor process at the end of the filling process.
+  \end{ahcomments}
+\end{ahfunction}
+
+\end{ahmodule}

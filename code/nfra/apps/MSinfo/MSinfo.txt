@@ -1,0 +1,154 @@
+MSinfo - description
+====================
+
+The application MSinfo can be used to obtain info on an WSRT MS. It
+shows items as begin/end time, frequencies, target RA, DEC, etc.
+
+At present (02NOV2006) the information is obtained from the
+NFRA_TMS_PARAMETERS table in the MS. Note that this is a WSRT specific
+table that is e.g. not present for a LOFAR MS.
+
+The applications basically uses the class NFRA_MSshow to obtain and
+show the info. This class inherits the class NFRA_MS to actually
+obtain the info.
+
+Showing the info can be done is several ways:
+ - standard - a formatted screen output
+ - raw - a kwd=value output
+ - readme - special kwd=value format for the readme files in MOM
+ - arch - special format for the MySQL Archive table.
+
+Methods used from NFRA_MSshow
+-----------------------------
+
+ - setMethod - Set the method to obtain the info. Presently only
+               NFRA_MS::NFRA is allowed.
+ - getNFRAkwd - Get a kwd=value from the NFRA_TMS_PARAMETERS
+ - setInfo - get the info from the MS. The info is loaded into the
+             private properties of the class.
+ - mergeInfo - For MS's with multiple time slices, info from all
+               timeslices will be obtained and merged with already
+               existing info in the private proeprties.
+ - getError - The class has an error mechanisme. This method gets the
+              error from the class.
+ - getErrStr - Get the error as a string.
+ - isFilled - Flag indicating if any info has already been
+              obtained. This is e.g. necesary when merging.
+ - show - show the info in the requested mode.
+
+Calls
+-----
+
+Below the functions / class methods that are called from MSinfo are
+shown. Note that this is NOT a flow-chart. It only shows what methods
+from code under .../code/nfra is used. For each method used, the place
+where it is coded is indicated.
+
+Note that class NFRA_MSshow inherits from NFRA_MS. The constructor of
+NFRA_MS calls NFRA_MS::init, hence NFRA_MSShow::NFRA_MSshow also calls
+NFRA_MS::init.
+
+main() file=apps/MSinfo/MSinfo.cc:136
+ | NFRA_MSShow::NFRA_MSshow() file=implement/WSRT/NFRA_MSshow.h
+ |  | NFRA_MS::init() file=implement/WSRT/NFRA_MS.cc:365
+ | NFRA_MS::setMethod() file=implement/WSRT/NFRA_MS.cc:191
+ | NFRA_MS::getNFRAkwd() file=implement/WSRT/NFRA_MS.cc:205
+ |  | NFRA_parameters::NFRA_parameters() file=implement/WSRT/NFRA_MS_Tabs.h:153
+ |  | NFRA_parameters::getVal() file=implement/WSRT/NFRA_MS_Tabs.cc:1178
+ | KWDoutcd () file=apps/MSinfo/MSinfo.cc:116
+ | NFRA_MS::setInfo() file=implement/WSRT/NFRA_MS.cc:223
+ |  | NFRA_MS::getSubArray() file=implement/WSRT/NFRA_MS.cc:775
+ |  | NFRA_SubArray::NFRA_SubArray() file=implement/WSRT/NFRA_Misc.h:77
+ |  | NFRA_main::NFRA_main() file=implement/WSRT/NFRA_MS_Tabs.cc:1218
+ |  |  | calcHA() file=implement/WSRT/NFRA_Misc.cc:207
+ |  | NFRA_obs::NFRA_obs() file=implement/WSRT/NFRA_MS_Tabs.cc:254
+ |  | NFRA_obs::getSemester() file=implement/WSRT/NFRA_MS_Tabs.h:86
+ |  | NFRA_obs::getPrjNr() file=implement/WSRT/NFRA_MS_Tabs.h:87
+ |  | NFRA_obs::getFieldName() file=implement/WSRT/NFRA_MS_Tabs.h:88
+ |  | NFRA_proc::NFRA_proc() file=implement/WSRT/NFRA_MS_Tabs.cc:312
+ |  | NFRA_proc::getBackEnd() file=implement/WSRT/NFRA_MS_Tabs.h:103
+ |  | NFRA_antenna::NFRA_antenna() file=implement/WSRT/NFRA_MS_Tabs.cc
+ |  | NFRA_antenna::getBaseLines() file=implement/WSRT/NFRA_MS_Tabs.h:118
+ |  | NFRA_MS::setInfo_NFRA() file=implement/WSRT/NFRA_MS.cc:395
+ |  |  | NFRA_parameters::NFRA_parameters() file=implement/WSRT/NFRA_MS_Tabs.cc:528
+ |  |  | NFRA_parameters::FullPositionScan() file=implement/WSRT/NFRA_MS_Tabs.cc:539
+ |  |  |  | NFRA_parameters::getVal() file=implement/WSRT/NFRA_MS_Tabs.cc:1178
+ |  |  |  | NFRA_PW::NFRA_PW() file=implement/WSRT/NFRA_MS_PW.h:106
+ |  |  |  | NFRA_PW::addTelescope() file=implement/WSRT/NFRA_MS_PW.h:118
+ |  |  |  | CommaSepStr2vDbl() file=implement/WSRT/NFRA_Misc.cc:179
+ |  |  |  | NFRA_PosMos::NFRA_PosMos() file=implement/WSRT/NFRA_MS_PW.h:75
+ |  |  |  | NFRA_PosMos::setDwellTime() file=implement/WSRT/NFRA_MS_PW.h:85
+ |  |  |  | NFRA_Position::NFRA_Position() file=implement/WSRT/NFRA_MS_PW.cc:102
+ |  |  |  | NFRA_Position::setRA() file=implement/WSRT/NFRA_MS_PW.h:60
+ |  |  |  | NFRA_Position::setDEC() file=implement/WSRT/NFRA_MS_PW.h:61
+ |  |  |  | NFRA_Position::getRA() file=implement/WSRT/NFRA_MS_PW.h:52
+ |  |  |  | NFRA_Position::setName() file=implement/WSRT/NFRA_MS_PW.h:62
+ |  |  |  | NFRA_PosMos::addPosition() file=implement/WSRT/NFRA_MS_PW.h:86
+ |  |  |  | NFRA_PW::addPosMos() file=implement/WSRT/NFRA_MS_PW.h:119
+ |  |  |  | NFRA_PW::addToPosMos() file=implement/WSRT/NFRA_MS_PW.h:120
+ |  |  | NFRA_parameters::FullFrequencyScan() file=implement/WSRT/NFRA_MS_Tabs.cc:781
+ |  |  |  | NFRA_parameters::getVal() file=implement/WSRT/NFRA_MS_Tabs.cc:1178
+ |  |  |  | NFRA_FW::NFRA_FW() file=implement/WSRT/NFRA_MS_FW.h:151
+ |  |  |  | CommaSepStr2vStr() file=implement/WSRT/NFRA_Misc.cc:152
+ |  |  |  | NFRA_MS_FW::setTelescopes() file=implement/WSRT/NFRA_MS_FW.h:161
+ |  |  |  | NFRA_FreqMos::NFRA_FreqMos() file=implement/WSRT/NFRA_MS_FW.h:119
+ |  |  |  | NFRA_FreqMos::setDwellTime() file=implement/WSRT/NFRA_MS_FW.h:130
+ |  |  |  | NFRA_MFFE::NFRA_MFFE() file=implement/WSRT/NFRA_MS_FW.h:97
+ |  |  |  | NFRA_MFFE::setMFFEBand() file=implement/WSRT/NFRA_MS_FW.h:108
+ |  |  |  | NFRA_MFFE::setMFFESkyFreq() file=implement/WSRT/NFRA_MS_FW.h:109
+ |  |  |  | NFRA_MFFE::setMFFEBandWidth() file=implement/WSRT/NFRA_MS_FW.h:110
+ |  |  |  | NFRA_FreqMos::setMFFE() file=implement/WSRT/NFRA_MS_FW.h:131
+ |  |  |  | NFRA_IVC::NFRA_IVC() file=implement/WSRT/NFRA_MS_FW.cc:95
+ |  |  |  | NFRA_IVC::setIVCName() file=implement/WSRT/NFRA_MS_FW.h:74
+ |  |  |  | NFRA_IVC::setObsMode() file=implement/WSRT/NFRA_MS_FW.h:77
+ |  |  |  | NFRA_IVC::setRestFreq() file=implement/WSRT/NFRA_MS_FW.h:76
+ |  |  |  | NFRA_IVC::setVelDef() file=implement/WSRT/NFRA_MS_FW.h:78
+ |  |  |  | NFRA_IVC::setConvType() file=implement/WSRT/NFRA_MS_FW.h:79
+ |  |  |  | NFRA_IVC::setVelValue() file=implement/WSRT/NFRA_MS_FW.h:80
+ |  |  |  | NFRA_IVC::setBandWidth() file=implement/WSRT/NFRA_MS_FW.h:81
+ |  |  |  | NFRA_IVC::setNChan() file=implement/WSRT/NFRA_MS_FW.h:82
+ |  |  |  | NFRA_IVC::setChanWidth() file=implement/WSRT/NFRA_MS_FW.h:83
+ |  |  |  | NFRA_IVC::setNPol() file=implement/WSRT/NFRA_MS_FW.h:84
+ |  |  |  | NFRA_IVC::setPolsUsed() file=implement/WSRT/NFRA_MS_FW.h:85
+ |  |  |  | NFRA_IVC::setEF() file=implement/WSRT/NFRA_MS_FW.h:86
+ |  |  |  | NFRA_IVC::setSubArray() file=implement/WSRT/NFRA_MS_FW.h:87
+ |  |  |  | NFRA_MS_FW::addFreqMoss() file=implement/WSRT/NFRA_MS_FW.h:162
+ |  |  | NFRA_parameters::getVal() file=implement/WSRT/NFRA_MS_Tabs.cc:1178
+ |  |  | NFRA_parameters::getPWs() file=implement/WSRT/NFRA_MS_Tabs.h:158
+ |  |  | NFRA_parameters::getFWs() file=implement/WSRT/NFRA_MS_Tabs.h:159
+ |  | NFRA_MS::setInfo_MEAS() file=implement/WSRT/NFRA_MS.cc:655
+ |  |  | Not implemented yet
+ | m_atoi() file=apps/MSinfo/MSinfo.cc:124
+ | mkMSName() file=apps/MSinfo/MSinfo.cc:106
+ | NFRA_MS::mergeInfo() file=implement/WSRT/NFRA_MS.cc:349
+ |  | NFRA_MS::mergeInfo_NFRA() file=implement/WSRT/NFRA_MS.cc:490
+ |  |  | SubArray::SubArray() file=implement/WSRT/NFRA_Misc.h:71
+ |  |  | NFRA_MS::getSubArray() file=implement/WSRT/NFRA_MS.cc:683
+
+ |  |  | NFRA_parameters::NFRA_parameters() file=implement/WSRT/NFRA_MS_Tabs.cc:528
+
+ |  |  | NFRA_parameters::getVal() file=implement/WSRT/NFRA_MS_Tabs.cc:1178
+
+ |  |  | NFRA_main::NFRA_main() file=implement/WSRT/NFRA_MS_Tabs.cc:1218
+
+ |  |  | SubArray::getSANr() file=implement/WSRT/NFRA_Misc.h:78
+ |  |  | SubArray::incrNTimeSlices() file=implement/WSRT/NFRA_Misc.h:79
+ |  |  | NFRA_SubArray::NFRA_SubArray() file=implement/WSRT/NFRA_Misc.h:71
+ |  |  | NFRA_parameters::FullFrequencyScan() file=implement/WSRT/NFRA_MS_Tabs.cc:781
+ |  |  |  | (see above)
+ |  |  | NFRA_parameters::getFWs() file=implement/WSRT/NFRA_MS_Tabs.h:159
+
+
+ |  |  | NFRA_FW::addIVCs file=implement/WSRT/NFRA_MS_FW.h:165
+
+ |  | mergeInfo_MAIN() file=implement/WSRT/NFRA_MS.cc:673
+ |  |  | Not implemented yet
+ | NFRA_MS::getError() file=implement/WSRT/NFRA_MS.h:125
+
+ | NFRA_MS::isFilled() file=implement/WSRT/NFRA_MS.h
+
+ | NFRA_MSShow::show() file=implement/WSRT/NFRA_MSshow.cc:293
+
+ |
+
+

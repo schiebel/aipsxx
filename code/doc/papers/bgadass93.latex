@@ -1,0 +1,215 @@
+\documentstyle[11pt,paspconf, epsf]{article}
+\begin{document}
+
+\title{The AIPS++ Array and Image Classes}
+\author{B.E. Glendenning}
+\affil{National Radio Astronomy Observatory, 520 Edgemont 
+       Road, Charlottesville, VA  22903-2475}
+
+
+\begin{abstract}
+An Object-Oriented library of powerful and convenient C++ classes is
+being developed as a part of the AIPS++ project. Two sets of classes
+which provide Array and Image functionality are described.
+
+The Array classes (which have been available for some time) provide
+arbitrary N-dimensional arrays, as well as 1-, 2- and 3-dimensional
+specializations. Convenient ``whole-array'' expressions may be written,
+and decimated array sections are available as first class objects.
+
+The Image classes (which are presently under construction) offer the
+same sorts of features as arrays. Additionally, they must provide
+services such as binding coordinates to pixels, providing error
+estimates, and mapping sections of large multi-dimensional images to
+memory efficiently.
+\end{abstract}
+
+\keywords{AIPS++, C++, Object-Oriented Programming, Software
+Libraries, Image Processing, Data Analysis}
+
+\section{Introduction}
+
+AIPS++ is a successor to the popular AIPS package which is being
+constructed by a consortium of seven radio observatories. Some general
+information about AIPS++ can be found in Croes (1992) and in Norris
+(1993).
+
+AIPS++ is being written in an object-oriented style using the C++
+programming language. Object-oriented programming is a style of
+programming in which implementation details are encapsulated in a {\em
+class} (which corresponds to a ``type'') so that those implementation
+details may change without forcing many other changes in the program.
+Object-oriented programming also allows subsequent classes to extend
+or redefine the behavior of existing classes through a mechanism known
+as {\em inheritance}.
+
+C++ is an object-oriented extension to the C language. A reasonable
+introduction to C++ with some discussion of object-oriented
+programming may be found in Lippman (1991).
+
+Much of the work to date has concentrated on various foundation
+classes, such as the Array classes described here, and the Table data
+system described elsewhere in these proceedings (van Diepen 1993).
+With foundation classes in place, work is proceeding on higher
+level (``astronomical'') classes; these classes can be said to be
+layered on top of the foundation classes. The Image classes (presently
+under construction) are described later in this paper.
+
+An initial public release of the library (which contains the Array
+classes, but not the preliminary image classes) was made in November,
+1993. Fuller public releases are anticipated in 1994 and beyond.
+Contact {\em aips2-request@nrao.edu} via internet email, or {\em The
+AIPS++ Project Office} at the author's address for current release, or
+any other, information.
+
+\section{Array Classes}
+
+\begin{figure}
+\plotfiddle{glendenningb1.eps}{2.0in}{0}{50}{50}{-152}{0}
+\caption{Basic Array Classes}
+\end{figure}
+
+The basic Array classes (Fig.~1) are used to represent a
+multidimensional lattice of regularly spaced values. An {\em Array}
+object can be of any dimensionality. There are specialized Vector,
+Matrix, and Cube classes to represent one-, two-, and
+three-dimensional arrays. These specializations are provided both for
+convenience (in general an n-dimensional array must be indexed with a
+length-n integral vector, known as an {\em IPosition}) and efficiency.
+Features of the array classes include:
+
+\begin{description}
+
+\item[Templating]
+The array classes are able to hold values of
+essentially any type, so for example you could have a Matrix of
+strings, or a Vector of images. The ability to be able to use
+containers (arrays, linked lists, associative arrays, $\ldots$) is very
+powerful, although it stresses the compilation system.
+
+\item[Variable Origin]
+While zero is the default origin, it may be changed to any value.
+
+\item[Whole-array expressions]
+Rather than having to write multiple loops to step through an array,
+one can write expressions that work on whole-arrays much as in
+the languages FORTRAN~90 and IDL. While the default is to use
+``element-by-element'' arithmetic, the linear algebra products are
+also available. All the usual arithmetic, logical, transcendental,
+statistical and other functions are available. (One particularly
+useful such function applies an arbitrary user function to every
+element of the array).
+
+\item[Other Mathematics]
+There are various higher level mathematical classes and functions that
+use the Array class. For example there are classes that:
+\begin{itemize}
+\item Grid irregularly sampled data onto a grid (including convolution
+corrections).
+\item Perform FFT's and DFT's.
+\item Perform various Matrix decompositions (LU and QR)
+\end{itemize}
+
+\item[Array references]
+It is often useful for an array to reference storage inside another
+array. For example, in the following line of C++:
+\begin{verbatim}
+    matrix.row(5) = 1;
+\end{verbatim}
+the result of ``matrix.row(5)'' is a Vector whose storage
+corresponds to storage in the variable ``matrix.'' Assignment to the
+resulting vector changes the values along the appropriate row of the matrix.
+Another way of creating a reference is to take an array section
+(``slice''). An Array section is a regular subvolume of the array,
+possibly decimated (``every third column'') along one or more axes.
+The above ``row'' function is a special case of this.
+
+\item[Iteration]
+When you are given an array of potentially arbitrary dimensionality,
+for example an argument to a function you are writing, it is often
+convenient or efficient to iterate through the array using sub-arrays
+of a known dimensionality. For example, Figure~2  illustrates iterating
+through a Cube array with a cursor which is a Matrix. Note that
+the cursor array is a reference; changing values through the cursor will
+change the underlying storage in the Cube.
+
+\end{description}
+
+\begin{figure}
+\plotfiddle{glendenningb2.eps}{2.0in}{0}{100}{100}{-125}{0}
+\caption{Iterating Through an Array}
+\end{figure}
+
+More information on the array classes is available in Willis {\em et.
+al.} (1993) and in internal project documentation. For the latter
+contact the project office.
+
+\section{Image Classes}
+
+The image classes need to provide all the services the Array classes
+do ({\em access} to pixels, {\em whole-image} manipulations, {\em
+iteration}, {\em etc.}) as well as some others.
+
+\begin{description}
+
+\item[Coordinates]
+Images have astronomical coordinates. Besides simply inter-converting
+between pixel and image coordinates, one must be able to perform
+operations like registering images based on their coordinates,
+changing coordinate systems, and expressing uncertainties in positions.
+
+\item[Pixel Types and Errors]
+Pixels have both a type (including units) and errors which must be
+accounted for and propagated in image operations. Propagation of image
+errors is a research topic. Initial versions will have very simple
+statistical models.
+
+\item [I/O]
+Images can still be much larger than typical memories. For example,
+radio-interferometric cubes could conceivably be many gigabytes. The
+approach that is being used to encapsulate image I/O is to use an
+image iterator. In particular, one can choose to take a default
+cursor, which maps to an efficient shape (a tile) for the I/O system,
+or one can choose a shape that is convenient for the algorithm (i.e. a
+sliding window). One can also define the cursor to be as large as the
+entire image to lock it all into memory so you can ignore I/O (memory
+and swap space permitting).
+
+\item[Other Image Types]
+Besides the straight storage of pixels, we also need to be able to
+deal with masked images (i.e. blanks), and possibly with images that
+are formed from analytical functions (e.g. simulations).
+
+\end{description}
+
+\section{Status}
+
+The Array classes described here have been available for some time and
+were part of the November~93 AIPS++ Library release. The Image classes are
+currently under construction. They should be available internally to the
+project in early 1994.
+
+\begin{references}
+
+\reference Croes, G.A. 1992, On AIPS++, A New Astronomical Information 
+Processing System, Second Annual 
+Conference on Astronomical Data Analysis Software and Systems
+
+\reference Diepen, G. van 1993, AIPS++ Table Data System, Third Annual 
+Conference on Astronomical Data Analysis Software and Systems
+
+
+\reference Lippman, Stanley B. 1991,  C++ Primer -- Second Edition,
+Addison Wesley
+
+\reference Norris, R.P. 1993, AIPS++: a New Astronomical Imaging Package,
+in IAU Symposium \#158: very High Angular Resolution Imaging,  Ed. W.
+Tango, Kluwer, in press.
+
+\reference Willis, A.G., Healey, M.P.,  and Glendenning B.E.
+1993, The AIPS++ N-Dimensional Array Classes, in OON-SKI '93 --
+Proceedings of the First Annual Object-Oriented Numerics Conference
+
+\end{references}
+
+\end{document}

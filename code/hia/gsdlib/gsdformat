@@ -1,0 +1,230 @@
+#!/usr/local/bin/perl -s
+# Simulates gsd_print.c - Much smaller!!!
+#
+# Tim Jenness (JACH)  - April 1996
+
+# No longer needed since GSD is installed globally
+#BEGIN {push(@INC,"/home/timj/lib/blib")}
+
+# Load in the GSD module
+use GSD;
+use Term::ReadLine;
+
+$version = "1.0";
+
+# Version
+($v) && do {
+    print "JCMT GSD file lister ($0) version $version\n";
+    print "Contact Tim Jenness for more information\n";
+    exit;
+};
+
+
+# Help listing
+($h) && do {
+    print "Usage: $0 [-h] [-v] [-nodata]\n";
+    print "Options\n\t -h \t help\n";
+    print "\t -v \t version \n";
+    print "\t -nodata\t Only list header\n";
+    exit;
+
+};
+
+$term = new Term::ReadLine 'gsdformat' unless ($noread);
+
+# Need a file name
+
+$filename = $ARGV[0];
+
+if ($filename !~ /./) {
+    $prompt = "Which GSD file to list : ";
+    ($noread) && do {print $prompt; chomp($filename = <>)} ||
+    ($filename = $term->readline($prompt));
+}
+
+
+# Strip the trailing dat
+$filename = (split(/\./,$filename))[0];
+
+# Open the file 
+
+die "$!: $filename does not exist\n" unless ((-e "$filename.dat") || 
+					     (-e $ENV{'DATADIR'}."/$filename.dat"));
+
+$status = gsdOpenRead($filename,$version,$label,$no_items,$fptr,$file_dsc,
+		      $item_dsc,$data_ptr);
+
+
+die "Problem opening file. $filename may not be a GSD file\n" if ($status);
+
+# Strip trailing spaces from the label
+$label =~ s/\s+$//g;
+
+
+print "-"x78,"\n";
+print " G S D    P R I N T\n";
+print "-"x78,"\n";
+print "\n";
+print " Filename        : $filename\n";
+printf " GSD version     : %5.3f\n",$version;
+print " Label           : $label\n";
+print " Number of items : $no_items\n";
+print "\n\n\n";
+print " Name\t\t\t\t\t  Unit\t\tComment\n";
+print "-"x78,"\n";
+
+# Read in the format information
+
+&rdgsdinfo;
+
+for ($i=1; $i<=$no_items; $i++) {
+
+    $status = gsdItem($file_dsc,$item_dsc,$i,$name,$unit,$type,$array);
+    $name =~ s/\s+$//g;
+
+    $call = "gsdGet$array\l$type";
+
+    if ($array) {
+	print "-"x78,"\n";
+
+	@dimnm = ();
+	@dimunt = ();
+	@dimvals = ();
+	$actdims = 0;
+	$status = gsdInqSize($file_dsc,$item_dsc,$data_ptr,$i,\@dimnm,\@dimunt,
+			     \@dimvals,$actdims,$size);
+	
+	$status = &{$call}($file_dsc,$item_dsc,$data_ptr,$i,1,$size,1,$size,
+			   \@values,$actvals);
+
+	$newdata = "Array size= $size";
+#	$newdata = '#Dims: '.join(" x ",@dimvals)."  ".join(" ",@dimunt);
+	$jcmtname{$name} = "$name" if ($jcmtname{$name} !~ /./);
+
+	write STDOUT;
+
+	# Remove white space
+	grep(s/\s+//g,@dimunt);
+	grep(s/\s+//g,@dimvals);
+	grep(s/\s+//g,@dimnm);
+	
+	# Write the array definition
+	for ($j=0; $j < $actdims; $j++) {
+	    print "  > $dimnm[$j]:\t$dimvals[$j]\t $dimunt[$j]\n";
+	}
+
+	# Write the data
+	unless ($nodata && ($i == $no_items) ) {
+	    print "  Data:\n";
+	    for ($j=0; $j <$actvals; $j++) {
+	      if ($type =~ /C/i) {
+#		print "$values[$j]";
+		printf "%20s ",$values[$j];
+	      } else {
+		printf "%20g ",$values[$j];
+	      }
+	      print "\n" unless ((1+$j)%3);
+	    }
+	    print "\n" if ($actvals%3);
+	}
+
+    } else {
+
+	$status = &{$call}($file_dsc,$item_dsc,$data_ptr,$i,$newdata);
+	$newdata =~ s/\s+$//g if $type eq "C";
+	$unit =~ /HOUR/i && ($newdata = &todeg($newdata,0));
+	$unit =~ /DEG/i && do {   #Convert to hms or dms
+	    $dohour = 0;
+	    do { 
+		$unit = "HOUR";
+		$dohour = 1;
+	    } if ($name =~ /RA/i);
+	    $newdata = &todeg($newdata,$dohour);
+	};
+	write STDOUT; # Write scalar data
+    }
+
+}
+
+print "-"x78,"\n";
+
+$status = gsdClose($fptr,$file_dsc,$item_dsc,$data_ptr);
+
+
+exit;
+
+
+#----------------S U B R O U T I N E S------------------------------
+
+sub rdgsdinfo {
+    $transfile = "/jcmt_sw/gsdformat/storage_translate_full.inc";
+
+    open(GSDINFO,$transfile);
+
+    %jcmtname = ();
+    %jcmtcomment  = ();
+
+    while (<GSDINFO>) {
+	/NRAO_NAME/ && do {
+	    /'(.+)'/ && do {
+		$key = "\U$1\E";
+		$key =~ s/\s+$//g; # Okay so I should be able to do this 
+		# in the line above
+		$list && print "$key ";
+	    };
+	};
+	/JCMT_NAME/ && do {
+	    /'(.+)'/ && do {
+		$jcmt = "\U$1\E";
+		$jcmt =~ s/\s+$//g;
+		$jcmtname{$key} = $jcmt;
+		$list && print "\t $jcmtname{$key}";
+	    };
+	};
+	/JCMT_COMMENT/ && do {
+	    /'(.+)'/ && do {
+		$cmt = $1;
+		$cmt =~ s/\s+$//g;
+		$jcmtcomment{$key} = $cmt;
+		$list && print "\t $jcmtcomment{$key}\n";
+	    };
+	};
+    }
+
+    close(GSDINFO);
+    $list && exit;
+}
+
+
+# convert decimal degrees to dms
+
+sub todeg {
+    local($decimal,$hr) = @_;
+    local($degree,$minute,$second);
+    local($minus);
+    $decimal /= 15 if $hr;
+
+    $minus = "yes" if ($decimal < 0);
+
+    $degree = abs(int($decimal));
+    $minute = (abs($decimal)-$degree)*60;
+    $second = ($minute - int($minute))*60;
+    $minute = int($minute);
+    $minus && ($degree *= -1);
+
+    return(sprintf("%3g %2g %5.2f",$degree,$minute,$second));
+
+}
+
+# Scalar format
+
+format STDOUT = 
+ @<<<<<<<<<<<<<<<<< @>>>>>>>>>>>>>>>>>>>  @<<<<<<<<<<< ^<<<<<<<<<<<<<<<<<<<<<<<
+$jcmtname{$name}, $newdata, $unit,                  $jcmtcomment{$name}
+~~                                                     ^<<<<<<<<<<<<<<<<<<<<<<<
+                                                    $jcmtcomment{$name}
+.
+
+
+
+

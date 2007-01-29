@@ -1,0 +1,755 @@
+%% viewertool.help: help file for viewer tool
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: viewertool.help,v 19.1 2005/06/15 18:10:59 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{viewer}{Tool for viewing \aipspp\ images and arrays}
+
+\ahinclude{viewer.g}
+
+\ahkeyword{view}{}
+\ahkeyword{viewer}{}
+\ahkeyword{display}{}
+\ahkeyword{raster}{}
+\ahkeyword{contour}{}
+\ahkeyword{displaydata}{}
+\ahkeyword{colormap}{}
+\ahkeyword{visualisation}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+The \VT\ is an \aipspp\ tool which provides data display
+services.  It can produce false color image and contour map
+representations of \aipspp\ images or \glish\ arrays, rendered either
+on-screen or to PostScript files.  Extensive control over the display
+of data is available from both graphical and programming interfaces.
+The \VT\ is the primary interface to the \ahlink{viewer
+module}{viewer} of the Display package.
+
+\end{ahdescription}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{viewer}{Create a \VT}
+\begin{ahargs}
+  \ahaddarg{title}{Title of this \VT\ which appears in windows}{'viewer'}{String}
+  \ahaddarg{deleteatexit}{Delete this \VT\ when \glish\ exits?}{T}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use for the GUIs}{dws}{\widgetserverT}
+\end{ahargs}
+\ahreturns{\VT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VTs.  It constructs (creates) a \VT\
+which can subsequently be used to construct and manage the various
+other component \tools\ which might make up a data viewing application
+or the display services for an existing application.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{alldisplaydatas}{Return a list of all \VdisplaydataTs\ known to this \VT}
+\ahreturns{list of \VdisplaydataTs}
+\begin{ahdescription}
+
+This function simply returns a record containing all of the
+\lkVdisplaydataTs\ known to (managed by) this \VT.  The record
+contains as many top-level fields as there are \VdisplaydataTs, and
+each field is a \VdisplaydataT.  The fields are named by the
+identifying name of the corresponding \VdisplaydataT, ie. the return
+value of the \ahlink{viewer:viewerdisplaydata.name}{viewer:viewerdisplaydata.name}
+function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{alldisplaypanels}{Return a list of all \VdisplaypanelTs\ known to this \VT}
+\ahreturns{list of \VdisplaypanelTs}
+\begin{ahdescription}
+
+This function simply returns a record containing all of the
+\lkVdisplaypanelTs\ known to (managed by) this \VT.  The record
+contains as many top-level fields as there are \VdisplaypanelTs, and
+each field is a \VdisplaypanelT.  The fields are named by increasing
+integers.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{colormapmanager}{Return the \VcolormapMT\ for this \VT}
+\ahreturns{\VcolormapMT}
+\begin{ahdescription}
+
+Every \VT\ has one and only one \lkVcolormapMT\ associated
+with it.  It is constructed at construction time of the \VT.
+This function returns the \VcolormapMT\ for this \VT.
+More details on the functionality of a \VcolormapMT\ can be found
+in the documentation for \lkVcolormapMT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{deleteall}{Delete all \VdisplaydataTs}
+\begin{ahargs}
+  \ahaddarg{doneit}{truly delete the \VdisplaydataTs?}{T}{Boolean}
+  \ahaddarg{quiet}{prevent emission of updated list of \VdisplaydataTs?}{F}{Boolean}
+\end{ahargs}
+\ahreturns{None}
+\begin{ahdescription}
+
+This function simply calls the {\tt deletedata} function for
+every \VdisplaydataT\ managed by (known to) this \VT.
+It is normally called when the \VT\ is dying.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{deletedata}{Delete a \VdisplaydataT}
+\begin{ahargs}
+  \ahaddarg{displaydata}{\VdisplaydataT\ to delete}{}{\VdisplaydataT}
+  \ahaddarg{doneit}{truly delete the \VdisplaydataT?}{T}{Boolean}
+  \ahaddarg{quiet}{prevent emission of updated list of \VdisplaydataTs?}{F}{Boolean}
+\end{ahargs}
+\ahreturns{None}
+\begin{ahdescription}
+
+This function should be used to delete \VdisplaydataTs\ that were
+created by this \VT.  It will ensure that the
+\VdisplaydataT\ is unregistered from all \VdisplaypanelTs, and
+then if {\tt doneit=T} (the default), will actually free the resources 
+used by the \VdisplaydataT\ by calling its {\tt done} function.  The
+{\tt quiet} parameter should only be {\tt T} when the entire
+\VT\ is closing done via its own {\tt done} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{disable}{Disable the GUIs of all \VdisplaypanelTs\ and \VdataMTs}
+\ahreturns{none}
+\begin{ahdescription}
+
+This function is used to disable the GUIs of all the
+\VdisplaypanelTs\ and all the \VdataMTs\ that are managed
+by this \VT.  This differs from the {\tt hold} function in that
+refreshes of the displays will still be allowed, but the user will not
+be able to interact with the GUIs themselves.  The GUIs will be
+re-enabled when an equal number of calls are made to the {\tt enable}
+function.  Actually, the GUIs can only effectively be disabled (greyed
+out) when they created their own top-level frames, so for applications
+where \VdisplaypanelTs\ for example are embedded in externally ``owned''
+frames, this function does nothing.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close down (destroy) this \VT}
+\ahreturns{T}
+\begin{ahdescription}
+
+Calling this function frees up the resources used by this \VT,
+and renders it useless.  This function should be called when you are
+finished with a particular \VT, and is also called when \glish\
+exits, if the {\tt deleteatexit} argument to the \VT\ constructor
+was T.  All GUIs (including \VdisplaypanelTs) created by this
+\VT\ will be removed from the display, and all \lkVdisplaydataTs\
+managed by this \VT\ will be destroyed.  Any \images\ used to
+construct those \lkVdisplaydataTs\ will of course remain on disk.
+Depending on how imaginatively you have used the \VT, this
+function can take a few seconds to complete.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{emittoolkitlist}{Emit an event describing the toolkitlist for this \VT}
+\ahreturns{None}
+\begin{ahdescription}
+
+This function simply makes the \VT\ emit an event with the
+name 'toolkit', with the event value being the return value of a call
+to the {\tt toolkitlist} function.  Typically this is used internally 
+to synchronise all GUIs which display a list of the available tools
+and their mappings.
+
+{\em This function is normally used internally only.}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{enable}{Enable the GUIs of all \VdisplaypanelTs\ and \VdataMTs}
+\ahreturns{none}
+\begin{ahdescription}
+
+This function is used to enable the GUIs of all the
+\VdisplaypanelTs\ and all the \VdataMTs\ that are managed
+by this \VT.  This differs from the {\tt release} function in
+that it does not affect refreshes of the display, but does affect
+whether users can interact with the GUIs themselves.  The GUIs will
+only be re-enabled if the number of calls made to this function is
+equal to that made to the {\tt disable} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{hold}{Prevent refreshes occuring on all \VdisplaypanelTs}
+\ahreturns{none}
+\begin{ahdescription}
+
+This function is used to prevent refreshing occuring on all
+\VdisplaypanelTs\ that are managed by this \VT.  Refreshes
+will be re-enabled when an equal number of calls have been made to the
+{\tt release} function.  Typically, this is used internally when
+\VdisplaydataTs\ are being deleted or registered or unregistered from
+\VdisplaypanelTs.  Programmers should make use of the {\tt hold} and
+{\tt release} functions when performing multiple operations before a
+refresh is desired.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{gui}{Create and show a new \VdataMT\ and/or \VdisplaypanelT\ on the screen}
+\begin{ahargs}
+  \ahaddarg{datamanager}{Show a new \VdataMT?}{T}{Boolean}
+  \ahaddarg{displaypanel}{Show a new \VdisplaypanelT?}{T}{Boolean}
+\end{ahargs}
+\ahreturns{\VdataMT}
+\begin{ahdescription}
+
+This function is a simple front-end to the
+\ahlink{newdatamanager}{viewer:viewer.newdatamanager} and 
+\ahlink{newdisplaypanel}{viewer:viewer.newdisplaypanel} functions.  
+If the {\tt datamanager} argument is T, then a new \VdataMT\
+\guilong\ will be placed on the screen in its own frame.  Likewise, if 
+the {\tt displaypanel} argument is T, then a new \VdisplaypanelT\ will 
+be put on screen in a frame of its own.
+
+This function is provided partly for convenience, but mostly to suit
+the requirements of the Toolmanager \tool.  See the individual
+functions \ahlink{newdatamanager}{viewer:viewer.newdatamanager} and
+\ahlink{newdisplaypanel}{viewer:viewer.newdisplaypanel} for further
+information.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{loaddata}{Create a \VdisplaydataT\ for future use}
+\begin{ahargs}
+  \ahaddarg{data}{data to load}{}{array or image object, string filename of image or measurement set}
+  \ahaddarg{drawtype}{type of \VdisplaydataT\ to create}{}{'raster', 'contour', 'vector', 'marker', or 'skycatalog'}
+  \ahaddarg{autoregister}{auto-register this on any auto-register \VdisplaypanelTs?}{F}{Boolean}
+\end{ahargs}
+\ahreturns{\VdisplaydataT}
+\begin{ahdescription}
+
+This function provides the main route to creating \VdisplaydataTs.
+Any \VdisplaydataT\ created using this function will be managed by
+this \VT.  
+Supported file types besides image tools and arrays are:
+\begin{itemize}
+\item \aipspp\ images (for maximum performance use this)
+\item FITS images
+\item Miriad images
+\item Gipsy images (via FITS conversion;you need to have GIPSY
+available to be able to convert it to FITS)
+\item \aipspp\ measurement sets (only the 'raster' drawtype is allowed
+at present)
+\end{itemize}
+
+The arguments are straightforward, so for more
+information on what you can do with your \VdisplaydataT\ once you've
+made it, see the documentation on \lkVdisplaydataTs.  {\bf Internal
+use:}This function uses the {\tt createdata} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newcolormapmanagergui}{Create and optionally display a new GUI to control this \VT's \VcolormapMT}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame in which to place the \VdataMT}{F}{agent or F}
+  \ahaddarg{show}{show the \VdataMT?}{T}{Boolean}
+  \ahaddarg{hasdismiss}{add a "Dismiss" button to the GUI?}{F}{Boolean}
+  \ahaddarg{hasdone}{add a "Done" button to the GUI?}{F}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the GUI}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+This function can be used to place on the screen a new GUI for
+controlling this \VT's \lkVcolormapMT.  Careful use of the
+{\tt hasdismiss, hasdone} and {\tt parent} arguments can provide quite 
+flexible control over how the user builds their GUI.
+
+See the \lkVcolormapMT\ documentation for more information.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newdatamanager}{Create and show a new \VdataMT\ on the screen}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame in which to place the \VdataMT}{F}{agent or F}
+  \ahaddarg{show}{show the \VdataMT?}{T}{Boolean}
+  \ahaddarg{showload}{show the "Load data" rollup?}{F}{Boolean}
+  \ahaddarg{showedit}{show the "Adjust data" rollup?}{F}{Boolean}
+  \ahaddarg{hasdismiss}{add a "Dismiss" button to the GUI?}{F}{Boolean}
+  \ahaddarg{hasdone}{add a "Done" button to the GUI?}{F}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the GUI}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\VdataMT}
+\begin{ahdescription}
+
+This function is generally used to place a new \VdataMT\
+on the screen.  By judicious use of the {\tt parent, hasdismiss} and
+{\tt hasdone} arguments the appearance of the \VdataMT\ can
+be controlled quite carefully.  The \VdataMT\ is a relatively simple
+\guilong\ which simplifies the construction and editing of
+\lkVdisplaydataTs.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newdisplaypanel}{Create and show a new \VdisplaypanelT\ on the screen}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame in which to place the \VdisplaypanelT}{F}{agent or F}
+  \ahaddarg{width}{width of the drawing area on screen}{400}{Integer}
+  \ahaddarg{height}{height of the drawing area on screen}{300}{Integer}
+  \ahaddarg{nx}{number of panels in x}{1}{Integer}
+   \ahaddarg{nx}{number of panels in y}{1}{Integer}
+  \ahaddarg{maptype}{how colors will be addressed on this \VdisplaypanelT}{'index'}{'index' 'rgb' 'hsv'}
+  \ahaddarg{newcmap}{install a private colormap?}{unset}{Boolean or unset}
+  \ahaddarg{mincolors}{minimum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{maxcolors}{maximum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{autoregister}{accept auto-register data on this \VdisplaypanelT?}{F}{Boolean}
+  \ahaddarg{holdsdata}{is this \VdisplaypanelT\ going to hold data?}{T}{Boolean}
+  \ahaddarg{show}{show the \VdisplaypanelT?}{T}{Boolean}
+  \ahaddarg{hasgui}{adorn the \VdisplaypanelT\ with elements of a \guilong?}{unset}{unset or Boolean}
+  \ahaddarg{guihasmenubar}{add the menubar if a \guishort\ is added?}{T}{Boolean}
+  \ahaddarg{guihascontrolbox}{add the controlbox if a \guishort\ is added?}{T}{Boolean}
+  \ahaddarg{guihasanimator}{add the animator tapedeck if a \guishort\ is added?}{T}{Boolean}
+  \ahaddarg{guihasbuttons}{add the button bar if a \guishort\ is added?}{T}{Boolean}
+  \ahaddarg{hasdismiss}{add a "Dismiss" button to the GUI?}{unset}{unset or boolean}
+  \ahaddarg{hasdone}{add a "Done" button to the GUI?}{unset}{unset or boolean}
+  \ahaddarg{isolationmode}{prevent user accessing other components of this \VT\ via the \guishort?}{F}{boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the GUI}{unset}{\widgetserverT\ or unset}	
+  \ahaddarg{slicepanel}{create a 3d slice panel?}{F}{Boolean}	
+\end{ahargs}
+\ahreturns{\VdisplaypanelT}
+\begin{ahdescription}
+
+This function is generally used to place a new \VdisplaypanelT\ on the
+screen.  By judicious use of the {\tt parent, hasdismiss} and {\tt
+hasdone} arguments the appearance of the \VdisplaypanelT\ can be
+contolled quite carefully.  The {\tt guihas*} arguments control the
+adornment of the \VdisplaypanelT\ with various \guilong\
+components.  The {\tt hasdismiss} and {\tt hasdone} arguments can be
+used to specify what type of ``Dismiss'' button is placed on the
+\VdisplaypanelT, if any.  For further information, see the 
+documentation on the \VdisplaypanelT
+\ahlink{constructor}{viewer:viewer.viewerdisplayanel}, and its
+\ahlink{addgui function}{viewer:viewerdisplaypanel.addgui}.
+
+The {\tt newcmap} argument is particular to this function, and parsed
+before it is passed on to the \VdisplaypanelT\ constructor.  If it is
+{\tt unset}, and a parent frame is {\em not}\/ given, (ie. {\tt
+parent=F}), then this function will first attempt to construct a
+\VdisplaypanelT\ using (``sharing'') the system colormap, and if that
+fails, it will try again with a private colormap.  If the {\tt
+newcmap} argument is a boolean, then that is passed directly to the
+\VdisplaypanelT\ constructor.
+The last argument {\tt slicepanel} controls if the new tool should be
+a \ahlink{slicepanel}{viewer:viewerslicedp} to enable 3D slicing.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{release}{Allow refreshes to occur on all \VdisplaypanelTs}
+\ahreturns{none}
+\begin{ahdescription}
+
+This function is used to re-establish refreshing occuring on all
+\VdisplaypanelTs\ that are managed by this \VT.  Refreshes
+will be re-enabled when an equal number of calls have been made to
+this function as have been made to the {\tt hold} function.
+Typically, this is used internally when \VdisplaydataTs\ are being
+deleted or registered or unregistered from \VdisplaypanelTs.
+Programmers should make use of the {\tt hold} and {\tt release}
+functions when performing multiple operations before a refresh is
+desired.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{title}{Return the (construction) title of this \tool}
+\ahreturns{string}
+\begin{ahdescription}
+
+This function returns the title that was specified at construction of
+this \VT.  It is ordinarily used only to generate title text for
+\guilongs\ for this \VT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{toolkit}{Returns the toolkit used by this \tool}
+\ahreturns{\Vtoolkit}
+\begin{ahdescription}
+
+This function returns the \Vtoolkit\ of the current \VT, which defines
+which tools (eg. Zoomer tool) are assigned to which mouse buttons and
+which tools appear in the controlbox.
+{\em This function is normally used internally only.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this \tool}
+\ahreturns{'viewer'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'viewer'}, which can be
+used to identify this \tool\ as a \VT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{updatedatasets}{Update the list of global images
+	and arrays kept by the \VT}
+\ahreturns{none}
+\begin{ahdescription}
+
+This function is quite specific in its use.  Its purpose is to search
+for global \glish\ symbols which are either \glish\ arrays or
+Image \tools, and to store them in an internal list.  This list is used
+by other \VT\ functions.  After creating the updated list, it
+emits an event called 'datasets\_updated' so that any interested
+parties are informed that new data might be available for their own
+lists.  For example, the \VdataMT\ listens for this event so
+that its list of data remains current.  This function might also be
+used by a programmer after a global Image \tool\ is explicitly
+constructed in their code.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{widgetset}{Return the \widgetserverT\ used by this \tool}
+\ahreturns{\widgetserverT}
+\begin{ahdescription}
+
+This function simply returns the \widgetserverT\ that is used by
+this \VT\ to build GUIs.  It is generally reserved for internal
+use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{dying}{Is this \VT\ in the process of destroying itself?}
+%%\ahreturns{Boolean}
+%%\begin{ahdescription}
+%%
+%%This function is provided so that tools created by the \VT\ can
+%%establish whether a request to destroy them came from the \VT
+%%itself.  There are some tools, for example the \lkVcolormapMT, which
+%%will only allow their owning \VT\ to call their {\tt done}
+%%function.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{registerdatamanager}{Register a \VdataMT\ with this \VT}
+%%\begin{ahargs}
+%%  \ahaddarg{datamanager}{\VdataMT\ to register}{}{\VdataMT}
+%%\end{ahargs}
+%%\ahreturns{T or fail}
+%%\begin{ahdescription}
+%%
+%%This function is called by the constructor of a \VdataMT\ in
+%%order to register that \VdataMT\ as something that relies on
+%%the existence of this \VT, and which should therefore be
+%%destroyed when this \VT\ is destroyed.
+%%
+%%{\em There should be no need to call this function explicitly: it is
+%%reserved for internal use.}
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{registerdisplaypanel}{Register a \VdisplaypanelT\ with this \VT}
+%%\begin{ahargs}
+%%  \ahaddarg{displaypanel}{\VdisplaypanelT\ to register}{}{\VdataMT}
+%%\end{ahargs}
+%%\ahreturns{T or fail}
+%%\begin{ahdescription}
+%%
+%%This function is called by the constructor of a \VdisplaypanelT\ in
+%%order to register that \VdisplaypanelT\ as something that relies on
+%%the existence of this \VT, and which should therefore be
+%%destroyed when this \VT\ is destroyed.
+%%
+%%{\em There should be no need to call this function explicitly: it is
+%%reserved for internal use.}
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{validdatasets}{Return a list of datasets suitable for a particular type of rendering}
+%%\begin{ahargs}
+%%  \ahaddarg{dataformat}{rendering type}{}{'raster' 'contour'}
+%%\end{ahargs}
+%%\ahreturns{record of datasets}
+%%\begin{ahdescription}
+%%
+%%This function analyses the stored output of the {\tt updatedatasets}
+%%function, and should normally be preceded by a call to that very
+%%function.  The caller of this function provides a particular type of
+%%representation (at present 'raster' or 'contour') and returned is a
+%%list of datasets that could be used to construct a \VdisplaydataT\ of
+%%that representation.  For example, if the user gives {\tt
+%%dataformat='contour'}, then as of this writing, {\tt validdatasets}
+%%will return a record whose top-level fields are global \glish\ symbols
+%%which are either \glish\ arrays or \aipspp\ \images\ (for they are the
+%%two types of data that a 'contour' representation can be made from),
+%%and whose sub-fields are: 'data', containing the on-disk name of the
+%%\image\ or the actual array data; 'listname', containing a unique name
+%%with which to identify the dataset; and 'dlformat', which will be
+%%either 'image' or 'array'.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{datasetfromname}{Return information about a dataset from its name}
+%%\begin{ahargs}
+%%  \ahaddarg{name}{viewer-calculated name of a dataset}{}{String}
+%%\end{ahargs}
+%%\ahreturns{none}
+%%\begin{ahdescription}
+%%
+%%Again, this function operates on the most recent output of the 
+%%{\tt updatedatasets} function.  Given the "name" of a dataset, that
+%%is, the 'listname' field of a dataset record retrieved by the
+%%{\tt validdatasets} function, this function returns the entire
+%%record of information for that particular dataset.  The fields of 
+%%this dataset are described in the {\tt validdatasets} function.
+%%
+%%{\bf This function should not be called by the user:} it is used
+%%internally.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{alldisplaytypes}{Return information about available data representations}
+%%\ahreturns{record of displaytypes}
+%%\begin{ahdescription}
+%%
+%%This function returns some basic information (in a record) describing
+%%the data representations that the \VT\ can generate.  The top-level
+%%fields of the returned record are at present limited to {\tt 'raster'}
+%%and {\tt 'contour'}, and each has the following subfields: {\tt
+%%'listname'}, being a description of the representation that can be
+%%displayed in a user-interface (eg.\ {\tt 'Raster Image'}); {\tt
+%%'validfor'}, which lists the dataset types which can be used to
+%%construct such a representation (eg.\ {\tt "image array"}); and {\tt
+%%'dlformat'}, which is a copy of the name of the top-level field (ie.\
+%%{\tt 'raster'} or {\tt 'contour'}).
+%%
+%%{\bf This function should not be called by users:} it is called 
+%%by \VdataMTs.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{validdisplaytypes}{Return a list of displaytypes 
+%%	suitable for a particular type of dataset}
+%%\begin{ahargs}
+%%  \ahaddarg{dataformat}{dataset type}{}{'image' 'array'}
+%%\end{ahargs}
+%%\ahreturns{record of displaytypes}
+%%\begin{ahdescription}
+%%
+%%This function takes as its argument a dataset type ('image' or 'array' 
+%%at the present time) and returns a list of displaytypes that could be
+%%constructed from said type of data.  For example, an 'image' can be
+%%used to build a 'contour' or a 'raster' representation, so information 
+%%about contours and rasters would be returned.  This is primarily a
+%%support function used by the \VdataMT.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{displaytypefromname}{Find displaytype information for a given displaytype 'listname'}
+%%\begin{ahargs}
+%%  \ahaddarg{name}{'listname' of target displaytype}{}{String}
+%%\end{ahargs}
+%%\ahreturns{displaytype record}
+%%\begin{ahdescription}
+%%
+%%This function returns a record describing the displaytype having the
+%%given 'listname' field: for example, given 'Raster Image', it will
+%%return the following record: {\tt [listname=Raster Image,
+%%validfor=image array, dlformat=raster]}.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{createdata}{Create a \VdisplaydataT\ for future use}
+%%\begin{ahargs}
+%%  \ahaddarg{dataset}{dataset record describing data}{}{dataset record}
+%%  \ahaddarg{displaytype}{displaytype record describing what sort of
+%%	\VdisplaydataT\ to make}{}{displaytype record}
+%%\end{ahargs}
+%%\ahreturns{\VdisplaydataT}
+%%\begin{ahdescription}
+%%
+%%This function does much of the work for the {\tt loaddata} function.
+%%It takes record arguments which have generally been previously
+%%returned by the dataset and displatype function families.  It
+%%does not provide the {\tt autoregister} facility, that is available
+%%only in the {\tt loaddata} function.
+%%
+%%{\bf This function should not be called by users:} it is called by the
+%%\ahlink{loaddata}{viewer:viewer.loaddata} function.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{emitdisplaydatalist}{Emit the current list of \VdisplaydataTs\ known to this \VT}
+%%\ahreturns{None}
+%%\begin{ahdescription}
+%%
+%%This function is generally called internally, but is available for
+%%use from the command-line or from scripts in the case that a mixed
+%%interface is being used to operate the \VT.  All it does is
+%%cause the \VT\ to emit an event called 'displaydatas' which
+%%contains a list of all the \lkVdisplaydataTs\ known to the \tool.
+%%
+%%{\em This function is normally used internally only.}
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{displaydatafromname}{Return a handle to a \VdisplaydataT\ from its name}
+%%\begin{ahargs}
+%%  \ahaddarg{name}{\VdisplaydataT\ name}{}{String}
+%%\end{ahargs}
+%%\ahreturns{\VdisplaydataT or fail}
+%%\begin{ahdescription}
+%%
+%%Given the name of a \lkVdisplaydataT, this function returns the 
+%%handle to the corresponding \tool\ whose {\tt name} function returns
+%%the same as that given to this function.
+%%
+%%{\em This function is normally used internally only.}
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%\begin{ahfunction}{generatefilename}{Generate a unique filename, normally for PostScript output}
+%%\begin{ahargs}
+%%  \ahaddarg{base}{base name for file}{unset}{String or unset}
+%%  \ahaddarg{ext}{file extension}{''}{String}
+%%\end{ahargs}
+%%\ahreturns{String}
+%%\begin{ahdescription}
+%%
+%%This function can be used to generate a (hopefully) unique filename,
+%%with an optional specified base.  If {\tt base} is not given, then the 
+%%name of this \VT\ (returned by the {\tt title} function) will
+%%be used as the base.  A unique number is appended to the base,
+%%followed by the extension if it is given.
+%%
+%%\end{ahdescription}
+%%\end{ahfunction}
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{ahobject}
+\end{document}

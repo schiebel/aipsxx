@@ -1,0 +1,351 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: msplot.help,v 19.2 2005/01/27 23:10:34 gmoellen Exp $
+\begin{ahtool}{msplot}{tool for MeasurementSet plotting, display, listing and editing}
+\ahinclude{msplot.g}
+
+\begin{ahdescription} 
+
+\texttt{msplot} provides a GUI-based tool for displaying the data (as
+line plots or gridded onto a raster) of various parts of a measurement
+set. It is built on top of the \ahlink{ms}{ms.ms} tool, allowing
+plotting of many of the variables accessible via the
+\ahlink{ms:ms.getdata}{ms:ms.getdata} function. \texttt{msplot} also
+supports interactive flagging of data in a measurement set.
+Non-interactive flagging is possible using the
+\ahlink{flagger}{flagger:flagger} tool or the
+\ahlink{autoflag}{autoflag:autoflag} tool.
+
+Next to the {\bf Show} label at the top, you will find a button that
+allows selection of one of possible plots, displays, and listings. In
+this context, a plot means a graph of plotted points (made using the
+\ahlink{pgplotter}{plotter:pgplotter}), a display means an
+image-like display of gridded data (made using the
+\ahlink{viewer}{viewer:viewer}), and a listing send various
+information to the logger. The most straightforward plot is X versus
+Y, where, for example, X could be selected to be Time, and Y could be
+selected to be field\_id.  Generally plotting visibility against
+something else will be more useful: for example, on the Y axis might
+be observed amplitude, and X might be uvdist.  Use the plotflagged
+switch under the Options menu to control whether flagged points are
+visible. Use the multi-panel switch under Options to control whether
+multiple plots are displayed on the same page (as would be useful for
+{\em e.g} ATCA baseline plots.  Summary and row-by-row
+listings are available, though the latter is quite underdeveloped
+currently.
+
+The types of plots allowed are adapted to the type of data: for
+synthesis data, one can plot uv coverage and the data for a slice
+in the uv plane. For single dish data, one can plot the pointing
+coverage and the data for a slice in the sky plane.
+
+For the Plot of X versus Y, the axes to be plotted can be chosen by
+selecting under the various buttons on the second row labelled X Axis
+and Y Axis.  Iteration over various axes may be enabled by selecting
+buttons under the Iterate button. To stop an iteration or other
+operation, press the red Stop button. By suitable combination of these
+controls, you should be able to able to get a very wide range of
+useful X, Y plots.
+
+For the Image display, visibility data are displayed as an image,
+gridded on axes: Interferometer, Row (Time), Channel, and
+Correlation. The choice of what form of visibility to show as
+brightness is controlled by the Image button.
+
+Selection of the Measurement Set data to be shown is controlled by a
+number of buttons on the third row. Selecting one of these causes
+a frame to be shown directly underneath.
+\begin{description}
+\item[X, Y plot limits] The scaling for the plot axes may be specified
+using the entry boxes. The range of values in the plot may be
+filled into the box using the Ranges button at the right hand side.
+\item[Data selection] Ranges of quantities to be selected 
+may be input via entry boxes.
+The range of values in the measurement set may be
+filled into the box using the Ranges button at the right hand side.
+A selection may then be made and the Ranges recalculated. 
+\item[Spectral selection] Channels to be plotted may be selected 
+with or without averaging. One specifies the number of desired {\em
+output} channels (NCHAN), the {\em input} channel to start with
+(START), the number of {\em input} channels to step between output
+channels (STEP), and the number of {\em input} channels to average per
+output channel (WIDTH).  For example, to plot each of 32 channels, use
+NCHAN=32, START=1, STEP=1, WIDTH=1. To plot the average of all the
+channels use NCHAN=1, START=1, STEP=1, WIDTH=32.  NCHAN=3, START=2,
+STEP=5, WIDTH=3 will plot 3 output channels, each the average of
+channels [2,3,4,5,6], [5,6,7,8,9], and [8,9,10,11,12].
+\item[Polarization selection] The names of the requested polarizations
+may be input: {\em e.g.} I Q U V or RR RL LR LL, {\em etc.}.
+\end{description}
+
+The control arguments for \texttt{msplot} are saved and restored 
+between executions, and in addition the arguments may be reset to 
+the default values. All of this is possible from the Arguments
+button at the bottom of the GUI.
+
+When plotting, msplot works by issuing commands to the
+\ahlink{pgplotter}{plotter:pgplotter}. The plot may be saved in AIPS++
+plot file format (actually an AIPS++ table), or written as a
+postscript file.
+
+When displaying, msplot uses the \ahlink{viewer}{viewer:viewer}. It
+first constructs an image with the relevant axes (by gridding
+the data onto a cube), and then sends it to the viewer for
+display. All the capabilities of the viewer may be used to control
+the display. 
+
+\subsection{Editing via the viewer}
+
+Msplot also allows editing of data. This is enabled by constructing
+msplot with an {\tt edit=T} argument. Editing is possible via the X,Y
+plots, and the image-like displays. If editing is possible then the
+top window of the relevant frame will have the line 'Editing Commands'.
+
+In the image-like display, the visibility amplitude (or whatever is
+selected using the Image menu) is displayed on axes of interferometer,
+row, correlator, and channel. To optimize the screen use, the view is
+adapted to the shape of the data. X is the axis with the largest
+number of pixels, Y the next largest, and so on.  Note that the
+displayed axes may be changed using the Adjust button on the display
+panel. The world coordinates for each axis (X, Y, Z) will be
+displayed.
+
+To edit with the image display:
+
+\begin{itemize}
+\item Use the Image button to control what is displayed as
+brightness in the plot. This can be Amplitude, Phase, Real, or
+Imaginary of the Observed, Corrected, Model, or Residual Visibility.
+\item Use the Polarization Selection button to select the polarizations
+to be plotted {\em e.g.} RR, RL, LR, or LL. You can usually
+leave this as the default, and all full polarizations will
+be displayed (as the hidden fourth axis).
+\item Use the Spectral selection button to select the spectral
+window(s) and the range of channels.
+\item Optionally use the Field Id range selection further select the data. 
+\item Press Go to display the data.
+\item Optionally adjust the display using the Adjust button.
+\item Select the type of flagging using the left hand button
+on the row of buttons. This has various possibilities: by Antenna, by
+Time, by Interferometer, by Channel, and by Correlator.
+For example, to flag all data for a given Time, select just the
+Time button. To flag all data for a given Antenna and a given Time,
+select both Time and Antenna.
+\item The flags may be applied to all Spectral Window Ids and
+Polarization Ids by selecting the appropriate button.
+\item To start flagging, move to the display window. To select
+a {\bf single value}, press the cross-hair button on the left hand
+size of the display, and then click on the display to set the cross
+hair, and then double-click to accept the value. To remove the
+displayed cross-hair, press escape.  To select {\bf a range of
+values}, press the square region button and then click and drag on the
+display to set the (square) region. To accept the region, double
+click. To remove the displayed region, press escape.
+\item To see the currently defined edits, press the List button.
+\item If you make a mistake, press the Cancel button to forget
+the current edit or Clear to forget all the stored edits.
+\item Once you are finished defining edits, they may be applied
+and the display reloaded using the Flag button. You may now
+continue defining more edits.
+\item If you really mess up, then you may revert to the
+original flagging status on startup using the Revert button.
+\end{itemize}
+
+\subsection{Editing via X,Y plots}
+
+msplot will plot any of a range of quantities in X,Y scatter
+plots. This may then be edited by drawing a box on the display
+using the mouse.
+
+\begin{itemize}
+\item Use the X axis, and Y axis buttons to control what is plotted
+along the axes.
+\item Optionally use the Polarization Selection button to select the 
+polarizations to be plotted {\em e.g.} RR, RL, LR, or LL. You can
+usually leave this as the default, and all full polarizations will be
+displayed (as different colors).
+\item Optionally use the Spectral selection button to select the
+Spectral Windows and the range of channels.
+\item Optionally use the Fields button to further select the data. 
+\item To start flagging, move to the plot window. You will
+select regions by pressing the mouse button 1 (usually the left
+button), and then dragging to the top right corner. The selected
+region will be drawn in a green cross-hatched pattern, and the
+coordinates of the region will be printed out. You may make as many of
+these regions as you like.
+\item To control whether the edits are applied to all channels
+and all correlations uniformly, you may select the corresponding
+button on the edit window.
+\item To see the currently defined edits, press the List button.
+\item If you make a mistake, press the Cancel button to forget
+the current edit or Clear to forget all the stored edits.
+Note that the cross-hatched region will remain but will turn light grey.
+\item Once you are finished defining edits, they may be applied
+and the display reloaded using the Apply button. You may now
+continue defining more edits.
+\item If you really mess up, then you may revert to the
+original flagging status on startup using the Revert button.
+\end{itemize}
+
+The same set of steps may be used with the Locate button instead of
+the Flag button. This lists the selected points to the logger. No
+flagging is done. This is useful for finding outlier points.
+
+The flags are applied with each press of the Flag button.
+On exit from msplot, you will be asked whether to keep these flags
+permanently or to restore the old flag columns. If you choose to keep
+these flags, then the flag column table will contain the flag columns as they
+were prior to this run of msplot.  If you choose to restore the old
+flagg columns then the flag column table will contain the flag columns
+after applying these edits.
+
+\subsection{Useful tips}
+
+\begin{itemize}
+\item For synthesis data, set Data selection/Show Zero Spacing to
+False to avoid the scale being dominated by the zero spacing points.
+\item To find the position angle of a feature, use the 
+Plot of Y (data) versus reprojected U axis. Set the number of plots
+to be 18, and you will see the visibility function plotted for
+increments of ten degrees.
+\item Some of the entry fields have graphical tools to help in
+setting: Data selection/Antennas, Data selection/Interferometer
+Number, Data selection/Field Id. As is standard throughout AIPS++,
+these are accessed via the wrench menu on the right end of each entry widget.
+\item Data selection/Antennas and Data selection/Interferometer Number
+have different purposes and usually should not be used together.
+The former allows all data from a set of antennas to be selected,
+whereas the latter allows more detailed control over which antenna
+pairs are to be selected.
+\item The ranges in the Data selection frame are evaluated by
+selecting with the current selections, and then finding the ranges.
+The initial values are calculated with no selection. Use the Update
+button on the Data selection frame to update the Ranges for
+the current selection. For example, suppose that you wish to
+find the range of observed times for a given field id. Set the field
+id as desired and then press the Update button. The next press
+of the Range button for the Time will fill in the time range for
+that field id.
+\item In both the Spectral selection and Polarization selection frame,
+the initial values for some of the parameters are filled in when a
+value is entered in the List entry box.
+\item To find outlier points with the plotter, use the same steps as 
+you would for flagging but press Locate instead of Flag. The
+selected points will be identified in the logger.	
+\end{itemize}
+
+\subsection{Background on editing}
+
+The Measurement Set contains two columns, FLAG\_ROW and FLAG that are
+used to denote flagging of data. On starting msplot with the argument
+edit=T, these columns are saved to another table, the flag
+column table, from which they may be restored as required. As msplot
+proceeds, the flag columns in the measurement set are modified
+whenever the Apply button is pressed. Thus on exit from msplot, if
+one wishes to discard the edits, these columns must be copied back
+from the temporary flag column table. The user is asked whether this
+is to be done whenever msplot exits (or when AIPS++ is exited).
+
+If the edits are to be discarded, the new flag columns are stored
+in the flag column table, from where they may be applied using the
+function \ahlink{msplotapplyflags}{msplot:msplotapplyflags}.
+
+Note that non-interactive flagging is possible using the
+\ahlink{flagger}{flagger:flagger} tool.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'msplot.g'
+include 'imager.g'
+imagermaketestms()			# To make the standard MS 3C273XC1.ms
+mymsplot:=msplot('3C273XC1.ms')	# To create a msplot
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{msplot}{Construct a visibility plotter}
+\begin{ahdescription}
+Construct a visibility plotter from a MeasurementSet. In processing,
+only {\tt nrows} rows are read at any one time so this should be
+used to tune the amount of memory used in processing.
+
+The flagfile is used to stop a copy of the FLAG and FLAG\_ROW columns
+prior to editing. This allows any changes in the flagging to
+be reversed on exit. The flagfile may then applied afterwards
+using the function \ahlink{msplotapplyflags}{msplotapplyflags}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{msfile}{Name of MeasurementSet}{''}{String}
+\ahaddarg{nrows}{Number of rows to buffer at once}{16384}{Integer}
+\ahaddarg{edit}{Allow editing?}{F}{Boolean}
+\ahaddarg{flagfile}{Name of flag file}{unset}{File name}
+\ahaddarg{displaywidth}{Width of display in pixels}{600}{Integer}
+\ahaddarg{displayheight}{Height of display in pixels}{300}{Integer}
+\end{ahargs}
+\end{ahconstructor}
+\end{ahtool}
+
+\begin{ahfunction}{msplotapplyflags}{Apply flag columns}
+  \begin{ahdescription}
+    msplot can, during a flagging session, create a table that
+    contains the contents of the FLAG \& FLAG\_ROW columns of the
+    measurement set. This function can copy the flags from this
+    ``flag'' table back into the corresponding columns of the
+    measurement set.
+
+    The name of the measurement set that was used to create the
+    ``flag'' table is stored in the flag table and it is not necessary
+    to specify which measurement set the ``flag'' table is associated
+    with. You can apply the ``flag'' table to a different measurement
+    set by specifying its name using the msfile argument. It is
+    \textbf{critical} that the alternate measurement set have the same
+    number of rows, and that the data in each row of be the same shape
+    as the measurement set from which the flag table was derived. In
+    practice this means the the alternate measurement set should be
+    derived in some way from the original one.
+
+    Normally the flags in the ``flag'' table will replace those in the
+    measurement set. It is possible to merge the flags so that the
+    resultant flags are the logical OR of those already in the
+    measurement set and the flags in the ``flag'' table. This is done
+    by setting the merge argument to T.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{flagfile}{Name of flag file}{no default}{String}
+    \ahaddarg{msfile}{Name of measurement set}{unset}{String}
+    \ahaddarg{merge}{Merge the flags from both tables}{F}{Boolean}
+  \end{ahargs}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'msplot.g';
+      msplotapplyflags('3C273XC1.ms.flags.12')
+    \end{verbatim}
+    This example applies the flags in the table called
+    \texttt{3C273XC1.flags.12} to a measurements set called
+    \texttt{3C273XC1.ms} in the same directory.
+  \end{ahexample}
+\end{ahfunction}

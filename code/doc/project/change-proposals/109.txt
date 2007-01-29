@@ -1,0 +1,104 @@
+ Title:                  Proposal for MeasurementSet changes 
+ Person responsible:     Mark Wieringa (mwiering@atnf.csiro.au)
+ Originator of proposal: Mark Wieringa (mwiering@atnf.csiro.au)
+ Exploders targeted:     aips2-workers
+ Time table:
+         Date of issue:          1996 September 16        Done
+         Comments due:           1996 September 25        Done
+         Revised proposal:       1996 September 28        Done        
+         Final comments due:     1996 October 3           Done
+         Decision date:          1996 October 4           Done
+ 
+ Statement of goals:
+ 
+ To 
+ (1) fix some inconsistencies and remove unused items in the current
+     MeasurementSet and 
+ (2) change the required status of some columns and sub-tables to optional
+     to avoid wasted space and/or duplicate or dummy information and
+ (3) add required support for Measures for coordinates & time
+  
+ Proposed changes:
+ 
+ 1. Remove DEFAULT_CALIBRATION keyword from main table
+ 2. Make DATA column optional (like FLOAT_DATA)
+ 3. Add member function Bool MeasurementSet::makeComplexData() to create
+    the DATA column from FLOAT_DATA if needed. 
+ 4. Remove MAX_ANT keyword from ANTENNA table
+ 5. Remove ANTENNAS and NUM_ANT columns from ARRAY table, fix
+    description of NAME (String) 
+ 6. Remove NUM_FEED keyword from FEED table
+ 7. Make BEAM_OFFSET column in FEED table of type Double (wrong in docs
+    only)
+ 8. Make RECEPTOR_ANGLE in FEED table a 1-d array of length NUM_RECEPTORS
+ 9. Add a TIME column to the FIELD table
+ 10. Add OBSERVATION_ID column to the OBS_LOG table
+ 11. Make the SOURCE table optional, remove the SOURCE_ID column from main
+     table (i.e., SOURCE table is only pointed to from FIELD table) 
+ 12. Remove NUM_CHAN column from SYSCAL table
+ 13. Change WIND_VELOCITY to WIND_SPEED in WEATHER table
+ 14. Make WEIGHT column in main table scalar (*)
+ 15. Add MEASURE_REFERENCE keyword to columns to take the Measure enum
+     specifying the reference frame: 
+     e.g., the keywords for FIELD/POINTING_DIR would be:
+        MEASURE_TYPE:   DIRECTION  (as now)
+        MEASURE_REFERENCE: J2000   (new) n.b. could also be B1950 or GALACTIC
+        UNIT:           rad        (as now)
+ 16. Add convenience functions to the MS to
+     easily turn column values into Measures: 
+     e.g. for the above example 
+     MDirection MS::directionMeasure(const Table&, const String& columnName)
+     called with MS::directionMeasure(ms.field(),"POINTING_DIR");
+     will return an MDirection pointing at the J2000 pole. 
+     MPosition:set() can then be used to fill the coordinate value and, if
+     necessary, additional reference frame info from other parts of
+     the MS (e.g. time and position for AZEL measures).
+ 17. Add optional String columns MOLECULE and TRANSITION to the
+     SPECTRAL_WINDOW table.
+ 
+ 
+     Expected Impact:
+ 
+ Positive: 
+ 1. No longer used (Correctors ax'd)
+ 2. Avoid bloat or kludge with zero dimensions in single dish case.
+    (Using 2 tiled StorageManagers it should be possible to mix
+     float and complex data in one MS if required [Multibeam data])
+ 3. Make it easy to combine single dish and synthesis data when
+    DATA is optional
+ 4. Not used
+ 5. Not used, and not always uniquely definable (see example in
+    FITS Format for Interferometry Data Interchange by Diamond et al.) 
+ 6. Not used
+ 7. Consistency
+ 8. Needed for X-Y receptors to establish local naming convention
+ 9. Needed as time origin for the _RATE columns; note that TIME will NOT be
+    an index/coordinate
+ 10. Needed to point back to the OBSERVATION table
+ 11 Most fillers don't have the info to fill this table available to them,
+    so instead of dummy-filling the fields we can make the table optional.
+    The SOURCE_ID in the main table is not needed, it can be found via
+    the FIELD table (each field belongs to a single source). 
+ 12. Remove duplicate info (already in SPECTRAL_WINDOW table)
+ 13. It is a scalar quantity, so speed is the correct name
+ 14. Presently this is used only by the imaging code, but as a scalar
+     quantity. This change makes that correct usage.
+ 15. Adds much needed info on the reference frame of stored coordinates 
+ 16. Gives easy access to the stored MEASURE_REFERENCE 
+ 17. Provides a standard place to store these values (present in FITS)
+
+ Negative:
+ 2. Some more run-time checking may be needed
+ 8  Some changes to existing imaging code needed
+ 2,4,5,6,8-15. Fillers will need updating
+ 14. VisibilityIterator will need updating (but simplifies) and 
+     the direct mapping with FITS is lost. 
+ 
+ I intend to fix up checked in (& unlocked) code.
+ 
+ 
+ Proposed documentation changes:
+ 
+ The MeasurementSet header files and the MeasurementSet Definition Document
+ will be updated to reflect the changes.
+ 

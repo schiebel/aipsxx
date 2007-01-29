@@ -1,0 +1,646 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: combobox.help,v 19.2 2004/08/25 02:12:37 cvsmgr Exp $
+
+\begin{ahobject}{combobox} {A widget for selecting one or more items from a list.}
+
+\ahinclude{combobox.g}
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\begin{ahdescription}
+
+The combobox combines a text entry widget with a popup listbox and
+a label to provide a handy GUI way to select one or more items from a list. 
+The combobox has an internal data store -- a list of strings -- and a
+way to keep track of which of these strings is currently selected.  You
+can think of the listbox as the visual representation of the data store, and 
+the text entry widget as the visual representation of the current 
+selection.
+
+Items in the combobox data store are always strings, so the
+application must do whatever is necessary to interpret strings as
+numbers, or file names, or any other application-specific tool.  The
+most common use of the combobox will be for the interactive selection
+of items by the user in the popup listbox, by using the mouse.  The
+combobox immediately displays these selections in the text extry
+widget.  Users may also edit and type directly into the text entry
+widget; a carriage return in the text entry widget usually causes the current
+contents of that widget to be added to the combobox data store (and
+the listbox) as a new item.  The current
+contents of the text entry widget can be retrieved at any time by
+a ``getentry ()'' call.  The current listbox selection may be
+retrieved at any time by a ``get('selected')'' call.  The entry
+contents may not be the same as the listbox selection if, for example,
+the user has edited the entry contents but not yet hit return.
+The application can choose to retrieve the entry contents at any
+time and, if necessary, add items to the combobox (and optionally
+make one of these the current selection).
+
+When the user presses the arrow button which causes the listbox
+to pop up, the listbox grabs the input focus.  The user then
+usually has only two options: clicking the left mouse button on an
+item in the listbox, which selects that item and puts
+it into the combobox entry field, or clicking anywhere else which
+causes the listbox to be dismissed and nothing to happen.
+If the combobox has been set to display a clear button through
+the use of the canclearpopup attribute then the user can also
+click on the clear button.  This clears all of the items from
+the internal data store as well as clearing the entry before
+dismissing the listbox.  If the listbox has scrollbars, the user
+can manipulate those.
+
+The combobox emits events through the agent returned by the
+agent member function.  Standard events include ``select'', 
+when the user makes a selection in the combobox or
+hits return in the entry, causing a new selection,
+``return'', when the user hits return in the entry
+(which also generates a selection if addonreturn is T)
+and a ``press'', when the user presses the button which displays the
+listbox.  The bind member function can be used to bind
+any x-event to this same agent.
+
+One limitation in glishtk is that it is impossible to query
+the true size of an entry widget.  The best one can do is
+query the requested size when the widget was constructed.
+This makes it impossible for the listbox popup to always have
+the same width as the entry widget in the combobox.
+
+One further caveat is that the indexing into the internal
+data store through member functions such as get, insert,
+and delete, is 0-relative.  This is to make it identical
+to the indexing in the glishtk listbox widget which the
+combobox uses.  This means that the first item in the list
+is at index number 0 and if there are N items in the list
+the the last item in the list is at index number 'N\-1'.
+In addition to being able to index by integer, there are
+three string indices which are useful: 'active', 'selected',
+and 'end'.  Of these, 'active' and 'end' also can be used
+in glishtk listbox indexing.  The third, 'selected' was added
+as a natural synonym for 'active'.
+
+The combobox emits events through the agent returned by
+the ``agent'' member function.
+\begin{description}
+\item[return]When the user hits return in the combobox entry.
+The value of this event is the contents of the entry box when the
+user hit return.
+\item[select]When the user selects something from the popup
+list box or after a {\bf return} if the combobox has addonreturn
+turned on (the default case).
+\item[clear]When the user presses the ``Clear'' button on the popup.
+\item[press]When the user presses the arrow button
+\item[user defined]Through the use of the ``bind'' member function,
+the application can bind X-events to the entry widget.  When a
+bound event occurs in the entry widget it is emitted through this
+agent with the name the user chose in the invocation of ``bind''.
+\end{description}
+
+\begin{ahexample}
+\begin{verbatim}
+f := frame()
+cb := combobox(f,'Colors',"red blue green yellow amber saffron");
+print cb.get('selected')
+# the string ``red'' is printed out
+cb.select(2)
+print cb.get('selected')
+# the string ``green'' is printed out due to 0-relative indexing
+cb.insert('orange', 2)
+a := cb.get(0,'end')
+# a now contains "red blue orange green yellow amber saffron"
+# The selection is maintained at green, which now has an index of 3
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+  %----- constructor
+  \begin{ahconstructor}{combobox}{Construct a combobox}
+    \begin{ahcomments}
+	Most of the defaulted arguments provide fine control over the
+appearance of the various parts of the combobox.  Most users will never
+need to use these arguments.  The arguments most likely be changed
+by users are placed early in the argument list.
+% these needed to be split in two so that each table fits on one
+% sheet of paper
+    \end{ahcomments}
+    \begin{ahargs}
+       \ahaddarg{parent}{a frame to hold the combobox}{}{glishtk frame}
+       \ahaddarg{labeltext}{a label for the combobox}{'label'}{string}
+       \ahaddarg{items}{The initial contents of the combobox data. The first item will be selected.  If F the contents will be empty}{F}{an array of strings}
+       \ahaddarg{addonreturn}{Should a return in the entry widget automatically add the entry value to the contents?}{T}{T or F}
+       \ahaddarg{entrydisabled}{When the entry is disabled, the user can not edit in the entry, the combobox otherwise functions normally.}{F}{T or F}
+       \ahaddarg{canclearpopup}{When this is true, the listbox comes with a ``Clear'' button which, when pressed, clears the contents.}{F}{T or F}
+       \ahaddarg{autoinsertorder}{Determines where each new item is inserted if no specific location is given.}{'tail'}{'tail','head'}
+       \ahaddarg{disabled}{Disable the combobox, turns off all graphical interaction.}{F}{T or F}
+       \ahaddarg{borderwidth}{The borderwidth of the outer combobox frame.}{2}{any integer}
+       \ahaddarg{exportselection}{exportselection value for entry.}{T}{T or F}
+       \ahaddarg{vscrollbar}{The type of vertical scrollbar that the listbox has.}{'ondemand'}{'ondemand','always','none'}
+       \ahaddarg{hscrollbar}{The type of horizontal scrollbar that the listbox and the entry have.}{'none'}{'ondemand','always','none'}
+       \ahaddarg{labelwidth}{The width, in characters, of the label.}{0}{any integer}
+       \ahaddarg{labelfont}{The font used in the label.}{}{any X font.}
+       \ahaddarg{labelrelief}{The relief of the label.}{'flat'}{any glishtk relief}
+       \ahaddarg{labeljustify}{The text justification of the label.}{'left'}{any glishtk text justificiation}
+     \end{ahargs}
+     \begin{ahargs}
+       \ahaddarg{labelbackground}{The background color of the label.}{'lightgrey'}{any X color.}
+       \ahaddarg{labelforeground}{The foreground color of the label.}{'black'}{any X color.}
+       \ahaddarg{labelanchor}{The text anchor point within the label.}{'c'}{any glishtk anchor.}
+       \ahaddarg{entrywidth}{The width, in characters, of the entry.}{30}{any integer}
+       \ahaddarg{entryfont}{The font used in the entry.}{}{any X font.}
+       \ahaddarg{entryrelief}{The relief of the entry.}{'sunken'}{any glishtk relief}
+       \ahaddarg{entryjustify}{The text justification of the entry.}{'left'}{any glishtk text justificiation}
+       \ahaddarg{entrybackground}{The background color of the entry.}{'lightgrey'}{any X color.}
+       \ahaddarg{entryforeground}{The foreground color of the entry.}{'black'}{any X color.}
+       \ahaddarg{entryanchor}{The text anchor point within the entry.}{'c'}{any glishtk anchor.}
+       \ahaddarg{arrowbutton}{The file containing the bitmap to use for the arrow button.}{'downarrow.xbm'}{any X bitmap file.}
+       \ahaddarg{arrowbackground}{The background color of the arrow button.}{'lightgrey'}{any X color.}
+       \ahaddarg{arrowforeground}{The foreground color of the arrow button.}{'black'}{any X color.}
+       \ahaddarg{listboxheight}{The height of the listbox when a horizontal scrollbar is present.}{6}{any integer}
+       \ahaddarg{help}{Short popup help text}{}{String}
+       \ahaddarg{widgetset}{Widget set to use}{dws}{A widgetserver closure tool}
+     \end{ahargs}
+    \ahreturns{a combobox tool with associated functions.}
+  \end{ahconstructor}
+
+  %----- agent
+  \begin{ahfunction}{agent}{Get a reference to the agent which emits events from this combobox.}
+    \ahreturns{a glish agent}
+    \begin{ahdescription}
+	This combobox agent emits a ``return'' when the user hits return in 
+the entry, a ``press'' the user presses the arrow button, a ``select'' when
+then makes a selection in the listbox, and  ``clear'' when the user presses
+the clear button on the listbox (which is only present if canclearpopup is T.
+A ``select'' event also follows a ``return'' event if addonreturn is T.
+    \end{ahdescription}
+    \begin{ahexample}
+      \begin{verbatim}
+	f := frame()
+	cb := combobox(f,'colors')
+	whenever cb.agent()->* do {
+	    print $name, ' event seen, value is : ', $value
+        }
+      \end{verbatim}
+    \end{ahexample}
+  \end{ahfunction}
+
+  %----- pixelwidth
+  \begin{ahfunction}{pixelwidth}{The true width, in pixels, of the outer combobox frame.}
+    \ahreturns{an integer}
+  \end{ahfunction}
+
+  %----- pixelheight
+  \begin{ahfunction}{pixelheight}{The true height, in pixels, of the outer combobox frame.}
+    \ahreturns{an integer}
+  \end{ahfunction}
+
+  %----- get
+  \begin{ahfunction}{get}{Get an item or range of items from the combobox.}
+    \begin{ahargs}
+	\ahaddarg{first}{The first item to get}{}{Any valid item number from 0 to the end plus 'selected' and 'end'}
+	\ahaddarg{last}{The last item to get, if F just get the first}{F}{Any index >= first or F}
+    \end{ahargs}
+    \ahreturns{A vector of strings}
+    \begin{ahdescription}
+	As with the glishtk listbox, the index numbers here are 0-relative (i.e.
+	the first item is item number 0).
+	``selected'' translates to the index of the current selection, ``end'' translates
+	to the last item in the combobox.  get() returns a fail if the index is
+	out of range or otherwise does not exist (e.g. there is no current selection).
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- selection
+  \begin{ahfunction}{selection}{Retrieve the index number of the current selection.}
+    \ahreturns{An integer}
+    \begin{ahdescription}
+	Returns a -1 if there is no current selection.
+    \end{ahdescription}
+  \end{ahfunction}
+
+
+  %----- select
+  \begin{ahfunction}{select}{Select the indicated item by index number and place it in the entry.}
+    \begin{ahargs}
+	\ahaddarg{whichitem}{The item to select}{}{Any valid item number from 0 to the end plus 'selected' and 'end'}
+    \end{ahargs}
+     \ahreturns{T}
+   \begin{ahdescription}
+	This returns a fail if there is no valid selection.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- getentry
+  \begin{ahfunction}{getentry}{Get the contents of the entry.}
+    \ahreturns{A string}
+  \end{ahfunction}
+
+  %----- addonreturn
+  \begin{ahfunction}{addonreturn}{Sets the behavior when the user presses return in the entry.}
+    \begin{ahargs}
+	\ahaddarg{addonreturn}{The requested behavior}{}{T or F}
+    \end{ahargs}
+    \begin{ahdescription}
+	When the argument is T, a return automatically adds the contents of the
+entry to the combobox internal data, when it is F, nothing happens.  Typically,
+when this attribute is F the application will wait for return events from the
+combobox and examine the value of the entry before deciding if it should be
+added to the internal combobox data or not.  The default behavior is to
+always add values on return, or T.
+    \end{ahdescription}
+    \begin{ahexample}
+      \begin{verbatim}
+        f := frame()
+        cb := combobox(f,'colors',"red blue green yellow amber saffron")
+        cb.addonreturn(F)
+        whenever cb.agent()->return do {
+            newitem := $value
+            if (newitem != cb.get('selected')) {
+                # only add a new item if it isn't what is currently
+                # selected
+               	cb.insert(newitem, select=T)
+                # when added, insert it via current autoinsertorder
+               	# and select it
+            }
+       	}
+     	\end{verbatim}
+    \end{ahexample}
+  \end{ahfunction}
+
+  %----- canclearpopup
+  \begin{ahfunction}{canclearpopup}{Is there a clear button on the listbox popup.}
+    \begin{ahargs}
+	\ahaddarg{tOrF}{Is there a clear button}{}{T or F}
+    \end{ahargs}
+    \begin{ahdescription}
+	If this is true, then a clear button is present next to the listbox 
+popup which, when pressed, clears the contents of the combobox (deleting
+them all and clearing the entry).  Otherwise, there is no graphical
+way to clear the contents of the combobox.  The default behavior is to
+have a clear button, or F.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- borderwidth
+  \begin{ahfunction}{borderwidth}{Change the borderwidth of the outer combobox frame.}
+    \begin{ahargs}
+	\ahaddarg{newwidth}{The new width}{}{any positive integer.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- exportselection
+  \begin{ahfunction}{exportselection}{Change the export selection property of the entry.}
+    \begin{ahargs}
+	\ahaddarg{tOrF}{The new exportselection value}{}{T or F.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- disabled
+  \begin{ahfunction}{disabled}{Disable (T) or enable (F) the entire combobox.}
+    \begin{ahargs}
+	\ahaddarg{tOrF}{The new state of the combobox}{}{T or F.}
+    \end{ahargs}
+    \begin{ahdescription}
+	When the combobox is disabled, the user can not interact with it
+	graphically although all of the functions work as always.  The
+	state of the entry is remember so that if the entry was disabled
+	when the combobox was disabled, it will remain disabled when the
+	combobox is enabled (via a F argument to this function).
+     \end{ahdescription}
+  \end{ahfunction}
+
+  %----- delete
+  \begin{ahfunction}{delete}{Delete an item or range of items from the combobox.}
+    \begin{ahargs}
+	\ahaddarg{first}{The first item to delete}{}{Any valid item number from 0 to the end plus 'selected' and 'end'}
+	\ahaddarg{last}{The last item to delete, if F just get the first}{F}{Any index >= first or F}
+    \end{ahargs}
+    \begin{ahdescription}
+	This deletes these items from the list.  If the current selection falls
+	within the specified range, the first item before the range is selected 
+	or the first item after the range is selected if the range includes 
+	item 0.  If the entire contents are deleted, there is no current selection
+	after this function has returned.
+	As with the glishtk listbox, the index numbers here are 0-relative (i.e.
+	the first item is item number 0).
+	``selected'' translates to the index of the current selection, ``end'' translates
+	to the last item in the combobox.  delete() returns a fail if the index is
+	out of range or otherwise does not exist (e.g. there is no current selection)
+	and the contents of the combobox will remain unchanged in that case.
+    \end{ahdescription}
+    \begin{ahexample}
+       \begin{verbatim}
+	   f := frame();
+           cb := combobox(f,'colors',"red blue green yellow amber saffron")
+           # delete everything from the current selection to the end
+           # the new selection is whatever immediately preceeds the current
+           # selection or nothing, if 'selected' is item 0.
+           cb.delete('selected','end')
+       \end{verbatim}
+    \end{ahexample}
+  \end{ahfunction}
+
+  %----- insert
+  \begin{ahfunction}{insert}{Insert an item into the combobox.}
+    \begin{ahargs}
+	\ahaddarg{newitem}{The thing to insert}{}{A string}
+	\ahaddarg{index}{Its new location}{F}{Any index <= largest index + 1}
+	\ahaddarg{select}{Select this item}{F}{T or F}
+    \end{ahargs}
+    \ahreturns{T}
+    \begin{ahdescription}
+	If index is F then the current autoinsertorder determines which
+	and of the list of items this item is added at.  If an index
+	is specified, all of the existing items from that index to the
+	end are moved to the next location (i.e. an insert at location
+	5 results in the indexes of 5 to the end being now 6 to the new end).
+	This may cause the index of the current selection to change.
+	As with the glishtk listbox, the index numbers here are 0-relative (i.e.
+	the first item is item number 0).
+	``selected'' translates to the index of the current selection, ``end'' translates
+	to the last item in the combobox.  insert() returns a fail if the index is
+	out of range (more than 1 larger than the current largest index).
+	If select is T, this item will be selected after insertion.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- insertentry
+  \begin{ahfunction}{insertentry}{Replace the contents of the entry.}
+    \begin{ahargs}
+	\ahaddarg{newentry}{The new contents of the entry}{}{A string}
+    \end{ahargs}
+    \begin{ahdescription}
+	This new entry is not selected and it does not appear in the
+	combobox popup.  In other words, this is just as if the user 
+	had typed this string and not yet hit return in the entry.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- vscrollbar
+  \begin{ahfunction}{vscrollbar}{Change the vertical scrollbar behavior of the combobox popup.}
+    \begin{ahargs}
+	\ahaddarg{vscrollbar}{The new vertical scrollbar behavior}{}{'ondemand', 'always', 'none'}
+    \end{ahargs}
+    \begin{ahdescription}
+	When 'ondemand' is requested, the vertical scrollbar only appears when
+	the number of items is larger than listboxheight elements.  When
+	'always' is requested, the listbox always has a scrollbar.  When
+	'none' is requested, the listbox never has a scrollbar and it
+	is always high enough to show all of the items in the combobox.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- hscrollbar
+  \begin{ahfunction}{hscrollbar}{Change the horizontal scrollbar behavior of the entry and the combobox popup.}
+    \begin{ahargs}
+	\ahaddarg{hscrollbar}{The new horizontal scrollbar behavior}{}{'ondemand', 'always', 'none'}
+    \end{ahargs}
+    \begin{ahdescription}
+	The entry and listbox popup share the same horizontal scrollbar behavior.
+	When one has a horizontal scrollbar, the other does as well.
+	When 'ondemand' is requested, the horizontal scrollbar only appears when
+	the number longest item is longer than entrywidth elements.  When
+	'always' is requested, the horizontal scrollbar is always present. When
+        'none' is requested, there is no horizontal scrollbar and
+	the listbox is always wide enough to show all of the items in 
+	the combobox.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- autoinsertorder
+  \begin{ahfunction}{autoinserorder}{Change the automatic insertion behavior.}
+    \begin{ahargs}
+	\ahaddarg{insertorder}{The new automatic insertion behavior}{}{'tail', 'head'}
+    \end{ahargs}
+    \begin{ahdescription}
+	This determines how new items are added to the combobox when no specific
+	index location is specified - either through the use of the insert
+	function or through the users actions in the entry field.
+	If this is 'tail', the new item is added to the end of the list, if
+	this is 'head', the new item is added to the head of the list.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- bind
+  \begin{ahfunction}{bind}{Bind an X event to the combobox entry.}
+    \begin{ahargs}
+	\ahaddarg{xevent}{The X event to be bound.}{}{An X event in glishtk syntax}
+	\ahaddarg{eventname}{The name which will be associated with this event.}{}{A string}
+    \end{ahargs}
+    \begin{ahdescription}
+	This event will be bound to the combobox entry.  Events having the
+	name eventname will be emitted from the agent returned by the
+	agent member function each time this X event occurs within the
+	combobox entry.
+    \end{ahdescription}
+    \begin{ahexample}
+        \begin{verbatim}
+        cb.bind('<KeyPress>','keypress')
+        whenever cb.agent()->keypress do {
+           print 'Key pressed in combobox entry : ', $value;
+        }
+        \end{verbatim}
+    \end{ahexample}
+  \end{ahfunction}
+
+  %----- cursor
+  \begin{ahfunction}{cursor}{Change the default cursor within the combobox.}
+    \begin{ahargs}
+	\ahaddarg{xcursor}{The new default cursor.}{}{An X cursor}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- popupcursor
+  \begin{ahfunction}{popupcursor}{Change the default cursor within the combobox popup.}
+    \begin{ahargs}
+	\ahaddarg{xcursor}{The new default cursor in the popup.}{}{An X cursor}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labeltext
+  \begin{ahfunction}{labeltext}{Change the text of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newlabel}{The new label text.}{}{A string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelwidth
+  \begin{ahfunction}{labelwidth}{Change the width of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newwidth}{The new label width.}{}{An integer.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelfont
+  \begin{ahfunction}{labelfont}{Change the font of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newfont}{The new label font.}{}{An X font.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelrelief
+  \begin{ahfunction}{labelrelief}{Change the relief of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newrelief}{The new label relief.}{}{A glishtk relief string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labeljustify
+  \begin{ahfunction}{labeljustify}{Change the text justification within the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newjustify}{The new label text justification.}{}{A glishtk justify string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelforeground
+  \begin{ahfunction}{labelforeground}{Change the foreground color of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newforeground}{The new label foreground color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelbackground
+  \begin{ahfunction}{labelbackground}{Change the background color of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newbackground}{The new label background color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- labelanchor
+  \begin{ahfunction}{labelanchor}{Change the anchor attribute of the combobox label.}
+    \begin{ahargs}
+	\ahaddarg{newanchor}{The new label anchor attribute.}{}{A glishtk anchor string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- entrydisabled
+  \begin{ahfunction}{entrydisabled}{Disable or enable the entry.}
+     \begin{ahargs}
+        \ahaddarg{tOrF}{The state of the entry.}{}{T or F.}
+     \end{ahargs}
+     \begin{ahdescription}
+	When the entry is disabled (T here), the user can not type into
+	the entry part of the combobox.  This makes it impossible for the
+	user to add to the contents of the combobox graphically.  The
+	combobox functions still behave as before so an application is
+	free to do whatever it wants to do to the combobox.  This allows
+	an application to present an unchangable set of combobox options
+	to the user.  The user can only choose from the existing set of
+	items.  They can not add to them.  If the application programmer
+	has choosen to provide a clear button in the listbox, however, it
+	would then be possible for the user to clear the contents of
+	the combobox.
+     \end{ahdescription}
+  \end{ahfunction}
+
+
+  %----- entrywidth
+  \begin{ahfunction}{entrywidth}{Change the width of the combobox entry.}
+    \begin{ahargs}
+	\ahaddarg{newwidth}{The new entry width.}{}{An integer.}
+    \end{ahargs}
+    \begin{ahdescription}
+	Note that this will affect the width of the listbox popup when
+	no horizontal scrollbar is present.
+    \end{ahdescription}
+  \end{ahfunction}
+
+  %----- entryfont
+  \begin{ahfunction}{entryfont}{Change the font of the combobox entry and popup.}
+    \begin{ahargs}
+	\ahaddarg{newfont}{The new entry font.}{}{An X font.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- entryrelief
+  \begin{ahfunction}{entryrelief}{Change the relief of the combobox entry and popup.}
+    \begin{ahargs}
+	\ahaddarg{newrelief}{The new entry relief.}{}{A glishtk relief string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- entryjustify
+  \begin{ahfunction}{entryjustify}{Change the text justification within the combobox entry and popup.}
+    \begin{ahargs}
+	\ahaddarg{newjustify}{The new entry text justification.}{}{A glishtk justify string.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- entryforeground
+  \begin{ahfunction}{entryforeground}{Change the foreground color of the combobox entry and popup.}
+    \begin{ahargs}
+	\ahaddarg{newforeground}{The new entry foreground color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- entrybackground
+  \begin{ahfunction}{entrybackground}{Change the background color of the combobox entry and popup.}
+    \begin{ahargs}
+	\ahaddarg{newbackground}{The new entry background color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- arrowbutton
+  \begin{ahfunction}{arrowbutton}{Change the bitmap which is the arrow button.}
+    \begin{ahargs}
+	\ahaddarg{newbutton}{The new arrow button bitmap.}{}{The name of a file containing an X bitmap.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- arrowbackground
+  \begin{ahfunction}{arrowbackground}{Change the background color of the arrow button.}
+    \begin{ahargs}
+	\ahaddarg{newbackground}{The new arrow button background color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- arrowforeground
+  \begin{ahfunction}{arrowforeground}{Change the foreground color of the arrow button.}
+    \begin{ahargs}
+	\ahaddarg{newforeground}{The new arrow button foreground color.}{}{An X color.}
+    \end{ahargs}
+  \end{ahfunction}
+
+  %----- listboxheight
+  \begin{ahfunction}{listboxheight}{Change the height of the listbox.}
+    \begin{ahargs}
+	\ahaddarg{newheight}{The new listbox height.}{}{An integer.}
+    \end{ahargs}
+    \begin{ahdescription}
+	This value is only important if there is a vertical scrollbar
+	present.  If the vertical scrollbar is always on, the listbox is
+	always this height.  If the vertical scrollbar is only on when
+	needed, the listbox is this height when the number of entries
+	in the combobox exceeds this number, otherwise the listbox is
+	only as high as it needs to be to hold the number of items
+	in the combobox.  If there is no scrollbar, the listbox will be
+	whatever height is necessary to see all of the combobox entries
+	at the same time without scrolling.
+    \end{ahdescription}
+  \end{ahfunction}
+
+\end{ahobject}

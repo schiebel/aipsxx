@@ -1,0 +1,290 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: deleteregions.help,v 19.2 2004/08/25 02:12:57 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{deleteregions}{Tk widget to delete image regions from a Table}
+
+\ahinclude{deleteregions.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This Tk widget enables you to delete \regions\ (or more simply, regions
+- see \ahlink{Regionmanager}{images:regionmanager}) stored in an
+\aipspp\ Table.  It can also be used to provide a GUI interface for
+deleting regions from a record or global name space (from \glish). 
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=deleteregions.ps, width=3.6in}
+\caption{The deleteregions GUI}
+\end{center}
+\end{figure}
+
+The widget displays, in listboxes, the regions stored in the Table (or
+record or \glish).  The `Delete' button is used to delete the regions
+that you have selected.  The `Delete all' button deletes all regions. 
+The `Deselect' button deselects all regions.  Optionally, you can be
+prompted for confirmation before deletion by selecting from the
+`Confirm' menu.  The `Dismiss' button dismisses the GUI.  You can
+recover it with the \ahlink{gui}{widgets:deleteregions.gui} function. 
+
+Under the `File' menu, you can either dismiss the GUI or destroy the
+widget (same as invoking function
+\ahlink{done}{widgets:deleteregions.done}). 
+
+The Table can be specified in many ways (at construction and via the
+entry box in the GUI); a \ahlink{Table}{table} \tool, an
+\ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool.  
+
+This widget emits an event called {\tt deleted} (it has no value) when
+the regions have been deleted.  It also emits an event called {\tt
+dismissed} (it has no value) when the dismiss button on the GUI is
+pressed. 
+
+\end{ahdescription}
+
+\begin{ahconstructor}{deleteregions}{Construct a deleteregions widget}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent for the widget}{}{Widget}
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+  \ahaddarg{regions}{Regions or region names (for source 'record' or 'global'}{""}{Record or vector of strings}
+  \ahaddarg{source}{Source of the regions}{'table'}{String from 'table', 'record', or 'global'}
+  \ahaddarg{widgetset}{The widget server to use}{dws}{widgetserver tool}
+\end{ahargs}
+\ahreturns{Agent}
+\begin{ahdescription}
+
+This is the constructor.  If {\stfaf parent=F}, then the widget will make
+its own parent frame.  
+
+The argument {\stfaf source} specifies what the source of the regions is.
+
+If {\stfaf source='table'} then the regions are to be found in the Table
+specified with the argument {\stfaf table}.  The argument {\stfaf
+regions} is ignored in this case.  If you leave {\stfaf table}
+unspecified, then you can enter the Table into the entry box provided in
+the GUI.  
+
+The Table can be specified in many ways (at construction and via the
+entry box in the GUI); a \ahlink{Table}{table} \tool, an
+\ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool.  
+
+If {\stfaf source='global'} then the regions are to be found in the
+global name space of \glish.  The argument {\stfaf table} is ignored in
+this case.  You must specify the names of the regions as a vector of
+strings with the {\stfaf regions} argument. 
+
+If {\stfaf source='record'} then the regions are to be found in the
+record given by the argument {\stfaf regions}.  The argument {\stfaf
+table} is ignored in this case. 
+
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'deleteregions.g'   
+- include 'regionmanager.g'
+- dr1 := deleteregions(table='hcn', source='table');
+- whenever dr1->deleted do {
+   print 'regions deleted from table';
+  }
+-
+- r1 := drm.quarter();
+- r2 := drm.box();
+- r3 := drm.box([10,10],20,20]);
+- dr2 := deleteregions(source='global', regions="r1 r2 r3");
+- whenever dr2->deleted do {
+   print 'regions deleted from Glish';
+  }
+-
+- r1 := drm.quarter();
+- r2 := drm.box();
+- r3 := drm.box([10,10],[20,20]);
+- rec := [=];
+- rec['r1'] := r1; rec['r2'] := r2; rec['r3'] := r3;
+- dr3 := deleteregions(source='record', regions=rec);
+- whenever dr3->deleted do {
+   print 'regions deleted from record';
+  }
+-
+\end{verbatim}
+We show the three ways to source the regions.
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function destroys the widget.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r := deleteregions();
+- r
+ref [*agent*=<agent>, done=<function>, gui=<function>, settable=<function>] 
+- r.done();
+T
+- r
+F
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{gui}{Restart the GUI}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+When the widget is first constructed, it brings up a GUI.  When you
+delete regions, the GUI is dismissed.  This function restarts the
+GUI; it will have the same state as when it was dismissed. 
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{refresh}{Refresh the display}
+\ahreturns{Bool}
+\begin{ahdescription}
+If the source is from a Table, this function reaccesses the table to
+find the regions and redisplays them.   Otherwise it just
+clears any selection.
+\end{ahdescription}
+\end{ahfunction}
+ 
+
+
+\begin{ahfunction}{setregions}{Set new regions}
+\begin{ahargs}  
+  \ahaddarg{regions}{Regions or region names (for source 'record' or 'global'}{""}{Record or vector of strings}
+\end{ahargs}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This function lets you set a new set of regions into the
+widget.  The source of the regions is the same as
+at construction and must match.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'deleteregions.g'
+- include 'regionmanager.g'
+- r1 := drm.quarter();
+- r2 := drm.box();
+- r3 := drm.box([10,10],20,20]);
+- rec := [=];
+- rec[1] := r1; rec[2] := r2; rec[3] := r3;
+- dr3 := deleteregions(source='record', regions=rec);
+- rec := [=];
+= rec[1] := r1; rec[2] := r2;
+- dr3.setregions(rec);
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{settable}{Set a (new) table}
+\begin{ahargs}  
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+\end{ahargs}
+\ahreturns{Bool or fail}
+ 
+\begin{ahdescription}
+ 
+This function manually (i.e.  not via the GUI interface) sets a
+(new) Table name.  It is equivalent to doing it via the GUI.  
+The Table can be specified in many ways (at construction and via the
+entry box in the GUI); a \ahlink{Table}{table} \tool, an
+\ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool.  
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'deleteregions.g'
+- include 'image.g'
+- include 'table.g'
+- r := deleteregions(table='hcn');
+- im := image('hcn2');
+- t := table('hcn2');
+- r.settable(im);
+- r.settable('hcn2');
+- r.settable(t);
+- r.settable('im');
+- r.settable('t');
+\end{verbatim}
+
+In this example, we show all the ways you can specify the 
+table.
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahobject}
+
+
+
+
+

@@ -1,0 +1,216 @@
+\def\eps@scaling{.95}
+\def\epsscale#1{\gdef\eps@scaling{#1}}
+\def\plotfiddle#1#2#3#4#5#6#7{\centering \leavevmode
+    \vbox to#2{\rule{0pt}{#2}}
+    \special{psfile=#1 voffset=#7 hoffset=#6 vscale=#5 hscale=#4 angle=#3}}
+
+\chapter{Reducing JCMT data in DISH}
+\label{jcmtdish}
+
+{\em R. Phillips \& J. McMullin}
+
+\section{Setting Your Environment}\label{sect:2}
+
+\subsection{Starting AIPS++}
+
+To start AIPS++, issue the following commands (from the bash shell):
+
+\begin{verbatim}
+> . /aips++/stable/aipsinit.sh
+> aips++
+\end{verbatim}
+
+\subsection{Making AIPS++ run faster}
+
+Here are several hints for speeding up your performance, 
+if the operation/startup of AIPS++ seems sluggish.
+
+\begin{itemize}
+\item{} Store cache files on the computer you run from by adding the
+	following line to your .aipsrc file:
+	\begin{verbatim}
+	user.aipsdir: /tmp/username_aips++
+
+	where username is your username, e.g.,
+	user.aipsdir: /tmp/rphillips_aips++
+	\end{verbatim}
+
+
+\item{} If you do not want to have the toolmanager GUI available on starting
+	AIPS++, you can suppress it and speed up the startup time by including
+	the following lines in your .aipsrc file:
+	\begin{verbatim}
+	toolmanager.fullgui: F
+	toolmanager.gui.auto: F
+	\end{verbatim}
+
+	The toolmanager isn't directly needed for any DISH operations. Should
+	you want it, it can be used at a later time by typing:
+	\begin{verbatim}
+	tm.gui();
+	\end{verbatim}
+
+\item{} Run AIPS++ from the computer which hosts the disks with your data.
+	Typically the data I/O over NFS is slow and the above bypasses this
+	as much as possible
+
+\end{itemize}
+
+AIPS++ builds its cache file structure the first time it is started with a
+new user.aipsdir, and each time you start a new version. Judge its startup
+speed on the {\it second} time you start it up, not the first.
+
+\subsection{Paging}
+
+If you find that error messages, code, and data listings scroll off of your
+terminal window, you might need to assign the {\bf PAGER} environment 
+variable. You can remedy this by setting {\bf PAGER} to 'less' in your
+UNIX startup scripts.
+
+\begin{verbatim}
+export PAGER='less'
+\end{verbatim}
+
+\section{Filling {\bf gsd} data to an AIPS++ MeasurementSet}\label{sect:3}
+
+\begin{verbatim}
+> GSDfiller
+Name of input GSD file: jcmtdemo.dat
+Input file : jcmtdemo.dat
+Output file: jcmtdemoms
+GSD version is 5.3
+Using JCMT position from Observatory Table
+GSDDataSource::fillSampleData called
+n spectral windows is 4
+-- filling MAIN Table
+-- filling SPECTRAL_WINDOW sub-Table
+-- filling ANTENNA sub-Table
+-- filling DATA_DESCRIPTION sub-Table
+-- filling FEED sub-Table
+-- filling FIELD sub-Table
+[0.897304580145, 0.536422981884]
+[0.897699235533, 0.535695727179]
+-- filling OBSERVATION sub-Table
+-- filling POINTING sub-Table
+-- filling POLARIZATION sub-Table
+-- filling PROCESSOR sub-Table
+-- filling SOURCE sub-Table
+241800000000
+Frequency: 241800000000
+Frequency: 241800000000
+241800000000
+Frequency: 241800000000
+Frequency: 241800000000
+241800000000
+Frequency: 241800000000
+Frequency: 241800000000
+241800000000
+Frequency: 241800000000
+Frequency: 241800000000
+-- filling STATE sub-Table
+-- filling SYSCAL sub-Table
+-- filling WEATHER sub-Table
+\end{verbatim}
+
+\section{Loading Data into DISH}\label{sect:4}
+
+At this point, you have made an AIPS++ MeasurementSet called 'jcmtdemoms'.
+This MeasurementSet differs slightly from the standard and so a utility
+function is available to correct this.
+
+\begin{verbatim}
+> . /aips++/stable/aipsinit.sh
+> glish -l jcmtutils.g			#this starts up a DISH tool
+					#and loads some jcmt utility functions
+...
+Time to initialize DISH =  10.392246
+DISH tool is --> d
+JCMT   tool is --> jcmt
+Glish version 2.7. 
+- jcmt.fixms('jcmtdemoms');
+- d.open('jcmtdemoms');
+\end{verbatim}
+
+\section{Analyzing Data}\label{sect:5}
+
+The analysis of JCMT data is similar to other single dish telescopes. Please
+see the other Getting Results chapter titled "Single Dish Analysis"
+
+\section{Imaging JCMT data}\label{sect:6}
+
+Imaging is enabled through the imager tool in DISH. It can also be executed
+as a script from the command line. The following is an example with comments;
+this assumes that the MeasurementSet has been 'patched' as shown in Section 3.
+
+\begin{verbatim}
+include 'imager.g'		#load the imager tool
+#
+#define the data to be used
+thems:='/home/charybdis2/jmcmulli/jcmtdata/obs_das_0064ms'	
+im:=imager(thems);		#create an imager tool
+
+#set which data will be used; in this case each pointing is represented
+#as a separate field. For this 2048 channel data, we select 500 channels
+#of data from 850 to 1350 (850+500)
+im.setdata(fieldid=[1:1593],spwid=1,nchan=500,start=850,step=1);
+
+im.setoptions(gridfunction='SF')#set the gridding function to be SF
+im.weight('natural');		#use natural weighting of the data
+
+#the following defines the phase center or center of the mapped field
+#this isn't really necessary for single dish data but is a required
+#argument.
+row:=800;
+ptab:=table(spaste(thems,'/POINTING'));
+direcs:=ptab.getcol('DIRECTION');
+thedir:=direcs[,1,row];
+global mydir:=dm.direction('J2000',spaste(thedir[1],'rad'),
+       spaste(thedir[2],'rad'));
+
+#set the image characteristics. In this case we construct a 40x40 map
+#using 0.79' x 0.79' pixels. We construct a data cube with 50 planes
+#which represent 10 channel averages from channel 850 to channel 1350.
+im.setimage(nx=40,ny=40,cellx='0.79arcmin',celly='0.79arcmin',stokes='I',
+       doshift=T,spwid=1,mode='channel',nchan=50,start=850,step=10,
+       phasecenter=mydir);
+
+#make the data cube/image. It is saved on disk as 'scanimage'
+im.makeimage(image='scanimage',type='singledish');
+
+#now view it
+myimage:=image('scanimage');	#make an image tool in AIPS++ based on scanimage
+myimage.view();			#calls up the viewer for seeing the image
+\end{verbatim}
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{jcmt_multi.ps}{6.5in}{0}{70}{70}{-220}{-50}
+  \caption{\label{fig:multipanel}Viewer display of 4 channels of the 
+data cube. Multiple planes can be viewed by selecting the "Canvas Manager"
+option from the "File" menu. Also see the Getting Results chapter 3.11.}
+\end{flushleft}
+\end{figure}
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{jcmt_spec.ps}{6.5in}{0}{70}{70}{-220}{-50}
+  \caption{\label{fig:jcmtspec}Viewer display of an image utilizing the
+Image Analysis Tool. Selecting the Positions Tool, choosing a position
+on the data cube (marked by the cross hairs), and selecting the "Auto-plot"
+feature allows the user to examine the gridded spectra of the data cube
+interactively. As each position is selected, the spectrum for that position
+is displayed in the lower plot.}
+\end{flushleft}
+\end{figure}
+
+\section{To Do List for JCMT/DISH}\label{sect:7}
+
+\begin{itemize}
+\item{} Enable filler merge capability for multi-spectral window data
+\item{} Enhance gsd->MS filler so patch script isn't needed
+\item{} Enable DSB scale for plotter
+\item{} Develop Frequency Switch Calibration procedure for JCMT data
+\item{} Refine JCMT imaging to support standard baseline removal
+\item{} Develop a Grid Spectra map utility
+\item{} Enable multi-panel image display --  {\it Done.}
+\end{itemize}

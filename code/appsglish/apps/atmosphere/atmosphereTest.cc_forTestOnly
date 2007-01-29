@@ -1,0 +1,207 @@
+// AtmTest.cpp
+
+#include <iostream>
+//#include <stdlib.h>
+#include "DOatmosphere.h"
+#include <synthesis/MeasurementComponents/test/TelCalTrace.h>
+#include <casa/Arrays/Vector.h>
+
+using namespace std;
+
+
+int main() {
+  TELCAL_TRACE("Test of atmosphere class\n\n");
+
+  /// Test atmosphere()
+  double altitude    = 2550.;     // m
+  double temperature = 270.32;    // K
+  double pressure    = 73585;     // Pascals
+  double maxAltitude = 45000;     // m
+  double humidity    = 20;        // % 
+  double dTempdH     = -5.6/1000.; // K/m
+  double dP          = 500.;       // Pascals
+  double dPm         = 1.25;
+  double h0          = 2000.;     // m
+
+  TELCAL_TRACE("Test of constructor  atmosphere(altitude,temperature,pressure,maxAltitude,humidity,dTempdH,dP,dPm, h0, MIDLAT_SUMMER)\n\n");
+  TELCAL_TRACE1("altitude    = %f m\n",altitude);
+  TELCAL_TRACE1("temperature = %f K\n",temperature);
+  TELCAL_TRACE1("pressure    = %f Pascals\n",pressure);
+  TELCAL_TRACE1("maxAltitude = %f m\n",maxAltitude);
+  TELCAL_TRACE1("humidity    = %f \n",humidity);
+  TELCAL_TRACE1("dTempdH     = %f K/m\n",dTempdH);
+  TELCAL_TRACE1("dP          = %f pascals\n",dP);
+  TELCAL_TRACE1("dPm         = %f \n",dPm);
+  TELCAL_TRACE1("h0          = %f m\n\n",h0);
+
+  atmosphere *atm = new atmosphere(Quantity(altitude,"m"),
+				     Quantity(temperature,"K"),
+				     Quantity(pressure,"Pa"),
+				     Quantity(maxAltitude,"m"),
+				     humidity,
+				     Quantity(dTempdH,"K/m"),
+				     Quantity(dP,"Pa"),
+				     dPm,
+				     Quantity(h0,"m"),
+				     MIDLAT_SUMMER);
+  
+  TELCAL_TRACE("Test: getStartupWaterContent()\n");
+  double water = (atm->getStartupWaterContent()).get("m").getValue();
+  TELCAL_TRACE1("Guessed water content %8.4f meter\n\n",water);
+
+  TELCAL_TRACE("Test: void getProfile(Profile)\n");
+  //  Profile p;
+  Quantum<Vector<Double> > qthickness;
+  Quantum<Vector<Double> > qtemperature;
+  Quantum<Vector<Double> > qwater;
+  Quantum<Vector<Double> > qpressure;
+  Quantum<Vector<Double> > qO3;
+  Quantum<Vector<Double> > qCO;
+  Quantum<Vector<Double> > qN2O;
+  atm->getProfile(qthickness,qtemperature,qwater,qpressure,qO3,qCO,qN2O);
+  int npp=((qthickness.getValue()).shape())[0];
+  for (int i=0; i<npp;i++) {
+    printf("%8.2f %10.3f %10.6f %10.3f\n",
+	   (qthickness.get("m").getValue())[i],
+	   (qtemperature.get("K").getValue())[i],
+	   (qwater.get("kg.m-3").getValue())[i],
+	   (qpressure.get("Pa").getValue())[i]);
+  }
+
+  /// Test initWindow()
+  
+  Int nbands = 1;
+  Vector<Double> fCenter(nbands);
+  Vector<Double> fWidth(nbands);
+  Vector<Double> fRes(nbands);
+
+  fCenter[0] = 88.e9;
+  fWidth[0]  =  5.e8;
+  fRes[0]    =  5.e8;
+  double precWater = water;
+
+  TELCAL_TRACE("Test of initWindow()\n");
+  atm->initWindow(nbands,
+		  Quantum<Vector<Double> > (fCenter,"Hz"),
+		  Quantum<Vector<Double> > (fWidth,"Hz"),
+		  Quantum<Vector<Double> > (fRes,"Hz"));
+
+  int n=atm->getNdata(0);
+  TELCAL_TRACE1("%d band(s)\n",n);
+
+  /// Test getOpacity(opacity)
+  TELCAL_TRACE("Test: getOpacity(Opacity)\n");
+  Vector<Double> dryOpacity;
+  Quantum<Vector<Double> > wetOpacity;
+  atm->getOpacity(dryOpacity, wetOpacity);
+  TELCAL_TRACE2(" - dryOpacity %6.4f wetOpacity/mm %7.5f\n",dryOpacity[0],(wetOpacity.get("mm-1").getValue())[0]);
+
+  /// Test getAbsCoeff
+  Quantum<Vector<Double> > kH2OLines;
+  Quantum<Vector<Double> > kH2OCont;
+  Quantum<Vector<Double> > kO2;
+  Quantum<Vector<Double> > kDryCont;
+  Quantum<Vector<Double> > kO3;
+  Quantum<Vector<Double> > kCO;
+  Quantum<Vector<Double> > kN2O;
+  atm->getAbsCoeff(kH2OLines,kH2OCont,kO2,kDryCont,kO3,kCO,kN2O);
+  TELCAL_TRACE3("AbsCoeff getAbsCoeff() (3 first layers): %f %f %f\n",(kH2OLines.get("m-1").getValue())[0],(kH2OLines.get("m-1").getValue())[1*NMAX_DATOS*npp],(kH2OLines.get("m-1").getValue())[2*NMAX_DATOS*npp]);
+
+  /// Test getAbsCoeffDer
+  Quantum<Vector<Double> > kH2OLinesDer;
+  Quantum<Vector<Double> > kH2OContDer;
+  Quantum<Vector<Double> > kO2Der;
+  Quantum<Vector<Double> > kDryContDer;
+  Quantum<Vector<Double> > kO3Der;
+  Quantum<Vector<Double> > kCODer;
+  Quantum<Vector<Double> > kN2ODer;
+  atm->getAbsCoeffDer(kH2OLinesDer,kH2OContDer,kO2Der,
+			 kDryContDer,kO3Der,kCODer,kN2ODer);
+  TELCAL_TRACE3("AbsCoeff getAbsCoeffDer() (3 first layers): %f %f %f\n",(kH2OLinesDer.get("m-1").getValue())[0],(kH2OLinesDer.get("m-1").getValue())[1*NMAX_DATOS*npp],(kH2OLinesDer.get("m-1").getValue())[2*NMAX_DATOS*npp]);
+
+  /// Compute SkyBrightness()
+  double airMass = 1.51;
+  double tbgr    = 2.73;
+  precWater = 4.05/1000;
+
+  TELCAL_TRACE("Test of computeSkyBrightness()\n");
+  atm->computeSkyBrightness(airMass, Quantity(tbgr,"K"), Quantity(precWater,"m"));
+
+  Quantum<Vector<Double> > tBand = atm->getSkyBrightness(BLACKBODY);
+  TELCAL_TRACE1("SkyBrightness = %f K (TEBB) \n",(tBand.get("K").getValue())[0]);
+  tBand = atm->getSkyBrightness(RAYLEIGH_JEANS);
+  TELCAL_TRACE1("SkyBrightness = %f K (Rayleigh Jeans) \n\n",(tBand.get("K").getValue())[0]);
+
+
+  ///==================================================================
+  /// Test spectral routines
+  ///==================================================================
+
+  TELCAL_COUT("=====================================================");
+  TELCAL_COUT("Test with spectral data\n");
+
+  nbands = 2;
+  fCenter.resize(nbands);
+  fWidth.resize(nbands);
+  fRes.resize(nbands);
+
+  for (int i=0;i<nbands;i++) {
+    fCenter[i] = 88.e9;
+    fWidth[i]  =  5.e8;
+    fRes[i]    =  fWidth[0]/4.;           // 4 channels
+  }
+
+  TELCAL_TRACE("Test of initWindow()\n");
+  atm->initWindow(nbands,
+		  Quantum<Vector<Double> > (fCenter,"Hz"),
+		  Quantum<Vector<Double> > (fWidth,"Hz"),
+		  Quantum<Vector<Double> > (fRes,"Hz"));
+
+  n=atm->getNdata(0);
+  TELCAL_TRACE2("%d bands %d channels(s)\n",nbands,n);
+
+  /// Test getOpacitySpec()
+  TELCAL_TRACE("Test: Opacity getOpacitySpec()\n");
+  Array<Double> dryOpacitySpec;
+  Quantum<Array<Double> > wetOpacitySpec;
+  atm->getOpacitySpec(dryOpacitySpec,wetOpacitySpec);
+  cout<<dryOpacitySpec.shape()<<endl;
+  cout<<(wetOpacitySpec.get("mm-1").getValue()).shape()<<endl;
+  cout<<dryOpacitySpec.shape()<<endl;
+  cout<<(wetOpacitySpec.get("mm-1").getValue()).shape()<<endl;
+
+  TELCAL_COUT("band 0");
+  for (int i=0; i<n; i++) {
+    TELCAL_TRACE2(" - dryOpacity %6.4f  wetOpacity/mm %7.5f \n",
+		  dryOpacitySpec(IPosition(2,0,i)),
+		  (wetOpacitySpec.get("mm-1").getValue())(IPosition(2,0,i)));
+  }
+  TELCAL_COUT("band 1");
+  for (int i=0; i<n; i++) {
+    TELCAL_TRACE2(" - dryOpacity %6.4f  wetOpacity/mm %7.5f \n",
+		  dryOpacitySpec(IPosition(2,1,i)),
+		  (wetOpacitySpec.get("mm-1").getValue())(IPosition(2,1,i)));
+  }
+  cout<<endl;
+
+
+  TELCAL_TRACE("Test of computeSkyBrightness()\n");
+  atm->computeSkyBrightness(airMass, Quantity(tbgr,"K"), Quantity(precWater,"m"));
+
+  Quantum<Array<Double> > tBandSpec = atm->getSkyBrightnessSpec(BLACKBODY);
+  for (int ib=0;ib<nbands;ib++)
+    for (int i=0;i<4;i++) {
+      TELCAL_TRACE3("Band %d channel %d SkyBrightness = %f K (TEBB) \n",ib,i,(tBandSpec.get("K").getValue())(IPosition(2,ib,i)));
+    }
+  tBandSpec = atm->getSkyBrightnessSpec(RAYLEIGH_JEANS);
+  for (int ib=0;ib<nbands;ib++)
+    for (int i=0;i<4;i++) {
+      TELCAL_TRACE3("Band %d channel %d SkyBrightness = %f K (Rayleigh Jeans) \n",ib,i,(tBandSpec.get("K").getValue())(IPosition(2,ib,i)));
+    }
+  cout<<endl;
+
+  delete atm;
+  cout <<"end of atmosphere test"<<endl;
+  exit(0);
+  
+}

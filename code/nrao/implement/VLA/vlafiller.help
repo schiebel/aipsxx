@@ -1,0 +1,1347 @@
+%% Copyright (C) 1999,2000,2001,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: vlafiller.help,v 19.2 2005/07/21 22:49:07 gli Exp $
+
+\begin{ahobject}{vlafiller}
+{A tool for converting VLA archive format data to a measurement set}
+
+\ahinclude{vlafiller.g}
+\ahcategory{vla}
+
+\begin{ahdescription}
+  A vlafiller is a tool that contains functions that allow you to
+  convert data that has been stored in the VLA archive format to a
+  measurement set.  Note that VLA archive format versions earlier
+  than version 23 (earlier than 1990) are not supported by the vlafiller. 
+
+  The VLA archive format is radically different from FITS and is the
+  native data format written by the online computers at the VLA. The
+  VLA data that is archived at the AOC is stored, on tape, in this
+  format. It is described more fully in the VLA Computer Memorandum
+  188.
+
+  Running the vlafiller tool is a multi-step process. These steps can
+  be grouped into the following sequence.
+  \begin{enumerate}
+  \item{Create a vlafiller tool}
+  \item{Specify the data source and sink}
+  \item{Select some data filters (optional)}
+  \item{Start the copying process}
+  \item{Remove the tool}
+  \end{enumerate}
+
+  The advantage of a multi-step approach is that it gives the user
+  fine grained, flexible control of the filling process. For many
+  users this is unnecessary and the global functions
+  \ahlink{vlafillerfromtape}{vla:vlafillerfromtape},
+  \ahlink{vlafillerfromdisk}{vla:vlafillerfromdisk} bundle the
+  vlafiller functions into a simpler one step approach.
+\end{ahdescription}
+
+\medskip\noindent{\bf Creating a vlafiller tool}
+
+  The only way to create a vlafiller tool is to use the
+  \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor. Calling
+  this function will start a precompiled executable, called vlafiller,
+  usually running on your machine. This executable executes all the
+  vlafiller functions. See the documentation for the
+  \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor for a more
+  complete description of this function.
+
+\medskip\noindent{\bf Specifying the data source and sink}
+
+  The data source can either be a tape drive, disk file or the online
+  computers. If it is a tape drive then it is assumed that a VLA
+  archive format tape is already in the drive. The vlafiller knows
+  about the layout and blocking structure of files on a VLA archive
+  format tape and is able to rewind and skip to the any file on the
+  tape. The files on a tape are numbered beginning at one. Users of
+  tapes from the VLA archive need to be aware that the first file on
+  these tapes is a tape label and hence the first file containing
+  astronomical data will be the file numbered two.
+
+  An alternative to using the tapeinput function the VLA archive
+  data may be copied from tape to disk using commands like:
+  \begin{verbatim} 
+    dd if=/dev/tape bs=26624 of=file1.vla
+  \end{verbatim}
+  and you can use commands like 
+  \begin{verbatim} 
+    mt -f /dev/tape fsf 2
+  \end{verbatim}
+  to manually skip, in this example, over two tape files.
+
+  Then the \ahlink{diskinput}{vla:vlafiller.diskinput} function can
+  be used to read this file. The advantage of this is that reading
+  from disk is \emph{much} faster and a lot less troublesome than
+  reading from tape. It is also advantageous to do this if you need
+  to read the data multiple times as shown in the examples
+  below. The disadvantage is that you need about 160MBytes of spare
+  disk space, as this is typically the size of a VLA archive file.
+
+  The vlafiller can also read data directly from the online computers
+  at the VLA. This option is only available when the filler is run on
+  a computer at the array operations center in Socorro. See the final
+  example below for an illustration of how to do this.
+
+  The data sink is a measurement set. The vlafiller can append data to
+  an existing measurement set\footnote{Currently, it is only possible
+  to append to a measurement set that was created with the vlafiller
+  tool.} or create a new one. Only one measurement set can be written
+  for each pass through the input data. If you need to write multiple
+  measurement sets each containing a different subset of the input
+  archive you should consider copying the data to disk as described
+  above. See the documentation for the
+  \ahlink{output}{vla:vlafiller.output} function for a more complete
+  description of how to specify the data sink.
+
+\medskip\noindent{\bf Selecting data filters}
+
+  One measurement set is able to contain all the data in any number
+  of VLA archive format files. Such a measurement set will usually
+  be quite large, potentially affecting data access times, and may
+  contain unwanted data. The vlafiller has a number of functions
+  that allow you to discard data prior to it being copied into the
+  output measurement set. These functions all have names that begin
+  with the word select, a typical one being
+  \ahlink{selectproject}{vla:vlafiller.selectproject}.
+
+  It is possible to use any combination of select functions as each
+  one filters the data on a different parameter\footnote{The exception
+  is the selectfrequency and selectband functions which are mutually
+  exclusive.}. For example using the selectproject and
+  \ahlink{selectfrequency}{vla:vlafiller.selectfrequency} functions
+  will then only copy data from the specified project \emph{and} in
+  the specified frequency range. Other data in the same project or
+  other projects that use the same frequency will not have their data
+  copied to the measurement set.
+
+  Using a specific select function more than once will overwrite the
+  previous selection. For example using the
+  \ahlink{selectsource}{vla:vlafiller.selectsource} function with
+  sourceA and then sourceB as arguments will discard any selection of
+  sourceA (assuming you have not run the
+  \ahlink{fill}{vla:vlafiller.fill} function between the two function
+  calls).
+
+  Currently it is only possible to select data based on a limited
+  number of parameters. Other selections must be done after the data
+  is converted to a measurement set.
+
+\medskip\noindent{\bf Starting the copying process}
+
+  Once a vlafiller tool has been setup with input and output files
+  the \ahlink{fill}{vla:vlafiller.fill} function is used to copy
+  the data. 
+
+  This function, unlike all the other ones in the vlafiller tool, can
+  take some time. Because of this it can be run in the background ie.,
+  asynchronously. If run synchronously and from the command line you
+  will not be able to type any further commands to glish until the
+  command completes. If run asynchronously from the command line the
+  function will return with a small positive integer that indicates
+  the job number. This number can be used to query whether the
+  function is still running and a message will appear in the logger
+  when the function has finished. In either case the vlafiller tool
+  will not execute any other functions until the fill function has
+  completed. You need to start a new vlafiller server process, by
+  calling the constructor with the forcenewserver argument set to
+  true, to run two fill functions simultaneously.
+
+  You can signal for the filler to stop filling as soon as possible
+  using the \ahlink{stop}{vla:vlafiller.stop} function. This function
+  will shut the filling function down after it has completed
+  processing the current record.
+
+  When the fill function terminates it closes the input source, but
+  leaves the output measurement set open. This way you can open
+  another input source and append data to the existing measurement
+  set.
+
+\medskip\noindent{\bf Removing the tool}
+
+  When you have finished with the vlafiller you should shut down the
+  process, using the \ahlink{done}{vla:vlafiller.done} function,
+  even though it is not consuming much processor time. This is to
+  conserve virtual memory. Once a tool is shut down it can no longer
+  be used. It also closes the output measurement set.
+
+\begin{ahexample}
+  The following example shows the minimum necessary to run the
+  vlafiller. 
+
+  The first line makes all the definitions for this tool available
+  to the user. The second line calls the constructor. The third
+  tells the filler that the input is to come from a file, in the
+  current directory, called file1.vla. The fourth states that the
+  output is to go to a measurement set called file1.ms. The fifth
+  line does all the copying and the sixth shuts down the tool.
+
+  \begin{verbatim}
+    include 'vlafiller.g'     #1
+    v := vlafiller()          #2
+    v.diskinput('file1.vla')  #3
+    v.output('file1.ms')      #4
+    v.fill()                  #5
+    v.done()                  #5
+  \end{verbatim}
+
+  This example could also be done much more simply using the
+  vlafillerfromdisk global function as shown below.
+  \begin{verbatim}
+    vlafillerfromdisk('file1.ms', 'file1.vla')
+  \end{verbatim}
+  All the other examples in this section are too complicated to be
+  done using the \ahlink{vlafillerfromdisk}{vla:vlafillerfromdisk} or
+  \ahlink{vlafillerfromtape}{vla:vlafillerfromtape} global functions.
+\end{ahexample}
+
+\begin{ahexample}
+  This example illustrates the way the vlafiller can be used
+  to read all the calibrators from three files.
+
+  The first three lines are identical to the first example. The fourth
+  line sets the output measurement set to file1.ms. As this file may
+  already exist, if you have just done example shown above the
+  overwrite flag is set to force deletion of any existing file prior
+  to copying any data. The fifth line selects all the calibrators,
+  irrespective of their calibration code.  The sixth line copies all
+  the calibrators from the file to the measurement set. 
+
+  At this point the input VLA archive file is closed but the output
+  measurement set is still open. Line seven opens a new VLA archive
+  file, called file2.vla, and line eight copies all the calibrators
+  from that file to the measurement set. Note that the selection done
+  in line five is still current and that the second fill command
+  appends to the existing measurement set rather than overwriting
+  it.
+
+  This process continues for the third file before the process is shut
+  down.
+
+  \begin{verbatim}
+    include 'vlafiller.g'               #1
+    v := vlafiller()                    #2
+    v.diskinput('file1.vla')            #3
+    v.output('file1.ms', overwrite=T)   #4
+    v.selectcalibrator('*')             #5
+    v.fill()                            #6
+    v.diskinput('file2.vla')            #7
+    v.fill()                            #8
+    v.diskinput('file3.vla')            #9
+    v.fill()                            #10
+    v.done()                            #11
+  \end{verbatim}
+\end{ahexample}
+
+\begin{ahexample}
+  This example illustrates how to make multiple passes through
+  a file to do more complex selections. The selectsource function
+  can only select one source. If you want to create a measurement
+  set with exactly two sources you need to read the file twice as
+  shown in the example below.
+
+  The first four lines are identical to the above example. The fifth
+  line selects the first source 'ngc1234' and the sixth line copies
+  this to the measurement set. As described above after calling the
+  fill function the input data source is closed. So we need to
+  re-specify it as shown in line seven. Line eight then sets the
+  selection to read the other source and line nine appends it to the
+  measurement set.
+
+  \begin{verbatim}
+    include 'vlafiller.g'               #1
+    v := vlafiller()                    #2
+    v.diskinput('file1.vla')            #3
+    v.output('file1.ms', overwrite=T)   #4
+    v.selectsource('ngc1234')           #5
+    v.fill()                            #6
+    v.diskinput('file1.vla')            #7
+    v.selectsource('cen-a')             #8
+    v.fill()                            #9
+    v.done()                            #10
+  \end{verbatim}
+\end{ahexample}
+
+\begin{ahexample}
+  This example illustrates how to use the vlafiller to read
+  from a tape on a remote machine and fill the data asynchronously
+  (as tapes take a long time).
+
+  The first line is identical to previous examples. The second line
+  starts up the vlafiller process on the computer called 'tapehost'
+  (thats the one with the tape drive). The third line tells the
+  vlafiller it is to read the first three files from the tape in the
+  drive with a Unix device name of '/dev/nst0'. The fourth line tells
+  the vlafiller to create the measurement set in the /tmp
+  directory. This is the /tmp directory on the tapehost machine which
+  is usually not the same as the /tmp directory on your local
+  machine. To see the measurement set on your local machine you need
+  to write to a disk that shares files (usually via NFS). The fifth
+  line selects only the data from the specified project. The sixth
+  line tells the filler to start copying the data asynchronously.
+
+  At this point glish returns before all the data has been
+  copied. When all the data has been copied a message appears in the
+  logger window. This may be missed if you are doing other things so
+  in this example I set up a whenever that detects the event
+  signalling that the job has finished and pops up a window to attract
+  the users attention. Finally the tool is shut down.
+
+  \begin{verbatim}
+    include 'vlafiller.g'                       #1
+    v := vlafiller(host='tapehost')             #2
+    v.tapeinput('/dev/nst0', files=[1,2,3])     #3
+    v.output('/tmp/file1.ms')                   #4
+    v.selectproject('ab123')                    #5
+    jobid := v.fill(async=T, verbose=F)         #6
+    whenever defaultservers.alerter() -> [as_string(jobid)] do {
+      deactivate 
+      messagebox("VLA filler has finished") 
+    }
+    ....
+    v.done() 
+  \end{verbatim}
+\end{ahexample}
+	
+\begin{ahexample}
+  The final example illustrates how to use the vlafiller to read
+  data from the online computers. 
+
+  The first two lines are identical to previous examples. The third
+  line tells the vlafiller it is to read data from the online
+  computers. The fourth line tells the vlafiller to create the
+  measurement set in the current directory. The fifth line selects
+  only the data from the specified project. The sixth line tells the
+  filler to start copying the data. Records are processed as they are
+  made available by the online computers. To stop the filling process
+  the stop function is used. This cleanly terminates the filling
+  function and the tool is shutdown using the done function.
+
+  \begin{verbatim}
+    include 'vlafiller.g'                       #1
+    v := vlafiller()                            #2
+    v.onlineinput()                             #3
+    v.output('realtime.ms')                     #4
+    v.selectproject('ab123')                    #5
+    v.fill(async=T)                             #6
+    ....
+    v.stop()                                    #7
+    v.done()                                    #8
+  \end{verbatim}
+\end{ahexample}
+	
+\medskip\noindent{\bf Scaling \& weighting of VLA data}
+
+The vlafiller scales both the visibility data and computes the weights
+in a manner that is compatible with the \texttt{31DEC01} version of
+the AIPS task FILLM. The details of both the scaling and weight
+computation are described below.
+
+The visibility data that is stored in the VLA archive is related to
+the the raw correlator coefficients by a scaling factor. This factor,
+which is different for each correlator, can be decomposed into antenna
+based terms called the nominal sensitivity $(s_i)$. The raw
+correlation coeffecient $(\rho_{ij})$ is then related to the value
+stored in the VLA archive $(v_{ij})$ by the formula:
+\[
+       v_{ij} = \rho_{ij} \cdot \sqrt{s_i \cdot s_j}
+\]
+The nominal sensitivity is derived during the course of an observation
+from calibrated noise diodes on each antenna. 
+
+The visibility data in VLA archive format is represented using a
+16-bit signed integer for each of the real and imaginary
+components. To increase the dynamic range that can be represented each
+group of visibilities is scaled by a signed exponent $(e)$. A group of
+visibilities is, in continuum mode, all four-correlations
+ie.,~RR,~LL,~RL,~LR, for one baseline. In spectral line mode it's all
+channels corresponding to one correlation.
+
+In order to convert these integers to a complex number $(d_r, d_i)$
+the vlafiller uses the formula (the subscripts $r$ \& $i$ denote the
+real and imaginary components):
+\[
+        (d_r, d_i) = (v_r, v_i) /  2^{-(e+8)}
+\]
+
+All floating point operations are done in single precision. The factor
+of 8 added to the exponent results in scaling the complex data by
+256. It is probably used to further scale the data so that it has
+nominal units of deka-Jansky's ie., 1.0 means 10\,Jy.
+
+The vlafiller assigns weights to the data that are directly
+proportional to both the integration time and the observed bandwidth
+and indirectly related to the system temperature at each of the
+antennas. The mathematical description and justification of this is
+described in AIPS memo 103, ``Weighting data in AIPS'' by Ketan
+Desai. In essence it states that the weights should be given by:
+
+\[
+        w_{ij} = \frac{\Delta t \Delta \nu}{s_i s_j}
+\]
+\begin{tabbing}
+where: \= $\Delta t$   \= is the integration time (typically 10 seconds)\\
+       \> $\Delta \nu$ \> is the bandwidth (often 50MHz) \\ 
+       \> $s_i$        \> is the nominal sensitivity of antenna $i$ (typically around .2)
+\end{tabbing}
+
+AIPS modifies these weights by scaling them by a factor that has been
+empirically determined so that the rms determined from the weights
+$(\sigma_{ij} = \frac{1}{\sqrt{w_{ij}}})$ corresponds to the measured
+rms in the visiblities when a calibrator is being observed. This
+factor is .12/10000\footnote{It is interesting to note that
+$.12/10000$ is very close to $1/256^2$ which is the adjustment that
+would be made in the weights that corresponded to the scaling the data
+256.}. In order to maintain consistency with AIPS,
+\aipspp\ also scales the weights by this factor.
+
+Prior to version~1.5 of \aipspp\ the vlafiller used a simpler
+algorithm for calculating weights that matched what was the default in
+older versions of AIPS. The old weights were simply the integration
+time, in seconds, divided by 10. The vlafiller contains a global
+function called \ahlink{vlafilleroldweights}{vla:vlafilleroldweights}
+that allows you to change the weights in a measurement set so that the
+older scheme is used. You cannot change the weights in a measurement
+from the old scheme to the new scheme. Instead you need to reload the
+data.
+
+%\medskip\noindent{\bf Technical details}
+%* The meaning of Channel zero is not discussed
+%* No use of zero in data or flagging bits
+%* Flagging is done through ADA.
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{vlafiller}{Construct an vlafiller tool.}
+  \begin{ahdescription}
+
+    Use this constructor to create a vlafiller tool. This is the only
+    way to construct such a tool. As described above newly created
+    tools cannot convert data until the the input data source is
+    defined, using the tapeinput, diskinput or onlineinput functions,
+    and output measurement set is defined using the output function.
+
+    The host argument specifies which machine the precompiled
+    vlafiller process should be started on. The default value of unset
+    starts it on the same machine as the one that glish is running
+    on. Starting a vlafilller process on a remote machine gives you
+    access to the tape drives and disks on that machine. Use this
+    option if you do not have a tape drive on your local machine.
+
+    In order to run the vlafiller on a remote machine you need to
+    satisfy all the following conditions.
+    \begin{itemize}
+    \item It must be possible to start \aipspp\ on the remote machine
+    \item You must be able to log onto the remote machine without
+          having to type a password
+    \item The AIPSPATH environment variable must be defined on the
+          remote machine. You may want to set this up in the relevant
+          ``dot'' file eg., adding a line like 
+          \texttt{source~/usr/local/aips++/aipsinit.csh} in your 
+          .cshrc file (for csh).
+    \end{itemize}
+    One quick way to check if all three conditions are met is to type, 
+    on your local machine:
+    \begin{verbatim}
+        rsh host 'echo \$AIPSPATH'
+    \end{verbatim}
+    where host is replaced by the name of the remote machine. If the
+    value of the AIPSPATH variabl that is printed does not contain
+    something like \texttt{aips-root~architecture~site~host} and that
+    all the values are correct for the remote machine you can be
+    certain that starting the vlafiller, or any \aipspp\ server, on the
+    remote host will not work
+
+    Each vlafiller server process can only run one function at a
+    time. Hence it is not possible, for example, to simultaneously
+    read data from two tape drives to two measurement sets using one
+    server. To solve this you start two servers. The forcenewserver
+    argument allows you to do this by overriding the default behaviour
+    of having each vlafiller tool share the same server.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{host}{The host on which the vlafiller should be run}
+             {unset}{string}
+    \ahaddarg{forcenewserver}{Always start a new server}
+             {F}{Boolean}
+  \end{ahargs}
+  \ahreturns{A vlafiller tool}
+
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      v := vlafiller() 
+      v.diskinput('file1.vla') 
+      v.output('file1.ms') 
+      v.selectproject(project='ab123') 
+      v.state() 
+      v.fill(async=T) 
+      v.stop()
+      v.done() 
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+
+    This example creates a vlafiller tool, sets the data source as a
+    disk file called file1.vla, and the data sink as the measurement
+    set called file1.ms. The selectproject function filters the data
+    so that only records that correspond to the case insensitive
+    project-id 'ab123' will be copied. The state function prints the
+    current state of the filler in the logger, in case you forget.
+
+    No data is actually copied until the fill function is called. If a
+    large amount of data is involved then the fill function may take
+    some time so it may make sense to let the filler work in the
+    background by setting the async flag. After copying some data the
+    user stopped the filling function using the stop function. The
+    vlafiller tool was then shut down, memory associated with it
+    released and the output measurement set closed using the done
+    function.
+
+  \end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahfunction}{diskinput}{Specify the input data file.}
+  \ahkeyword{diskinput}{diskinput}
+  \begin{ahdescription}
+
+    The diskinput functions specifies that the input data is the
+    specified file on disk. 
+
+    Normally VLA archive data is stored on tape but if you need to
+    read one or more files repeatedly it may be faster to copy the
+    file to disk and then convert this disk file to a measurement
+    set. Data can be read from tapes to disk in a variety of ways
+    including:
+    \begin{verbatim} 
+      dd if=/dev/tape bs=26624 of=file1.vla
+    \end{verbatim}
+
+     This functions returns F if the specified file is not readable.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{filename}{The input file name.}
+             {no default}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{onlineinput}{Read input data from the online computers.}
+  \ahkeyword{onlineinput}{onlineinput}
+  \begin{ahdescription}
+
+    The onlineinput functions specifies that the input data is to come
+    from the online computers at the VLA. This allows you to read data
+    shortly after it has been observed. The data is sent from the VLA
+    computers to a predefined machine called \texttt{vis-server} at
+    the Array Operations Center (AOC) in Socorro NM. The vlafiller
+    will make a connection, via the Internet to this machine. Online
+    filling is only available on the computers at the AOC.
+
+  \end{ahdescription}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    See the final example in the tool overview documentation.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tapeinput}{Specify the input tape device.}
+  \ahkeyword{tapeinput}{tapeinput}
+  \begin{ahdescription}
+
+    The tapeinput function specifies that the input data source is the
+    specified files on the specified tape device.
+
+    VLA archive data is normally stored on tape. Each tape may contain
+    numerous files with the data from different projects mixed within
+    one file and/or spread across numerous tape files. The tape
+    archive log will contain a summary of what data is on what tape
+    file.
+
+    This function tells the vlafiller tool which tape device and which
+    files to read from the specified tape device. The tape device is
+    the standard Unix name. Typical examples are \texttt{/dev/rmt/0ln}
+    for Solaris~2.x and \texttt{/dev/nst0} for Linux. 
+
+    The files are numbered beginning at one. The files that are to be
+    read are specified with positive integers that are in ascending
+    order. For example specifying \verb|files=[1,2,10]| will read the
+    first, second and tenth files from tape. \footnote{Users should be
+    aware that, for tapes in the VLA archive, this numbering scheme
+    differs by one from that used in versions of aips++ prior to
+    1.7. The numbering scheme now corresponds to that listed in the
+    logs kept in the archive room.}
+
+    Users of AIPS should note that the \aipspp\ convention of
+    explicitly specifying which files to read is different, and more
+    flexible, than than using the \texttt{NFILES} adverb in the
+    \texttt{FILLM} task. In \texttt{FILLM} the \texttt{NFILES} adverb
+    specifies how many tape files to skip prior to reading to reading
+    any data.
+
+    The vlafiller tool always rewinds the tape in order to know where
+    the the tape is currently positioned when the files are specified
+    using integers greater than zero. If you have manually positioned
+    the tape to the start of the file you want to read you can specify
+    that the filler should ``read the next file'' using
+    \verb|files=0|. The number zero in this case meaning ``read the
+    next file''. In this case the filler will not rewind the tape
+    prior to reading the data. It is also possible to specify
+    \verb|files=[0,0,0]| which means ``read the next three files'' and
+    to mix zeros with absolute file numbers. For example
+    \verb|files=[1,0,10]| will read the first, second and tenth files,
+    but \verb|files=[1,0,2]| will produce an error message as the
+    filler will not read file two twice.
+
+    This functions returns F if the specified tape is not readable.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{device}{The tape device.}
+             {no default}{string}
+    \ahaddarg{files}{The files to read.}
+             {[1]}{vector of integers}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      v := vlafiller() 
+      v.tapeinput('/dev/nst0', files=1) 
+      v.output('file1.ms') 
+      v.selectsource(source='ngc1234', qualifier=1) 
+      v.fill() 
+      v.done() 
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example is identical to that for the vlafiller constructor
+    except that the input data is the first file on the specified tape
+    and all the data of ngc1234 with qualifier will be copied.
+  \end{ahcomments}
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{output}{Specify the output measurement set}
+  \ahkeyword{output}{output}
+  \begin{ahdescription}
+
+    The output function specifies that the name of the output
+    measurement set. A measurement set stores the data on disk in
+    files \& directories within a directory with the specified name.
+
+    If the specified measurementment set already exists, and contains
+    exclusively data that has been created by the vlafiller tool, it is
+    possible to append new data to the existing measurement
+    set. The overwrite argument needs to be set to F to append data.
+
+    Otherwise the measurement set, or a file/directory with the
+    same name, will not be replaced unless the overwrite argument is
+    set to T. 
+
+    This functions returns F if the specified measurement set cannot
+    be created.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msname}{The measurement set name.}
+             {no default}{string}
+    \ahaddarg{overwrite}{Overwrite an existing file.}
+             {F}{Boolean}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the
+   \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{selectproject}{Select which project to convert}
+  \ahkeyword{selectproject}{selectproject}
+  \begin{ahdescription}
+
+    The selectproject function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    The observing project identifier is a string of six or less
+    characters. Only records that contain the same, case in-sensitive,
+    string are copied to the output measurement set.  The 'unset'
+    value matches all projects. This is the default.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{project}{The observing project name.}
+             {unset}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the
+   \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{selecttime}{Select which time-range to convert}
+  \ahkeyword{selecttime}{selecttime}
+  \begin{ahdescription}
+
+    The selecttime function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    Only data that have been observed\footnote{The observation time of
+    a single integration is the time at the midpoint of the
+    integration} between the specified start and stop times will be
+    copied to the output measurement set. The times are specified using
+    any of the string formats that can be interpreted by the 
+    \ahlink{quanta}{quanta} module (see the section on time
+    formatting). 
+
+    If the start input parameter is unset then it defaults to 'a long
+    time in the past'. Similarly if the stop input parameter is unset
+    it defaults to 'along time in the future'. Hence using this
+    function with no input parameters disables any time selection.
+
+    It is important to specify both the day and time portions for the
+    start and stop time. Otherwise the day will default to the day
+    with the modified Julian day of zero ie. the 17-Nov-1858. If you
+    want to fill in the current date for the day number you can
+    preceed the time with a slash. eg., \verb|start='/6:45'|.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{start}{The beginning of the time range.}
+             {unset}{string}
+    \ahaddarg{stop}{The end of the time range.}
+             {unset}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      v := vlafiller() 
+      v.diskinput('file1.vla') 
+      v.output('file1.ms') 
+      v.selecttime(start='31Dec00/00:00:00.123', 
+	           stop='31-Dec-2000/23:59:59.876') 
+      v.selectfrequency(centerfrequency='1.4GHz', bandwidth='200MHz') 
+      v.fill() 
+      v.done() 
+    \end{verbatim}
+  \end{ahexample}
+  This example selects all the data that was observed on the last day
+  of the millennium where any part of the observation was between
+  1.3GHz and 1.5GHz. See the example for the
+  \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor for a more
+  complete discreption of other parts of this example.
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectfrequency}{Select which frequency-range to convert}
+  \ahkeyword{selectfrequency}{selectfrequency}
+  \begin{ahdescription}
+
+    The selectfrequency function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    The frequency band is specified using a center frequency and a
+    bandwidth around that frequency. These frequencies are specified
+    using strings to include the necessary units ie., kHz, MHz etc.
+    
+    This function rejects input records were all the correlations are
+    entirely outside the specified frequency band. It cannot be used
+    to select channels, this must be done after the measurement set
+    has been created. For example if a spectral line observation has
+    data in ten channels between 100MHz and 200MHz then calling this
+    function with a center frequency of 200MHz and a bandwidth of
+    40MHz will include \emph{all} of the data between 100MHz and
+    200MHz and not just the last two channels.
+
+    If any of the input parameters is unset then no frequency
+    selection is done. This is the default.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{centerfrequency}{The center frequency.}
+             {unset}{string}
+    \ahaddarg{bandwidth}{The range of frequencies around the center frequency.}
+             {unset}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{selecttime}{vla:vlafiller.selecttime} function.
+  \end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectband}{Select which frequency-band to convert}
+  \ahkeyword{selectband}{selectband}
+  \begin{ahdescription}
+
+    The selectband function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    This function selects input records where any of the correlations
+    are within one of the eight standard VLA observing bands. These
+    bands are:
+    \begin{center}
+    \begin{tabular}{|c|r|}\hline
+      Band & Frequencies  \\ \hline
+        4  &    48 --    96 MHz \\
+        P  &   298 --   345 MHz \\
+        L  &  1.15 --  1.75 GHz \\
+        C  &  4.2  --  5.1  GHz \\
+        X  &  6.8  --  9.6  GHz \\
+        U  & 13.5  -- 16.3  GHz \\
+        K  & 20.8  -- 25.8  GHz \\
+        Q  & 38.0  -- 51.0  GHz \\ \hline
+    \end{tabular}
+    \end{center}
+    
+    The input argument to this function is a single character, case
+    insensitive, string containing one of the band codes shown
+    above. This is then translated to the relevant frequencies and
+    passed to the selectfrequency function described above. Like the
+    selectfrequency function this function may also copy data that is
+    outside the band if some of the data in an input record is inside
+    the specified band.
+
+    If the input parameter is unset then no frequency selection is
+    done. This is the default.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{bandname}{The frequency band to select.}
+             {unset}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the 
+    \ahlink{selecttime}{vla:vlafiller.selectcalibrator} function.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{selectsource}{Select which source to convert}
+  \ahkeyword{selectsource}{selectsource}
+  \begin{ahdescription}
+
+    The selectsource function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    The source name is a string with up to 16 characters. Only records
+    that contain the same, case in-sensitive, string are copied to the
+    output measurement set. The 'unset' value matches all
+    projects. This is the default.
+
+    The source qualifier is an additional parameter that can be used
+    to distinguish different observing configurations of the same
+    source. It is an integer and is usually zero. The unset value can
+    be used to select data with any source qualifier and this is the
+    default.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{source}{The source name.}
+             {unset}{string}
+    \ahaddarg{qualifier}{The qualifier.}
+             {unset}{integer}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{tapeinput}{vla:vlafiller.tapeinput} function.
+  \end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectsubarray}{Select which sub-array to convert}
+  \ahkeyword{selectsubarray}{selectsubarray}
+  \begin{ahdescription}
+
+    The selectsubarray function filters the data so that only some of
+    it is copied to the output measurement set.
+    
+    The input argument to this function is an integer between one and
+    five (inclusive) which indicates which subarray to select the data
+    from. 
+
+    If the input parameter is unset then no subarray selection is
+    done. This is the default.
+
+    This functions returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{subarray}{The subarray id.}
+             {unset}{integer}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    See the 
+    \ahlink{selectcalibrator}{vla:vlafiller.selectcalibrator} function.
+  \end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectcalibrator}{Select which calibrators to convert}
+  \ahkeyword{selectcalibrator}{selectcalibrator}
+  \begin{ahdescription}
+
+    The selectcalibrator function filters the data so that only some of
+    it is copied to the output measurement set.
+
+    The calibrator code can be any uppercase letter or a single
+    numeric character. Often it is assigned by the scheduling software
+    and may have a specific meaning. The character \verb|'*'| can be
+    used to select all the calibrators regardless of the calibration
+    code. This does not select any of the target sources which have a
+    calibrator code of \verb|' '| (the space character).
+
+    This function can be used to filter out all the calibrators so
+    that only target sources are filled. This is done using a
+    argument of \verb|' '| (the space character).
+
+    To revert to the default behaviour of selecting all the target
+    sources and all the calibrators this function should called with
+    the unset argument.
+    
+    This function returns F if the selection could not be done.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{calcode}{The calibrator code to select.}
+             {unset}{string}
+  \end{ahargs}
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      v := vlafiller() 
+      v.diskinput('file1.vla') 
+      v.output('file1.ms') 
+      v.selectband('L') 
+      v.selectsubarray(1) 
+      v.selectcalibrator('C') 
+      v.fill() 
+      v.done() 
+    \end{verbatim}
+  \end{ahexample}
+  This example selects all the calibrator data with positions known to
+  better than 50mas (as thats what calcode 'C' usually means), that
+  was observed using in 'L' band (near 1.4GHz) in using sub-array 1.
+  See the example for the \ahlink{vlafiller}{vla:vlafiller.vlafiller}
+  constructor for a more complete description of other parts of this
+  example.
+\end{ahfunction}
+
+\begin{ahfunction}{fill}{Copy the data}
+  \ahkeyword{fill}{fill}
+  \begin{ahdescription}
+
+    The fill function copies the data from the previously specified
+    input VLA archive to the previously specified output measurement
+    set, applying any previously specified data filtering criteria.
+    
+    All cross-correlation and auto-correlation data are copied to the
+    measurement set. Data is copied and flagged if the online
+    system indicates that any of the IF's involved in the correlation
+    had a status greater than three.
+
+    Unlike most of the other functions in this tool the fill data may
+    take a long time to execute. As a result it sends to the logger
+    messages indicating whenever it has come across, a change in the
+    array configuration, field center, spectral window or polarization
+    setup. More extensive messages that log the processing of each
+    record may be enabled by setting the verbose argument to T.
+
+    The fill function may also be run asynchronously by setting the
+    async argument to T. When run asynchronously the function
+    returns quickly and runs in the background. A message is sent to
+    the logger window when the function has finished executing.
+
+    When the fill function has successfully completed the input source
+    is reset to a null value. This means you \emph{must} call setinput
+    at least once once prior to every invocation of the fill function.
+
+    This functions returns T or the job id (if run asynchronously).
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{verbose}{Send messages when copying each record.}
+             {F}{Boolean}
+    \ahaddarg{async}{Run this function asynchronously.}
+             {F}{Boolean}
+  \end{ahargs}
+  \ahreturns{T or a small integer}
+  \begin{ahexample}
+    See the example for the
+   \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor or the
+   examples in the vlafiller tool description.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{state}{Show the state of the tool}
+  \ahkeyword{state}{state}
+  \begin{ahdescription}
+
+    The state function displays to the logger the current state of the
+    filler. This lets you know what the input and output files are and
+    what selections have been made.
+
+  \end{ahdescription}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stop}{Stop the filling process}
+  \ahkeyword{stop}{stop}
+  \begin{ahdescription}
+
+    The stop function will signal the filler process to stop
+    immediately after reading the next record. This is the earliest
+    point at which the filling process can sensibly be halted and it
+    is quite likely that the filling process will be stopped midway
+    through a scan. Using this function, and then shutting down the
+    filler process, using the \ahlink{done}{vla:vlafiller.done}
+    function, should result in a perfectly valid but truncated
+    measurement set.
+
+  \end{ahdescription}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete the vlafiller tool}
+  \ahkeyword{done}{done}
+  \begin{ahdescription}
+
+    The done function frees up all the memory associated with a
+    vlafiller tool. This function also closes all the disk files and
+    tape devices that it used so that other tools can use them.  It
+    will also shut down the server process if there are no other
+    vlafiller tools being used.
+
+  \end{ahdescription}
+  \ahreturns{T}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+  \end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+%% Global functions
+
+\begin{ahfunction}{vlafillerfromtape}{Convert VLA archive data from a tape to
+                   a measurement set}	
+  \ahkeyword{vlafillerfromtape}{vlafillerfromtape}
+  \begin{ahdescription}
+
+    This global function prevents users from having to explicitly use
+    the vlafiller tool by packaging its functions so they perform a
+    common task ie., copying VLA archive data from tape to a
+    measurement set.
+
+    There are only two arguments which the user must supply in order
+    to successfully use this function, these are the device and msname
+    arguments. These arguments specify the name of the tape device and
+    the output measurement set. All other arguments are optional. See
+    the \ahlink{tapeinput}{vla:vlafiller.tapeinput} \&
+    \ahlink{output}{vla:vlafiller.output} functions for more details.
+
+    A number of arguments control what data is copied to the output
+    measurement set. These are:
+    \begin{description}
+    \item[project] See the
+      \ahlink{selectproject}{vla:vlafiller.selectproject} function.
+    \item[start \& stop] See the
+      \ahlink{selecttime}{vla:vlafiller.selecttime} function.
+    \item[bandname] See the
+      \ahlink{selectband}{vla:vlafiller.selectband} function.
+    \item[source] See the
+      \ahlink{selectsource}{vla:vlafiller.selectsource}
+      function\footnote{You cannot select which qualifier to use, you
+      always get all of them}.
+    \end{description}
+
+    The remaining arguments control details of the filling
+    process. The overwrite argument specifies whether the output
+    measurement set is deleted prior to copying the data. See the
+    \ahlink{output}{vla:vlafiller.output} function for more
+    details. 
+
+    The files argument controls which files on tape are to be
+    read. The first file containing astronomical data is numbered file
+    one and a number of files can be specified using a vector of
+    increasing integers eg., \verb|files=[1,2,10]|. See the
+    \ahlink{tapeinput}{vla:vlafiller.tapeinput} function for more
+    details.
+
+    The verbose argument controls how much status information is sent
+    to the logger and the async argument controls whether the function
+    should run in the background. See the
+    \ahlink{fill}{vla:vlafiller.fill} function for more details.
+
+    The host argument controls which machine this filler process is
+    run on. This allows remote tape drives to be used. Unless you have
+    done this before it is recommended you read the full description of
+    this mechanism described in the
+    \ahlink{vlafiller}{vla:vlafiller.vlafiller} constructor.
+
+    This function returns T is everything went well and F otherwise.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msname}{The measurement set name.}
+             {no default}{string}
+    \ahaddarg{device}{The tape device.}
+             {no default}{string}
+    \ahaddarg{files}{The files to read.}
+             {[1]}{vector of integers}
+    \ahaddarg{project}{The observing project name.}
+             {unset}{string}
+    \ahaddarg{start}{The beginning of the time range.}
+             {unset}{string}
+    \ahaddarg{stop}{The end of the time range.}
+             {unset}{string}
+    \ahaddarg{bandname}{The frequency band to select.}
+             {unset}{string}
+    \ahaddarg{source}{The source name.}
+             {unset}{string}
+    \ahaddarg{overwrite}{Overwrite an existing file.}
+             {F}{Boolean}
+    \ahaddarg{verbose}{Send messages when copying each record.}
+             {F}{Boolean}
+    \ahaddarg{async}{Run this function asynchronously.}
+             {T}{Boolean}
+    \ahaddarg{host}{The host on which the vlafiller should be run}
+             {unset}{string}
+  \end{ahargs}
+
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafillerfromtape('ab123.ms', '/dev/rmt/0ln', files=[1,2], project='ab123'); 
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example creates the measurement set called 'ab123.ms' from
+    all the records in the first two files of the tape that come from
+    the observing project called 'AB123'.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{vlafillerfromdisk}{Convert VLA archive data 
+	from a disk file to a measurement set}
+  \ahkeyword{vlafillerfromdisk}{vlafillerfromdisk}
+  \begin{ahdescription}
+
+    This global function prevents users from having to explicitly use
+    the vlafiller tool by packaging its functions so they perform a
+    common task ie., copying data from a disk file containing VLA
+    archive data into a measurement set.
+
+    In the best case, there are only two arguments which the user must supply 
+    in order to successfully use this function, these are the filename and
+    msname arguments. These arguments specify the names of the input
+    vla archive file and the output measurement set. All other
+    arguments are optional. See the
+    \ahlink{diskinput}{vla:vlafiller.diskinput} \&
+    \ahlink{output}{vla:vlafiller.output} functions for more details.
+    Due to the variety of the dataset quality, 
+    however, some dataset requires a larger tolerance for frequeny 
+    in order to recognize the same spectral window. So the user may need
+    to pass in a proper tolerance according to the specific dataset.
+    As a rule of thumb, executing the filling script first with the
+    default tolerance and examing the generated SPECTRAL\_WINDOW
+    subtable of MS will give you a good hint about what is the 
+    right tolerance for the frequency to use. For instance, 
+    for dataset G192, the proper tolerance for frequency is
+    about 6 times of its channel width( see the glish test script 
+    g192\_testTolerance.g ), while for dataset NGC7538, a much larger 
+    tolerance, 60 times of its channel width, ( see the glish test
+    scripts ngc7538\_testTolerance.g ) is required in order to recognize
+    the two related frequencies as the same spectral window. The 
+    freqTolerance should be in the unit of Hz. 
+
+    A number of arguments control what data is copied to the output
+    measurement set. These are:
+    \begin{description}
+    \item[project] See the
+      \ahlink{selectproject}{vla:vlafiller.selectproject} function.
+    \item[start \& stop] See the
+      \ahlink{selecttime}{vla:vlafiller.selecttime} function.
+    \item[bandname] See the
+      \ahlink{selectband}{vla:vlafiller.selectband} function.
+    \item[source] See the
+      \ahlink{selectsource}{vla:vlafiller.selectsource}
+      function\footnote{You cannot select which qualifier to use, you
+      always get all of them}.
+    \end{description}
+
+    The remaining arguments control details of the filling
+    process. The overwrite argument specifies whether the output
+    measurement set is deleted prior to copying the data. See the
+    \ahlink{output}{vla:vlafiller.output} function for more
+    details. 
+
+    The verbose argument controls how much status information is sent
+    to the logger and the async argument controls whether the function
+    should run in the background. See the
+    \ahlink{fill}{vla:vlafiller.fill} function for more details.
+
+    This function returns T is everything went well and F otherwise.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msname}{The measurement set name.}
+             {no default}{string}
+    \ahaddarg{filename}{The input file name.}
+             {no default}{string}
+    \ahaddarg{project}{The observing project name.}
+             {unset}{string}
+    \ahaddarg{start}{The beginning of the time range.}
+             {unset}{string}
+    \ahaddarg{stop}{The end of the time range.}
+             {unset}{string}
+    \ahaddarg{bandname}{The frequency band to select.}
+             {unset}{string}
+    \ahaddarg{source}{The source name.}
+             {unset}{string}
+    \ahaddarg{overwrite}{Overwrite an existing file.}
+             {F}{Boolean}
+    \ahaddarg{verbose}{Send messages when copying each record.}
+             {F}{Boolean}
+    \ahaddarg{async}{Run this function asynchronously.}
+             {F}{Boolean}
+    \ahaddarg{freqTolerance}{The tolerance for frequency.}
+             {The channel width of the current spectral window in Hz}{Double}
+  \end{ahargs}
+
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafillerfromdisk('ab123.ms', 'file1.vla', project='ab123');
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example creates the measurement set called 'ab123.ms' from
+    all the records in the file called 'file1.vla' that come from
+    the observing project called 'AB123'.
+  \end{ahcomments}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafillerfromdisk(filename='data/G192/AS758\_C030425.xp1',
+                        msname='g192\_a.ms', overwrite=T,bandname='K',
+                        async=F, freqTolerance=150000.0);
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example shows how a user can pass in a tolerance for the  frequency matching.
+    It creates the measurement set called 'g192\_a.ms' from
+    all the records in the file called 'data/G192/AS758\_C030425.xp1'. 
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{vlafilleroldweights}{Use an older weighting scheme}
+  \ahkeyword{vlafilleroldweights}{vlafilleroldweights}
+  \begin{ahdescription}
+
+    This global function will change the weights of the supplied
+    measurement set to a value that only depends on the integration
+    time. The values in the WEIGHT column will be changed to one tenth
+    of the value in the EXPOSURE column and the values in the SIGMA
+    column will be changed to the inverse square-root of the new value
+    in the WEIGHT column. This was the original behaviour of the
+    vlafiller tool.
+
+    From release~1.5 the vlafiller tool sets the weights to a value
+    that depends on the integration time, bandwidth and system
+    temperature of the relevant antennas. This is believed to be more
+    representative of the errors in the observation.
+
+    This function returns T is everything went well and F otherwise.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{msname}{The measurement set name.}
+             {no default}{string}
+  \end{ahargs}
+
+  \ahreturns{T or F}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafilleroldweights('ab123.ms');
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example resets the weights in the measurement set
+    'ab123.ms'. There is no way to back out of this change so if you
+    need to compare both weighting schemes you should copy your data
+   to a separate measurement set prior to running this function.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{vlafillerdemo}{Demonstrate the vlafiller tool}
+  \ahkeyword{vlafillerdemo}{vlafillerdemo}
+  \begin{ahdescription}
+  \end{ahdescription}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafillerdemo()
+    \end{verbatim}
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{vlafillertest}{Test the vlafiller tool}
+  \ahkeyword{vlafillertest}{vlafillertest}
+  \begin{ahdescription}
+  \end{ahdescription}
+  \ahreturns{T or fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'vlafiller.g'
+      vlafillertest()
+    \end{verbatim}
+  \end{ahexample}
+\end{ahfunction}

@@ -1,0 +1,547 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: itemcontainer.help,v 19.2 2004/08/25 02:09:01 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{itemcontainer}{A generic closure toolcontainer}
+
+\ahinclude{itemcontainer.g}
+
+\ahcategory{utilities}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{containers}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This generic closure tool is designed to be used as a container of
+small items.  Once created, the container can be made immutable.
+There is functionality to put items into the container, remove them
+and recover the contents of the container.  {\tt Items} can be of any
+type, and different types can be mixed in the one container.
+
+\ahlink{Region}{images:regionmanager} of
+interest tools are actually {\tt itemcomntainer} tools.
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+
+We make a tool containing some smoothing kernel information.  After
+invoking the {\tt makeconst} function, you can no longer add items to
+the container or delete from it. 
+
+\begin{verbatim}
+- include 'itemcontainer.g';
+T
+- include 'quanta.g';
+T
+- kernelType := 'gaussian';
+- kernelWidth := dq.quantity(20,'arcsec');
+- const i1 := itemcontainer();
+- i1.set('type', kernelType);
+T
+- i1.set('width', kernelWidth);
+T
+- i1.makeconst();
+T
+- i1.set('comment', 'fish');
+<fail>: This is a const object, you cannot write to it
+        File:   itemcontainer.g, Line 228
+        Stack:  .()
+\end{verbatim}
+\end{ahexample}  
+
+
+
+\begin{ahconstructor}{itemcontainer}{Construct an itemcontainer}
+\ahreturns{itemcontainer tool}
+\begin{ahdescription}
+
+This is the only {\tt itemcontainer} constructor.
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'itemcontainer.g'
+- i1 := itemcontainer()
+\end{verbatim}
+
+\end{ahexample}
+\end{ahconstructor}
+
+
+
+
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{String}
+\begin{ahdescription}
+ 
+This tool function returns the string ``itemcontainer''.  If
+you have a tool, but don't know what kind it is, this
+function usually exists to tell you who the tool is.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- myic := itemcontainer();
+- if (is_defined('myic') && is_record(myic) &&
+      has_field(myic, 'type') && myic.type() == 'itemcontainer') {
+     print 'yippee';
+  } else {
+     print 'itemcontainers are not impressive enough for my work';
+  }
+\end{verbatim}
+\end{ahexample}
+
+Note the use of the short cut ``\&\&'' operator.  A statement is only
+evaluated if the statement to the left is true. 
+
+\end{ahfunction}
+ 
+
+\begin{ahfunction}{done}{Destroy this itemcontainer}
+\ahreturns{Bool}
+\begin{ahdescription}
+
+This tool function destroys the state of the current {\tt itemcontainer}
+tool.  The tool still exists, but it is no longer an {\tt itemcontainer} !
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const myic := itemcontainer();
+- myic.done();
+T
+- print 'myic=', myic;
+myic=F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{has\_item}{Does this item exist}
+\ahreturns{Bool}
+\begin{ahdescription}
+
+This tool function indicates whether the named
+item exists in the {\tt itemcontainer} or not.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const i1:= itemcontainer();
+- i1.set('doggies', "retriever spaniel siamese");
+T
+- i1.has_item('doggies');
+T
+- i1.has_item('fish');
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{names}{Returns list of item names}
+\ahreturns{Vector of strings}
+\begin{ahdescription}
+
+This tool function returns the list of item names.  Note that any
+items added with the \ahlink{add}{misc:itemcontainer.add} will have
+a field name like ``*n'' where ``n'' is a number. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const fish := itemcontainer();
+- fish.set('types', "salmon trout gold");
+T
+- fish.set('fish1', 'trout');
+T
+- fish.add('salmon');
+3
+- print 'names=', fish.names();
+names=types fish1 *1 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{makeconst}{Make this itemcontainer const}
+\ahreturns{Boolean}   
+\begin{ahdescription}
+ 
+After application of this tool function, you can no longer change the
+internal state of the {\tt itemcontainer} tool.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- i1 := itemcontainer();
+T
+- i1.set('par1', 20);
+T
+- i1.set('par2', 30);
+T
+- i1.makeconst();
+T
+- i1.set('par3', 40);
+This is a const tool, you cannot overwrite it
+<fail>: This is a const object, you cannot overwrite it
+        File:   itemcontainer.g, Line 56
+        Stack:  .()
+\end{verbatim}
+
+Note that this is a different error from
+
+\begin{verbatim}
+- const i1 := itemcontainer()
+- i1 := 'fish'
+<fail>: <fail>: 'const' values cannot be modified.
+\end{verbatim}
+
+Here Glish is complaining that it can't reassign the tool
+{\tt i1}.  The previous example is illustrating that
+after application of the {\tt makeconst} function,
+you can't change the internal state of the {\tt itemcontainer}
+tool (nothing to do with trying to overwrite it).
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+\begin{ahfunction}{makeunconst}{Make this itemcontainer unconst}
+\ahreturns{Boolean}   
+\begin{ahdescription}
+ 
+After application of this tool function, you can change the
+internal state of the {\tt itemcontainer} tool again.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- i1 := itemcontainer();
+T
+- i1.set('par1', 20);
+- i1.makeconst();
+- i1.set('par3', 40);
+This is a const tool, you cannot overwrite it
+<fail>: This is a const object, you cannot overwrite it
+        File:   itemcontainer.g, Line 56
+        Stack:  .()
+- i1.makeunconst();
+- i1.set('par3', 40);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction} 
+
+
+
+
+
+
+\begin{ahfunction}{length}{Returns the number of items}
+\begin{ahargs}  
+   \ahaddarg{showdeleted}{yes or no}{F}{Bool}
+\end{ahargs}
+\ahreturns{Integer}
+\begin{ahdescription}
+
+This tool function returns the number of items in the list of item names.
+{\tt itemcontainer}. If {\tt showdeleted} is set to T, illegal fields
+are counted.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const fish := itemcontainer();
+- fish.set('types', "salmon trout gold");
+T
+- fish.set('fish1', 'trout');
+T
+- fish.add('salmon');
+3
+- print 'number=', fish.length();
+number=3
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{torecord}{Return the contents of the container as a record}
+\begin{ahargs}  
+   \ahaddarg{showdeleted}{yes or no}{F}{Bool}
+\end{ahargs}
+\ahreturns{Record}
+
+\begin{ahdescription}
+
+This tool function recovers the contents of the container into a
+record where each item has its own named (or numbered) field. 
+If {\tt showdeleted} is T, even ``illegal'' fields are copied.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const fish := itemcontainer();
+- fish.set('types', "salmon trout gold");
+T
+- fish.set('fish1', 'trout');
+T
+- fish.add('salmon');
+3
+- x := fish.torecord();
+- x
+[types=salmon trout gold, fish1=trout, *1=salmon] 
+- is_record(x);
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fromrecord}{Add the fields of this record}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function makes one item per field in the supplied record.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- const fish := itemcontainer();
+- rec := [=];
+- rec.types := "salmon trout gold";
+- rec.fish1 := 'trout';
+- rec.fish2 := 'salmon';
+- fish.fromrecord(rec);
+T
+- fish.names();
+types fish1 fish2
+- fish.torecord();
+[types=salmon trout gold, fish1=trout, fish2=salmon] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{set}{Put the named item into the container}
+\begin{ahargs}  
+   \ahaddarg{item}{Item name}{}{String}
+   \ahaddarg{value}{Item}{}{Any}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function puts the specified item into the container with the
+given name.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'quanta.g';
+T
+- const i1 := itemcontainer();
+- i1.set('type', 'boxcar');
+T
+- i1.set('width', dq.quantity(10,'arcsec'));
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{add}{Add the item to the container}
+\begin{ahargs}  
+   \ahaddarg{value}{Item}{}{Any}
+\end{ahargs}
+\ahreturns{Integer}
+
+\begin{ahdescription}
+
+This tool function adds the specified item into the container.   The
+item is given a number one higher than the number
+of existing items in the container.  This tool
+function returns the item number for the new item.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'quanta.g';
+T
+- const i1 := itemcontainer();
+- idx := i1.add(dq.quantity(10,'arcsec'));
+- x := i1.get(idx);
+- x;
+[value=10, unit=arcsec]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{Remove the item from the container}
+\begin{ahargs}  
+   \ahaddarg{item}{Item}{}{String or Integer}
+\end{ahargs}
+\ahreturns{}
+
+\begin{ahdescription}
+
+This tool function removes the specified {\tt item} from the container. Item
+can be an item name or the number of an item. (It does not remove the
+field from the container to preserve indexing, but sets the item's
+value to illegal.)
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'quanta.g';
+T
+- const i1 := itemcontainer();
+- idx := i1.add(dq.quantity(10,'arcsec'));
+- x := i1.get(idx);
+- x;
+[value=10, unit=arcsec]
+- i1.delete(idx);
+T
+- i1.get(idx);
+<fail>: Requested item "1" is not present
+        File:   ./itemcontainer.g, Line 152
+        Stack:  .() 
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{get}{Recover value of specified item}
+\begin{ahargs}  
+   \ahaddarg{item}{Item name or number}{}{String or integer}
+\end{ahargs}
+\ahreturns{Glish variable}
+
+\begin{ahdescription}
+
+This tool function recovers the specified variable into a Glish
+variable.  You can specify the {\tt item} either by its name or by its
+number. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'quanta.g';
+T
+- const i1 := itemcontainer();
+- i1.set('type', 'boxcar');
+T
+- idx := i1.add(dq.quantity(10,'arcsec'));
+- type := i1.get('type');
+- type;
+boxcar
+- type := i1.get(1);
+- type;
+boxcar
+- width := i1.get(2);
+- width;
+[value=10, unit=arcsec] 
+- x := i1.get(idx);
+- x;
+[value=10, unit=arcsec] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahfunction}   
+
+ 
+\end{ahobject}
+
+%% Global functions
+
+
+\begin{ahfunction}{is\_itemcontainer}{Is this an itemcontainer tool?}
+\begin{ahargs}
+  \ahaddarg{thing}{The thing to test}{}{Any}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+  
+This global function determines whether this is an {\tt itemcontainer} tool.  
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'regionmanager.g';
+T
+- r1 := drm.box();
+- is_itemcontainer(r1);     # Regions are made from itemcontainers
+T
+- i1 := itemcontainer();
+- is_itemcontainer(i1);
+T
+- x := [20];
+- is_itemcontainer(x);
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+ 
+
+\end{document}

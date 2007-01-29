@@ -1,0 +1,208 @@
+%% Copyright (C) 2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: cscatalog.help,v 19.0 2003/07/16 06:10:47 aips2adm Exp $
+\providecommand{\NRAOconesearch}{http://www.aoc.nrao.edu/e2e/java/vocone.html}
+\begin{ahtool}{cscatalog}{tool for VO conesearch queries}
+\begin{ahdescription}
+cscatalog is an tool that facilitates queries to VO conesearch
+services related to specific catalogs. Currently supported are
+NVSS, FIRST, and WENSS The services used are hosted by NRAO. The services may
+be tried by hand at 
+\htmladdnormallink{\NRAOconesearch}{\NRAOconesearch}
+
+In the following example, the NVSS catalog is queried for all sources
+overlapping the given
+image. \ahlink{cscatalog.queryimage}{vo.conesearch.cscatalog.queryimage} 
+returns a
+\ahlink{componentlist}{synthesis.componentmodels.componentlist} tool 
+that may be used in 
+\ahlink{imager}{synthesis.imager.imager} or converted to a
+\ahlink{skycatalog}{display.viewer.skycatalog} for display overlaid on an image.
+
+\begin{verbatim}
+#
+# Make an image tool
+#
+include 'image.g';
+im:=image('C1200M24.sub');
+# 
+# Make a conesearch catalog. This will return a componentlist
+#
+include 'cscatalog.g';
+cs:=cscatalog();
+cl:=cs.queryimage(im, 'NVSS');
+if(is_fail(cl)) fail;
+cs.done();
+#
+# Skycatalog is a simple format for displaying catalogs
+#
+include 'skycatalog.g'
+sc:=skycatalog(spaste(im.name(), '.sc'));
+sc.fromcomponentlist(cl);
+if(is_fail(sc)) fail;
+#
+# Now the image and the skycatalog should be visible in the viewer
+#
+include 'viewer.g';
+dv.gui();
+\end{verbatim}
+
+In this example, we have queried for an NVSS image (actually a
+subsection). The result (after using the viewer to load the image
+and the skycatalog) is shown in the figure below:
+
+\begin{latexonly}
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=C1200M24.ps, angle=90, width=6.0in}
+\end{center}
+\end{figure}
+\end{latexonly}
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+<img src="../helpfiles/C1200M24.gif"><BR>
+</center>
+\end{rawhtml}
+\end{htmlonly}
+
+
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{cscatalog}{Construct an cscatalog tool}
+\begin{ahdescription}
+This is used to construct {\tt cscatalog} tools.
+
+This returns a Glish variable containing the tool functions of
+cscatalog.
+\end{ahdescription}
+\ahreturns{cscatalog tool}
+\begin{ahexample}
+\begin{verbatim}
+cs:=cscatalog();
+rec:=cs.query(180, 45, 1, 'FIRST')
+cs.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{queryimage}{Query a catalog for an image}
+\begin{ahdescription}
+This queries a specific catalog for all sources overlapping the
+specified image tool.  The VOTable is returned after
+conversion to a \ahlink{componentlist}{synthesis.componentmodels.componentlist} tool.
+The componentlist tool is anonymous and must be renamed using the 
+\ahlink{componentlist.rename}{synthesis.componentmodels.componentlist.rename} function.
+
+Note that the componentlist contains all sources from the cone that
+circumscribes the image so there are points in the componentlist that
+will not be overlaid on the image.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{im}{Image tool}{None}{Image tool}
+\ahaddarg{catalog}{Catalog to be queried}{NVSS}{NVSS|FIRST|WENSS}
+\ahaddarg{fluxrange}{Flux limitation}{F}{Vector of quantities}
+\end{ahargs}
+\ahreturns{componentlist}
+\begin{ahexample}
+\begin{verbatim}
+#
+# Make an image tool
+#
+include 'image.g';
+im:=image('C1200M24.sub');
+# 
+# Make a conesearch catalog. This will return a componentlist
+#
+include 'cscatalog.g';
+cs:=cscatalog();
+cl:=cs.queryimage(im, 'NVSS', fluxrange='5mJy');
+if(is_fail(cl)) fail;
+cs.done();
+#
+# Skycatalog is a simple format for displaying catalogs
+#
+include 'skycatalog.g'
+sc:=skycatalog(spaste(im.name(), '.sc'));
+sc.fromcomponentlist(cl);
+if(is_fail(sc)) fail;
+#
+# Now the image and the skycatalog should be visible in the viewer
+#
+include 'viewer.g';
+dv.gui();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{querydirection}{Query a catalog for a direction return a componentlist}
+\begin{ahdescription}
+This queries a specific catalog for a given direction.
+The VOTable is returned after conversion to a 
+\ahlink{componentlist}{synthesis.componentmodels.componentlist} tool.
+The componentlist tool is anonymous and must be renamed using the 
+\ahlink{componentlist.rename}{synthesis.componentmodels.componentlist.rename} function.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{direction}{Direction measure}{none}{Measure}
+\ahaddarg{sr}{Search radius}{'1deg'}{Quantity}
+\ahaddarg{catalog}{Catalog to be queried}{NVSS}{NVSS|FIRST|WENSS}
+\ahaddarg{fluxrange}{Flux limitation}{F}{Vector of quantities}
+\end{ahargs}
+\ahreturns{componentlist}
+\begin{ahexample}
+\begin{verbatim}
+# 
+# Make a componentlist holding all sources with 10 degrees of 3C84
+#
+include 'cscatalog.g';
+cs:=cscatalog();
+cl:=cs.querydirection(dm.source('3C84'), sr='10deg', 'NVSS', fluxrange='5mJy');
+if(is_fail(cl)) fail;
+cs.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete the tool}
+\begin{ahdescription}
+This is used to delete the tool.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+cs:=cscatalog();
+cl:=cs.querydirection(dm.source('3C84'), sr='10deg', 'NVSS', fluxrange='5mJy');
+if(is_fail(cl)) fail;
+cs.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahtool}
+

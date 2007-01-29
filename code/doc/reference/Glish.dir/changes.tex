@@ -1,0 +1,594 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/changes.tex,v 19.0 2003/07/16 04:18:44 aips2adm Exp $
+
+\chapter{Changes Between Glish Releases}
+\label{changes}
+\index{changes!between Glish releases|(}
+
+This chapter documents the changes between the various \emph{Glish} releases.
+
+%%%%%%% Change the release number on the title page!
+
+\section{Release 2.7 (September 1998)}
+
+The following changes were made between release 2.6 and 2.7.
+
+%\begin{sloppy}
+\begin{itemize}
+
+\item Regular expressions were added with code taken from Perl version 5.004\_04
+(\xref{regular-exprs}).
+
+\item ASCII file I/O was added (\xref{io}).
+
+\item The Tk widgets were removed from the {\em Glish} interpreter, and moved
+to a client, {\tt gtk} (\xref{glishtk}).
+
+\item Proxy client capability was added to the {\em Glish} client library to
+permit moving the Tk widgets to a client (\xref{proxy-class}).
+
+\item Removed warning about disgarded results.
+
+\item Removed warning about {\em not} passing functions and agents to clients.
+
+\item Added new command line options, \verb+-vi+, \verb+-vf+, \verb+-info+,
+\verb+-help+, and \verb+-version+ (\xref{interpreter}).
+
+\item \verb+$agent+, \verb+$name+, and \verb+$value+ were made local to {\tt whenever}
+statements. This means that they are {\em not} corrupted during the processing
+of one {\tt whenever} statement by other {\tt await} or {\tt whenever} statements.
+
+\item \verb+request+ statements now work more like {\tt await} statements.
+They do not block all events, in their basic form, and they wait for a specific event
+from the client instead of just accepting the first event from the client.
+
+\item Several new functions were added:
+\begin{itemize}
+\item {\tt tr( )}, \xref{tr-func}
+\item {\tt to\_upper( )}, \xref{to_upper-func}
+\item {\tt to\_lower( )}, \xref{to_lower-func}
+\item {\tt readline( )}, \xref{readline-func}
+\item {\tt unique( )}, \xref{unique-func}
+\item {\tt shape( )}, \xref{shape-func}
+\item {\tt strlen( )}, \xref{strlen-func}
+\item {\tt sizeof( )}, \xref{sizeof-func}
+\item {\tt alloc\_info( )}, \xref{alloc_info-func}
+\item {\tt bundle\_events( )}, \xref{bundle_events-func}
+\item {\tt flush\_events( )}, \xref{flush_events-func}
+\item {\tt is\_regex( )}, \xref{is_regex-func}
+\item {\tt is\_file( )}, \xref{is_file-func}
+\item {\tt stat( )}, \xref{stat-func}
+\item {\tt is\_asciifile( )}, \xref{is_asciifile-func}
+\item {\tt write( )}, \xref{write-func}
+\item {\tt read( )}, \xref{read-func}
+\item {\tt fprintf( )}, \xref{fprintf-func}
+\item {\tt printf( )}, \xref{printf-func}
+\item {\tt sprintf( )}, \xref{sprintf-func}
+\end{itemize}
+
+\item A few additions were made to the Tk interface:
+\begin{itemize}
+\item popup frames were added (\xref{tkframe});
+\item an event to raize a frame was added (\xref{tkframe});
+\item the {\tt start}, {\tt end}, and {\tt resolution} parameters
+      to {\tt scale} were changed from integer to float (\xref{tkscale});
+\item an {\tt anchor} argument (and event) was added to {\tt button},
+      {\tt label}, and {\tt message};
+\item a {\tt bitmap} argument (and event) was added to {\tt button}
+      (\xref{tkbutton});
+\end{itemize}
+
+\end{itemize}
+
+\section{Release 2.6 (November 1997)}
+
+The following changes were made between release 2.5 and 2.6:
+
+%\begin{sloppy}
+\begin{itemize}
+
+\item The Tk widgets were bound to \emph{Glish} in an integrated way (\xref{glishtk}),
+and the necessary functions were added:
+\begin{itemize}
+\item \texttt{have\_gui( )}, \xref{have_gui-func}
+\item \texttt{tk\_hold( )}, \xref{tk_hold-func}
+\item \texttt{tk\_release( )}, \xref{tk_release-func}
+\item \texttt{frame(...)}, \xref{tkframe}
+\item \texttt{button(...)}, \xref{tkbutton}
+\item \texttt{scale(...)}, \xref{tkscale}
+\item \texttt{text(...)}, \xref{tktext}
+\item \texttt{scrollbar(...)}, \xref{tkscrollbar}
+\item \texttt{label(...)}, \xref{tklabel}
+\item \texttt{entry(...)}, \xref{tkentry}
+\item \texttt{message(...)}, \xref{tkmessage}
+\item \texttt{listbox(...)}, \xref{tklistbox}
+\item \texttt{canvas(...)}, \xref{tkcanvas}
+\end{itemize}
+
+\item The \emph{Glish} library \texttt{libglish.a} was split into \texttt{libglishp.a} and
+\texttt{libglish.a} so clients no longer must link in all of the interpreter's
+symbols (now in \texttt{libglishp.a}).
+
+\item Changed function scope rules. Now variables are local to the function
+by default (\xref{scoping}).
+
+\item The \emph{Glish} interpreter now does non-blocking writes for sending
+events. This allows the interpreter to send as much of an event as it
+can and then do other things until it can continue sending the event.
+This avoids some cases of deadlock, e.g. :
+\begin{verbatim}
+        echo_client->h(1:3000); echo_client->h(1:3000)
+\end{verbatim} 
+This required changes in the transport layer.
+
+\item The transport layer (\emph{SDS}) was replaced. The new library is called
+\emph{SOS} (\texttt{libsos.a}). It is a minimal C++ reimplementation of the portion
+of \emph{SDS} which \emph{Glish} used. This new transport layer overcomes some of \emph{SDS}'
+short comings:
+\begin{itemize}
+\item coercion of type boolean to type integer in boolean values
+sent to clients
+\item loss of ``embedded'' whitespace in strings sent to clients
+\item lack of non-blocking write
+\end{itemize}
+\emph{SOS} does this without sacrificing speed. \emph{SOS} uses \texttt{writev( )}
+to minimize the number of system calls in sending data.
+
+\emph{This means that all clients compiled with earlier versions of the
+\emph{Glish}
+libraries must be recompiled and relinked with these newer libraries.}
+
+\item \texttt{opaque} values are no longer supported.
+
+\item Files written to disk with \texttt{write\_value()} from an earlier version
+of \emph{Glish} will \emph{not} be readable via \texttt{read\_value()} with this version of
+\emph{Glish}. This is due to the change in transport layers.
+
+\item Changed string to boolean conversion; now a string is \texttt{T} if
+it has a non-zero length (\xref{predefineds-conversion}).
+
+\item Added \verb+<fail>+ values as a way to deal with error conditions
+(\xref{fail-stmt-2}).
+
+\item \texttt{const} now means not modifiable rather than ``constant reference''
+(\xref{constant-values}).
+
+\item All value in \emph{Glish} are now ``copy-on-write''.  This means that
+\texttt{ref} function parameters typically  should not be needed; \texttt{val}
+is now the default type for function parameters (\xref{copy-on-write}).
+
+\item Added numeric constants \texttt{pi} and \texttt{e} (\xref{pi-var}).
+
+\item Changed function parameter evaluation to permit things like:
+\begin{verbatim}
+        func foo( x, y=2*x ) { print y }
+\end{verbatim}
+
+\item Dropped the keywords ``send'' and ``request''. Currently these
+keywords are simply ignored, but with release 2.6.1 they will result in
+syntax errors (\xref{events}).
+
+\item Many memory leaks were fixed. Currently the most notable outstanding
+leaks are the result of \texttt{strdup( )} calls; the current \texttt{String} class
+needs to be beefed up and improved so it can be used throughout \emph{Glish} instead
+of \texttt{char*}.
+
+\item Changed \texttt{include} from directive to a statement
+(\xref{include-directive}).
+
+\item Added \texttt{eval( )} to allow strings to be interpreted as \emph{Glish}
+programs (\xref{eval-func})
+
+\item Added several new predefined functions:
+\begin{itemize}
+\item general purpose:
+\begin{itemize}
+\item \tt{time( )}, \xref{time-func}
+\item \tt{is\_nan(x)}, \xref{is_nan-func}
+\item \tt{is\_modifiable(x)}, \xref{is_modifiable-func}
+\item \tt{is\_const(x)}, \xref{is_const-func}
+\item \tt{ceil(x)}, \xref{ceiling-func}
+\item \tt{floor(x)}, \xref{floor-func}
+\item \tt{is\_fail(x)}, \xref{is_fail-func}
+\end{itemize}
+\item array manipulation:
+\begin{itemize}
+\item \tt{rbind(...)}, \xref{rbind-func}
+\item \tt{cbind(...)}, \xref{cbind-func}
+\end{itemize}
+\item symbol table manipulation:
+\begin{itemize}
+\item \tt{is\_defined(x)}, \xref{is_defined-func}
+\item \tt{symbol\_value(x)}, \xref{symbol_value-func}
+\item \tt{symbol\_names(...)}, \xref{symbol_names0-func}
+\item \tt{symbol\_set(...)}, \xref{symbol_set1-func}
+\item \tt{symbol\_delete(x)}, \xref{symbol_delete-func}
+\end{itemize}
+\item event related:
+\begin{itemize}
+\item \tt{whenever\_active(x)}, \xref{whenever_active-func}
+\end{itemize}
+\end{itemize}
+
+\item Some functions were changed:
+\begin{itemize}
+\item \texttt{log} is now log base 10, and a new function \texttt{ln} is
+the natural log (\xref{log-func}).
+\item \texttt{split} can now be used to split a string into individual
+characters by passing an empty separator string, e.g. \verb+split('this','')+
+returns \verb+t h i s+ (\xref{split-func}).
+\item \texttt{whenever\_stmts} added an extra field to the record returned. This
+field indicates which of the statements are active.
+\end{itemize}
+
+\item Added \texttt{wider} keyword to access a scope which is wider than the 
+current scope, but not \emph{global} (\xref{wider}). The main reason this was
+added was to support \emph{function closures} (\xref{func-closure}).
+
+\item With nested function definitions, the multiple scopes are preserved and
+used when the function is invoked. This along with \texttt{wider} allows for
+useful \emph{function closures} (\xref{func-closure}).
+
+\item A couple of important changes were made to \texttt{whenever} statements:
+\begin{itemize}
+\item ``stacked'' \texttt{whenever} statements (as a result of intervening
+\texttt{await}s) are now handled properly. The event is matched with the
+\emph{oldest} queued \texttt{whenever} statement (\xref{await-and-whenever}).
+\item Multiple function scope are now preserved and used if necessary. This
+is an issue when a \texttt{whenever} statement is set up within nested function
+definitions.
+\end{itemize}
+
+\item \verb+^C+, \verb+^\ +, and \verb+^Z+ now work properly, at least when
+command line editing is enabled. \verb+^C+ prompts before exiting; \verb+^\ +
+exits directly.
+
+\item Floating point exceptions are now handled properly on most platforms.
+This was especially a problem on the DEC Alpha machines.
+
+\item Added ``-l \emph{file}'' command line parameter (\xref{interpreter}).
+
+\item Rewrote the \texttt{glishd} client (see \S~\ref{glishd}). It now
+can be either
+started by \emph{root} and run as a daemon accepting connections on a published
+port, or started by a user and only handle commands from that particular
+user. When \texttt{glishd} is started by \emph{root}, users are authenticated
+using keys. Each user has a key, and each host has a key. \texttt{glishd}
+(running as \emph{root}) authenticates each user using a combination of the
+host and user key. This authentication is done thanks to Vern's \emph{NPD}
+library. Authentication is not necessary when \texttt{glishd} is started by a
+user other than \emph{root}.
+
+\item Improved remote client start up. Now the binary search path and the
+dynamic loader search path are set properly before starting either the
+\texttt{glishd} or a client.
+
+\item The configuration and make system can now handle creating shared
+\emph{Glish}
+libraries for most architectures.
+
+\item Now whenever \emph{Glish} dies, it attempts to write out all of the non-function,
+non-agent values to a file called \texttt{glish.core}.
+
+\item Now \verb+pragma include once+ can be used to prevent a script from being
+included multiple times.
+
+\item Clients can now be shared by multiple \emph{Glish} interpreters.  (See 
+\S~\ref{shared-clients} and \S~\ref{shared-client-implementation}.) This allows
+interpreters to communicate with each other. A \texttt{pragma} directive was added
+to allow script clients to specify that they should be shared. The following are
+the only valid pragmas for share clients are:
+\begin{itemize}
+\item \verb+pragma shared user+
+\item \verb+pragma shared group+
+\item \verb+pragma shared world+
+\end{itemize}
+Much of the initial work on shared clients was done by Todd Satogata
+(\htmladdnormallink{satogata@bnl.gov}{mailto:satogata@bnl.gov}) and
+Chris Saltmarsh
+(\htmladdnormallink{salty@farpoint.co.uk}{mailto:salty@farpoint.co.uk}).
+
+\item Several new fields were added to the \texttt{system} record:
+\begin{itemize}
+\item \verb+system.pid+ and \verb+system.ppid+, \xref{system-pid}
+\item \verb+system.tk+, \xref{system-tk}
+\item \verb+system.limits.max+ and \verb+system.limits.min+, \xref{system-limits-max}
+\item \verb+system.path.include+, \xref{system-path-include}
+\item \verb+system.path.bin.+\emph{hostname}, \xref{system-path-bin}
+\item \verb+system.path.bin.default+, \xref{system-path-bin}
+\item \verb+system.path.key+, \xref{system-path-key}
+\item \verb+system.print.limit+, \xref{system-print-limit}
+\item \verb+system.print.precision+, \xref{system-print-precision}
+\item \verb+system.output.trace+, \xref{system-output-trace}
+\item \verb+system.output.log+, \verb+system.output.ilog+, and \verb+system.output.olog+, \xref{command-logging}
+\item \verb+system.output.pager.exec+, \verb+system.output.pager.limit+, \xref{paged-output}
+\end{itemize}
+setting some of these affect things like how clients or include files
+are found, how variables are displayed, or if debug output is generated
+or not.
+
+\item Added paged output so that large values are sent through a pager, e.g.
+\emph{less} or \emph{more}, for display.
+
+\item Added handling for the escape sequences \verb+'\a'+, \verb+'\e'+ and \verb+'\v'+
+in strings.
+
+\end{itemize}
+%\end{sloppy}
+
+
+\section{Release 2.5 (December, 1994)}
+
+Release 2.5 comprised the following changes to Release 2.4:
+
+%\begin{sloppy}
+\begin{itemize}
+
+\item Complex numbers, \texttt{complex} and \texttt{dcomplex}, were added to
+\emph{Glish} along with the relevant functions:
+\begin{itemize}
+\item \texttt{complex(x,y)}, \xref{complex-func}.
+\item \texttt{imag(x)}, \xref{imag-func}.
+\item \texttt{real(x)}, \xref{real-func}.
+\item \texttt{conj(x)}, \xref{conj-func}.
+\item \texttt{arg(x)}, \xref{arg-func}.
+\item \texttt{is\_complex(x)}, \xref{is_complex-func}.
+\item \texttt{is\_dcomplex(x)}, \xref{is_dcomplex-func}.
+\item \texttt{as\_complex(x)}, \xref{as_complex-func}.
+\item \texttt{as\_dcomplex(x)}, \xref{as_dcomplex-func}.
+\end{itemize}
+See \S~\ref{complex-types}, \S~\ref{predefined-vectors}, and 
+\S~\ref{numeric-constants} for details.
+
+\item Attributes were added to \emph{Glish}. These allow extra information
+to be attached to \emph{Glish} values. (See \xref{attributes} for more
+information.)
+
+\item Multi-dimensional arrays were added to \emph{Glish}. These arrays 
+were implemented using attributes. Users can access single elements,
+slices, or a set of unrelated array elements using the
+subscript operator. (See \ref{arrays} for more information.)
+
+\item Value subreferences were added for vector types. These
+allow users to create references to only a portion of
+another vector or array. Once created, subreferences can
+be used much like whole-value references. 
+(See \xref{partial-value-references} for more information.)
+
+\item There were several changes to default arguments for functions.
+In particular, now defaulted arguments can be omitted as follows:
+\begin{verbatim}
+    func one(a=1, b=2, c=3, d=4) [a, b, c, d]
+    one(5,,4)
+\end{verbatim}
+This invocation invokes \texttt{one} with the default values for the 
+second and fourth arguments.  (See \xref{purposefully-omitted-arguments}.)
+
+The ellipsis can also have default values:
+\begin{verbatim}
+    func two(...=0) [...]
+    two(5,,6)
+\end{verbatim}
+Here, the second argument to \texttt{two} gets the default value. (See
+\xref{defaulted-ellipsis} for more information.) This example also
+shows how the ellipsis are now used to construct an array, when all
+of the arguments are \emph{numeric} types. (See 
+\xref{ellipsis-vector-construction} for more information.)
+
+Finally, there is a new \texttt{missing()} function which returns
+a boolean vector indicating which parameters received default
+values. (See \xref{missing-func-example}.)
+
+\item Some predefined functions were added:
+\begin{itemize}
+\item \texttt{asin(x)}, \xref{asin-func}.
+\item \texttt{acos(x)}, \xref{acos-func}.
+\item \texttt{atan(x)}, \xref{atan-func}.
+\item \texttt{prod(...)}, \xref{prod-func}.
+\end{itemize}
+\texttt{asin(x)}, \texttt{acos(x)}, and \texttt{atan(x)} do not yet work for
+\texttt{complex} types.
+
+\item Some old functions were improved, mostly to operate on an arbitrary
+number of arguments.
+\begin{itemize}
+\item \texttt{sum(...)}, \xref{sum-func}.
+\item \texttt{range(...)}, \xref{range-func}.
+\item \texttt{max(...)}, \xref{max-func}.
+\item \texttt{min(...)}, \xref{min-func}.
+\item \texttt{rep(x,y)}, \xref{rep-func}.
+\item \texttt{length(...)}, \xref{length-func}.
+\end{itemize}
+
+\item Command line editing was added using the \emph{editline} library
+by Simmule Turner and Rich Salz (see the \emph{editline/README} distribution
+file for copyright and other information). (See \xref{cli-editing} for more
+information about command line editing in \emph{Glish}.)
+
+\item All of the above changes were contributed by Darrell Schiebel.
+
+\item \emph{Glish} now has \texttt{byte} and \texttt{short} types (\xref{first-type}),
+corresponding to the C types of \texttt{unsigned char} and \texttt{short}.  These
+types include the usual \texttt{as\_byte}, \texttt{is\_short}, etc. functions.
+They were contributed by Chris Saltmarsh.
+
+\item The \texttt{sync(c)} function can be called to synchronize a \emph{Glish}
+script's execution with that of client \texttt{c} (\xref{sync-func}).
+
+\item The functions \texttt{sort(x)} (\xref{sort-func}),
+\texttt{sort\_pair(x,y)} (\xref{sort_pair-func}),
+and \texttt{order(x)} (\xref{order-func})
+provide support for sorting \emph{numeric} and \texttt{string} types.
+
+\item The precedence of the \texttt{val}, \texttt{const}, and \texttt{ref}
+operators has been increased (\xref{precedence-table}).
+
+\item The \emph{glish.init} file is now compiled into the interpreter
+rather than located at run-time (\xref{glish-init}).
+
+\item A new \texttt{Client} member function, \texttt{Error}, is used to
+report an error (particularly in a recently received event)
+(\xref{client-class}).
+
+\item A new \texttt{Client} member function, \texttt{ReplyPending}, returns
+true if the client has a \emph{request/reply} pending and false otherwise
+(\xref{client-class}).
+
+\item The \texttt{Client} member function \texttt{AddInputMask} now returns
+the number of new \texttt{fd}'s it added to the mask.
+
+\item The \texttt{Client} member function \texttt{HasSequencerConnection} is
+now called \texttt{HasInterpreterConnection}.
+
+\item A \texttt{Client::PostEvent} variant has been added which does
+\emph{printf-style} formatting but with two string arguments instead
+of just one (\xref{client-class}).
+
+\item The \texttt{GlishEvent} class has been spruced up a bit, and now
+supports a member function \texttt{int IsRequest() const}, which returns
+true if the event was a \texttt{request} and false otherwise
+(\xref{glishevent-class}).
+
+\item The \texttt{Value} associated with an event in \texttt{Client::PostEvent}
+can now be nil, if you know it won't be used (\xref{client-class}).
+
+\item Clients executed ``stand-alone'' (not from within a \emph{Glish} script)
+now default to \texttt{-noglish} behavior, in which a call to \texttt{NextEvent}
+returns nil (``no more events'').  To enable (for debugging purposes) reading
+events from \emph{stdin} and writing them to \emph{stdout}, you must explicitly
+specify the \texttt{-glish} flag (\xref{suppressing-standalone}).
+
+\item Use of the \texttt{bool} type in the \emph{Client} and \emph{Value}
+class libraries has now in many cases been replaced by \texttt{int}.  In
+the remaining cases, \texttt{glish\_bool} must be used.  The abbreviations
+of \texttt{true} and \texttt{false} for \texttt{glish\_true} and \texttt{glish\_false}
+are no longer available (\xref{value-constructors}).
+
+\end{itemize}
+%\end{sloppy}
+
+
+\section{Release 2.4}
+
+Release 2.4 comprised the following changes to Release 2.3:
+%\begin{sloppy}
+\begin{itemize}
+
+\item \emph{Glish} now has a mechanism for synchronous request/reply events:
+\begin{verbatim}
+    result := request a->b( 1:10 )
+\end{verbatim}
+sends a \texttt{b} event to \texttt{a} with value \texttt{1:10} and then waits for
+\texttt{a} to reply.  The value of \texttt{a}'s reply is stored in \texttt{result}.
+Note that \texttt{request} is a new keyword, which may cause incompatibilities
+(syntax errors) with existing scripts that have variables with that name.
+(See \xref{request-reply} for details.)
+
+\item The ``event-send'' statement now takes an optional \texttt{send} keyword.
+That is, you can write
+\begin{verbatim}
+    foo->bar( args )
+\end{verbatim}
+instead as
+\begin{verbatim}
+    send foo->bar( args )
+\end{verbatim}
+The belief is that using \texttt{send} will lead to more readable scripts,
+and the plan is to gradually phase in \texttt{send} as a mandatory keyword.
+
+\item The \texttt{Client} library now includes a member function:
+\begin{verbatim}
+    int Client::HasEventSource()
+\end{verbatim}
+which returns true if a \emph{Glish} client has \emph{any} input source (either
+a connection to the \emph{Glish} interpreter, or by reading from \emph{stdin\/}),
+and false if it has no input source (due to using \texttt{-noglish})
+(\cxref{client-lib}).
+
+\item The \texttt{[]} expression now returns a truly empty array
+(\xref{empty-vector}). 
+
+\end{itemize}
+%\end{sloppy}
+
+\section{Release 2.3}
+
+Release 2.3 comprised the following changes to Release 2.2:
+%\begin{sloppy}
+\begin{itemize}
+
+\item The new \texttt{activate} and \texttt{deactivate} statements allow
+control of executing \texttt{whenever} bodies (\xref{activate-stmt}).
+
+\item The \texttt{whenever\_stmts(agent)}, \texttt{active\_agents()},
+\texttt{current\_whenever()}, and \texttt{last\_whenever\_executed()}
+built-in functions provide information regarding which agents
+generate what events, to be used in conjunction with \texttt{activate}
+and \texttt{deactivate} (\xref{last_whenever_executed-func}).
+
+\item Each host now runs at most one copy of the \emph{Glish} daemon \emph{glishd\/}.
+The \emph{Glish} interpreter periodically probes the daemon and generates events
+if connectivity is lost or regained, or if the daemon terminates
+(\xref{glishd}).
+
+\item A new agent record, ``\texttt{system}'', manages information about the
+general environment where  a script runs.  It also generates events
+indicating that the environment has changed.  (See \xref{system-var}.)
+
+\item The ``\texttt{version}'' global has been removed, as it's now
+subsumed by ``\texttt{system.version}''.
+
+\item An ``\texttt{include}'' directive supports including the contents
+of one \emph{Glish} source file inside another (\xref{include-directive}).
+
+\item When running \emph{Glish} interactively, you can now create clients
+and set up ``\texttt{whenever}'' statements to respond to their events.
+
+\item You can use ``\verb+==+'' and ``\verb+!=+'' operators to compare
+\texttt{record}, \texttt{function}, \texttt{agent}, and \texttt{opaque} values
+(\xref{rel-exprs}).
+
+\item The \emph{Glish} interpreter now allows only one filename on the command
+line (since the ``\texttt{include}'' directive can be used to access multiple
+sources).  Because of this change, you no longer need the special "--"
+argument to delimit the end of source filenames and the beginning of script
+arguments.  See \xref{interpreter}.
+
+\item A new program (not a \emph{Glish} client), \texttt{tell\_glishd}, is available
+for controlling the \emph{Glish} daemon on a given host (\emph{tell\_glishd was removed}).
+
+\end{itemize}
+%\end{sloppy}
+
+\section{Release 2.2}
+
+Release 2.2 comprised the following changes to Release 2.1 (the
+original \emph{Glish} release):
+%\begin{sloppy}
+\begin{itemize}
+
+\item Assignment (the ``\texttt{:=}'' operator) changed from being
+a statement to being an expression, allowing ``cascaded'' assignments
+(\xref{assignment}).
+
+\item \emph{Glish} now supports ``compound'' assignment such as \texttt{x +:= 1}
+(\xref{assignment}).
+
+\item You can include an optional initialization assignment in
+\texttt{local} statements (\xref{scoping}).
+
+\item You can use a \emph{Glish} script as a client in another \emph{Glish} script
+(\xref{client-scripts}).
+
+\item The \texttt{opaque} type is available for client data uninterpreted
+by \emph{Glish}.
+
+\item The division operator (``\texttt{/}'') now always converts its
+operands to \texttt{double} and yields a \texttt{double} value.
+
+\item The \emph{Client} class now includes a virtual member function
+\texttt{FD\_Change} you can use to be notified when the Client's
+input sources changes (\xref{multiplexing}).
+
+\end{itemize}
+%\end{sloppy}
+\index{changes!between Glish releases|)}

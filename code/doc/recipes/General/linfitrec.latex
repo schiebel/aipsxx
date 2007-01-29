@@ -1,0 +1,98 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\input{extlab.lis}
+
+\begin{document}
+
+\begin{ahrecipe}{Generic linear fitting}
+
+{
+\begin{htmlonly}
+\htmladdnormallink{A postscript version of this page is available.}{../linfitrec.ps.gz}
+\end{htmlonly}
+}
+
+\arcategory{General}
+
+\argoals{Fit generic data linearly}
+
+\arusing{\htmlref{randomnumbers}{mathematics:randomnumbers} tool, \htmlref{fitter}{fitting:fitter} tool, \htmlref{pgplotter}{plotter:pgplotter} tool}
+
+\arresults{fitted coefficients and plot of data and fit}
+
+\arassume{}
+
+\arsynopsis{
+The generic fitting tool in aips++ provides a wide range of fitting
+operations.  This script illustrates the simple case of linear fitting.
+}
+
+\arscript{\htmladdnormallink{linfitrec.g}{../../../../code/contrib/recipes/linfitrec.g}}
+
+\begin{verbatim}
+
+include 'randomnumbers.g'                # initialize randomnumbers tool
+include 'fitting.g'                      # initialize fitting tool
+include 'pgplotter.g'
+
+x:=seq(1000)/500;                        # create independent variable vector
+y:= 11.3 + 5.6*x;                        # create linear dependent variable
+
+rand:=randomnumbers();                   # create randomnumbers tool
+rand.reseed();                           # reseed randomnumbers tool
+
+y:= y + rand.normal(mean=0.0,            # add zero-mean, variance=200.0
+                    variance=1.0,        #  Gaussian noise to y
+                    shape=1000);     
+
+myfit:=fitter();                         # create fitter tool
+
+myfit.init(n=2);                         # initialize for 2 unknowns
+
+myfit.makepoly(x,y);                     # inform (polynomial) fitter of
+                                         #  data so it can make normal
+                                         #  equations 
+
+myfit.fit();                             # perform the fit
+
+sol:=myfit.solution();                   # retrieve solutions and report them
+err:=myfit.error()
+print 'Solution = ',sol;
+print 'Errors   = ',err;
+
+yfit:=sol[1] + sol[2]*x;                 # form dependent variable vector 
+                                         #  from fit
+
+mypg:=pgplotter();                       # create pgplotter tool
+
+mypg.plotxy(x=x,                         # generate labelled plot of data pts
+            y=y,
+            plotlines=F,
+            xtitle='X',
+            ytitle='Y',
+            title='Y vs. X');
+
+mypg.plotxy(x=x,                         # add line plot of fit in green
+            y=yfit,
+            plotlines=T,
+            newplot=F,
+            linecolor=3);
+
+
+
+#OUTPUT:
+# Solution =  [11.2995 5.66225] 
+# Errors   =  [0.0617396 0.053428] 
+#  
+#  (note that exact solutions depend upon the random numbers!)
+
+
+\end{verbatim}
+
+\arsubm{George Moellenbrock}
+\arsubmaffl{NRAO-Socorro}
+\arsubmdate{2002-Jan-25}
+
+\end{ahrecipe}
+\end{document}
