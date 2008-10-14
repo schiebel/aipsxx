@@ -1,0 +1,249 @@
+## $Id: mkfile.in,v 19.2 2005/10/19 14:44:07 dschieb Exp $
+##
+## Makefile for npd C libraries.
+##
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+#IF SHARED
+MK_LIB = @MAKE_SLIB@
+LD_LIBS = @SLIB_LD_LIBS@ @SLIB_LD_LIBS_npd@
+CFLAGS = @CFLAGS@ @SLIB_CFLAGS@
+GSUFFIX = @NPD_SLIB_SUFFIX@
+SUFFIX = @SLIB_SUFFIX@
+RANLIB = :
+LIBTGT = @SHARED_LIB@
+BINTGT = 
+INSTALL_LIBTGT = INSTALL_@SHARED_LIB@
+INSTALL_BINTGT = 
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+#IF LABEL_SLIB
+LABEL = @SLIB_LABEL@libnpd$(GSUFFIX)
+LABELGC = @SLIB_LABEL@libnpdgc$(GSUFFIX)
+#FI
+#IF AIX
+AIXSYM = $(LIBDIR)/libnpd.exp
+AIXSYM_P = $(LIBDIR_P)/libnpd.exp
+AIXSLIBS = -Wl,-bI:$(LIBDIR_P)/libsos.exp
+#FI
+#ELSE
+MK_LIB = @MAKE_LIB@
+LD_LIBS = 
+CFLAGS = @CFLAGS@
+GSUFFIX = @GLISH_LIB_SUFFIX@
+SUFFIX = @GLISH_LIB_SUFFIX@
+RANLIB = @RANLIB@
+LIBTGT = lib_tgt
+BINTGT = bin_tgt
+INSTALL_LIBTGT = INSTALL_@STATIC_LIB@
+INSTALL_BINTGT = INSTALL_bin_tgt
+INSTALL_LIBRARY = $(INSTALL_DATA)
+#FI
+
+#IF GC
+GCLIB_P = $(LIBDIR_P)/libnpdgc$(SUFFIX)
+GCLIB = $(LIBDIR)/libnpdgc$(SUFFIX)
+#FI
+
+CC = @CC@
+LIBS = @LIBS@
+
+D = @DOT@
+T = @TOUCH_PROXY@
+MINSPACE_RM = @MINSPACE_RM@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+RM = rm -f
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+BINDIR = @bindir@
+
+SRC = ../..
+H = $(SRC)/include/Npd
+INC = -I.. -I$(SRC)/include -I$(INCDIR_P)
+
+MKHIER = $(top)/config/mkhier
+
+KEYDIR = @KEYDIR@
+
+OBJS = auth.o md5c.o npd.o util.o
+
+OBJS_PROXY = $(D)auth.o $(D)md5c.o $(D)npd.o $(D)util.o
+
+GCOBJS = gcauth.o gcmd5c.o gcnpd.o gcutil.o
+
+GCOBJS_PROXY = $(D)gcauth.o $(D)gcmd5c.o $(D)gcnpd.o $(D)gcutil.o
+
+HDRS = $(INCDIR)/Npd/npd.h
+
+TAR_FILE = npd.tar
+
+all: $(AIXSYM_P) $(LIBTGT) $(BINTGT)
+
+install: $(AIXSYM) $(INSTALL_LIBTGT) $(INSTALL_BINTGT)
+
+lib_tgt: $(LIBDIR_P)/libnpd$(SUFFIX) $(GCLIB_P)
+
+bin_tgt: $(BINDIR_P)/glishkey
+
+INSTALL_lib_tgt: $(LIBDIR)/libnpd$(SUFFIX) $(GCLIB) $(INCDIR)/Npd $(HDRS)
+	if test ! -d $(KEYDIR)/hosts; then	\
+	    $(MKHIER) "$(KEYDIR)/hosts";	\
+	    chmod -f 750 "$(KEYDIR)/hosts";	\
+	fi
+	if test ! -d $(KEYDIR)/users; then	\
+	    $(MKHIER) "$(KEYDIR)/users";	\
+	    chmod -f 770 "$(KEYDIR)/users";	\
+	fi
+
+INSTALL_bin_tgt: $(BINDIR)/glishkey
+
+libnpd$(GSUFFIX): $(OBJS_PROXY)
+	$(RM) libnpd$(GSUFFIX)
+	$(MK_LIB) libnpd$(GSUFFIX) $(LABEL) $(OBJS) $(LD_LIBS) $(AIXSLIBS)
+	$(RANLIB) libnpd$(GSUFFIX)
+	$(MINSPACE_RM) $(OBJS)
+
+libnpdgc$(GSUFFIX): $(GCOBJS_PROXY)
+	$(RM) libnpdgc$(GSUFFIX)
+	$(MK_LIB) libnpdgc$(GSUFFIX) $(LABELGC) $(GCOBJS) $(LD_LIBS) $(AIXSLIBS)
+	$(RANLIB) libnpdgc$(GSUFFIX)
+	$(MINSPACE_RM) $(OBJS)
+
+glishkey: libnpd$(GSUFFIX) genkey.o
+	$(CC) $(INC) $(CFLAGS) -o glishkey genkey.o libnpd$(GSUFFIX) -lm @LIBS@ @BIN_LIBS@
+
+$(LIBDIR_P)/libnpd$(GSUFFIX):libnpd$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libnpd$(GSUFFIX) $(LIBDIR_P)
+	$(RANLIB) $(LIBDIR_P)/libnpd$(GSUFFIX)
+
+$(LIBDIR_P)/libnpdgc$(GSUFFIX):libnpdgc$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libnpdgc$(GSUFFIX) $(LIBDIR_P)
+	$(RANLIB) $(LIBDIR_P)/libnpdgc$(GSUFFIX)
+
+$(BINDIR_P)/glishkey:glishkey
+	$(MKHIER) $(BINDIR_P)
+	$(INSTALL_PROGRAM) @strip_binary@ glishkey $(BINDIR_P)
+
+$(LIBDIR)/libnpd$(GSUFFIX):libnpd$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libnpd$(GSUFFIX) $(LIBDIR)
+	$(RANLIB) $(LIBDIR)/libnpd$(GSUFFIX)
+
+$(LIBDIR)/libnpdgc$(GSUFFIX):libnpdgc$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libnpdgc$(GSUFFIX) $(LIBDIR)
+	$(RANLIB) $(LIBDIR)/libnpdgc$(GSUFFIX)
+
+$(BINDIR)/glishkey:glishkey
+	$(MKHIER) $(BINDIR)
+	$(INSTALL_PROGRAM) @strip_binary@ glishkey $(BINDIR)
+
+#IF SLIB_SYM_LINKS
+$(LIBDIR_P)/libnpd$(SUFFIX): $(LIBDIR_P)/libnpd$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f libnpd$(SUFFIX);		\
+	ln -s libnpd$(GSUFFIX) libnpd$(SUFFIX)
+
+$(LIBDIR_P)/libnpdgc$(SUFFIX): $(LIBDIR_P)/libnpdgc$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f libnpdgc$(SUFFIX);	\
+	ln -s libnpdgc$(GSUFFIX) libnpdgc$(SUFFIX)
+
+$(LIBDIR)/libnpd$(SUFFIX): $(LIBDIR)/libnpd$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f libnpd$(SUFFIX);		\
+	ln -s libnpd$(GSUFFIX) libnpd$(SUFFIX)
+
+$(LIBDIR)/libnpdgc$(SUFFIX): $(LIBDIR)/libnpdgc$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f libnpdgc$(SUFFIX);	\
+	ln -s libnpdgc$(GSUFFIX) libnpdgc$(SUFFIX)
+#FI
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm -f tar-files
+
+tar-list:
+	@echo npd >&2
+	@ls Makefile.in *.c include/Npd/*.h
+
+rcsinfo:
+	@echo sds
+	@rlog -L RCS/*,v | sed -n -e 's/Working file://p' -e 's/locked by//p'
+	@echo sds/include/Sds
+	@cd include/Sds;rlog -L RCS/*,v | sed -n -e 's/Working file://p' -e 's/locked by//p'
+
+clean:
+	@rm -f errs $(OBJS_PROXY) *.o *~* $(APPS) core a.out *.a *.so ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h Makefile
+
+$(D)auth.o: $(SRC)/auth.c $(SRC)/md5.h $(SRC)/util.h $(SRC)/auth.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/auth.c	$(T)
+
+$(D)gcauth.o: $(SRC)/auth.c $(SRC)/md5.h $(SRC)/util.h $(SRC)/auth.h
+	$(CC) $(INC) $(CFLAGS) -DENABLE_GC -c -o gcauth.o $(SRC)/auth.c	$(T)
+
+$(D)npd.o: $(SRC)/npd.c $(SRC)/version.h $(SRC)/auth.h $(SRC)/util.h
+	$(CC) $(INC) $(CFLAGS) -DKEYS_DIR=\"$(KEYDIR)\" -c $(SRC)/npd.c	$(T)
+
+$(D)gcnpd.o: $(SRC)/npd.c $(SRC)/version.h $(SRC)/auth.h $(SRC)/util.h
+	$(CC) $(INC) $(CFLAGS) -DKEYS_DIR=\"$(KEYDIR)\" -DENABLE_GC -c -o gcnpd.o $(SRC)/npd.c	$(T)
+
+$(D)md5c.o: $(SRC)/md5c.c $(SRC)/md5.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/md5c.c $(T)
+
+$(D)gcmd5c.o: $(SRC)/md5c.c $(SRC)/md5.h
+	$(CC) $(INC) $(CFLAGS) -DENABLE_GC -c -o gcmd5c.o $(SRC)/md5c.c $(T)
+
+$(D)util.o: $(SRC)/util.c $(SRC)/util.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/util.c $(T)
+#	$(CC) $(INC) $(CFLAGS) -DLOG_FMT=\"$(LOGDIR)/%s.%s@%s.log\" -c $(SRC)/util.c
+
+$(D)gcutil.o: $(SRC)/util.c $(SRC)/util.h
+	$(CC) $(INC) $(CFLAGS) -DENABLE_GC -c -o gcutil.o $(SRC)/util.c $(T)
+
+genkey.o: $(SRC)/genkey.c $(SRC)/util.h
+	$(CC) $(INC) $(CFLAGS) -c $(SRC)/genkey.c
+
+##
+## Install headers
+##
+$(INCDIR)/Npd:
+	$(MKHIER) $(INCDIR)/Npd
+
+$(INCDIR)/Npd/npd.h: $(H)/npd.h
+	rm -f $@
+	cp $(H)/npd.h $@
+
+#IF AIX
+$(LIBDIR_P)/libnpd.exp: libnpd$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_DATA) libnpd.exp $(LIBDIR_P)
+
+$(LIBDIR)/libnpd.exp: libnpd$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_DATA) libnpd.exp $(LIBDIR)
+#FI
+
+INSTALL_:

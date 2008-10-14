@@ -1,0 +1,350 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: executive.help,v 19.2 2004/08/25 02:08:16 cvsmgr Exp $
+\begin{ahtool}{executive}{Tool for running scripts in a queue}
+\ahinclude{executive.g}
+
+\begin{ahdescription} 
+
+{\tt executive} implements a queue for executing commands or
+scripts:
+\begin{itemize}
+\item Command sequences may be specified - these are written to a
+script for execution. 
+\item Scripts are queued and run in order of submission. 
+\item Running scripts may be killed, and queued scripts may be
+deleted from the queue. 
+\item The scripts may be specified for execution on
+another host. 
+\item A log file may be optionally specified.
+\item The number of concurrently running jobs allowed may be specified.
+\end{itemize}
+
+{\bf Important} {\em Note that the scripts run in a separate instance of
+glish. Thus variables such as tools defined in the current glish
+session will not be available inside the script}.
+
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{executive}{Construct a executive tool}
+\begin{ahdescription}
+Construct a executive tool for subsequent use. A tool called {\tt
+defaultexecutive} is constructed automatically. A useful shorthand for
+{\tt defaultexecutive} is {\tt dex}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{concurrent}{Number of concurrent jobs}{1}{Int}
+\end{ahargs}
+\ahreturns{executive tool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+dex.runscript('doit.g');
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{runscript}{Run a script}
+\begin{ahdescription}
+Run a script, optionally on another host. Specification of a log file
+is optional - if not specified, output is logged in the current glish session.
+
+{\bf Important} The script must exit explicitly if {\tt executive} is
+to detect the end of processing. Thus, you {\bf must} put as the last
+executed line {\tt exit(1)}.
+
+{\bf Important} {\em Note that the scripts run in a separate instance of
+glish. Thus variables such as tools defined in the current glish
+session will not be available inside the script}.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{script}{Script to be executed}{None}{String}
+\ahaddarg{host}{Host where script is to be run: default is current host}{''}{String}
+\ahaddarg{log}{Log file}{''}{String}
+\end{ahargs}
+\ahreturns{job number}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.runscript('doit.g', host='zeus');
+myexecutive.run('doitagain()', inc='ireallydoit.g', host='zeus');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{run}{Run a sequence of commands}
+\begin{ahdescription}
+Run a sequence of commands, optionally on another host. Specification of a log file
+is optional - if not specified, output is logged in the current glish session.
+An include file may be specified.
+
+The number returned is the job number, which is a monotonically
+increasing number starting at one. You can use this number to kill or
+remove a given job.
+
+{\bf Important} {\em Note that the scripts run in a separate instance of
+glish. Thus variables such as tools defined in the current glish
+session will not be available inside the script}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{commands}{Commands to be executed}{None}{String}
+\ahaddarg{inc}{Include file to be invoked on start}{''}{String}
+\ahaddarg{host}{Host where script is to be run: default is current host}{''}{String}
+\ahaddarg{log}{Log file}{''}{String}
+\end{ahargs}
+\ahreturns{job number}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{make}{Run a makefile}
+\begin{ahdescription}
+Run \ahlink{make}{make} on a makefile and execute the resulting
+command,  optionally on another host. 
+Specification of a log file
+is optional - if not specified, output is logged in the current glish session.
+
+The number returned is the job number, which is a monotonically
+increasing number starting at one. You can use this number to kill or
+remove a given job.
+
+{\bf Important} {\em Note that the scripts run in a separate instance of
+glish. Thus variables such as tools defined in the current glish
+session will not be available inside the script}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{target}{Target to be constructed}{}{String}
+\ahaddarg{args}{Arguments}{}{String}
+\ahaddarg{makefile}{Makefile to be used}{'makefile'}{File name}
+\ahaddarg{host}{Host where script is to be run: default is current host}{''}{String}
+\ahaddarg{log}{Log file}{''}{String}
+\end{ahargs}
+\ahreturns{job number}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Terminate the executive}
+\begin{ahdescription}
+This is used to totally stop the {\tt executive}. It is a good idea
+to conserve memory use on your machine by stopping the process once
+you no longer need it.
+\end{ahdescription}
+\ahreturns{bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+#
+# Wait for stuff to finish....
+#
+myexecutive.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{concurrent}{Return number of concurrent jobs allowed}
+\begin{ahdescription}
+Return the number of concurrent jobs allowed.
+\end{ahdescription}
+\ahreturns{Int}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+print myexecutive.concurrent();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{running}{Return number of running jobs}
+\begin{ahdescription}
+Return the number of running jobs.
+\end{ahdescription}
+\ahreturns{Int}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+print myexecutive.running();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setconcurrent}{Set number of concurrent jobs allowed}
+\begin{ahdescription}
+Set the number of concurrent jobs allowed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{concurrent}{Number of concurrent jobs}{1}{Int}
+\end{ahargs}
+\ahreturns{Int}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.setconcurrent(2);
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doitaswell()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doiteventually()', inc='ireallydoit.g', host='zeus');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{show}{Show the queue status}
+\begin{ahdescription}
+Show the current queue status
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.setconcurrent(2);
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doitaswell()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doiteventually()', inc='ireallydoit.g', host='zeus');
+myexecutive.show();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{list}{Return the queue status}
+\begin{ahdescription}
+Return the current queue status in a record
+\end{ahdescription}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive()
+myexecutive.setconcurrent(2);
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doitaswell()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doiteventually()', inc='ireallydoit.g', host='zeus');
+print myexecutive.list();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stop}{Stop a specified job}
+\begin{ahdescription}
+Stop a specified job, either by killing the glish client executing it
+(if it is running) or by removing it from the waiting queue. The job
+is identified by the job id number returned by {\tt run} or {\tt runscript}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{id}{Job id from run or runscript}{None}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.setconcurrent(2);
+myexecutive.run('doit()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doitaswell()', inc='ireallydoit.g', host='zeus');
+myexecutive.run('doiteventually()', inc='ireallydoit.g', host='zeus');
+myexecutive.stop(2);
+print myexecutive.list();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Open a GUI for this tool}
+\begin{ahdescription}
+Opens a GUI for this tool.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive();
+myexecutive.gui();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{test}{Run a test for this tool}
+\begin{ahdescription}
+Run a test (actually executivetest) for this tool.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g';
+myexecutive:=executive()
+myexecutive.test();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahtool}
+
+\begin{ahfunction}{executivetest}{Perform a test of executive}
+\begin{ahdescription}
+Perform a test. The commands executed are:
+\begin{verbatim}
+  t:=executive(2);
+  t.run('print time();print system;', host, log=spaste(testdir, '/etest1.log'));
+  t.run('print time();print system;', log=spaste(testdir, '/etest2.log'));
+  t.run('print time();print system;', host);
+  t.run('print time();print system;', host, log=spaste(testdir, '/etest4.log'));
+  t.run('print time();print system;', host, log=spaste(testdir, '/etest5.log'));
+  t.stop(1);
+  t.show();
+  t.stop(4);
+  t.status();
+\end{verbatim}
+
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahargs}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+include 'executive.g'
+executivetest();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+

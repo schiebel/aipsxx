@@ -1,0 +1,424 @@
+
+Title:                  Code changes for SUN CC secondary compiler support
+Person responsible:     Athol Kemball (akemball@nrao.edu)
+Originator of proposal: Wes Young (wyoung@nrao.edu)
+Exploders targeted:     aips2-lib
+Time table:
+Date of issue:          2002 February  1        Done
+Comments due:           2002 February  8        Done
+Revised proposal:       2002 February 11        Done
+Final comments due:     2002 February 15        Done
+Decision date:          2002 March    22        Done
+
+Statement of goals:
+
+In the change proposal for adopting gcc 2.95.3 as the project compiler
+in December 2000, the secondary compiler for Rational Purify, Quantify
+and Purecoverage support was chosen to be the SUN CC compiler. This
+secondary compiler choice was guided by the much stronger Rational
+support for SUN CC over the GNU compilers. Rational support for new
+GNU compilers often lags their release by several years. This
+secondary compiler will allow us to make decisions about upgrading the
+GNU project compiler decoupled from Rational support issues.
+
+Since the change proposal of Dec 2000, Wes has completed a full
+analysis of the code changes we would require to support SUN CC.
+These are presented here.
+
+The primary goals of this change proposal are:
+
+i) to disseminate information about the code changes identified by Wes
+for sun4sol_ntv support.
+
+ii) to offer the project an opportunity to comment on these proposed
+changes before they are checked in, and to identify better
+solutions where they may exist.
+
+Our compiler policy is documented in our software engineering
+practices. The relevant excerpt is:
+
+-----Note 237-----------------------
+
+2) Project compiler: The project has a policy of a single project
+compiler in order to ensure maximum build stability so that
+applications can be delivered on time to end-users. All developers are
+expected to use the project compiler for development, and all code
+checked-in needs to compile with this designated compiler. The project
+compiler is set periodically subject to the following criteria:
+
+An improvement over the current project compiler in
+reliability, language support or optimization, or a
+combination thereof.
+
+Operation on all consortium development architectures, or
+those planned for the release.
+
+Inter-operability with current development tools used in the
+project.
+
+3. Secondary compilers: Secondary compilers may be designated by the
+technical leader if resources are available for their
+support. Code only needs to be checked against the project
+compiler, however, as noted above. A designated group will be
+responsible for ensuring a clean build on each secondary system,
+and are expected to resolve the overwhelming majority of any
+compiler or syntax support issues on these systems. Other
+developers may however be consulted for assistance or advice if
+changes need to be made to their code, particularly if these
+changes are subtle. In the event of syntax support conflicts, the
+C++ standard takes precedence unless not supported by the project
+compiler in the specific instance. Compiler defects are expected
+to be flagged with #ifdef statements for ease of later
+removal. Compiler defects need to be recorded for reference by
+other developers, and submitted to the vendor for correction.
+
+--- end Note 237 excerpt ------------
+
+Current secondary compilers in the project include SUN CC and IRIX CC.
+
+Proposed changes:
+
+Compiler #ifdefs will be kept to aips/*.h files and OS/* files as
+much as possible.  If a #ifdef is needed in other source code it
+will be marked uniquely with either a -DXXX_COMPILER_WORKAROUND in
+the makedefs and #ifdef XXX_COMPILER_WORKAROUND in the code or a a macro
+ala  WHATEVER_COMPILER_TYPEDEF.
+ 
+A brief summary of the changes is given here, with full details below.
+
+Changes to be implemented
+-------------------------
+
+Include files in aips
+  implement #ifdef for SUN native compilers.  This should clear up the std::
+  and using namespace problems detailed below.
+
+Unary function problem in String.cc
+  implement ToUpper and ToLower functions derived for unary_function<T,T>
+
+Missing templates for String.cc
+  do template instatiations in aips/string.h
+
+Typedef mytype mytype problem in class declaration
+  will use Wim's WHATEVER_SUN_TYPEDEF(X) macro suggestion
+
+Extern with assignment
+  will remove the extern x=123 and replace with extern x; x=123;
+
+Const problems
+  will address them as they arise using const_cast<>()
+
+Glish build problems
+  Fix the missing PASTE macro problem
+  add return values
+  sort out the preprocessor concatenation problems
+
+Missing return values
+  add the missing return values
+
+Missing Parameter Constraint templates
+  add them to trial/_ReposFiller/templates
+
+ 
+Detailed log of changes - with comments
+---------------------------------------
+
+I've merged some of Wim's comments into the detail log and appended some of
+Ger's observations about the KAI compiler.  We should address the rest of KAI
+issues with another change proposal after we have the SUN native working.
+
+
+ - Wes' comments with Sun Native compiler
+ 
+ Package aips
+ 
+ Note: the intention is to appropriately #ifdef for the SUN native compiler
+ for the aips/*.h include files.
+
+ math.h                     use <math.h> rather than cmath
+ stdio.h                    use <stdio.h> rather than cstdio
+ stdlib.h                   use <stdlib.h> rather than cstdlib
+ string.h                   use <string.h> rather than cstring
+ iosfwd.h                   put using std::ostream and std::istream
+ gets solves namespace problems
+ Mathematics/Math.h         added inline for float pow(float, float)
+ needs using namespace std;
+ Utilities/String.h         needs using namespace std;
+ Utilities/String.cc        needs the following code
+ ----
+ template <class T> struct ToUpper : public unary_function<T, T>
+ {
+ Int operator()(const T& x){return toupper(x);}
+ };
+ 
+ template <class T> struct ToLower : public unary_function<T, T>
+ {
+ Int operator()(const T& x){return tolower(x);}
+ };
+ 
+ Then replace tolower and toupper with with ToLower<Int>() and ToUpper<Int>()
+
+ -->
+ Wim says:
+
+ "- you sure this is necessary? toupper etc are supposed to be available in
+ cctype in the standard. Why not create the aips/ctype.h and include that?"
+
+ Wes responds:
+ 
+ This doesn't work with the native compiler so we will have to define a
+ unary_function.  Works OK with gcc.
+ <--
+
+ 
+ Needed these templates for gtable to link.  Put them in String.cc for now.
+ 
+ template char * std::transform(char *, char *, char *, ToUpper<Int>);
+ template char * std::transform(char *, char *, char *, ToLower<Int>);
+ template void std::__reverse(char *, char *, std::random_access_iterator_tag);
+ template istream& operator >> (istream &, string &);
+ template istream& __rwstd::rw_extract_string ( istream&, string&, 
+ std::char_traits<char>);
+
+ -->
+ Wim says:
+
+ "- I would think they are available in <string> (at least they should be).
+ better if they are really necessary to put them in aips/string.h (following
+ the general rule that including the aips/xx.h will give you the standrad
+ implementation)."
+ 
+ Wes Responds:
+
+ Will move template instatiations into aips/string.h.
+ <--
+
+ 
+ ----
+ Utilities/cregex.cc        needs using namespace std;
+ Mathematics/IComplex.h     needs std::ostream for ostream operator << > declaration
+ Mathematics/IComplex.cc    needs std::ostream for ostream operator << > declaration
+ Mathematics/Constants.cc   removed all the externs from the assignments
+ Mathematics/AutoDiffIO.h   needs #include<aips/Mathematics/AutoDiff.h> > rather than forward declare
+ -->
+ Wim says:
+
+ "- No; must be a bug. It is only used in a declaration of AutoDiff<T> &, and
+ if a forward declaration does not suffice there could be many problems in
+ other places. What happens if you replace the iostream forward with an
+ include. but leave this one?"
+
+ Wes responds:
+
+ My mistake it compiles fine. We can leave this alone.
+ <--
+
+
+ Arrays/IPosition.h         needs std::ostream for ostream operator << > declaration
+ Arrays/Slicer.h            needs std::ostream for ostream operator << > declaration
+ Arrays/Slicer.cc           needs std::ostream for ostream operator << > declaration
+ Arrays/MaskArrIO.h         needed <aips/Arrays/MaskedArray.h> rather
+ than forward declaration
+ Containers/OrdPairIO.h     needed <aips/IO/AipsIO.h> rather than 
+ forward declaration
+ Containers/RecordRep.cc    had to make some adjustments for const'ness
+ FITS/blockio.cc            needed std::ostrstream and std::ends
+ Fitting/LSQ.h              made it typedef LSQ::normType normType
+
+ -->
+ Wim says:
+
+ "- then gcc does not compile them anymore; since they will see the reference:
+ LSQ::normtype used elsewhere as: LSQ::LSQ::normtype."
+
+ Wes responds:
+
+ Indeed gcc fails to swallow. We will use Wim's suggestion:
+
+#if defined(__sun__) && <version> == (or <) xxx
+#define WHATEVER_SUN_TYPEDEF(X) X::
+#else
+#define WHATEVER_SUN_TYPEDEF(X)
+#endif
+
+(in aipsdef.h I think it was intended)
+
+called as:
+
+typedef WHATEVER_SUN_TYPEDEF(MDirection) Types Types;
+
+
+ Fitting/LSQBase.h          change abs to fabs so gcc would swallow
+ Tables/TiledStManAccessor.h needed std::iostream in declarations
+ Tasking/Aipsrc.h           moved typedefs into AipsrcVector and
+ AipsrcValue got rid of class AipsrcValue
+ Quanta/QuantumHolder.h     explicitly include <Complex.h> rather <Complexfwd.h>
+ Quanta/MeasValue.h         added a using namespace std
+ Measures/Measure.h         needs std::ostream for ostream operator << > declaration
+ Measures/MConvertBase.h,.cc used std::ostream
+ Measures/MDoppler.h        removed the class keyword for typedef class a<t>
+ MFrequency.h      also changed typedef Types Types to 
+ typedef M::Types Types
+ MDirection.h
+ Muvw.h
+ MEpoch.h
+ MPosition.h
+ MRadialVelocity.h
+ MBaseline.h
+ MEarthMagnetic.h
+ Tables/StandardStManAccessor.h needed std::ostream in declarations
+ Tables/IncrStManAccessor.h     needed std::ostream
+ Tables/TableRecordRep.cc       fixed some constness' problems
+ Tables/ColumnSet.cc            fixed some constness problems
+
+ Functionals/NQSimButterworthBandpass.cc,*.h  changed FunctionTraits to 
+ NQFunction1D<T>::FunctionArg
+ Functionals/NQChebyshev.cc,*.h  changed FunctionTraits to 
+ NQFunction1D<T>::FunctionArg
+ Functionals/NQCombiFunction.h	used macro workaround for partial template specialization
+ NQCompound2Function.cc
+ NQCompoundFunction.h
+ NQGaussian1D.h
+ NQGaussian1D2.cc
+ NQGaussian2D.h
+ NQGaussian2D2.cc
+ NQHyperPlane.h
+ NQPolynomial.h
+ NQPolynomial2.cc
+ NQSinusoid1D.h
+
+ -->
+ Wim says:
+
+ "- if workaround necessary cleaner to convert to complete specialization
+ through Macro then the proposed one, which will probably only work for the
+ current compilere version."
+
+ Wes responds:
+
+ OK.
+ <--
+ 
+ glish/include/Glish/glish.h Moved the "PASTE" macros outside of the 
+                             RCSID #ifdef
+ sos/alloc.h
+ sos.sos.h
+ glish/glish/Reflex.cc      added return value for a couple of = operators
+ glish/glish/main.cc        cast using sigfpe_handler_type rather than 
+ what was there.
+ glish/glish/clients/glishtk/tkProxy.cc added return value for 
+ glishtk_log_to_file
+ glish/glish/clients/glishtk/comdefs.h added #define quoteMe(x) #x and used it.
+                            tkPgplot.cc needed quoteMe defined and used too.
+ _ReposFiller/templates      made it std::fstream for CountedPtr_1730
+ version.h              needed std::ostream
+ version2.cc            needed std::ostream std::setw std::setfill
+ 
+ 
+ Package Trial
+ 
+ ComponentModels/SkyCompBase.h  Needed Complex.h included
+ MeasurementSets/MSIter.h       removed the class keyword from a
+                                function declaration.
+ 
+ Flagging/RFChunkStats.cc       used ostrstream rather than toString
+                                for conversion.
+ Functionals/FuncExprData.cc    commented out _Rb_tree stuff as it was a test.
+ IDL/IDL.cc                     added return for of null Array<Float>
+                                for getArray
+ SpectralComponents/SpectralFit.h  removed the extranous ; from the 
+                                   inlined code.
+ Images/MIRIADImage.cc          had to const_cast several strings.
+ Ionosphere/IonosphModelPIM.h   added some IonosphModelPIM:: in some typedefs
+ Mathematics/Interplate2D.cc    address of member function doesn't not 
+                                use &(member_function) syntax
+ MeasurementComponents/VPSkyJones.h  needed a destructor templates
+ tons of ParameterConstraints needed.  Essentially for every ParameterAccessor 
+                                       instatiated
+ Package Trialdisplay
+
+ Display/X11PCLimits.cc 	       extern not allowed here
+ apps/gDisplay/TckTkPixelCanvas.cc need to use <aips/iostream.h> instead of <stream.h>
+
+- Ger's comments for KAI compiler relevant to Solaris Native build
+
+1. Apart from using std::iostream, one also needs using std::cout,
+   std::hex, and several more such using statements.
+   In my own environment I've added them all to the appropriate files.
+   Quite some files needed inclusion of aips/iostream.h, otherwise
+   endl was unknown.
+
+3. pow(float,float) is already defined for KAI, so conditionally
+   removed from aips/math.h.
+   Needed to add std::abs to aips/math.h.
+   Similarly function polar needs std::. Needed in (Solvable)BJones.cc.
+
+4. Block<uInt> bl(nr,0) fails
+   because it cannot distinguish between Int and void*.
+   Solved by using 0u instead of 0.
+
+5. Needed ostream operator<< and >> instantiations for complex.
+   Solved by adding them conditionally to the templates file.
+
+6. The standard requires that the compiler can see a specialization,
+   hence they have to be declared in the .h file. So the specialization
+   of AipsRCVector<String>, AipsRCVector<Bool>, and AipsRCValue<Bool>
+   needed to be added to their .h files.
+   Note that KAI C++ mangles the names of specializations a bit
+   differently than ordinary templates. So the linker gives an error
+   if the specialization declaration is not seen.
+
+8. In one case constructing a Vector had an ambiguity because it also
+   took a conversion to a Block into consideration.
+   It is solved by making the Block ctor explicit which should be done
+   anyway as it makes no sense to have an automatic conversion from
+   a uInt to a Block.
+
+10.fitsio.h has a few friend functions in hdu.h. KAI C++ complained
+   that those functions were not accessible.
+   A KAI (Intel) engineer said that they had to be public in order to
+   adhere to the standard. She referred to
+   ISO-IEC 148820-1988, Section 11.4.7, first sentence:
+   "A name nominated by a friend declaration shall be accessible in the
+   scope of the class containing the friend declaration."
+   So yes, in order for you to make a function of another class a friend
+   of your current class, it must be a public function of the other class.
+   It was solved by making those functions public in hdu.h.
+
+11. KAI C++ failed on some Flagging classes because they were
+   privately instead of publicly derivated from RFAFlagEnums.
+
+12. Warnings are generated if the class scope is part of the function
+   declaration in the .h file
+   This sometimes happens when cut and paste from a .cc file is used to
+   create the line in the .h file.
+   I think they should be removed as much as possible.
+
+14. It generates warnings for unreachable code. In practically all
+   cases this was for code after a throw, usually a return statement
+   which was inserted to make older compilers happy.
+   I think we should start removing such statements because
+   gcc-2.95.3 does not generate warnings anymore. Such statements
+   were really for older compilers.
+
+15. It generates warnings for multiple ; (e.g. in NQFunction1D.h).
+   They can easily be removed.
+
+16. There are some warnings about hidden functions in case of function
+   overloading in a derived class. They should be investigated.
+
+17. There are some warnings about pointless comparison of unsigned
+   integer < 0. They should be investigated as they might indicate
+   programming errors.
+
+Expected Impact: 
+
+Several days build instability to check in the code changes in a
+block. We would test changes with three compilers SGI native CC, SUN
+native CC and g++ before checking them into them system.
+
+Proposed documentation changes: 
+ Document partial template specialization work-around in developer
+ note (pending SUN solution).
+ 
+---------------------------------------------------------------------------

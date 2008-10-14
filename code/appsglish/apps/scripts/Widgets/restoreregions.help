@@ -1,0 +1,254 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: restoreregions.help,v 19.2 2004/08/25 02:18:39 cvsmgr Exp $
+
+\begin{ahobject}{restoreregions}{Tk widget to restore image regions of interest from a table}
+
+\ahinclude{restoreregions.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This widget enables you to restore the image \regions\ (or more simply,
+regions - see \ahlink{Regionmanager}{images:regionmanager}) stored in an
+\aipspp\ Table.  You can restore the regions into a record, or into
+global name space (i.e.  into \glish). 
+
+ 
+\begin{figure}[h] 
+\begin{center}
+\epsfig{file=restoreregions.ps, width=3.6in}
+\caption{The restoreregions GUI}
+\end{center}
+\end{figure}
+ 
+The widget displays, in listboxes, the regions stored in the Table.  If
+you select specific regions, then the GUI expands to enable you to
+rename them during the restore.  
+The `Restore' button restores only selected regions.  The
+`Restore all' button restores all regions with no renaming option.  If you
+select `Confirm', you will be prompted for confirmation if you attempt
+to overwrite a pre-existing \glish\ symbol.  The `Dismiss' button dismisses the
+GUI.  You can recover it with the \ahlink{gui}{widgets:saveregions.gui}
+function.
+
+Under the `File' menu, you can either dismiss the GUI or destroy the
+widget (same as invoking function \ahlink{done}{widgets:saveregions.done}).
+
+You can change the Table you are accessing at any time by entering
+the new Table name in the appropriate entry box and entering 
+a carriage return.
+
+The Table can be specified in many ways (at construction and via the
+entry box in the GUI); a \ahlink{Table}{table} \tool, an
+\ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which  
+is either a Table or an Image \tool.  
+
+This widget emits an event called {\tt restored} (it has no value) when
+the regions have been restored.  It also emits an event called {\tt
+dismissed} (it has no value) when the dismiss button on the GUI is
+pressed. 
+
+\end{ahdescription}
+
+
+\begin{ahconstructor}{restoreregions}{Construct a restoreregions widget}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the widget}{F}{Widget}
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+  \ahaddarg{changenames}{Entry boxes to enable region name changes are provided}{T}{T or F}
+  \ahaddarg{globalrestore}{Restore to global name space or a record}{F}{T or F}
+  \ahaddarg{widgetset}{The widget server to use}{dws}{widgetserver tool}
+\end{ahargs}
+\ahreturns{Agent}
+\begin{ahdescription}
+
+This is the constructor.  If {\stfaf parent=F}, then the widget will make
+its own parent frame.  
+
+The Table can be specified in many ways; a \ahlink{Table}{table} \tool,
+an \ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool. 
+
+If {\stfaf changenames=T}, when you select regions, entry boxes
+which enable you to change the names of the regions on restore
+are provided.
+
+If {\stfaf globalrestore=T}, the regions are restored to global name
+space (i.e.  to \glish).  Otherwise they are restored to a record which
+you recover with function
+\ahlink{regions}{widgets:restoreregions.regions}. 
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'restoreregions.g'   
+- r := restoreregions(table='hcn')
+- whenever rr->restored do {
+   regions := rr.regions();
+  }
+\end{verbatim}
+
+In this example, the widget is contructed with a Table called {\sff hcn}. 
+When the user has selected the regions, they are recovered into a record
+(because {\stfaf globalrestore=F}).  Each field of the record contains one
+region \tool\ (see \ahlink{Regionmanager}{images:regionmanager}).  The
+fields of that record are named according to the names of the regions in the table. 
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function destroys the widget.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r := restoreregions();
+- r
+ref [*agent*=<agent>, done=<function>, gui=<function>, 
+regions=<function>, setnewtable=<function>] 
+- r.done();
+T
+- r
+F
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{gui}{Restart the GUI}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+When the widget is first constructed, it brings up a GUI.  When you
+restore regions, he GUI is dismissed.  This function restarts the
+GUI; it will have the same state as when it was dismissed. 
+
+\end{ahdescription}
+\end{ahfunction}
+ 
+
+\begin{ahfunction}{refresh}{Refresh the display}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function reaccesses the table to find the regions and
+redisplays them in the GUI.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{regions}{Recover the selected regions from the Table into a record}
+\ahreturns{Record of regions}
+
+\begin{ahdescription}
+
+If you constructed with {\stfaf globalrestore=T}, this function returns an
+empty record.  Otherwise, it recovers all the selected regions into a
+record.  Each field of the record contains one region \tool\ (see
+\ahlink{Regionmanager}{images:regionmanager}).  The fields are named
+according to the names of the regions in the Table. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'restoreregions.g'   
+- r := restoreregions();
+- whenever rr->restored do {
+   regions := rr.regions();
+  }
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{settable}{Set a (new) table}
+\begin{ahargs}  
+  \ahaddarg{table}{The table of interest}{''}{Table tool, image tool or string}
+\end{ahargs}
+\ahreturns{Bool or fail}
+ 
+\begin{ahdescription}
+ 
+This function manually (i.e.  not via the GUI interface) sets a
+(new) Table name.  It is equivalent to doing it via the GUI.  
+
+The Table can be specified in many ways; a \ahlink{Table}{table} \tool,
+an \ahlink{Image}{images:image}) \tool, the name of a Table (a string)
+which might be an \aipspp\ image, or the name of a \glish\ symbol which
+is either a Table or an Image \tool. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- include 'restoreregions.g'
+- include 'image.g'
+- include 'table.g'
+- r := restoreregions(table='hcn');
+- im := image('hcn2');
+- t := table('hcn2');
+- r.settable(im);
+- r.settable('hcn2');
+- r.settable(t);
+- r.settable('im');
+- r.settable('t');
+\end{verbatim}
+
+In this example, we show all the ways you can specify the table. 
+
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+

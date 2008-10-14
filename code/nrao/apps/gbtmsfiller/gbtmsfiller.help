@@ -1,0 +1,627 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: gbtmsfiller.help,v 19.4 2006/03/09 22:01:34 bgarwood Exp $
+
+\begin{ahobject}{gbtmsfiller}{A tool for filling GBT data to an aips++ MeasurementSet.}
+
+\ahinclude{gbtmsfiller.g}
+
+\ahkeyword{gbt}{}
+\ahkeyword{MeasurementSet}{}
+\ahkeyword{filler}
+
+\ahmethods{}
+
+\begin{ahdescription}
+This \texttt{tool} is intended to be run by the GBT operators during
+normal operation of the telescope.  Several MeasurementSets will 
+typically be filled at the same time (one for each backend in
+use by each project during an observing session).  The filling
+process is driven by the ScanLog.fits file for each project.
+This tool is under development and the exact operational details
+have not yet been finalized.  It is anticipated that most interations
+with this \texttt{tool} will be done through its GUI.
+\end{ahdescription}
+
+\begin{ahexample}
+No example available yet.
+\end{ahexample}
+\begin{ahcomments}
+This space reserved for comments about the example, when it 
+becomes available.
+\end{ahcomments}
+
+\begin{ahconstructor}{gbtmsfiller}{Construct gbtmsfiller tool}
+\ahreturns{object}
+\begin{ahdescription}
+This creates the gbtmsfiller \texttt{tool}.  The resulting 
+\texttt{tool} is not yet ready to fill.  The project directory
+must first be specified.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+gbtfiller := gbtmsfiller()
+gbtfiller.setproject('/home/gbtdata/AGBT02A_028_01')
+# the filler is now ready to fill
+gbtfiller.fillall()
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+The plan is that once a project is specified, subsequent filling will
+happen automatically when new data arrives.  For the time being, 
+the decision to fill to a new MS as opposed to continuing to append
+to the old MS will be left up to the operator.  It is expected that
+reasonable heuristics will be developed to make this process automatic
+as well although the ability to force a new MS will continue to
+be available.
+\end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahfunction}{isattached}{Does the filler have a valid project directory}
+\ahreturns{boolean}
+\begin{ahdescription}
+Does the current project directory exist and is there a ScanLog.fits file
+there?  When this function returns True, the filler is attached to
+a project and is ready to begin filling.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{fillall}{Start filling all of the scans in the scan log}
+\begin{ahargs}
+\ahaddarg{async}{Run this command asyncronously}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Start filling.  All of the known data on disk at the time of
+the last update of the scan log is filled. When run asyncronously, this
+function returns before the filling has completed.  Watch the log in that case
+to see the progress of the filling.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{fillnext}{Start filling the next scan in the scan log}
+\begin{ahargs}
+\ahaddarg{async}{Run this command asyncronously}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Start filling.  The next scan in the scan log is filled. It is anticipated 
+that this function will
+be automatically called during normal operation whenever new data
+is written to disk (update is called first).
+When run asyncronously, this
+function returns before the filling has completed.  Watch the log in that case
+to see the progress of the filling.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{update}{Reopen and resync with the scan log}
+\begin{ahargs}
+\ahaddarg{async}{Run this command asyncronously}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This should be called whenever the scan log FITS file has changed
+so that the filler can know about all of the data on disk.
+When run asyncronously, this
+function returns before the update has completed.  Watch the log in that case
+to see the progress of the update.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{more}{Are there more scans to process in the scan log?}
+\ahreturns{boolean}
+\begin{ahdescription}
+The answer to this question reflects the state of the scan log at the
+last update.  If the scan log has since changed on disk, update must
+first be called in order that the filler can see those changes.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{status}{Report the status of the filler}
+\ahreturns{record}
+\begin{ahdescription}
+Returns the status record.
+\begin{ahrecord}{status}{the status record}
+\ahdatum{attached}{is the filler attached}{}{boolean}
+\ahdatum{nextscan}{pending scan number to be processed}{}{integer}
+\ahdatum{nextdmjd}{pending DMJD value to be processed}{}{double}
+\ahdatum{nexttimestamp}{pending scan timestamp to be processed}{}{double}
+\ahdatum{project}{project being filled}{}{string}
+\ahdatum{msdirectory}{The directory where any MSs are being written}{}{string}
+\ahdatum{object}{object constraint}{}{string}
+\ahdatum{mintime}{minimum time constraint}{}{string}
+\ahdatum{maxtime}{maximum time constraint}{}{string}
+\ahdatum{minscan}{minimum scan number constraint}{}{integer}
+\ahdatum{maxscan}{maximum scan number constraint}{}{integer}
+\ahdatum{fillrawpointing}{Are the raw pointings being saved?}{}{boolean}
+\ahdatum{fillrawfocus}{Are the raw focus data being saved?}{}{boolean}
+\ahdatum{filllags}{Are the raw lags being filled?}{}{boolean}
+\ahdatum{vv}{The current vanVleck correction}{}{string}
+\ahdatum{smooth}{The current smoothing function}{}{string}
+\ahdatum{usehighcal}{Is the $HIGH_CAL$ being used? (old data only)}{}{boolean}
+\ahdatum{compresscalcols}{Are the spectral line calibration columns compressed?}{}{boolean}
+\ahdatum{usebias}{Is the bias being calculated for the ACS vanVleck correction?}{}{boolean}
+\ahdatum{backendtype}{backend type constraint}{}{string}
+\ahdatum{oneacsms}{Is a single ACS MS being filled?}{}{boolean}
+\ahdatum{dcbias}{Current DC bias value.}{}{double}
+\ahdatum{minbiasfactor}{Minimum bias factor.}{}{integer}
+\ahdatum{fixlags}{Try and fix the ACS lags.}{}{boolean}
+\ahdatum{dcr}{Status of the MS being filled with DCR data}{}{backend status record}
+\ahdatum{holo}{Status of the MS being filled with Holography data}{}{backend status record}
+\ahdatum{sp}{Status of the MS being filled with SpectralProcessor data}{}{backend status record}
+\ahdatum{acs}{Record of status records for ACS (spectrometer) data}{}{record}
+\end{ahrecord}
+The ACS (spectrometer) status record has the following structure:
+\begin{ahrecord}{acs}{Record of status records for ACS data}
+\ahdatum{ABCD}{Status of the MS being filled with all ACS data (banks A,B,C,D)}{}{backend status record}
+\ahdatum{A}{Status of the MS being filled with bank A ACS data}{}{backend status record}
+\ahdatum{B}{Status of the MS being filled with bank B ACS data}{}{backend status record}
+\ahdatum{C}{Status of the MS being filled with bank C ACS data}{}{backend status record}
+\ahdatum{D}{Status of the MS being filled with bank D ACS data}{}{backend status record}
+\end{ahrecord}
+
+Each backend has a status record (the ACS (spectrometer) backend has 5 status records, one
+for the single MS being filled with data from all banks and one 
+for each possible bank, all grouped in the acs record).  The backend status record looks
+like this:
+\begin{ahrecord}{backend status}{the backend status record}
+\ahdatum{ms}{The name of the MS being filled.  This is unset if it is not being filled.}{}{string}
+\ahdatum{nrows}{The total number of rows in that MS.  This is -1 if it is not being filled.}{}{integer}
+\end{ahrecord}
+
+If the attached field is False, all of the other fields may not
+reflect the true state of the filler.  The project, object, mintime,
+maxtime, minscan, maxscan, fillrawpointing, fillrawfocus,
+filllags, vv, smooth, usehighcal, compresscalcols, usebias,
+oneacsms and backendtype constraints can all
+be set via this DO interface.  When the filler is at the end of
+the scan log (more() return False) then nextscan will have a
+value of -1 and nextdmjd and nextimestamp will have values of
+0.0.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setproject}{Set the project directory}
+\begin{ahargs}
+\ahaddarg{project}{The project directory}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Setting the project directory causes any currently open ScanLog.fits
+file as well as any MeasurementSets currently being
+filled to be closed.  The next fill will open the new ScanLog.fits and begin
+filling information found there.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{project}{Get the current project directory}
+\ahreturns{string}
+\begin{ahdescription}
+Get the current project directory known to the filler.  This
+returns an empty string if no project has been set.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setbackend}{Limit the backends to fill to one type}
+\begin{ahargs}
+\ahaddarg{backend}{The backend type to fill}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Possible types are ANY, HOLO, DCR, SP, and ACS.  SPECTRALPROCESSOR is
+synonymous with SP and SPECTROMETER is synonymous with ACS.  Any other
+types from that specified here will be ignored.  The default, ANY,
+implies that all of the known types will be filled.  This
+argument is case insensitive.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{backend}{Get the current backend type}
+\ahreturns{string}
+\begin{ahdescription}
+Get the current backend type being filled.  The default is ANY, 
+implying that any backends known to the filler are filled.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setmsdirectory}{Change the directory of all output MSs}
+\begin{ahargs}
+\ahaddarg{msdirectory}{The directory of all output MSs}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The output MSs are all placed in this directory.
+This function allows you to change the default, which is the
+current directory.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{msdirectory}{Get the current directory of all output MSs}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setmsrootname}{Change the root name of all output MSs}
+\begin{ahargs}
+\ahaddarg{msrootname}{The root name of all output MS}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The output MSs are named using this string plus the backend type
+plus a version number: msrootname\_backendtype.
+This function allows you to change the default, which is the
+base name of the project directory.  The backendtype is
+one of HOLO, DCR, SP, or ACS.  If multiple ACS MeasurementSets
+are being filled.  There will be an additional \_A, \_B,
+\_C, or \_D appended to the name as necessary.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{msrootname}{Get the current msrootname}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setmintime}{Change the minimum time for data to be filled}
+\begin{ahargs}
+\ahaddarg{mintime}{The minimum time.}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Only data taken after mintime will be filled.  The default is for there
+to be no minimum time and fill all data.  If a sub-scan spans mintime (i.e.
+starts before mintime but ends after mintime) the entire sub-scan will be
+filled.  The time string is specified using the FITS time convention:
+YYYY-MM-DDTHH:MM:SS.sss.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{mintime}{Get the current minimum time for data to be filled}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setmaxtime}{Change the maximum time for data to be filled}
+\begin{ahargs}
+\ahaddarg{mintime}{The maximum time.}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Only data taken before maxtime will be filled.  The default is for there
+to be no maximum time and fill all data.  If a sub-scan spans maxtime (i.e.
+starts before maxtime but ends after maxtime) the entire sub-scan will be
+filled.  The time string is specified using the FITS time convention:
+YYYY-MM-DDTHH:MM:SS.sss.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{maxtime}{Get the current maximum time for data to be filled}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setminscan}{Change the minimum scan number for data to be filled}
+\begin{ahargs}
+\ahaddarg{minscan}{The minimum scan number.}{}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Only data having a scan number greater than or equal to minscan will be filled.  Specifying
+a value of -1 (the default at startup) indicates that there is no minimum
+scan number.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{minscan}{Get the current minimum scan number for data to be filled}
+\ahreturns{integer}
+\end{ahfunction}
+
+\begin{ahfunction}{setmaxscan}{Change the maximum scan number for data to be filled}
+\begin{ahargs}
+\ahaddarg{minscan}{The maximum scan number.}{}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Only data having a scan number less than or equal to maxscan will be filled.  Specifying
+a value of -1 (the default at startup) indicates that there is no maximum
+scan number.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{maxscan}{Get the current maximum scan number for data to be filled}
+\ahreturns{integer}
+\end{ahfunction}
+
+\begin{ahfunction}{setobject}{Limit the fill to objects matching this string}
+\begin{ahargs}
+\ahaddarg{object}{The object string to match}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Only scans with objects matching this string will be filled.  Simple
+wild cards involving * are allowed.  If this string is just that
+wildcard (the default when this \texttt{tool} is created) then
+all objects will match.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{object}{Get the current object string to match}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setfillrawpointing}{Set the flag which controlls whether the raw pointings are saved (filled).}
+\begin{ahargs}
+\ahaddarg{fillrawpointing}{When true, raw pointings are filled.}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The GBT Antenna FITS file contains information on the telescope pointings.
+The pointing information is normally sampled 10 times a second.  The filler
+computes a mean pointing direction over each integration and stores that value
+in the DIRECTION column of the POINTING subtable.  When the fillrawpointing
+flag is F(alse) (the default value) the raw, unaveraged, pointings are not saved
+in the MeasurementSet in order to save space.  This behavior can be changed by
+setting this flag to T.  When this flag is true, the raw pointings can be
+found in the NRAO\_GBT\_POINTING subtable.  This decision must be made before the 
+MeasurementSet is filled.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{fillrawpointing}{Get the value of the fillrawpointing flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setfillrawfocus}{Set the flag which controlls whether the raw focus values are saved (filled).}
+\begin{ahargs}
+\ahaddarg{fillrawfocus}{When true, raw focus values are filled.}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The GBT Antenna FITS file contains information on the telescope focus parameters.
+The focus information is normally sampled 10 times a second.  The filler
+computes the mean focus parameters over each integration and stores that value
+in the NRAO\_GBT\_MEAN\_FOCUS subtable (future versions of the filler will likely
+associate this information more closely with the FEED subtable).  When the 
+fillrawfocus 
+flag is F(alse) (the default value) the raw, unaveraged, focus values are not saved
+in the MeasurementSet in order to save space.  This behavior can be changed by
+setting this flag to T.  When this flag is true, the raw focus values can be
+found in the NRAO\_GBT\_FOCUS subtable.  This decision must be made before the 
+MeasurementSet is filled.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{fillrawfocus}{Get the value of the fillrawfocus flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setfilllags}{Set the flag which controlls whether the LAG\_DATA data column is filled.}
+\begin{ahargs}
+\ahaddarg{filllags}{When true, the LAG\_DATA column is filled.}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+This flag is only used to control filling of data from the ACS (spectrometer).  Normally,
+when this flag is false, the raw lag data are only used to generate the FLOAT\_DATA
+column.  When this flag is true, the raw data are also filled to the
+LAG\_DATA column.  The FLOAT\_DATA column will continue to be filled
+in that case.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{filllags}{Get the value of the filllags flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setvv}{Choose the type of vanVleck correction for spectrometer data.}
+\begin{ahargs}
+\ahaddarg{vv}{Valid types are ``schwab'', ``old'', ``none'', and ``default''}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The type of vanVleck correction is only relevent to data from the spectrometer.
+The ``schwab'' correction is an implementation of a general solution developed
+by Fred Schwab.  The ``old'' correction is the original vanVleck correction based
+on code from Arecibo.  If ``none'' is selected, no vanVleck correction will be
+done.  The current default, if this is not set, is ``Schwab''.  If the vv argument
+value is unrecognized, the return value will be F (false) and the default type
+will be used.  This argument is case insensitive.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{vv}{Get the value of type of vanVleck correction being used.}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setsmooth}{Choose the type of smoothing for spectrometer data.}
+\begin{ahargs}
+\ahaddarg{vv}{Valid types are ``hanning'', ``hamming'', ``none'', and ``default''}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The type of smoothing is only relevent to data from the spectrometer.
+This smoothing is applied after the vanVleck correction is done and before
+the data are fourier transformed to the spectral domain.
+The current default, if this is not set, is ``hanning''.  If the smooth argument
+value is unrecognized, the return value will be F (false) and the default type
+will be used.  This argument is case insensisitive.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{smooth}{Get the value of type of smoothing being used.}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{setusehighcal}{Set the flag which controlls which CAL\_TEMP is used from the receiver cal table.}
+\begin{ahargs}
+\ahaddarg{usehighcal}{When true, HIGH\_CAL\_TEMP is used, else LOW\_CAL\_TEMP.}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The receiver cal tables contain measured TCAL values for a HIGH and LOW cal as a function of
+frequency for each receptor.  In early GBT data, the IF FITS file lacked the information
+to determine which cal was appropriate.  This flag is used to signal, for that old data,
+which cal value to use.  It is ignored for current data since the IF fits file fully
+specifies which TCAL value is used.  When this flag is true and the IF FITS file is missing 
+this information, the HIGH cal value is used.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{usehighcal}{Get the value of the usehighcal flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setusebias}{Set the flag which controlls whether the bias is calculated during the van Vleck correction.}
+\begin{ahargs}
+\ahaddarg{usebias}{When true, the bias is part of the vanVleck correction for ACS data.}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+There is often a non-zero bias in the ACS (spectrometer) sampler levels.  When this flag is true, 
+the van Vleck correction attempts to work out what this bias is by examining the last 5 percent 
+of the lag values.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{usebias}{Get the value of the usebias flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setoneacsms}{Set the flag which controlls whether a single ACS MeasurementSet is filled.}
+\begin{ahargs}
+\ahaddarg{oneacsms}{When true, a single ACS MeasurementSet is filled with data from all ACS banks.}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The original filler filled each ACS bank to a separate MeasurementSet.  This makes bulk processing
+of all ACS data (from all banks) difficult so the filler was rewritten to allow it to put all
+ACS data, from any bank, to the same MeasurementSet.  That is now the default behavior.  There may
+be circumstances where it is desirable to separate them out into separate MeasurementSets and
+this flag allows you to do that.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{oneacsms}{Get the value of the oneacsms flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setcompresscalcols}{Set the flag which controls whether the calibration columns are compressed.}
+\begin{ahargs}
+\ahaddarg{compresscalcols}{When true, the calibration columns are compressed.}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+In order to control data bloat, it is desirable to compress the calibration columns (e.g. COMPRESSED\_DATA).  
+The compression is done independently for each row.  This only applies to spectral
+line data (DCR and Holography data are never compressed).  When this
+flag is true, these columns are compressed.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{compresscalcols}{Get the value of the compresscalcols flag.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{setdcbias}{Set a specific bias to use during the van Vleck correction.}
+\begin{ahargs}
+\ahaddarg{dcbias}{This value is used as the bias.}{0.0}{double}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+There is often a non-zero bias in the ACS (spectrometer) sampler levels. If the bias is thought to be known based on other
+scans, then it can be set here to a specific value.  This is the actual bias in the samplers, and not simply the observed
+asymptote in the raw lags.  If uselag is True, then this value is ignored in favor of the derived dcbias.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{dcbias}{Get the specific value of the dcbias to use during the van Vleck correction.}
+\ahreturns{double}
+\end{ahfunction}
+
+\begin{ahfunction}{setminbiasfactor}{Attempt to correct for the truncation error in the ACS samplers.}
+\begin{ahargs}
+\ahaddarg{minbiasfactor}{The minimum integer to be multiplied by 0.5/65536 and subtracted from the data..}{-1}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+There is a truncation (instead of a rounding) as the raw lags are converted to 32-bit integers.  This introduces a 
+systematic error in the lags.  When this value is non-negative (>=0) then the nearest integer larger than this value
+is found which, when multiplied by 0.5/65536 and added to the last 5% of the lag values, raises the mean of those lags
+to just above 0.0.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{minbiasfactor}{Get the minbiasfactor value.}
+\ahreturns{integer}
+\end{ahfunction}
+
+\begin{ahfunction}{newms}{Force a new MS for all currently filling backends.}
+\ahreturns{boolean}
+\begin{ahdescription}
+This is not yet implemented.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setfixlags}{Toggle whether bad ACS lags should be fixed, if possible.}
+\begin{ahargs}
+\ahaddarg{fixlags}{When true, bad ACS lags are fixed, if possible.}{False}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+The ACS some times suffers from bad 1024-lag segments where the entire segment
+is obviously offset and possibly scaled differently from the surrounding lags.
+If this toggle is true and that bad-lag segment is not the first 1024 lags, then
+the filler will "fix" the bad lags.  This fix is done by first subtracting the
+median of those bad lags from the bad lags.  Then the bad lags are scaled so
+that their standard deviation matches the standard deviation of the 512 lags
+on either side of the bad lags.  Finally, a constant is added to the bad
+lags so that the median of the bad lags matches the median of the 512 lags on
+either side of the bad lags.  If this toggle is false, the data are flagged
+as bad.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{fixlags}{Get the fixlags toggle value.}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Stop filling and close the tool.}
+\ahreturns{boolean}
+\begin{ahdescription}
+This permantly closes the connection between this \texttt{tool} and any
+data being filled.  Use this only when you are done with 
+the current \texttt{tool}.  Once this function has been called it
+becomes useless.  Any MeasurementSets and data files currently opened
+when this function is called will be closed.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool.}
+\ahreturns{string}
+\begin{ahdescription}
+This is required for the toolmanager to manage this tool.  This
+function always returns "gbtmsfiller".
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}

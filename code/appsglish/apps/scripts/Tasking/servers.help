@@ -1,0 +1,730 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: servers.help,v 19.2 2004/08/25 02:04:44 cvsmgr Exp $
+
+\begin{ahobject}{servers}{A tool for sending events between glish and
+precompiled executables}
+
+\ahinclude{servers.g}
+
+\begin{ahdescription}
+servers communicates between glish distributed objects (tools) and
+C++ executables. It provides the following services:
+\begin{itemize}
+\item Creation, execution and destruction of C++ servers
+\item Parameter passing to and from servers
+\item Plotting, progress meters, {\em etc.} (implemented in Glish
+or via a Glish layer)
+\item Synchronous and asynchronous execution of functions
+\item Logging of messages
+\end{itemize}
+
+There is only one servers tool running at any one time called
+defaultservers. This \emph{must} be running if the tool system is to
+work at all.
+
+Users normally need not interact with defaultservers. Its functions
+will largely be used by programmers writing tools and most of the
+interactions are hidden inside the tool framework (this is described
+in Note 197).  The only major exceptions are:
+\begin{itemize}
+\item When one wants to retrieve
+values returned by a function that was running asynchronously. This is
+described in the \ahlink{result}{tasking:servers.result} function.
+\item When one wants the name of a plotter used by a tool. This is
+returned by the \ahlink{getplotter}{tasking:servers.getplotter}
+function
+\end{itemize}
+
+The terminology used here needs some explanation:
+\begin{description}
+\item[server] A server is a C++ executable that runs as a process.
+\item[object] A server may contain one or more objects. An object
+is equivalent to a Glish tool. It usually has multiple functions
+that may be executed.
+\end{description}
+
+Some servers are pre-started to minimize \aipspp\ startup time.
+The default pre-started clients are: timer, misc, and quanta.
+If you wish to prevent this, set the following in your
+.aipsrc file:
+
+\begin{verbatim}
+user.prestart:	none
+\end{verbatim}
+
+If you wish to extend or change the list, set the following in your
+.aipsrc file:
+
+\begin{verbatim}
+user.prestart:	timer misc quanta measures
+\end{verbatim}
+
+Integers are used to index into lists of servers and objects.
+Thus to specify a server requires one integer, and to specify
+an object requires two: one for the server and one for the object.
+Thus the functions of servers require one or both of these, depending
+on whether the operation is server or object-specific.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahfunction}{activate}{Create a new server}
+  \ahkeyword{activate}{activate}
+  \begin{ahdescription}
+
+    The activate function creates a new server of the specified type,
+    if necessary. A server is an executable piece of code that has
+    been written to communicate with glish.  This function will start
+    the specified process on the specified computer or, by default, on
+    the current computer ie., the one running glish.
+
+    This function will only create new server process if one is not
+    already running on the specified computer. However this can be
+    overridden.
+
+    This function returns a positive integer that can be used by other
+    functions in this tool indicate which server process you are
+    referring to.
+
+    Normally servers are terminated when empty ie., contains no tools.
+    One can override this using the terminateonempty flag. Use this
+    only for servers that are likely to be restarted soon to avoid the
+    overhead for reloading the executable.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{server}{The name of the server to create}
+             {no default}{a string}
+    \ahaddarg{host}{The name of the computer on which to start the
+		    server}
+             {an empty string}{any computer name}
+    \ahaddarg{forcenewserver}{Start a new server even if one is running}
+             {F}{T or F}
+    \ahaddarg{async}{Start the server asynchronously}
+             {F}{T or F}
+    \ahaddarg{terminateonempty}{Terminate servers when empty}{T}{Boolean}
+  \end{ahargs}
+  \ahreturns{A positive integer}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'servers.g';
+      private := [=];
+      private.serverid := defaultservers.activate('numerics');
+      private.toolid := defaultservers.create(private.serverid, 'fftserver');
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This will start up the numerics process on the current machine. It
+    then creates a fftserver tool, using the default constructor, that
+    uses this server. See also the example for the create function.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{create}{Create an object}
+  \ahkeyword{create}{create}
+  \begin{ahdescription}
+
+    The create function creates an object. The object that is created
+    must be one of those inside the specified server.
+
+    Every C++ object that can be created with this function has a
+    className member function. The string returned by this function is
+    the string that must be specified in the type argument to create
+    an instance of that class.
+
+    Some objects may be constructed only using a default
+    constructor. For these objects the creator and invokerecord
+    arguments should be left at their default values.
+
+    Objects which can be constructed in multiple ways will have a
+    ``factory'' class associated with them. This factory class will
+    map the string specified in the creator argument into the
+    appropriate constructor. 
+
+    Some constructors may require additional parameters and these are
+    specified using fields in the invokerecord argument. The
+    parameters that are relevant are defined using Parameter objects
+    in the appropriate factory class.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{id}{Identifies which server to use}
+             {no default}{A positive integer obtained from the
+                          activate function.}
+    \ahaddarg{type}{The object to create.}
+             {no default}{A string that corresponds to the output of
+                          the className function in the C++ class.}
+    \ahaddarg{creator}{A string indicating which constructor to use.}
+             {An empty string}{An empty string or one that matches a
+                               string in the ``factory'' class.}
+    \ahaddarg{invokerecord}{Additional construction parameters}
+             {An empty record}{A record with fields containing
+additional construction parameters.}
+  \end{ahargs}
+  \ahreturns{A record whose fields?????}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'servers.g';
+      private := [=];
+      private.serverid := defaultservers.activate('componentlist');, 
+      private.toolid := defaultservers.create(private.serverid, 'componentlist',
+                                              'readcomponentlist', 
+                                              [filename='crux.cl', readonly=T]);
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This will start up the componentlist process on the current
+    machine. It then creates a componentlist object, using the
+    ``readcomponentlist'' constructor. This constructor has two arguments 
+    the file to open and whether it should be opened read-only.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{add}{Add an object to an existing server}
+  \ahkeyword{add}{add}
+  \begin{ahdescription}
+
+    The add function adds an object to an existing server. The
+    id that is specified is presumed to have been returned
+    by a function returning a ID.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{agentid}{Identifies which server to use}
+             {no default}{A positive integer obtained from the
+                          activate function.}
+    \ahaddarg{id}{Identifies the object (as returned from a DO)}
+             {no default}{A record returned from a DO function}
+  \end{ahargs}
+  \ahreturns{A record}
+  \begin{ahexample}
+    \begin{verbatim}
+      id := defaultservers.run(private.serverid, private.invokerec);
+      toolid := defaultservers.add(private.serverid, id);
+      return _define_componentlist(private.serverid, toolid);
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+     The run returns an id record. The add function is then used to
+     add this id to the list of objects stored in private.serverid.
+     Finally a new componentlist tool is returned using this
+     server and id.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{run}{Run a function in an object}
+  \ahkeyword{run}{run}
+  \begin{ahdescription}
+    The run function runs a member function in the specified C++
+    object. 
+
+    The server that will be used is specified by the id parameter. The
+    object, function within that object, and parameters within that
+    function are specified using the invokerecord argument.
+
+    There are two special fields in the invokerecord argument. These
+    are ``\_method'' and ``\_sequence''. The first of these indicates
+    which function to run and hence should be a string that matches
+    one returned by the methods member function in the C++ object. I
+    do not know what the ``\_sequence'' argument does but I guess that
+    it indicates which C++ object to use. The value to use for the
+    second argument is the \_sequence field in the record returned by
+    the create function as shown in the example below.
+
+    Other fields in the invokerecord function are only required if the
+    specified function needs user supplied parameters. The field names
+    must match the name given to the ``Parameter'' object associated
+    with the specified function.
+
+    The async argument controls whether or not to wait for the
+    execution of C++ function to complete. Functions that are quick to
+    compute are normally run synchronously. When a function is run
+    synchrounously the return value of this function is the return
+    value of the C++ function, or T if the C++ function returns a
+    void.
+
+    When the function is run asynchronously the return value is a
+    small integer that identifies the job. This job id can be used in
+    conjunction with the running function to determine when the
+    function has finished. When a function has finished the job id can
+    be used in conjunction with the result function to get the return
+    value of the function.
+
+    This function can also return a fail if something bad has
+    happened.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{id}{Identifies which server to use}
+             {no default}{A positive integer obtained from the
+                          activate function.}
+    \ahaddarg{invokerecord}{Parameters for the function that will be run}
+             {no default}{A record with the required fields}
+    \ahaddarg{async}{Return before the function has completed?}
+             {F}{T or F}
+  \end{ahargs}
+  \ahreturns{T, an integer or a fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      private.getlabelRec := [_method = 'getlabel',
+			      _sequence = private.toolid._sequence];
+      public.getlabel := function(which) {
+        wider private;
+        private.getlabelRec.which := which;
+        return defaultservers.run(private.serverid, private.getlabelRec);
+      }
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example shows how to use the run function to call a C++
+    function that has one parameter, the which argument. This function
+    is always run synchronously and hence the return value of the run
+    function is the return value of the C++ function ie., the label string.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Delete a tool}
+  \ahkeyword{done}{done}
+  \begin{ahdescription}
+
+    The done function closes ie., it calls the destructor, of the C++
+    object associated with the specified tool. When all the objects
+    that use a server have been shutdown the done function will also
+    shutdown the server.
+
+    Once a object has been shutdown it is generally advisable to
+    diasble the tool associated with the C++ object. An example of how
+    this is done is given below.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{id}{Identifies which server to use}
+             {no default}{A positive integer obtained from the
+                          activate function.}
+    \ahaddarg{objectid}{The object to delete.}
+             {no default}{The objectid field of the record returned by 
+                          the create function.}
+  \end{ahargs}
+  \ahreturns{T or a fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      public.done  := function() {
+        wider public, private;
+        ok := defaultservers.done(private.serverid, private.toolid.objectid);
+        if (ok) {
+          val private := F;
+          val public := F;
+         }
+        return ok;
+      }
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    Assuming the toolid and serverid variables have been defined as
+    shown in the examples for the activate or create functions, it is
+    possible to shutdown the tool and perhaps the server using this
+    function.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{running}{Determine if an asynchronous function is running}
+  \ahkeyword{running}{running}
+  \begin{ahdescription}
+    The running function determines whether the specified job, or
+    asynchronous invokation of a C++ function, has finished. It
+    returns T if the job is still running and F otherwise. If a bad
+    job id is passed it returns a fail.
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{jobid}{Which job id we are inquiring about}
+             {no default}{A positive integer obtained from the
+                          run function.}
+  \end{ahargs}
+  \ahreturns{T, F or a fail}
+  \begin{ahexample}
+    See the example for the results function.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{result}{Get the result(s) from an asynchronous function.}
+  \ahkeyword{result}{result}
+  \begin{ahdescription}
+    The results function is used to get the return values after an
+    asynchronous C++ function has finished.  
+
+    The results for the specified function are obtained using the
+    jobid that is returned when the function is started with the {\tt run}
+    function. Normally these results are cleared when {\tt result} is
+    called; however, it is possible to keep them for future access by
+    setting the {\tt clear} argument to {\tt F}.
+
+    The results are provided in a record format with fields
+    corresponding to each of the input parameters. This is to allow
+    some input parameters to also act as output values. If the C++
+    function returns a value then the record will also contain a
+    {\tt returnval} field that contains the value returned by the C++
+    function.
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{jobid}{Which job id we are inquiring about}
+             {no default}{A positive integer obtained from the
+                          run function.}
+    \ahaddarg{clear}{Delete the results from the internal buffer}
+             {T}{T or F}
+  \end{ahargs}
+  \ahreturns{T, F or a fail}
+  \begin{ahexample}
+    \begin{verbatim}
+      private.simulateRec := [_method = 'simulate',
+    			      _sequence = private.id._sequence];
+      public.simulate := function(howmany=1, async=F) {
+        wider private;
+        private.simulateRec.howmany := howmany;
+        retval := defaultservers.run(private.serverid,
+                                     private.simulateRec, async);
+        if (is_fail(retval)) return retval;
+        if (async) {
+          t := client("timer", 1.0);
+          whenever t->ready do {
+    	    if (!defaultservers.running(retval)) {
+              t->terminate();
+    	      deactivate;
+    	      note('Added ', howmany, ' simulated component(s) to the list.',
+    	           origin='componentlist.simulate');
+    	    }
+          }
+        } else {
+          note('Added ', howmany, ' simulated component(s) to the list.',
+    	       origin='componentlist.simulate');
+        }
+        return T;
+      }
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example illustrates how a function can be made to work both
+    synchronously or asynchronously. In either the former case the
+    user waits for the function to complete does not receive a glish
+    prompt until then. In the latter case the functions returns
+    quickly and executation proceeeds in the backgroud. In either case 
+    the note is only printed when everything has been done.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{getplotter}{Get the plotter used by a tool}
+  \ahkeyword{result}{result}
+  \begin{ahdescription}
+	When a tool uses a plot command, a
+\ahlink{pgplotter}{pgplotter} is created. The plotter is stored by
+{\tt defaultservers}, and a reference to it may be retrieved using the
+getplotter function. Since it is a glish reference to the
+{\tt pgplotter}, commands that change the state of the plotter may be
+issued. The main use fot this is to allow script to issue print
+commands to the pgplotter.
+
+The function needs the agentid field in the record returned from the
+{\tt id()} function of the tool. All tools should have this function,
+but unfortunately some may not.
+
+
+  \end{ahdescription}
+  \begin{ahargs}
+    \ahaddarg{id}{agentid field from record returned by tool id() function}
+             {no default}{A positive integer}
+    \ahaddarg{name}{Optional name of plotfile}{''}{String}
+  \end{ahargs}
+  \ahreturns{A record containing pgplotters or a fail}
+  \begin{ahexample}
+    \begin{verbatim}
+	myimager := imager('3C273XC1.ms');
+	myimager.plotuv();
+	imagerplotter := defaultservers.getplotter(myimager.id().agentid)
+	imagerplotter[1].postscript('3C273XC1.uvplot.ps');
+      }
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example illustrates how to retrieve and use the {\tt
+pgplotter}. Note that We assume in this example that the only plotter
+is the first one. In more complex cases, one might have to use a
+different element in the returned record.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{isvalid}{Is this a valid server?}
+  \ahkeyword{isvalid}{isvalid}
+  \begin{ahargs}
+    \ahaddarg{agentid}{server id}
+             {no default}{Int}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{busy}{Is the server busy?}
+  \ahkeyword{busy}{busy}
+  \begin{ahargs}
+    \ahaddarg{agentid}{server id}
+             {no default}{Int}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{settimeout}{Set event timeouts}
+\begin{ahdescription}
+Normally some crucial events are just awaited. It is
+possible to set a timeout for some of the events. Normally
+this should not be needed except in debugging. The events
+are:
+\begin{description}
+\item[create] Create a server
+\item[close] Close a tool
+\item[done] Close a server
+\item[makeplot] Make a plot server
+\end{description}
+\end{ahdescription}
+
+  \ahkeyword{settimeout}{settimeout}
+  \begin{ahargs}
+    \ahaddarg{action}{event name}
+             {create}{String}
+    \ahaddarg{timeout}{Time out in seconds}
+             {60}{Numeric}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{timeouts}{Return record of timeouts}
+\begin{ahdescription}
+Normally some crucial events are just awaited. It is
+possible to set a timeout for some of the events. Normally
+this should not be needed except in debugging. The events
+are:
+\begin{description}
+\item[create] Create a server
+\item[close] Close a tool
+\item[done] Close a server
+\item[makeplot] Make a plot server
+\end{description}
+\end{ahdescription}
+
+  \ahkeyword{timeouts}{settimeouts}
+  \ahreturns{Record of timeouts}
+\end{ahfunction}
+
+\begin{ahfunction}{info}{Print information on the existing servers.}
+  \ahkeyword{info}{info}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{memory}{Return the memory usage of each server}
+  \begin{ahdescription}
+    servers keeps track of how much memory each server is using. This
+    function will return a record containing the amount of memory,
+    in mega-bytes, used bt each server. For convienience the amount of
+    memory used by Glish is also returned.
+  \end{ahdescription}
+  \ahkeyword{memory}{memory}
+  \ahreturns{record}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'servers.g';
+      print defaultservers.memory();
+      # [misc=0.290412903, quanta=0.0799331665, Glish=3.77894211]
+    \end{verbatim}
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{sendmemoryevents}{Enable the generation of memory events}
+  \begin{ahdescription}
+    servers can send a memory event whenever it detects that the memory
+    used by a server has changed. The value associated with the memory
+    event is a record identical to the one returned by the
+    \ahlink{memory}{tasking:servers.memory} function.
+
+    By default servers does not send events and this function must be
+    called to initiate this behaviour. The complimentary function is
+    \ahlink{stopmemoryevents}{tasking:servers.stopmemoryevents}.
+
+  \end{ahdescription}
+  \ahkeyword{sendmemoryevents}{sendmemoryevents}
+  \ahreturns{nothing}
+  \begin{ahexample}
+    \begin{verbatim}
+      include 'servers.g';
+      whenever defaultservers->memory do {
+        local memory := $value;
+        total := 0;
+        for (i in ind(memory)) {
+           total +:= memory[i];
+        }
+        print 'aips++ memory usage is', total;
+      } 
+      defaultservers.sendmemoryevents();
+      # At this point the whenever may receive events
+      defaultservers.stopmemoryevents();
+      # At this point the whenever will not receive any events.
+    \end{verbatim}
+  \end{ahexample}
+  \begin{ahcomments}
+    This example creates a ``whenever'' statement that will print the
+    total memory used by aips++. However the defaultsaervers will not
+    emit memory events until the sendmemoryevents function is called.
+  \end{ahcomments}
+\end{ahfunction}
+
+\begin{ahfunction}{stopmemoryevents}{Disable the generation of memory events}
+  \begin{ahdescription}
+    servers can send a memory event whenever it detects that the memory
+    used by a server has changed. This function can be used to prevent
+    this from happening. It is complementry to the 
+    \ahlink{sendmemoryevents}{tasking:servers.sendmemoryevents}
+    function.
+
+    Using this function does does not guarentee that servers will stop
+    sending memory events. servers counts how many times the
+    sendmemoryevents function has been called and the stopmemoryevents
+    function must be called an equal number of times to actually stop the
+    memory events. This is to ensure that one client does not stop
+    events for other clients that have requested them.
+
+  \end{ahdescription}
+  \ahkeyword{sendmemoryevents}{sendmemoryevents}
+  \ahreturns{nothing}
+  \begin{ahexample}
+    See the example for the
+    \ahlink{sendmemoryevents}{tasking:servers.sendmemoryevents} function.
+  \end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{init}{Initialize servers}
+\begin{ahdescription}
+This function initializes servers after construction. It should not
+be called other than in servers.g.
+\end{ahdescription}
+  \ahkeyword{init}{init}
+  \ahreturns{don't know}
+\end{ahfunction}
+
+\begin{ahfunction}{alerter}{Relay events on completion}
+\begin{ahdescription}
+servers works internally by sending and receiving events. When
+running synchronously these events are converted into return values as
+appropriate. However, when running asynchronously, one needs a
+mechanism to emit events that can be caught outside.  The
+alerter function provides this mechanism.
+
+The events emitted are:
+\begin{description}
+\item[error] The job ended in error.
+\item[fail] The server failed.
+\item[note] A note was issued.
+\item['jobid'] The job with id 'jobid' ended successfully. 
+\end{description}
+
+The value returned by the event is a record with fields:
+\begin{description}
+\item[agent] The agent used in execution.
+\item[value] The value.
+\end{description}
+
+Here is an example of how to execute a function asynchronously
+and set up a whenever on the result:
+
+\begin{verbatim}
+im:=imager('3C273XC1.ms')
+jobid:=im.plotvis(async=T);
+whenever defaultservers.alerter()->[as_string(jobid)] do {
+  print 'Plot finished';
+  deactivate;
+}
+\end{verbatim}
+
+\end{ahdescription}
+
+  \ahkeyword{alerter}{alerter}
+  \ahreturns{Agent record for receiving events and their results}
+\end{ahfunction}
+
+\begin{ahfunction}{agents}{Return a record of all agents}
+\begin{ahdescription}
+Needed for debugging only.
+\end{ahdescription}
+  \ahkeyword{agents}{agents}
+  \ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{suspend}{Suspend certain clients}
+\begin{ahdescription}
+Needed for debugging only.
+\end{ahdescription}
+  \ahkeyword{suspend}{suspend}
+  \begin{ahargs}
+    \ahaddarg{suspend\_clients}{Clients to suspend}
+             {no default}{String}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{trace}{Trace events related to certain clients}
+\begin{ahdescription}
+Needed for debugging only.
+\end{ahdescription}
+  \ahkeyword{trace}{trace}
+  \begin{ahargs}
+    \ahaddarg{trace\_clients}{Clients to trace}
+             {no default}{String}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{kill}{Kill a given agent}
+\begin{ahdescription}
+Kill a given agent.
+\end{ahdescription}
+  \ahkeyword{kill}{kill}
+  \begin{ahargs}
+    \ahaddarg{agentid}{Agent id}
+             {no default}{Int}
+  \end{ahargs}
+  \ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{methods}{Return the methods of an object}
+\begin{ahdescription}
+Return the methods of a given object.
+\end{ahdescription}
+  \ahkeyword{methods}{methods}
+  \begin{ahargs}
+    \ahaddarg{agentid}{Agent id}
+             {no default}{Int}
+    \ahaddarg{objectid}{Object id}
+             {no default}{Int}
+  \end{ahargs}
+  \ahreturns{String}
+\end{ahfunction}
+
+\end{ahobject}
+

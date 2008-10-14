@@ -1,0 +1,1527 @@
+%% viewerdisplaypanel.help: help file for viewerdisplaypanel tool
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: viewerdisplaypanel.help,v 19.8 2005/06/15 18:10:58 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{viewerdisplaypanel}{Tool for providing drawing windows (canvases)}
+
+\ahinclude{viewerdisplaypanel.g}
+
+\ahkeyword{displaypanel}{}
+\ahkeyword{canvas}
+
+\ahmethods{}
+
+\subsubsection*{General description}
+
+\begin{ahdescription}
+
+This \tool\ is a fundamental component of the \lkVT.  It provides a
+drawing area (or ``canvas'') on which \lkVdisplaydataTs\ can draw
+themselves.  Multiple \VdisplaypanelTs\ can be placed on the screen,
+and each can have multiple \VdisplaydataTs\ registered to draw
+themselves.  In this way, for example, multiple views of the same data
+can be simultaneously displayed, and contour \VdisplaydataTs\ can be
+drawn ``on top'' of raster \VdisplaydataTs, for example.  Exact copies
+of \VdisplaypanelTs\ can be written to X11 Pixmap files, and
+high-quality PostScript representations of \VdisplaypanelTs\ can be
+saved and printed.
+
+\VdisplaypanelTs\ can be adorned with various \guilong\ components, 
+including a ``controlbox'' which allows the user to select controls
+like zooming and colormap fiddling, and a ``tapedeck'' which enables
+the user to manually or automatically move through data having more
+than two (non-redundant) axes.
+
+Three points related to the registration of \VdisplaydataTs\ on
+\VdisplaypanelTs\ are worth making here:
+
+\begin{enumerate}
+
+\item {\em The order of registration of \VdisplaydataTs\ on a specific
+\VdisplaypanelT\ is important.}  The maximum area of sky, or
+position-velocity space, or of whatever coordinate system is being
+used, is determined solely by the first registered \VdisplaydataT.
+All other \VdisplaydataTs\ registered for display on a particular
+\VdisplaypanelT\ simply draw those parts of their data which ought to
+be visible on the \VdisplaypanelT.  A consequence of this is that the
+zoom setting of the \VdisplaypanelT\ must be reset to the full view
+whenever the first registered \VdisplaydataT\ is removed, replaced, or
+re-read.  Independent of the order in which \VdisplaydataTs\ are
+registered on a given \VdisplaypanelT, the raster-type
+\VdisplaydataTs\ are always drawn first, followed by contours, and
+lastly axis labels.
+
+\item {\em Axis labels are drawn by \VdisplaydataTs, and only by the
+first registered \VdisplaydataT.}  In the \VT, axis labelling
+information belongs to the \VdisplaydataTs\ rather than to the
+\VdisplaypanelTs, which is commonly seen in other applications.  This
+is because the only entity which knows {\em exactly}\/ how to draw the 
+axis labels for a particular piece of data is the \VdisplaydataT\
+which draws the data itself.  Control over the appearance of axis
+labels is therefore available via the individual \VdisplaydataTs.
+
+\item {\em Registering a specific \VdisplaydataT\ on more than one
+\VdisplaypanelT\ can reduce display efficiency.}  The drawings made of 
+data by a \VdisplaydataT\ are cached, so that they only need to be
+recalculated under various circumstances, such as the settings for the
+\VdisplaydataT\ changing, or the size of the \VdisplaypanelT\ on which 
+they are drawing changing.  The caching will in general fail to
+operate efficiently if a \VdisplaydataT\ is registered on more than 
+\VdisplaypanelT.  This is best avoided by making another
+\VdisplaydataT\ from the same dataset, and registering this second
+\tool\ on the second \VdisplaypanelT.
+
+\end{enumerate}
+
+Additional to the \toolfunctions\ described for the \VdisplaypanelT, 
+this \tool\ also possesses the \toolfunctions\ described in the
+\lkVstandardGI\ documentation. Note that some functions may not be
+documented and therefore shouldn't be used unless you really know what
+you are doing.
+
+\end{ahdescription}
+
+\subsubsection*{Graphical User Interface}
+\label{viewer:vdpgui}
+\begin{ahdescription}
+
+The standard \guilong\ provided by the \VdisplaypanelT\ is shown in
+Figure~\ref{fig:vdpintro}.  Surrounding the actual display area itself
+are five \guishort\ components: the menu bar at the top, the button
+bar at the bottom, the tracking bar[s] just above the buttons, the
+controlbox on the left, and the (currently disabled) ``tapedeck''
+control on the right.  Applications programmers are able to control
+which of these components appear on the
+\VdisplaypanelTs\ that they create, and hence throughout \aipspp,
+\VdisplaypanelTs\ can appear slightly different from the example given
+here.
+%\begin{latexonly}
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=vdpintro.ps,width=4.1in}
+\caption{The \VdisplaypanelT\ \guilong}
+\label{fig:vdpintro}
+\end{center}
+\end{figure}
+%\end{latexonly}
+
+{\bf Note:} All \aipspp\ \guishorts\ have a so-called popup help. Just
+rest your mouse cursor on top of a \guishort\ element (e.g. a button)
+and a little frame will appear outlining the funtionality of this
+element. If you then press and hold down the right mouse button you
+will get a detailed description. The information given there should be
+sufficient to let you operate that \guishort\ element.
+
+\medskip \noindent {\em \underline{The menu bar}} 
+\label{viewer:vdpguimenubar}
+
+\smallskip In \mbox{Figure \ref{fig:vdpintro}}, a typical
+\VdisplaypanelT\ is shown in all its glory.  The menu bar along the
+top has just three menus:
+
+\begin{itemize}
+
+\item {\gif File}, offering selections to create and display new \VdisplaypanelTs,
+access to various managers associated with the Viewer
+\tool, and selections to finish the \VdisplaypanelT\ itself, and to finish use of
+the entire Viewer \tool. 
+
+The {\gif File} menu is where additional \VdisplaypanelTs\ can be
+created for use.  Multiple \ndps\ can be on-screen, and to the
+best of their ability they will share the available color resources. 
+Three classes of \ndp\ can be made: {\ssf Index} panels, on
+which normal raster maps can be displayed, with pixel intensities mapped
+to colors from a colormap; and {\ssf RGB} (red-green-blue) and {\ssf
+HSV} (hue-saturation-value) panels, on which multi-component raster maps
+can be put together.  \ndds\ which are set up to use a colormap
+(eg.  'Rainbow', 'Greyscale', etc.) will only draw when registered on an
+{\ssf Index} panel.  Similarly, \ndds\ which are set up to draw to
+the red, green or blue color channel will only draw themselves on RGB
+panels.  And likewise, \ndds\ which are set up to draw to the hue,
+saturation or value color channel will only draw when registered on HSV
+panels.
+
+For the {\ssf RGB} and {\ssf HSV} panel types, up to three raster maps
+can be displayed concurrently, overlaid on each other, with each mapped
+to a different color component.  For example, an optical image could be
+displayed using the green component, and an X-ray image ``overlaid''
+using the red component.  In locations of strong X-ray emission and
+weak optical emission, the map will be predominantly red; weak X-ray
+emission coincident with strong optical emission will be predominantly
+green, and in between will be various levels of yellow. 
+
+Two sub-classes of \ndps\ can be made: {\ssf non-flashing}
+and {\ssf most colors} panels.  The latter provides the most colors
+available, but with the cost of ugly ``color flashing'' behaviour as
+the mouse cursor is moved in to and out of the \ndp\ window.
+The former provides generally less colors, but avoids this color
+flashing, and is generally more appropriate when analysis involving
+multiple windows is underway.
+
+The menu also gives access to \VslicedpTs\ in all color
+modes. \VdisplaydataT\  with at least three axes can be displayed on
+these in slice mode. See the documentation for \lkVslicedpT\ for more.
+
+\item {\gif DisplayData}, which is where various \VdisplaydataT\ can
+be registered (or unregistered) for display on the \VdisplaypanelT.
+\VdisplaydataT\ are registered for display by ensuring that their
+checkbox is lit in this menu.  When more than one \VdisplaydataT\ is
+available for registration, additional convenience selections are
+placed at the bottom of the menu, enabling the user to register or
+unregister all the \VdisplaydataT\ in the list.
+
+\item {\gif Tools} contains a submenu {\gif ImageAnalysis}
+\label{viewer:vdpguiimanal}
+{\gif ImageAnalysis} tools all listen to regions and postions emitted by
+the region/positioning tool. The {\gif Tools} menu also contains a
+{\gif Annotations...} menu item, which opens the the \ahlink{Annotations GUI}{viewer:vannotations}.
+
+You can interactively make a \ahlink{region}{images:regionmanager}
+(boxes and polygons) from the display with the cursor.  First you select
+the appropriate button (or icon; box or polygon) from the viewer control
+buttons arranged vertically along the left-hand side of the display.  
+Whatever mouse button you used to select the icon is now active for
+creating the region. Either drag out a box, or select vertices of a
+polygon.
+
+You create the region by double clicking inside of it.  When you do
+this, the \VdisplaypanelT\ will emit an event called {\tt region}.  See
+below for a description of that event. 
+
+\begin{itemize}
+\item{\gif ImageAnalysis} This menu brings up a window with roll-ups
+for several image analysis operations. Each roll-up has a tab widget
+for each of the registered \ndds. You can select the one you want to
+analyze by pressing the  button showing the image name.
+\begin{itemize}
+
+\item{\gif Statistics} 
+This roll-up shows image statistics on the selected image. It listens
+to event created by the region tools (of the \ahlink{control
+box}{viewer:vdpguicbox}. Whenever you emit such a region the fields in
+this GUI will be updated. 
+
+When you generate an interactive region the statistics are computed only
+for the current displayed plane of the image.  You can extend this
+spatial region over a range of animation-axis pixels via the {\gif
+Extend} check box and by entering a pixel range in the adjacent entry
+box. For example, entering {\gif 10 20} would apply the spatial region
+to planes 10 through 20 along the animation axis.  
+
+Statistics can also be computed for the full data {\gif Full} or the
+current plane {\gif Plane} as selected with the animator tapedeck.
+Check the {\gif Robust} button to also retrieve robust statistics.
+
+You can also bring up a pgplotter tool to show a statistic histogram by
+clicking the {\gif plot} button or alternatively {\gif Auto-plot} to
+have that plot updated automatically.  The next row of buttons allow you
+to {\gif copy} the values shown to the clip board (retrieve with {\tt x
+:= dcb.paste()}). {\gif Auto-copy} automatically updates the clip board.
+
+
+\item{\gif Positions}
+The Position rollup consists of a plot button (only if the image has
+more than 2 dimensions), a copy button, an autocopy switch and
+position fields to identify the current position of the cursor.
+
+The position rollup listen's to position events generated by it's
+parent \VdisplaypanelT\ (via the crosshair tool) as well as motion
+events generated by the \VdisplaypanelT\ from the movement of the
+mouse over the display area (when position tracking is turned
+on). When one of these events are received by the position rollup, the
+current position details are updated.
+
+You can plot the profile (at the cursor position and along the movie
+axis) with the button labelled {\tt Plot}.
+
+When you submit a {\tt region event} (see below), the plot will be
+updated with a new profile. This profile respresents the statistics in
+the submitted region along the movie axis of the image. The default
+statistic is {\tt mean} and can be changed in via the {\tt Adjust}
+button near the bottom of the profile window.
+
+You can copy the position details to the default Clipboard \tool\
+({\stf dcb}) with the {\tt Copy} button.  This copies a record to the
+clipboard with the format below. If you prefer, you can autocopy the
+positions to the Clipboard by checking the {\tt Autocopy} button.
+Then, every time you generate a position, a record is automatically
+copied the Clipboard.
+
+Format of copied record:
+
+rec.ddname
+
+rec.position
+      .pixel
+      .world
+            .numeric
+            .string
+      .intensity
+            .value
+            .mask
+
+rec.region
+      .pixelblc
+      .pixeltrc
+      .stat
+
+rec.profile
+      .cs
+            .cs
+      .x
+            .pixel
+                  .abs
+            .world
+                  .abs
+      .y
+            .data
+            .mask
+            .unit
+
+The profile can be customized via the {\tt Adjust} button near the
+bottom of the profile window. Features such as autoscaling, rest
+frequency labelling and region profiles are available here.
+
+You can zoom in the profile window by using the left mouse button
+using the same method that is used to zoom in the viewer
+panel. Similarly, an {\tt Unzoom} button is also available.
+
+\item{\gif Regions}
+
+Every time you generate a region, it is also inserted into the region
+entry widget (a check box flashes to indicate something went in) at
+the top of the regions rollup (roll it down to see the entry widget
+!). This enables you to copy it to the default Clipboard \tool\ ({\stf
+dcb}) and also paste into it from the default Clipboard \tool.  When a
+region is captured, a little indicator light next to the entry widget
+flashes to indicate something went in.  There is also a {\tt Show} button
+which prints the bounding box of the region to the logger and shows
+the regions already generated as a white outline.  This button turns
+into {\tt Hide} once it is pressed to disable the region drawing.
+
+It is also possible to accumulate regions, and then make a compound
+region from all of them.  This is done via the {\tt Regions} rollup; roll
+it down and look at the row of buttons at the bottom.  In this mode,
+if you have pressed the {\tt Show} button, the regions are shown
+individually as they are generated.
+
+The second button from the left controls the accumulation. If it is
+labelled {\tt Start}, when you press it (and its label will then change to
+{\tt Finish}), regions are internally accumulated (no {\tt region} event is
+emitted and the region is not inserted in the region entry widget).  
+When you have accumulated all the regions you want, you may press
+{\tt Finish}.  When accumulation mode is active, a check box to the right
+is lit and the number of regions accumulated displayed.  Now a compound
+region is made from all the regions you accumulated according to the
+select you make from the left-most menu; you can make a union or
+intersection.  When this region is created, the {\tt region} event is
+emitted.
+
+\item{\gif Slices} Every time you use the polyline tool, a {\tt
+polyline} event is generated containing the points of the polyline. These
+points are used here to 
+
+\begin{itemize}
+\item Generate an interpolated 1-D slice along the polyline and optionally plot it
+(use the {\tt Plot} and {\tt Autoplot} buttons).
+\item For DirectionCoordinates, the distance and position angle between the polyline
+vertices is computed.  If the polyline contains more
+than two points the sum over all distances and the sum over all angles
+is shown.
+\end{itemize}
+
+Use the {\tt Copy} and {\tt Autocopy} buttons to transfer the slice,
+distance and position angle information to the clip board.
+
+\item{\gif Summaries} This part just shows the same
+\ahlink{Image.summary}{images:image.summary.function} would show,
+wrapped up in a nice gui text area.
+\end{itemize}
+
+\end{itemize}
+
+
+\item {\gif Help}, which provides selections with which assistance can
+be obtained on the Viewer \tool\ itself, or more widely within \aipspp.
+\end{itemize}
+
+%%Button bar
+\medskip \noindent {\em \underline{The button bar}} 
+\label{viewer:vdpguibtnbar}
+\smallskip
+Along the bottom of the \VdisplaypanelT\ are a few buttons, which are available
+for commonly executed tasks:
+
+\begin{itemize}
+\item
+The {\gif Adjust...} button is used to make adjustments to the way the
+various \VdisplaydataT\ draw themselves.  Pressing {\gif Adjust} just
+once will create adjustment windows for all \VdisplaydataT\ that are
+presently registered on the \VdisplaypanelT. Here is a detailed
+description of the elements of the \ahlink{\gif Adjust
+\guishort}{viewer:vddoptions}.
+
+\item 
+The {\gif Unzoom} button is a short-cut to fully unzooming the
+display---when pressed, the \VdisplaypanelT\ will re-draw itself displaying as
+much of the {\em first-registered} \VdisplaydataT\ as is possible.
+
+\item
+The {\gif Clear} button is a short-cut to unregistering all
+\VdisplaydataT\ which are presently registered on this
+\VdisplaypanelT.  When pressed, the \VdisplaypanelT\ will be cleared.
+
+\item
+The {\gif Print...} button is a short-cut to selecting {\gif Print...}
+from the {\gif File} menu, and will bring up the print window for this
+\VdisplaypanelT, which naturally provides printing operations. For
+more go to \lkVcanvasprintMT.
+
+\item
+Finally, the {\gif Done} button will remove this \VdisplaypanelT\ from the
+viewer.
+\end{itemize}
+
+
+\medskip \noindent {\em \underline{The tracking bar[s]}}
+\label{viewer:vdpguitrkbar}
+
+\smallskip
+Separate tracking bars are generated for each \VdisplaydataT\
+registered on the \VdisplaypanelT.  They continually report the value
+and position of the point of the display area under the mouse cursor.
+
+Pressing {\tt space bar} in the display area will "freeze" the tracking
+displays or restore them again to continual tracking.
+Pressing the {\tt L} key will send the displayed values to the logger.
+(An even more detailed record may also be sent to the clipboard, by using
+the {\gif Positions} rollup under the
+\ahlink{\gif Tools/ImageAnalysis}{viewer:vdpguiimanal} menu item).
+
+Note that if you have "click-to-focus" set in your windowing system, you
+may need to click on the displaypanel's window before it will recognize the
+key presses above.  This can be confusing, since the tracking bar[s]
+will respond to mouse movement in any case.
+
+\medskip \noindent {\em \underline{The control box}}
+
+\label{viewer:vdpguicbox}
+\smallskip
+
+The control box (on the left hand side of most \VdisplaypanelTs)
+provides a more convenient way to access the various controls
+available on \VdisplaypanelTs.  Clicking on a button will assign that
+control to the mouse button which was used to click, over-riding any
+previous assignment to that mouse button. 
+
+For most tools the following actions apply:
+\begin{itemize}
+\item{``Esc''} key cancels the tool.
+
+\item{``Double click''} of the button assigned to the tool executes it
+(eg. with regions it sends out an event).
+
+\item{``Handles''} (little boxes on the edges) can be used to resize
+the tool.
+\end{itemize}
+
+From the top button downwards, the controls are: 
+\begin{itemize}
+\item{{\bf Zooming:} 
+The top-most button, depicting a magnifying glass with a plus sign
+inside, is the zoom control button.  Zooming is accomplished by pressing
+down the selected mouse button at the start point, dragging the mouse
+away from that point, and releasing the selected mouse button when the
+zoom box encloses the desired zoom area.  Once the button is released,
+the zoom rectangle can be moved by clicking inside it with the selected
+mouse button and dragging it around, and resized by selecting one of the
+handles at the corners and dragging. 
+
+To zoom in, simply double click with the selected button inside the
+rectangle, and when the \VdisplaypanelT\ is re-drawn, the area enclosed by the
+rectangle will be expanded to fill the \VdisplaypanelT, in as much as other
+constraints allow this.  Double clicking outside the rectangle, will
+result in a zoom out, whereby the previous full view will be scaled down
+to fit within the rectangle, in as much as other constraints allow this. 
+}
+
+\item{{\bf Panning:} 
+The next button down, whose icon is the outline of a hand, is the
+panning control button.  Panning is accomplished by pressing down the
+selected mouse button at the point you wish to move, dragging the
+mouse to the position where you want the first point moved to, and
+releasing the selected mouse button.
+
+{\bf Note:} The arrow keys, Page Up, Page Down, Home and End keys, and
+scroll wheel (if any) can also be used to scroll through your data
+once you have zoomed in.  For these to work, the mouse must be over
+the display panel drawing area, but no mouse tool need be active.
+All but the left and right arrows apply only to the vertical direction.
+However, you can use the Crtl key in conjunction with the arrows
+to move one page at a time in any direction.
+}
+
+\item{{\bf Stretch-shift colormap fiddling:} 
+}
+
+\item{{\bf Brightness-contrast colormap fiddling:} 
+}
+
+\item{{\bf Positioning:} 
+The fifth control is a crosshair icon, which enables the user to
+place a crosshair marker on the \ndp\ to indicate a position.  Depending
+on the context, the emitted positions may be used, for example, to
+display image spectral profiles or flag measurement set data.  After
+selecting a mouse button for the crosshair, click on the \ndp\ to
+place it, and drag to move it around.  Double-click is not needed
+with this control; the position is emitted whenever the crosshair's
+assigned mouse button is pressed or the crosshair is moved.
+{\bf Note: position selection is quite different from {\em position
+tracking}.}
+}
+
+\item{{\bf Rectangle and Polygon region drawing:}
+Rectangular and polygonal regions can easily be constructed.  The
+rectangle region is generated exactly the same way as the zoom
+rectangle, and is emitted by double clicking within the rectangle.
+Polygon regions can be constructed by progressively clicking the
+selected mouse button at the desired location of each vertex, and
+clicking in the same location twice to complete the polygon.  Once
+constructed, it can be moved by dragging inside the polygon, and
+reshaped by dragging the various handles at the vertices.  Double
+click within the polygon to emit the polygonal region.  Compound image
+\ahlink{regions}{viewer:vdpguiimanal} can be built up using these
+controls.  The rectangular control can also be used to specify areas
+to be flagged in measurement sets.
+}
+
+\item{{\bf Polyline drawing:}
+A polyline can be constructed with this tool. This tool is almost
+identical to the polygon region tool. Create the points by clicking at
+the positions wanted and the double-click to finish the line. this
+generates a polyline event. 
+}
+\end{itemize}
+
+\medskip \noindent {\em \underline{The animation tapedeck}}
+\label{viewer:vdpguiani}
+\smallskip
+
+In its 'Normal' mode, the tapedeck-style controls down the
+right-hand side of most Display Panels provide basic movement
+between image planes, along a selected
+third dimension of the displaydatas.  This set of buttons will
+only be enabled when the first-registered displaydata reports that
+it has more than one plane along the 'Z axis'
+specified in its 'Adjust' panel.  In the most common
+case the animator controls the frequency channel being viewed.
+From the top down, the tape deck controls allow the user to:
+
+\begin{itemize}
+\item{rewind to the start of the sequence (i.e. the first plane)}
+\item{step backwards by one plane}
+\item{play backwards, or repetitively step backwards}
+\item{stop any current play}
+\item{play forwards, or repetitively step forwards}
+\item{step forwards by one plane}
+\item{fast forward to the end of the sequence}
+\end{itemize}
+Below the tapedack buttons is an editable text box indicating the
+current frame number and a sunken label showing the total number
+of frames.  One can type a channel number into the current frame
+box to jump to that channel, for example, when 'Frequency' is on
+the 'Z axis'.
+
+Below these is a right-arrow button; pressing it
+will display a popup frame containing sliders for setting the
+animation speed and the number of frames to skip when playing
+animations.
+
+Below all these controls is a pair of radio buttons selecting
+animator mode: either 'Normal' (the default mode described above)
+or 'Blink'.  In 'Blink' mode, when more than one raster image is
+registered on the Display Panel, the tapedeck will control
+which one is being displayed at the moment.  The
+images registered should cover the same portion of the sky, using
+the same coordinate projection.  Several images can also be displayed
+side-by-side in this mode, with the same zoom applied to all.  For
+details on operating the Display Panel in this mode, see the Display
+section of the \em{AIPS++ Cookbook, vol. 1}.
+
+\end{ahdescription}
+
+\subsubsection*{Events}
+\label{viewer:vdpevents}
+The \VdisplaypanelT\ emits several events. A few of them can be of
+interest for the programmer.
+\begin{itemize}
+\item{\gif pseudoregion}
+The pseudoregion event is emitted after double-clicking a region
+tool. The record this event holds contains unfromatted information
+about the region. Use {\gif region} instead.
+\item{\gif pseudoposition}
+The pseudoposition event is emitted after double-clicking a positioning
+tool. The record this event holds contains unfromatted information
+about the positon. Use {\gif position} instead.
+\item{\gif motion}
+The motion event returns a record containing (screen)pixel and world
+coordinate (and units) of the position the cursor is moved.
+It is for internal use only.
+
+\item{\gif region}
+Note: This event only occurs when \VdisplaydataTs\ are registered.
+
+An event called {\tt region} is emitted when you interactively create
+a region with the cursor.  This event is always emitted, unless
+region accumulation mode is active (see above).  When you terminate
+accumulation mode, the {\tt region} event is then emitted.
+
+The region event \$value record is shown diagramatically below.
+
+\begin{verbatim}
+\$value
+  region                 # The region tool
+  type                   # The region type (box, polygon etc)
+\end{verbatim}
+
+\item{\gif position}
+Note : This event only occurs when \VdisplaydataTs\ are registered.
+
+An event called {\tt position } is emitted when you interactively created
+a position with the cursor (see above).
+
+The \$value of the event is a record with the fields
+{\cf position} and {\cf profile}.
+
+The position event record is shown diagramatically below.
+
+\begin{verbatim}
+\$value
+  position               # Location of cursor
+    pixel                #   Absolute integer pixel coordinate
+    world                #   Absolute world coordinate
+      numeric            #     as a numeric vector
+      quantity           #     as vector of quantities
+      string             #     as a formatted string
+      measure            #     as measures (further subfields not shown)
+    intensity            #   Intensity of image
+      mask               #     mask value
+      value              #     value of image (quanity)
+      pixel              #     absolute integer pixel location
+  profile                # The z-profile (if > 2D image)
+    x                    #   abcissa
+      pixel              #     pixel coordinate
+        abs              #       absolute
+        rel              #       relative
+      nativeworld        #     world coordinate in native units
+        abs              #       absolute
+        rel              #       relative
+      name               #     name of abcissa axis
+      nativeunit         #     native abcissa unit
+      currentworld       #     world coordinate as currently plotted (if plotted
+)
+      currentunit        #     abcissa unit as currently plotted 
+      currentveltype     #     velocity type as currently plotted
+      currentabs         #     absolute or relative as currently plotted
+      isSpectral         #     is the abcissa a spectral coordinate
+    y                    #   ordinate
+      unit               #     unit of ordinate
+      data               #     ordinate values
+\end{verbatim}
+
+\item{\gif polyline}
+This event is generated by the {\tt polyline} tool, when the user
+double-clicks, or drags and drops an existing polyline or its points.
+
+\item{\gif statistics}
+Note: This event only occurs when \VdisplaydataTs\ are registered.
+
+If the statistics rollup is rolled down, then statistics are written to
+the listboxes ({\tt Plane}, {\tt Full} button press or region event emitted)
+then a {\tt statistics} event is generated. 
+
+
+The statistics event record is shown diagramatically below. The {\cf
+stats} subfield  is a record with the same format as that generated by
+the return record of function
+\ahlink{Image.statistics}{images:image.statistics.function}.
+
+\begin{verbatim}
+\$value
+  region           # The region from which the statistics were evaluated
+  stats            # The statistics record 
+    npts           
+    sum            
+    sumsq
+    min
+    max
+    mean
+    sigma
+    rms
+    blc
+    blcf
+    trc
+    trcf
+    minpos
+    minposf
+    maxpos
+    maxposf
+\end{verbatim}
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{ahconstructor}{viewerdisplaypanel}{Create a \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame for the panel}{F}{agent or F}
+  \ahaddarg{viewer}{the \VT\ which will manager this \tool}{}{\VT} 
+  \ahaddarg{width}{width in pixels of the drawing area}{250}{integer}
+  \ahaddarg{height}{height in pixels of the drawing area}{250}{integer}
+  \ahaddarg{nx}{number of panels in x}{1}{integer}
+  \ahaddarg{nx}{number of panels in y}{1}{integer}
+  \ahaddarg{maptype}{how colors will be addressed on this \VdisplaypanelT}{'index'}{'index' 'rgb' 'hsv'}
+  \ahaddarg{newcmap}{install a private colormap? (ignored if a parent frame is provided)}{F}{boolean}
+  \ahaddarg{mincolors}{minimum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{maxcolors}{maximum number of colors to allocate}{unset}{Integer or unset}
+  \ahaddarg{autoregister}{accept auto-register data on this \VdisplaypanelT?}{F}{boolean}
+  \ahaddarg{holdsdata}{is this \VdisplaypanelT\ going to hold data?}{T}{boolean}
+  \ahaddarg{show}{show the \VdisplaypanelT?}{T}{boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the \guishort}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\VdisplaypanelT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VdisplaypanelTs.  It constructs (creates)
+a \VdisplaypanelT\ which can subsequently be used for the display of 
+\VdisplaydataTs.  If {\tt widgetset} is left {\tt unset}, then the
+\VdisplaypanelT\ will use the \widgetserverT\ used by its parent \VT.
+
+{\bf This constructor should not be called by users:} it is called by
+the \ahlink{newdisplaypanel}{viewer:viewer.newdisplaypanel} function of
+the \lkVT, which returns a \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{addgui}{Add various \guishort\ components to this \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{guihasmenubar}{add a menu bar (top)?}{T}{boolean}
+  \ahaddarg{guihascontrolbox}{add a control box (left)?}{T}{boolean}
+  \ahaddarg{guihasanimator}{add an animator/tapedeck (right)?}{T}{boolean}
+  \ahaddarg{guihasbuttons}{add buttons (bottom)?}{T}{boolean}
+  \ahaddarg{hasdismiss}{add a ``Dismiss'' button to the \guishort?}{unset}{unset or boolean}
+  \ahaddarg{hasdone}{add a ``Done'' button to the \guishort?}{unset}{unset or boolean}
+  \ahaddarg{isolationmode}{prevent user accessing other components of this \VT?}{F}{boolean}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function can be used to add specified \guilong\ components to an
+existing \VdisplaypanelT.  This function can only be called once per
+\VdisplaypanelT, so get it right the first time!
+
+If both {\tt hasdismiss} and {\tt hasdone} are given as {\tt T}, then
+a warning will be emitted, and {\tt hasdismiss} will be forcibly set 
+to {\tt F}.  If both {\tt hasdismiss} and {\tt hasdone} are left
+{\tt unset}, then {\tt hasdone} will be forcibly set to {\tt T} and
+{\tt hasdismiss} to {\tt F}.  If only one of these two arguments is
+specified, and the other left {\tt unset}, then the {\tt unset}
+argument will default to the opposite of the given argument.
+
+If {\tt isolationmode} is {\tt T}, then the \guishort\ added to the
+\VdisplaypanelT will not provide the user with the buttons or menu
+items to create new \VdisplaypanelTs\ or \VdataMTs.  Typically this
+option should be used whenever a non-global \VT\ is constructed.
+
+See the \ahlink{\guishort\ description}{viewer:vdpgui} on hpw to
+operate the \guishort.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{adjust}{Display adjustment panel for \VdisplaydataTs}
+\begin{ahargs}
+  \ahaddarg{displaydata}{name of displaydata}{F}{string}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+In the default mode this function creates and shows a \guilong\ for
+each \VdisplaydataT\ which is registered for display on this
+\VdisplaypanelT.  If the name of a \VdisplaydataT\ is given only it's
+\guilong\ will be displayed.  The nice thing about creating the
+adjustment panels in this way is that they can be instantly remapped
+to the screen even if the user has hit the ``Dismiss'' button.
+Generally, other methods of obtaining the \VdisplaydataT\ \guishorts\
+result in \guishorts\ which have ``Done'' buttons.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{animator}{Return the \VanimatorT\ used by this \tool}
+\ahreturns{\VanimatorT}
+\begin{ahdescription}
+
+This function simply returns the \VanimatorT\ which is used by this
+\VdisplaypanelT.  The return value can be used to manually and 
+automatically step through the frames available to the
+\VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{annotationdd}{Return the agent of the annotation layer}
+\ahreturns{drawingdisplaydata agent}
+\begin{ahdescription}
+This function retruns an DDD agent which can be used to put
+annotations onto the canvas.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{autoregister}{Set or query the auto-register state of this \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{set}{Auto-register on or off}{unset}{boolean or unset}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+
+This function, if called with a boolean value for {\tt set}, will set
+the auto-register state of this \VdisplaypanelT\ to the given value,
+and return the same value.  Otherwise, it simply returns a boolean
+indicating whether auto-register is on (T) or off (F).
+
+Any \VdisplaydataTs\ subsequently created via the
+\ahlink{loaddata}{viewer:viewer.loaddata} function of the \VT, with {\tt
+autoregister=T}, will automatically be registered on this
+\VdisplaypanelT\ if auto-register is true for this \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{canvasmanager}{Return the \VcanvasMT\ used by this \tool}
+\ahreturns{\VcanvasMT}
+\begin{ahdescription}
+
+This function simply returns the \VcanvasMT\ which was constructed and
+is used by this \VdisplaypanelT.  The return value provides functions 
+to modify various settings of the \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{canvasprintmanager}{Return the \VcanvasprintMT\ used by this \VdisplaypanelT}
+\ahreturns{\VcanvasprintMT}
+\begin{ahdescription}
+
+This function returns the \VcanvasprintMT\ that was constructed and is
+used by this \VdisplaypanelT\ to provide printing services.  The
+return value provides functions which can be used to control printing
+options.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{viewer}{Return the \VT\ which manages this \tool}
+\ahreturns{\VT}
+\begin{ahdescription}
+
+This function simply returns the \VT\ which manages this
+\VdisplaypanelT, and probably constructed it.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{dying}{Is this \VdisplaypanelT\ in the process of destroying itself?}
+\ahreturns{boolean}
+\begin{ahdescription}
+
+This function is provided so that tools created by (and belonging to)
+the \VdisplaypanelT\ can establish whether a request to destroy them
+came from the \VdisplaypanelT itself.  There are some tools, for
+example the \VcanvasMT, which will only allow their owning
+\VdisplaypanelT\ to call their {\tt done} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close down (destroy) this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+If you no longer need to use this \VdisplaypanelT, calling this
+function will free up its resources.  Any \VdisplaydataTs\ which are
+registered on this \VdisplaypanelT\ will be unregistered.  Any
+\guilongs associated with this \tool\ will be removed from the screen.
+An event with name {\tt 'done'} will be emitted when the
+\VdisplaypanelT\ is destroyed.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{upperframe}{Return the upper frame in the \VdisplaypanelT\ window}
+\ahreturns{frame}
+\begin{ahdescription}
+
+This function is generally used internally to obtain the frame into
+which the \VdisplaypanelT\ menubar should be placed.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{lowerframe}{Return the lower frame in the \VdisplaypanelT\ window}
+\ahreturns{frame}
+\begin{ahdescription}
+
+This function is generally used internally to obtain the frame into
+which the \VdisplaypanelT\ buttonbar should be placed.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{leftframe}{Return the left frame in the \VdisplaypanelT\ window}
+\ahreturns{frame}
+\begin{ahdescription}
+
+This function is generally used internally to obtain the frame into
+which the \VdisplaypanelT\ controlbox should be placed.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{rightframe}{Return the right frame in the \VdisplaypanelT\ window}
+\ahreturns{frame}
+\begin{ahdescription}
+
+This function is generally used internally to obtain the frame into
+which the \VdisplaypanelT\ \VanimatorT\ tapedeck should be placed.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{writexpm}{Write an X11 Pixmap of the \VdisplaypanelT\ to disk}
+\begin{ahargs}
+  \ahaddarg{filename}{name of X11 Pixmap file}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function writes an exact replica of the display area part of the
+\VdisplaypanelT\ to disk in X11 Pixmap format.  This format can be
+converted to ``portable pixmap format'' via the utility {\bf
+xpmtoppm}, and then onwards to many other pixmap formats, for example
+TIFF, BMP, etc.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{annotator}{Return the viewerannotations created by
+this \VdisplaypanelT\ on construction}
+\ahreturns{This \VdisplaypanelTs\ \VannotationsT\}
+\begin{ahdescription}
+
+This function returns a reference to this \VdisplaypanelTs\
+\VannotationsT\. This can be used to draw shapes onto the
+viewerdisplaypanel, open the annotations GUI, delete shapes etc. For
+more information see \ahlink{viewerannotations}{viewer:viewerannot}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{newcmap}{Query whether this \VdisplaypanelT\ is using a new colormap}
+\ahreturns{boolean or unset}
+\begin{ahdescription}
+
+This function returns {\tt T} if the \VdisplaypanelT\ was constructed
+using a new (private) X Windows colormap, {\tt F} if the
+\VdisplaypanelT\ is using the system X Windows colormap, or {\tt
+unset} if this information is unknown.  It will be unknown in cases
+where the \VdisplaypanelT\ was inserted into an existing frame, in
+which case the \VdisplaypanelT\ will use the same X Windows colormap
+as the parent frame.  (Recall that the constructor argument {\tt
+newcmap} is ignored if a parent frame is provided.)
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{holdsdata}{Returns whether this \VdisplaypanelT\ can hold \VdisplaydataTs}
+\ahreturns{boolean}
+\begin{ahdescription}
+
+This function simply returns a boolean value indicating whether this 
+\VdisplaypanelT\ was constructed with the {\tt holdsdata} argument T
+or F.  \VdisplaypanelTs\ for which {\tt holdsdata=T} will have
+functions for registering and unregistering \VdisplaydataTs.  The only 
+use of \VdisplaypanelTs\ {\em without}\/ {\tt holdsdata=T} is for the
+\VcolormapMT\ \guilong\ as of this writing.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{status}{Return a record describing various attributes of the \VdisplaypanelT}
+\ahreturns{record}
+\begin{ahdescription}
+
+This function returns some fairly low-level information about the
+\VdisplaypanelT.  The record returned has upto two top-level fields:
+{\tt pixelcanvas}, and {\tt paneldisplay} if this \VdisplaypanelT\
+holds data.
+
+Fields which may exist in the {\tt pixelcanvas} sub-record include the 
+following (those tagged ``dynamic'' can change during the lifetime of
+a \VdisplaypanelT):
+
+\begin{itemize}
+
+\item {\tt width}: width of the entire display area (``pixelcanvas'') in
+pixels (dynamic).
+
+\item {\tt height}: height of the pixelcanvas in pixels (dynamic).
+
+\item {\tt depth}: bit depth of the pixelcanvas, normally 8-bit.
+
+\item {\tt maptype}: maptype of the pixelcanvas, normally 'index'.
+
+\item {\tt xdpi}: approximate resolution in the X direction, in dots
+per inch (dpi).
+
+\item {\tt ydpi}: approximate resolution in the Y direction.
+
+\item {\tt colortablesize}: number of colors currently allocated to
+the pixelcanvas (dynamic).
+
+\item {\tt maxcolortablesize}: maximum number of colors that could
+immediately be allocated to the pixelcanvas (dynamic).
+
+\item {\tt buildincolormaps}: names of the colormaps that are known
+to the pixelcanvas.
+
+\item {\tt registeredcolormaps}: a record having sub-fields {\tt
+names}, which lists the names of the registered colormaps, and {\tt
+sizes}, which lists the length of each of the named, registered
+colormaps.  Normally the values in {\tt sizes} should add up to {\tt
+colortablesize}, since the colormaps will dynamically resize to fill
+the colortable.
+
+\end{itemize}
+
+Fields which may exist in the {\tt paneldisplay} sub-record (they are
+all dynamic) include:
+
+\begin{itemize}
+
+\item {\tt nxpanels}: The number of panels in x direction on this
+paneldisplay.
+
+\item {\tt nypanels}: The number of panels in y direction on this
+paneldisplay.
+
+\item {\tt xorigin}: The blcX of this paneldisplay on the pixelcanvas
+(0.0-1.0).
+
+\item {\tt yorigin}: The blcY of this paneldisplay on the pixelcanvas
+(0.0-1.0).
+
+\item {\tt xsize}: The extent in x of this paneldisplay on the pixelcanvas
+(0.0-1.0).
+
+\item {\tt xsize}: The extent in y of this paneldisplay on the pixelcanvas
+(0.0-1.0).
+
+
+\item {\tt linearblc}: linear coordinates {\tt [x, y]} of the
+bottom-left corner of each panel in the paneldisplay.
+
+\item {\tt lineartrc}: linear coordinates {\tt [x, y]} of the 
+top-right corner of each panel in the paneldisplay.
+
+\item {\tt worldblc}: world coordinates {\tt [x, y]} of the
+bottom-left corner of each panel in the paneldisplay.
+
+\item {\tt worldtrc}: world coordinates {\tt [x, y]} of the 
+top-right corner of each panel in the paneldisplay.
+
+\item{axisunits}: the units of the world axes
+
+\end{itemize}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getoptions}{Return a record describing some modifiable state of this \tool}
+\ahreturns{record}
+\begin{ahdescription}
+
+This function returns a record which describes some of the internal
+state of this \VdisplaypanelT.  The record differs from that returned
+by the {\tt status} \toolfunction\ in both format and content: it is
+suitable for construction of an \autoguiT, and contains explicitly
+modifiable parameters.  A brief description of the fields which {\em
+may}\/ exist in the returned record follows:
+
+\begin{itemize}
+
+\item {\tt colortablesize}: the number of colors currently allocated
+to this \VdisplaypanelTs\ pixelcanvas.
+
+\item {\tt papercolors}: a boolean specifying whether screen or paper
+colors (black/white or white/black background/foreground) should be
+used.
+
+\item {\tt leftmarginspacepg}: left margin space in PgPlot character
+units.
+
+\item {\tt bottommarginspacepg}: bottom margin space in PgPlot character
+units.
+
+\item {\tt rightmarginspacepg}: right margin space in PgPlot character
+units.
+
+\item {\tt topmarginspacepg}: top margin space in PgPlot character
+units.
+
+\item {\tt nxpanels}: The number of panels in x direction on this
+paneldisplay.
+
+\item {\tt nypanels}: The number of panels in y direction on this
+paneldisplay.
+
+\item {\tt xspacing}: The space between adjacent panels in x direction.
+
+\item {\tt yspacing}: The space between adjacent panels in y direction.
+ 
+\end{itemize}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setoptions}{Set the modifiable state of this \tool}
+\begin{ahargs}
+  \ahaddarg{options}{options record describing the requested state}{}{record}
+\end{ahargs}
+\ahreturns{T}
+
+This function should be used to set the internal state of a
+\VdisplaypanelT, according to the field names of the record returned
+by the \ahlink{getoptions}{viewer:viewerdisplaypanel.getoptions}
+\toolfunction.  Installing new options on a \VdisplaypanelT\ will
+generally cause the refresh (that is, a total re-drawing) of any
+\VdisplaydataTs\ registered on the \VdisplaypanelT.  This is because
+modifying the options will cause a change in the appearance of the
+data.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{hold}{Prevent refreshes occuring on this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function will prevent refreshing occuring on this
+\VdisplaypanelT\ until an equal number of calls to the
+\ahlink{release}{viewer:viewerdisplaypanel.release} function have been made.
+Typically this should be used when multiple operations need to be
+carried out before the user is shown the result of the operations.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{release}{Allow refreshes to occur on this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function will re-enable refreshing occuring on this
+\VdisplaypanelT\ provided an equal number of calls have been made to
+the \ahlink{hold}{viewer:viewerdisplaypanel.hold} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{disablecontrols}{Temporarily disable the controls on this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function will simply suspend the actions of controls on this
+\VdisplaypanelT.  This means, for example, that the zoom and colormap
+fiddling controls will not work temporarily.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{enablecontrols}{Re-enable the controls on this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function re-installs the controls on this \VdisplaypanelT\ after
+they have been disabled with the
+\ahlink{disablecontrols}{viewer:viewerdisplaypanel.disablecontrols} function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newcanvasmanagergui}{Create and (probably) show a new \guilong\ for this \tool's \VcanvasMT}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame in which to place the \VcanvasMT}{F}{agent or F}
+  \ahaddarg{show}{show the \VcanvasMT?}{T}{boolean}
+  \ahaddarg{hasdismiss}{add a "Dismiss" button to the \guishort?}{F}{boolean}
+  \ahaddarg{hasdone}{add a "Done" button to the \guishort?}{F}{boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the \guishort}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+This function will create a new \guilong\ which can be used to control
+this \VdisplaypanelT's \VcanvasMT.  By default, the \guishort\ is
+placed on the screen, although it can be constructed for later use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{newcanvasprintmanagergui}{Create and (probably) show a new \guilong\ for this \tool's \VcanvasprintMT}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame in which to place the \VcanvasprintMT}{F}{agent or F}
+  \ahaddarg{show}{show the \VcanvasprintMT?}{T}{boolean}
+  \ahaddarg{hasdismiss}{add a "Dismiss" button to the \guishort?}{F}{boolean}
+  \ahaddarg{hasdone}{add a "Done" button to the \guishort?}{F}{boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use to build the \guishort}{unset}{\widgetserverT\ or unset}	
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+This function will create a new \guilong\ which can be used to control
+this \VdisplaypanelT's \VcanvasprintMT.  By default, the \guishort\ is
+placed on the screen, although it can be constructed for later use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{testpattern}{Turn a test pattern on or off on the \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{onoff}{turn pattern on (T) or off (F)}{}{boolean}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+Calling this function with {\tt onoff=T} will place a ``test pattern''
+on the \VdisplaypanelT\ which is drawn with each refresh.  The test
+pattern is really available for, surprise, surprise, testing!  It is
+actually the test pattern which is used to display the registered
+colormaps in the \guilong\ for the \lkVcolormapMT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{type}{Return the type of this \tool}
+\ahreturns{'viewerdisplaypanel'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'viewerdisplaypanel'},
+which can be used to identify this \tool\ as a \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{registercolormap}{Explicitly register a colormap on the \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{map}{name of colormap to register}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+If the given colormap name is valid, then it will be explicitly
+registered on this \VdisplaypanelT.  The result of this will be a
+redistribution of the available color cells to the registered
+colormaps.  A change will only be noticed if previously the named
+colormap was {\em not}\/ registered on this \VdisplaypanelT.
+
+{\em This function is generally reserved for internal use; careless
+use of it could cause the \VT\ or \aipspp\ to fail.}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{unregistercolormap}{Explicitly unregister a colormap on the \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{map}{name of colormap to unregister}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function simply explicitly {\em un}registers the named colormap,
+provided it is a valid colormap and is already registered on this
+\VdisplaypanelT.
+
+{\em This function is generally reserved for internal use, and
+careless use of it could cause the \VT\ or \aipspp\ to fail.}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{register}{Register a \VdisplaydataT\ for drawing}
+\begin{ahargs}
+  \ahaddarg{displaydata}{\VdisplaydataT\ to register}{}{\VdisplaydataT}
+\end{ahargs}
+\ahreturns{T, F or fail}
+\begin{ahdescription}
+
+This function registers the given \lkVdisplaydataT\ on this
+\VdisplaydataT.  That means that at the next and subsequent refreshes,
+until it is unregistered, the given \VdisplaydataT\ will attempt to
+draw itself on this \VdisplaypanelT.
+
+A return value of {\tt T} indicates that the \VdisplaydataT\ was
+successfully registered on this \VdisplaypanelT.  A return value of
+{\tt F} indicates that the \VdisplaydataT\ was already registered, so
+no action was performed.  The return value will be {\tt fail} if the
+\VdisplaydataT\ was unknown to, or could not be found by, this
+\VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{unregister}{Unregister a \VdisplaydataT\ from this \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{displaydata}{\VdisplaydataT\ to unregister}{}{\VdisplaydataT}
+\end{ahargs}
+\ahreturns{T, F or fail}
+
+This function removes the given \VdisplaydataT\ from the list of
+\VdisplaydataTs\ which will (attempt to) draw themselves on this
+\VdisplaypanelT\ at each refresh.
+
+A return value of {\tt T} indicates that the \VdisplaydataT\ was
+successfully unregistered from this \VdisplaypanelT.  A return value
+of {\tt F} indicates that the \VdisplaydataT\ was not previously
+registered, so no action was performed.  The return value will be {\tt
+fail} if the \VdisplaydataT\ was unknown to, or could not be found by,
+this \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{isregistered}{Query whether a \VdisplaydataT\ is registered on this \VdisplaypanelT}
+\begin{ahargs}
+  \ahaddarg{displaydata}{\VdisplaydataT\ to query}{}{\VdisplaydataT}
+\end{ahargs}
+\ahreturns{T, F or fail}
+
+This function simply returns {\tt T} or {\tt F} indicating
+(respectively) that the given \VdisplaydataT\ is or is not currently
+registered for display on this \VdisplaypanelT.  The return value will 
+be {\tt fail} if the \VdisplaydataT\ was unknown to, or could not be
+found by, this \VdisplaypanelT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{registerednames}{Return a vector of the names of registered \VdisplaydataTs}
+\ahreturns{Vector of strings}
+\begin{ahdescription}
+
+This function returns a vector of names of all \VdisplaydataTs\
+registered on this \VdisplaypanelT.
+{\em This function is generally reserved for internal use.}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{registrationflags}{Return a record describing which \VdisplaydataTs\ are registered on this \tool}
+\ahreturns{record}
+\begin{ahdescription}
+
+This function returns a record whose top-level field names are those
+of the \VdisplaydataTs\ known to the \VT\ which owns this
+\VdisplaypanelT.  The value of each field is a boolean, which if T
+indicates that that \VdisplaydataT\ is registered for display on this
+\VdisplaypanelT.
+
+{\em This function is generally reserved for internal use.}
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{unregisterall}{Unregister all \VdisplaydataTs\ from this \VdisplaypanelT}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function simply calls the
+\ahlink{unregister}{viewer:viewerdisplaypanel.unregister} function for every
+\VdisplaydataT\ that is registered on this \VdisplaypanelT.  It is
+akin to ``clearing'' the \VdisplaypanelT.  The unregistrations are
+wrapped in a {\tt hold}/{\tt release} scope, so that only one refresh
+is made at the end of this function.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{unzoom}{Unzoom the current view}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function will modify the coordinates on the \VdisplaypanelT\ such
+that the full view (of at least the first registered \VdisplaydataT)
+is visible.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setzoom}{Set a specific zoom}
+\begin{ahargs}
+  \ahaddarg{blc}{bottom-left linear coordinates of zoom}{}{2-vector}
+  \ahaddarg{trc}{top-right linear coordinates of zoom}{}{2-vector}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function sets the linear coordinate system of the
+\VdisplaypanelT\ to the specified blc and trc.  Linear coordinates are
+generally identical to the pixel coordinates of the first registered
+\VdisplaydataT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{zoom}{Zoom by a given factor}
+\begin{ahargs}
+  \ahaddarg{xfac}{scale factor in X direction}{2.0}{float}
+  \ahaddarg{yfac}{scale factor in Y direction}{unset}{unset or float}
+\end{ahargs}
+\ahreturns{T}
+\begin{ahdescription}
+
+If {\tt yfac=unset}, then {\tt yfac} is forced to be identical to {\tt
+xfac}.  This function zooms in by the specified amount in each
+direction, centred on the centre of the current viewable area.  For
+scale factors greater than one, the view is magnified, and for less
+than one, the view is demagnified.  There will be some interplay
+between the {\tt aspect} option of \VdisplaydataTs and the zoom
+setting.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\begin{ahfunction}{getdisplaydatas}{Unsure what this really does}
+%\ahreturns{record of \VdisplaydataTs?}
+%\begin{ahdescription}
+%
+%{\em This function is clearly intended for internal use only, because
+%the author can't even remember what it's for, although it is actually
+%used, I assure you...}
+%
+%\end{ahdescription}
+%\end{ahfunction}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject} 
+\end{document}

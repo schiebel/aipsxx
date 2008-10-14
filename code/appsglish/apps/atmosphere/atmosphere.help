@@ -1,0 +1,645 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{atmosphere}{Tool for calculating atmospheric effects in the mm regime}
+
+\ahinclude{atmosphere.g}
+
+\begin{ahdescription} 
+
+
+{\tt atmosphere}, for now, does calculations of atmospheric
+profile, the integrated opatical depth on each band, the integrated
+optical depth for each channel of each band, the absorption coefficients,
+the dispersive and non-dispersive phase delay factor, the sky brightness,
+etc, based on a model of the atmosphere. There are five atmosphere 
+models: tropical, mid latitude summer, mid latitude winter, subarctic
+summer, subarctic winter.
+This Distributed Object integrates the atmospheric model of Juan R. Pardo,
+written in FORTRAN, into the AIPS++ code base.  This model, which is also
+used by the ALMA TELCAL group, is important for accurate simulation of
+millimeter observations with ALMA. 
+The tool has to be constructed with the altitude at site, temperature
+at site, pressure at site, maximum altitude ( top of the modelled 
+atmposphere ), humidity, temperature gradient with height (dT/dh),initial
+pressure step ( P[1]-P[0]), pressure multiplicative factor for steps (
+if named dPm, then ( P[i+1]-P[i] = dPm*( P[i]-P[i-1])), scale height for
+water, and atmospheric type. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+
+The following show the use of the atmosphere tool.
+\begin{verbatim}
+include 'atmosphere.g'
+#
+# Wait for results before proceeding to the next step
+#
+#
+# Make an atmosphere tool
+#
+
+myatm:= atmosphere(altitude='2550.m', temperature='270.32K',
+                   pressure='73585Pa', maxAltitude = '45000m',
+                   humidity=20, dTem_dh='-0.0056.K/m',
+    	           dP='500Pa', dPm=1.25, h0='2000.m',atmtype=2); 
+
+#
+# get startup water content
+#
+water := myatm.getStartupWaterContent()
+print spaste('Guessed water content is:   ', water)
+
+Guessed water content is:   [value=0.00160052609, unit=m]
+
+#
+# get profile
+#
+myatm.getProfile( thickness=thickness, temperature=temperature,
+                  water=water, pressure=pressure,
+                  O3=O3, CO=CO, N2O=N2O )
+print spaste( 'thickness = ', thickness )
+print spaste( '(thickness.value)[1],thickness.unit = ',
+               (thickness.value)[1], thickness.unit )
+
+thickness = [value=[54.2820552 68.3014666 86.0898268 108.749638
+ 137.76137 175.148792 223.740915 287.605456 372.804489 488.798233
+ 651.269636 888.430939 1257.26693 1895.2737 3257.98328 1750 2000
+ 2000 3000 3000 3000 4250 4500 4500] , unit=m]
+
+(thickness.value)[1],thickness.unit = 54.2820552m
+#
+# initialize window
+#
+nbands := 2;
+for ( i in 1:nbands) {
+     (fCenter.value)[i] := 88.e9;  
+     (fWidth.value)[i] := 5.e8;  
+     (fRes.value)[i] := (fWidth.value)[1]/4.0;   # 4 channels
+}
+
+fCenter.unit := 'Hz';
+fWidth.unit := 'Hz';
+fRes.unit := 'Hz';
+
+myatm.initWindow(nbands=nbands,fCenter=fCenter,fWidth=fWidth,fRes=fRes )
+
+#
+# get the number of channels of ith band
+#
+n:=myatm.getNdata(iband=1);
+print spaste( 'getNdata() = ', n );
+
+getNdata() = 4
+#
+# get the integrated optical depth on each band
+#
+myatm.getOpacity( dryOpacity=dryOpacity, wetOpacity=wetOpacity);
+print spaste('dryOpacity = ', dryOpacity );
+print spaste('wetOpacity = ', wetOpacity );
+
+dryOpacity = [0.0181100218 0.0181100218]
+wetOpacity = [value=[0.00665036438 0.00665036438] , unit=mm-1]
+#
+# get the integrated optical depth for each channel of each band
+#
+myatm.getOpacitySpec( dryOpacitySpec=dryOS, wetOpacitySpec=wetOS );  
+print spaste( 'dryOpacitySpec = ', dryOS );
+print spaste( 'wetOpacitySpec = ', wetOS );
+
+dryOpacitySpec = [[1:2,]
+    0.018275032 0.0181644629 0.0180543786 0.0179462136
+    0.018275032 0.0181644629 0.0180543786 0.0179462136]
+wetOpacitySpec = [value=[[1:2,]
+    0.0066217328 0.0066217328 0.0066217328 0.0066217328
+    0.0066217328 0.0066217328 0.0066217328 0.0066217328], unit=mm-1]
+#
+# get absorption coefficients
+#
+myatm.getAbsCoeff( kH2OLines=kH2OLines, kH2OCont=kH2OCont, kO2=kO2,
+                   kDryCont=kDryCont, kO3=kO3, kCO=kCO, kN2O=kN2O )
+print spaste('(kH2OLines.value[1],kH2OLines.unit) = ',
+              (kH2OLines.value)[1], kH2OLines.unit );
+
+(kH2OLines.value[1],kH2OLines.unit) = 0.000105215009m-1
+#
+# get absorption coefficient derivatives
+#
+myatm.getAbsCoeffDer( kH2OLinesDer=kH2OLinesDer,
+                      kH2OContDer=kH2OContDer,kO2Der=kO2Der,
+                      kDryContDer=kDryContDer, kO3Der=kO3Der,
+                      kCODer=kCODer, kN2ODer=kN2ODer )
+print spaste( '(kH2OLinesDer.value[1],kH2OLinesDer.unit) = ',
+                kH2OLinesDer.value[1], kH2OLinesDer.unit )
+
+(kH2OLinesDer.value[1],kH2OLinesDer.unit) =  -9.73882945e-08m-1
+#
+# get dispersive and non-dispersive phase delay factor
+#
+myatm.getPhaseFactor( dispPhase=dispPhase, nonDispPhase=nonDispPhase ); 
+print spaste( 'dispPhase = ' , dispPhase );
+print spaste( 'nonDispPhase = ', nonDispPhase );
+
+dispPhase = [value=[740.282096 740.282096] , unit=deg.m-1]
+nonDispPhase = [value=[1.60255787 1.60255787] , unit=deg.m-1]
+#
+# computer sky brightness
+#
+myatm.computeSkyBrightness(airMass=1.51, tbgr='2.73K', precWater='4.05e-3m')
+#
+# get sky brightness computed by computeSkyBrightness()
+#
+tBand1 := myatm.getSkyBrightness(iopt=1);
+tBand2 := myatm.getSkyBrightness(iopt=2);
+print spaste("SkyBrightness for Blackbody = ",tBand1 );
+print spaste("SkyBrightness for Rayleigh Jeans = ",tBand2 )
+
+SkyBrightness for Blackbody =[value=[19.9391734 19.9391734] , unit=K]
+SkyBrightness for Rayleigh Jeans =[value=[17.9019838 17.9019838] , unit=K]
+#
+# get sky brightness by integrating the transfer equation for each channel
+#
+tBandSpec1 := myatm.getSkyBrightnessSpec(iopt=1)
+tBandSpec2 := test_atm.getSkyBrightnessSpec(iopt=2)
+print spaste('For blackbody, SkyBrightness = ', tBandSpec1)
+print spaste('For Rayleigh Jeans,  SkyBrightness = ', tBandSpec2)
+
+For Blackbody, SkyBrightness = [value=[[1:2,]
+    19.9541615 19.9439307 19.9339303 19.9246711
+    19.9541615 19.9439307 19.9339303 19.9246711], unit=K]
+For Rayleigh Jeans, SkyBrightness = [value=[[1:2,]
+    17.9210985 17.9081171 17.895366 17.8833538
+    17.9210985 17.9081171 17.895366 17.8833538], unit=K]
+#
+# set sky coupling
+#
+myatm.setSkyCoupling( c=1.0 )
+#
+# get sky coupling
+#
+sc_out := myatm.getSkyCoupling();
+print spaste( 'SkyCoupling = ', sc_out )
+
+SkyCoupling = 1.0
+
+\end{verbatim}
+\end{ahexample}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{atmosphere}{Construct an atmosphere tool}
+\begin{ahdescription}
+This is used to construct {\tt atmosphere} tool with the condition at the position 
+the user  wants to calculate the profile, the integrated opatical depth on each
+band, the integrated optical depth for each channel of each band, the absorption
+coefficients, the dispersive and non-dispersive phase delay factor, the sky
+brightness, etc. 
+This returns a Glish variable containing the tool of atmosphere.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{altitude}{Site altitude}{2550m}{Quantity with units of altitude, meter }
+\ahaddarg[in]{temperature}{Ambient Temperature}{270.32K}{Quantity with units of temperature, K}
+\ahaddarg[in]{pressure}{Ambient pressure}{73585Pa}{Quantity with units of pressure, Pascal }
+\ahaddarg[in]{maxAltitude}{altitude of the top pf the modelled atmosphere}{45000m}{Quantity with dimension of length, meter}
+\ahaddarg[in]{humidity}{used to guess water}{20}{0 - 100}
+\ahaddarg[in]{dTem\_dh}{the derivative of temperature with respect to height}{-0.0056K/m}{Quantity with units of K/m}
+\ahaddarg[in]{dP}{initial pressure step}{500Pa}{Quantity with the units of pressure, Pa}
+\ahaddarg[in]{dPm}{pressure multiplicative factor for steps}{1.25}{real value}
+\ahaddarg[in]{h0}{scale height for water( exp distribution )}{2000m}{Quantity with the dimension of length, meter }
+\ahaddarg[in]{atmType}{ atmospheric type }{2}{ 1(tropical),2(mid latitude summer),3(mid latitude winter)
+                                                 ,4(subarctic summer),5(subarctic winter), dimensionless}
+\end{ahargs}
+\ahreturns{atmosphere tool}
+\begin{ahexample}
+\begin{verbatim}
+ myatm:= atmosphere(altitude='2550.m', temperature='270.32K',
+                    pressure='73585Pa',maxAltitude='45000m',
+                    humidity=20, dTem_dh='-0.0056K/m',
+    	            dP='500Pa', dPm=1.25, h0='2000.m',atmtype=2) 
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{getStartupWaterContent}{get the guessed startup water content}
+\begin{ahdescription}
+Get the guessed startup water content.
+\end{ahdescription}
+\ahreturns{ Double, gussed precipitable water content, in meters.}
+\begin{ahexample}
+\begin{verbatim}
+water:= myatm.getStartupWaterContent()
+print spaste('Guessed water content is:   ', water)
+
+Guessed water content is:   [value=0.00160052609, unit=m]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getProfile}{get atmospheric profile}
+\begin{ahdescription}
+
+Get the atmospheric profile.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{thickness}{thickness of every atmospheric layer}{none}{Quantum with a vector value and dimension of length, m}
+\ahaddarg[out]{temperature}{temperature of every atmospheric layer}{none}{Quantum with a vector value and unit of temperature, K}
+\ahaddarg[out]{water}{water content of every atmospheric layer}{none}{Quantum with a vector value and unit of kg.m-3}
+\ahaddarg[out]{pressure}{pressure of every atmospheric layer}{none}{Quantum with a vector value and unit of Pascal }
+\ahaddarg[out]{O3}{O3 of every atmospheric layer}{none}{Quantum with a vector value and unit of m-3}
+\ahaddarg[out]{CO}{CO of every atmospheric layer}{none}{Quantum with a vector value and unit of m-3}
+\ahaddarg[out]{N2O}{N2O of every atmospheric layer}{none}{Quantum with a vector value and unit of m-3}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getProfile( thickness, temperature, water, pressure, O3, CO, N2O )
+print spaste( 'thickness = ', thickness )
+print spaste( '(thickness.value)[1],thickness.unit = ',
+               (thickness.value)[1], thickness.unit )
+
+thickness = [value=[54.2820552 68.3014666 86.0898268 108.749638
+ 137.76137 175.148792 223.740915 287.605456 372.804489 488.798233
+ 651.269636 888.430939 1257.26693 1895.2737 3257.98328 1750 2000
+ 2000 3000 3000 3000 4250 4500 4500] , unit=m]
+
+(thickness.value)[1],thickness.unit = 54.2820552m
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{initWindow}{initialize window }
+\begin{ahdescription}
+
+function that defines a spectral window, computes absorption and emmision coefficients for this window,
+using the above atmospheric parameters.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{nbands}{number of bands}{1}{Int, standing for the number of bands}
+\ahaddarg[in]{fCenter}{frequencies}{'88.e9Hz'}{Quantum with a vector value and unit of frequency, Hz}
+\ahaddarg[in]{fWidth}{frequency width}{'5.0e8Hz'}{Quantum with a vector value and unit of frequency, Hz}
+\ahaddarg[in]{fRes}{resolution inside band}{'1.25Hz'}{Quantum with a vector value and unit frequency, Hz }
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+nbands := 2;
+for ( i in 1:nbands) {
+     (fCenter.value)[i] := 88.e9;  
+     (fWidth.value)[i] := 5.e8;  
+     (fRes.value)[i] := (fWidth.value)[1]/4.0;   # 4 channels
+}
+
+fCenter.unit := 'Hz';
+fWidth.unit := 'Hz';
+fRes.unit := 'Hz';
+
+myatm.initWindow(nbands=nbands,fCenter=fCenter,fWidth=fWidth,fRes=fRes )
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getNdata}{return the number of channels of ith band}
+\begin{ahdescription}
+
+Return the number of channels of ith band ( passes in as parameter ).
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{ibands}{identifier of bands}{1}{Int, standing for the identifier of bands}
+
+\end{ahargs}
+
+\ahreturns{ Int, the number of channels of the given band.}
+
+\begin{ahexample}
+\begin{verbatim}
+n:=test_atm.getNdata(iband=1)
+print spaste( 'getNdata() = ', n )
+
+getNdata() = 4
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getOapcity}{get the integrated optical depth on each band}
+\begin{ahdescription}
+
+Get the integrated optical depth on each band.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{dryOpacity}{dry opacity for each band}{none}{Vector of Double}
+\ahaddarg[out]{wetOpacity}{wet ipacity for each band}{none}{Quantum with a vector value and unit of mm-1}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getOpacity( dryOpacity=dryOpacity, wetOpacity=wetOpacity);
+print spaste('dryOpacity = ', dryOpacity );
+print spaste('wetOpacity = ', wetOpacity );
+
+dryOpacity = [0.0181100218 0.0181100218]
+wetOpacity = [value=[0.00665036438 0.00665036438] , unit=mm-1]
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getOapcitySpec}{get the integrated optical depth for each channel of each band}
+\begin{ahdescription}
+
+Get the integrated optical depth for each channel of each band.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{dryOpacitySpec}{dry opacity spectrum for each channel of each band}{none}{Array of Double}
+\ahaddarg[out]{wetOpacitySpec}{wet ipacity spectrum for each channel of each band}{none}{Quantum with a Array value and unit of mm-1}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getOpacitySpec( dryOpacitySpec=dryOS, wetOpacitySpec=wetOS );  
+print spaste( 'dryOpacitySpec = ', dryOS );
+print spaste( 'wetOpacitySpec = ', wetOS );
+
+dryOpacitySpec = [[1:2,]
+    0.018275032 0.0181644629 0.0180543786 0.0179462136
+    0.018275032 0.0181644629 0.0180543786 0.0179462136]
+wetOpacitySpec = [value=[[1:2,]
+    0.0066217328 0.0066217328 0.0066217328 0.0066217328
+    0.0066217328 0.0066217328 0.0066217328 0.0066217328], unit=mm-1]
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getAbsCoeff}{get the absorption coefficients}
+\begin{ahdescription}
+
+Get the absorption coefficients.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{kH2OLines}{absorption coefficients for H2O lines }{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kH2OCont}{absorption coefficients for H2O continum}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kO2}{absorption coefficients for O2}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kDryCont}{absorption coefficients for dry continum}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kO3}{absorption coefficients for O3}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kCO}{absorption coefficients for CO}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kN2O}{absorption coefficients for N2O}{none}{Quantum with a vector value and unit of m-1}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getAbsCoeff( kH2OLines=kH2OLines,kH2OCont=kH2OCont, kO2=kO2,
+                   kDryCont=kDryCont, kO3=kO3, kCO=kCO, kN2O=kN2O )
+print spaste('(kH2OLines.value[1],kH2OLines.unit) = ',
+              (kH2OLines.value)[1], kH2OLines.unit );
+
+(kH2OLines.value[1],kH2OLines.unit) = 0.000105215009m-1
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getAbsCoeffDer}{get the derivatives of absorption coefficients}
+\begin{ahdescription}
+
+Get the derivatives of absorption coefficients.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{kH2OLinesDer}{derivatives of absorption coefficients for H2O lines }{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kH2OContDer}{derivatives of absorption coefficients for H2O continum}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kO2Der}{derivatives of absorption coefficients for O2}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kDryContDer}{derivatives of absorption coefficients for dry continum}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kO3Der}{derivatives of absorption coefficients for O3}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kCODer}{derivatives of absorption coefficients for CO}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{kN2ODer}{derivatives of absorption coefficients for N2O}{none}{Quantum with a vector value and unit of m-1}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getAbsCoeffDer( kH2OLinesDer=kH2OLinesDer,
+                      kH2OContDer=kH2OContDer,kO2Der=kO2Der,
+                      kDryContDer=kDryContDer, kO3Der=kO3Der,
+                      kCODer=kCODer, kN2ODer=kN2ODer )
+print spaste( '(kH2OLinesDer.value[1],kH2OLinesDer.unit) = ',
+                kH2OLinesDer.value[1], kH2OLinesDer.unit )
+
+(kH2OLinesDer.value[1],kH2OLinesDer.unit) =  -9.73882945e-08m-1
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getPhaseFactor}{get the dipersive and non-dispersive phase delay factor}
+\begin{ahdescription}
+
+Get the dipersive and non-dispersive phase depay factor.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[out]{dispPhase}{dispersive phase delay factor}{none}{Quantum with a vector value and unit of m-1}
+\ahaddarg[out]{nonDispPhase}{non-dispersive phase delay factor}{none}{Quantum with a vector value and unit of m-1}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.getPhaseFactor( dispPhase=dispPhase, nonDispPhase=nonDispPhase ); 
+print spaste( 'dispPhase = ' , dispPhase );
+print spaste( 'nonDispPhase = ', nonDispPhase );
+
+dispPhase = [value=[740.282096 740.282096] , unit=deg.m-1]
+nonDispPhase = [value=[1.60255787 1.60255787] , unit=deg.m-1]
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{computeSkyBrightness}{compute the sky brightness by integrating the transfer equation}
+\begin{ahdescription}
+
+Compute the sky brightness by integrating the transfer equation.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{airMass}{air mass}{1.51}{Double, dimensionless}
+\ahaddarg[in]{tbgr}{temperature of cosmic background}{'2.73K}{Quantity with unit of temperature, K}
+\ahaddarg[in]{precWater}{precipitable water content}{'4.05e-3m'}{Quantity with dimension of length, m}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.computeSkyBrightness(airMass=1.51, tbgr='2.73K', 
+                           precWater='4.05e-3m')
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getSkyBrightness}{get sky brightness computed by computeSkyBrightness()}
+\begin{ahdescription}
+
+Get sky brightness computed by computeSkyBrightness().
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{iopt}{temperature type}{1}{Int 1 or 2, standing for blackbody temperature or Rayleigh Jeans temperature}
+
+\end{ahargs}
+
+\ahreturns{ Quantum with a vector value and dimension of temperature, K, which is the sky brightness for the given temperature type.}
+
+\begin{ahexample}
+\begin{verbatim}
+tBand1 := myatm.getSkyBrightness(iopt=1);
+tBand2 := myatm.getSkyBrightness(iopt=2);
+print spaste("SkyBrightness for Blackbody = ",tBand1 );
+print spaste("SkyBrightness for Rayleigh Jeans = ",tBand2 )
+
+SkyBrightness for Blackbody =[value=[19.9391734 19.9391734] , unit=K]
+SkyBrightness for Rayleigh Jeans =[value=[17.9019838 17.9019838] , unit=K]
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getSkyBrightnessSpec}{get sky brightness by integrating the transfer equation for each channel}
+\begin{ahdescription}
+
+Get sky brightness by integrating the transfer equation for each channel.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{iopt}{temperature type}{1}{Int 1 or 2, standing for blackbody temperature or Rayleigh Jeans temperature}
+
+\end{ahargs}
+
+\ahreturns{ Quantum with a Array value and dimension of temperature, K, which is the sky brightness for the given temperature type.}
+
+\begin{ahexample}
+\begin{verbatim}
+tBandSpec1 := myatm.getSkyBrightnessSpec(iopt=1)
+tBandSpec2 := test_atm.getSkyBrightnessSpec(iopt=2)
+print spaste('For blackbody, SkyBrightness = ', tBandSpec1)
+print spaste('For Rayleigh Jeans,  SkyBrightness = ', tBandSpec2)
+
+For Blackbody, SkyBrightness = [value=[[1:2,]
+    19.9541615 19.9439307 19.9339303 19.9246711
+    19.9541615 19.9439307 19.9339303 19.9246711], unit=K]
+For Rayleigh Jeans, SkyBrightness = [value=[[1:2,]
+    17.9210985 17.9081171 17.895366 17.8833538
+    17.9210985 17.9081171 17.895366 17.8833538], unit=K]
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+-------------------------------------------------
+\begin{ahfunction}{setSkyCoupling}{set sky coupling}
+\begin{ahdescription}
+
+Set sky coupling.
+
+\end{ahdescription}
+
+\begin{ahargs}
+
+\ahaddarg[in]{c}{sky coupling}{1.0}{Float, standing for the sky coupling}
+
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+myatm.setSkyCoupling( c=1.0 )
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+--------------------------------------------------------------------------------------------------
+\begin{ahfunction}{getSkyCoupling}{return the sky coupling}
+\begin{ahdescription}
+
+Return the sky coupling.
+
+\end{ahdescription}
+
+\ahreturns{ Float, the sky coupling.}
+
+\begin{ahexample}
+\begin{verbatim}
+sc_out := myatm.getSkyCoupling();
+print spaste( 'SkyCoupling = ', sc_out );
+
+SkyCoupling = 1.0
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}

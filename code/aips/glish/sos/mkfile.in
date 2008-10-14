@@ -1,0 +1,271 @@
+## $Id: mkfile.in,v 19.1 2004/07/13 22:37:02 dschieb Exp $
+##
+## Makefile for sos library.
+##
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+#IF SHARED
+MK_LIB = @MAKE_SLIB@
+LD_LIBS = @SLIB_LD_LIBS@ @SLIB_LD_LIBS_sos@
+CFLAGS = @CFLAGS@ @SLIB_CFLAGS@
+CXXFLAGS = @CXXFLAGS@ @SLIB_CXXFLAGS@
+GSUFFIX = @SOS_SLIB_SUFFIX@
+SUFFIX = @SLIB_SUFFIX@
+RANLIB = :
+LIBTGT = @SHARED_LIB@
+INSTALL_LIBTGT = INSTALL_@SHARED_LIB@
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+#IF LABEL_SLIB
+LABEL = @SLIB_LABEL@libsos$(GSUFFIX)
+LABELGC = @SLIB_LABEL@libsosgc$(GSUFFIX)
+#FI
+#IF AIX
+AIXSYM = $(LIBDIR)/libsos.exp
+AIXSYM_P = $(LIBDIR_P)/libsos.exp
+#FI
+#ELSE
+MK_LIB = @MAKE_LIB@
+LD_LIBS = 
+CFLAGS = @CFLAGS@
+CXXFLAGS = @CXXFLAGS@
+GSUFFIX = @GLISH_LIB_SUFFIX@
+SUFFIX = @GLISH_LIB_SUFFIX@
+RANLIB = @RANLIB@
+LIBTGT = @STATIC_LIB@
+INSTALL_LIBTGT = INSTALL_@STATIC_LIB@
+INSTALL_LIBRARY = $(INSTALL_DATA)
+#FI
+
+#IF GC
+GCLIB_P = $(LIBDIR_P)/libsosgc$(SUFFIX)
+GCLIB = $(LIBDIR)/libsosgc$(SUFFIX)
+#FI
+
+CC = @CC@
+CPLUS = @CXX@
+LIBS = @LIBS@
+
+D = @DOT@
+T = @TOUCH_PROXY@
+MINSPACE_RM = @MINSPACE_RM@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+RM = rm -f
+
+SRC = ../..
+H = $(SRC)/include/sos
+SDSINC = -I$(SRC)/include
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+
+MKHIER = $(top)/config/mkhier
+
+INCLUDE = -I.. -I$(SRC) -I$(SRC)/include -I$(INCDIR_P)
+
+OBJS = convert.o header.o io.o longint.o types.o list.o ref.o
+OBJS_PROXY = $(D)convert.o $(D)header.o $(D)io.o $(D)longint.o \
+	$(D)types.o $(D)list.o $(D)ref.o
+
+GCOBJS = gcconvert.o gcheader.o gcio.o gclongint.o gctypes.o gclist.o gcref.o
+GCOBJS_PROXY = $(D)gcconvert.o $(D)gcheader.o $(D)gcio.o $(D)gclongint.o \
+	$(D)gctypes.o $(D)gclist.o $(D)gcref.o
+
+HDRS = $(INCDIR)/sos/io.h $(INCDIR)/sos/sos.h $(INCDIR)/sos/types.h \
+	$(INCDIR)/sos/header.h $(INCDIR)/sos/mdep.h $(INCDIR)/sos/list.h \
+	$(INCDIR)/sos/generic.h $(INCDIR)/sos/ref.h $(INCDIR)/sos/alloc.h
+
+TAR_FILE = sos.tar
+
+all: $(AIXSYM_P) $(LIBTGT)
+
+install: $(AIXSYM) $(INSTALL_LIBTGT)
+
+lib_tgt: $(LIBDIR_P)/libsos$(SUFFIX) $(GCLIB_P)
+
+INSTALL_lib_tgt: $(LIBDIR)/libsos$(SUFFIX) $(GCLIB) $(INCDIR)/sos $(HDRS)
+
+libsos$(GSUFFIX): $(OBJS_PROXY)
+	$(RM) libsos$(GSUFFIX)
+	$(MK_LIB) libsos$(GSUFFIX) $(LABEL) $(OBJS) $(LD_LIBS)
+	$(RANLIB) libsos$(GSUFFIX)
+	$(MINSPACE_RM) $(OBJS)
+
+$(LIBDIR_P)/libsos$(GSUFFIX): libsos$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libsos$(GSUFFIX) $(LIBDIR_P)
+	$(RANLIB) $(LIBDIR_P)/libsos$(GSUFFIX)
+
+$(LIBDIR)/libsos$(GSUFFIX): libsos$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libsos$(GSUFFIX) $(LIBDIR)
+	$(RANLIB) $(LIBDIR)/libsos$(GSUFFIX)
+
+libsosgc$(GSUFFIX): $(GCOBJS_PROXY)
+	$(RM) libsosgc$(GSUFFIX)
+	$(MK_LIB) libsosgc$(GSUFFIX) $(LABELGC) $(GCOBJS) $(LD_LIBS)
+	$(RANLIB) libsosgc$(GSUFFIX)
+	$(MINSPACE_RM) $(GCOBJS)
+
+$(LIBDIR_P)/libsosgc$(GSUFFIX): libsosgc$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libsosgc$(GSUFFIX) $(LIBDIR_P)
+	$(RANLIB) $(LIBDIR_P)/libsosgc$(GSUFFIX)
+
+$(LIBDIR)/libsosgc$(GSUFFIX): libsosgc$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libsosgc$(GSUFFIX) $(LIBDIR)
+	$(RANLIB) $(LIBDIR)/libsosgc$(GSUFFIX)
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm -f tar-files
+
+tar-list:
+	@echo sds >&2
+	@ls Makefile.in *.cc include/Sds/*.h Doc/*
+
+rcsinfo:
+	@echo sds
+	@rlog -L RCS/*,v | sed -n -e 's/Working file://p' -e 's/locked by//p'
+	@echo sds/include/Sds
+	@cd include/Sds;rlog -L RCS/*,v | sed -n -e 's/Working file://p' -e 's/locked by//p'
+
+clean:
+	@rm -f errs $(OBJS_PROXY) *.o *~* $(APPS) core a.out *$(GSUFFIX) ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h Makefile
+
+$(D)convert.o: $(SRC)/convert.cc $(SRC)/convert.h $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/convert.cc $(T)
+
+$(D)gcconvert.o: $(SRC)/convert.cc $(SRC)/convert.h $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gcconvert.o $(SRC)/convert.cc $(T)
+
+$(D)header.o: $(SRC)/header.cc $(H)/header.h $(H)/mdep.h $(H)/types.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/header.cc $(T)
+
+$(D)gcheader.o: $(SRC)/header.cc $(H)/header.h $(H)/mdep.h $(H)/types.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gcheader.o $(SRC)/header.cc $(T)
+
+$(D)io.o: $(SRC)/io.cc $(H)/io.h $(H)/header.h $(H)/mdep.h $(H)/types.h $(SRC)/convert.h $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/io.cc $(T)
+
+$(D)gcio.o: $(SRC)/io.cc $(H)/io.h $(H)/header.h $(H)/mdep.h $(H)/types.h $(SRC)/convert.h $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gcio.o $(SRC)/io.cc $(T)
+
+$(D)longint.o: $(SRC)/longint.cc $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/longint.cc $(T)
+
+$(D)gclongint.o: $(SRC)/longint.cc $(SRC)/longint.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gclongint.o $(SRC)/longint.cc $(T)
+
+$(D)types.o: $(SRC)/types.cc $(H)/types.h $(H)/mdep.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/types.cc $(T)
+
+$(D)gctypes.o: $(SRC)/types.cc $(H)/types.h $(H)/mdep.h $(H)/sos.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gctypes.o $(SRC)/types.cc $(T)
+
+$(D)list.o: $(SRC)/list.cc $(H)/list.h $(H)/sos.h $(H)/generic.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/list.cc $(T)
+
+$(D)gclist.o: $(SRC)/list.cc $(H)/list.h $(H)/sos.h $(H)/generic.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gclist.o $(SRC)/list.cc $(T)
+
+$(D)ref.o: $(SRC)/ref.cc $(H)/ref.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/ref.cc $(T)
+
+$(D)gcref.o: $(SRC)/ref.cc $(H)/ref.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DENABLE_GC -c -o gcref.o $(SRC)/ref.cc $(T)
+
+#IF SLIB_SYM_LINKS
+$(LIBDIR_P)/libsos$(SUFFIX): $(LIBDIR_P)/libsos$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f libsos$(SUFFIX);		\
+	ln -s libsos$(GSUFFIX) libsos$(SUFFIX)
+
+$(LIBDIR_P)/libsosgc$(SUFFIX): $(LIBDIR_P)/libsosgc$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f libsosgc$(SUFFIX);	\
+	ln -s libsosgc$(GSUFFIX) libsosgc$(SUFFIX)
+
+$(LIBDIR)/libsos$(SUFFIX): $(LIBDIR)/libsos$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f libsos$(SUFFIX);	\
+	ln -s libsos$(GSUFFIX) libsos$(SUFFIX)
+
+$(LIBDIR)/libsosgc$(SUFFIX): $(LIBDIR)/libsosgc$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f libsosgc$(SUFFIX);	\
+	ln -s libsosgc$(GSUFFIX) libsosgc$(SUFFIX)
+#FI
+
+##
+## Install headers
+##
+$(INCDIR)/sos:
+	$(MKHIER) $(INCDIR)/sos
+
+$(INCDIR)/sos/io.h: $(H)/io.h
+	rm -f $@
+	cp $(H)/io.h $@
+
+$(INCDIR)/sos/sos.h: $(H)/sos.h
+	@rm -f $@
+	cp $(H)/sos.h $@
+
+$(INCDIR)/sos/types.h: $(H)/types.h
+	@rm -f $@
+	cp $(H)/types.h $@
+
+$(INCDIR)/sos/header.h: $(H)/header.h
+	@rm -f $@
+	cp $(H)/header.h $@
+
+$(INCDIR)/sos/mdep.h: $(H)/mdep.h
+	@rm -f $@
+	cp $(H)/mdep.h $@
+
+$(INCDIR)/sos/list.h: $(H)/list.h
+	@rm -f $@
+	cp $(H)/list.h $@
+
+$(INCDIR)/sos/generic.h: $(H)/generic.h
+	@rm -f $@
+	cp $(H)/generic.h $@
+
+$(INCDIR)/sos/ref.h: $(H)/ref.h
+	@rm -f $@
+	cp $(H)/ref.h $@
+
+$(INCDIR)/sos/alloc.h: $(H)/alloc.h
+	@rm -f $@
+	cp $(H)/alloc.h $@
+
+#IF AIX
+$(LIBDIR_P)/libsos.exp: libsos$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_DATA) libsos.exp $(LIBDIR_P)
+
+$(LIBDIR)/libsos.exp: libsos$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_DATA) libsos.exp $(LIBDIR)
+#FI
+
+INSTALL_:
+

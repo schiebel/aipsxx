@@ -1,0 +1,309 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: inputsmanager.help,v 19.2 2004/08/25 02:02:57 cvsmgr Exp $
+\begin{ahobject}{inputsmanager}{Tool for handling inputs for other tools}
+\ahcategory{utility}
+\ahkeyword{inputsmanager}{}
+\begin{ahdescription}
+{\tt inputsmanager} is a tool for handling the inputs (function
+arguments) for \aipspp\ tools. It provides command line interfaces for
+saving and retrieving all the inputs to a function.  It is primarily used by
+\ahlink{toolmanager} {tasking:toolmanager} to save and restore inputs, but it
+can also be used directly from the glish command line.  Note that inputs are
+not automatically saved in this manner when a function is invoked directly
+from the glish command line, although the command line history buffer can be
+used in that case.
+
+The values of the inputs are stored as a record by {\tt inputsmanager}
+for each tool function. For example, to retrieve the function arguments
+used last time that imager.setimage was run from the toolmanager:
+
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/13:54:24  lastsave
+T                                        
+- inputs.getvalues('imager', 'setimage')
+[nx=300, ny=300, cellx=[value=1.2, unit=arcsec], celly=[value=1.2,
+unit=arcsec], stokes=IQUV, doshift=T, phasecenter=[m0=[value=0,
+unit=deg], m1=[value=90, unit=deg], type=direction, refer=JUPITER],
+shiftx=[value=0, unit=arcsec], shifty=[value=0, unit=arcsec],
+mode=mfs, nchan=1, start=1, step=1, mstart=[value=0, unit=km/s],
+mstep=[value=0, unit=km/s], spwid=1, fieldid=1, facets=1]    
+\end{verbatim}
+
+The current inputs may be saved to a specific slot named by the
+keyword chosen from the
+\ahlink{toolmanager}{tasking:toolmanager}.  The default is
+'lastsave'.
+
+The values of the inputs are stored permanently in an AIPS++
+table. The name of the file is {\em aips++.inputs.table} and thus a
+separate table will be created for every directory in which \aipspp\
+is run. This default file location may be overridden using an {\tt
+aipsrc} variable.  For example, to put consolidateall inputs in one
+place:
+
+\begin{verbatim}
+inputsmanager.file:	$HOME/aips++.inputs.table
+\end{verbatim}
+
+Note that inputs are only saved from the
+\ahlink{toolmanager}{tasking:toolmanager}, and that the values
+are written to a disk-based table only when a
+\ahlink{save}{tasking:scripter.save} function is
+executed. A save is performed automatically on exit from glish.
+This means that you should always exit normally from glish if
+you wish the current inputs to be saved.
+
+\end{ahdescription}
+
+\ahobjs{}
+
+\begin{ahconstructor}{inputsmanager}{Construct inputsmanager tool}
+\begin{ahdescription}
+This constructor is called on inclusion of inputsmanager.g. Since only
+one inputsmanager can be created, you should never have to call this
+constructor. The {\em only} inputsmanager that exists has the
+conventional name {\tt inputs}.
+\end{ahdescription}
+\end{ahconstructor}
+
+\begin{ahfunction}{getvalues}{Get inputs for a tool and function}
+\begin{ahdescription}
+Get the inputs for a given tool, function, and keyword.
+This returns a record containing the argument name
+and value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\ahaddarg{method}{Name of function}{None}{String}
+\ahaddarg{keyword}{Name of keyword}{'lastsave'}{String}
+\end{ahargs}
+\ahreturns{Record of values}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/13:54:24  lastsave
+T                                        
+- inputs.getvalues('imager', 'setimage')
+[nx=300, ny=300, cellx=[value=1.2, unit=arcsec], celly=[value=1.2,
+unit=arcsec], stokes=IQUV, doshift=T, phasecenter=[m0=[value=0,
+unit=deg], m1=[value=90, unit=deg], type=direction, refer=JUPITER],
+shiftx=[value=0, unit=arcsec], shifty=[value=0, unit=arcsec],
+mode=mfs, nchan=1, start=1, step=1, mstart=[value=0, unit=km/s],
+mstep=[value=0, unit=km/s], spwid=1, fieldid=1, facets=1]    
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{savevalues}{Save inputs for a tool and function}
+\begin{ahdescription}
+Save the inputs for a given tool, function, and keyword. The
+record must contain the argument names and values.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\ahaddarg{method}{Name of function}{None}{String}
+\ahaddarg{values}{Record of inputs}{[=]}{Record}
+\ahaddarg{keyword}{Name of keyword}{'lastsave'}{String}
+\ahaddarg{dosave}{Force a save to disk-based table}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/13:54:24  lastsave
+T                                        
+- rec := inputs.getvalues('imager', 'setimage')
+- print rec
+[nx=300, ny=300, cellx=[value=1.2, unit=arcsec], celly=[value=1.2,
+unit=arcsec], stokes=IQUV, doshift=T, phasecenter=[m0=[value=0,
+unit=deg], m1=[value=90, unit=deg], type=direction, refer=JUPITER],
+shiftx=[value=0, unit=arcsec], shifty=[value=0, unit=arcsec],
+mode=mfs, nchan=1, start=1, step=1, mstart=[value=0, unit=km/s],
+mstep=[value=0, unit=km/s], spwid=1, fieldid=1, facets=1]
+- rec.stokes:='IV';
+- inputs.savevalues('imager', 'setimage', rec, 'IV only', dosave=F)
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/14:04:25  lastsave
+    2   2000/02/18/14:04:25   IV only
+T                                      
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{show}{Show all sets of available inputs}
+\begin{ahdescription}
+Shows all the available inputs on the screen.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{keyword}{Name of keyword}{'default'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/14:04:25  lastsave
+    2   2000/02/18/14:04:25   IV only
+T                                      
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{list}{List all sets of available inputs}
+\begin{ahdescription}
+Returns a record of all available inputs. Use this function
+with caution: the returned record is very large.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{keyword}{Name of keyword}{'default'}{String}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- field_names(inputs.list())
+version lastsave mysave1 mysave2     
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{Delete rows from the table}
+\begin{ahdescription}
+Deletes numbered rows from the inputs table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{rows}{Vector of row numbers}{None}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/14:04:25  lastsave
+    2   2000/02/18/14:04:25   IV only
+T
+- inputs.delete(2)
+NORMAL: Successfully deleted row 2
+T
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/14:04:25  lastsave
+T                                           
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{deletetable}{Delete the inputs table}
+\begin{ahdescription}
+Deletes the inputs table.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.show()
+Inputs:
+
+  Row                  Time   Keyword
+-------------------------------------
+    1   2000/02/18/14:04:25  lastsave
+T
+- inputs.deletetable()
+NORMAL: deleted table aips++.inputs.table
+F   
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{get}{Get all inputs for a given keyword}
+\begin{ahdescription}
+Get the inputs for a given keyword from the table.
+The values returned by {\tt getvalue} are then drawn
+from this set.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{keyword}{Name of keyword}{'lastsave'}{String}
+\end{ahargs}
+\ahreturns{Record of values}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.get('lastsave')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{save}{Save all inputs for a given keyword}
+\begin{ahdescription}
+Save the current inputs to a given keyword in the table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{keyword}{Name of keyword}{'lastsave'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- include 'inputsmanager.g'
+- inputs.save('lastsave')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahobject}
+

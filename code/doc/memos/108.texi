@@ -1,0 +1,442 @@
+ \input epsf.tex
+ \input texinfo     @c -*- texinfo -*-
+@c %**start of header
+@setfilename VLATape.info
+@settitle AIPS++ Software Design: Telescope Data Handling
+@setchapternewpage odd
+@finalout
+@c %**end of header
+
+@c for figures
+@defindex fi
+
+@titlepage
+@title AIPS++ Software Design: Telescope Data Handling
+@subtitle Last changed on $Date: 2003/07/16 03:46:22 $
+@author T. Bottomly
+
+
+@end titlepage
+
+@node Top, Introduction, , (dir)
+
+@ifinfo
+
+@noindent The source for this document was last changed on $Date: 2003/07/16 03:46:22 $ by
+$Author: aips2adm $.
+
+@end ifinfo
+
+@menu
+* Introduction::
+* References::
+* Class Design -- General::
+* Functional Design -- General::
+* Class Design -- VLA-specific::
+* Functional Design -- VLA-specific::
+@end menu
+
+@node Introduction, References, Top, Top
+@unnumbered Introduction
+
+This is a design document intended to describe both the object and
+functional models relating to the input processing of telescope data
+in the @sc{aips++} system.  This is, by no means, a final design document;
+suggestions for improvement, change, etc. are welcomed.
+
+The following approach was taken in deriving the design diagrams:
+@enumerate
+@item
+An object model was developed for VLA Archive Tape Processing.
+The model did not include attributes or methods for the defined classes.
+@item
+The object model was "generalized" to handle the following types of telescope
+data sources: the real-time system, a telescope system simulator,
+and other data media on which telescope data resides.
+Again, the model lacked class attributes and methods.
+@item
+Functional diagrams were developed for the VLA Tape Processing case.
+@item
+The object model (VLA-specific) was updated to reflect the methods and
+attributes made apparent during the creation of the functional diagrams.
+@item
+Functional diagrams were developed for the "general case".
+@item
+The object model (general) was updated to reflect the functional
+diagrams.
+@end enumerate
+
+This document describes the design for the general case followed by that
+for the VLA.
+
+@node References, Class Design -- General, Introduction, Top
+@unnumbered References
+
+Related documents include the following:
+@itemize @bullet
+@item
+@emph{Object-Oriented Modeling and Design}; Rumbaugh, Blaha, Premerlani, Eddy
+and Lorenson, Prentice-Hall, 1991.
+@item
+@emph{AIPS++ Software Design -- Analysis and Design of Major AIPS++ Subsystems};
+Hjellming and Glendenning, 1993.
+@item
+@emph{AIPS++ Implementation Memo #109, An Overview of AIPS++ Design}, Hjellming
+and Glendenning, 1993.
+@item
+@emph{VLA Synchronous System Archive Tape Format};
+Sowinski and Bottomly, 1993.
+@end itemize
+
+@node Class Design -- General, Functional Design -- General, References, Top
+@chapter Class Design -- General
+
+The following diagram describes the class structure related to a
+@emph{DataSource} -- a source of measurements for a @emph{MeasurementSet} and
+data for a @emph{TelescopeModel}.
+@footnote{AIPS++ Software Design -- Analysis and Design of Major AIPS++
+Subsystems; Hjellming and Glendenning, 1993}.
+The different "kinds" of @emph{DataSource}s
+include: the data media written by a telescope data system, a real-time
+data stream from a telescope system,
+and a telescope system simulator.
+
+Associated with each @emph{DataSource} is an optional @emph{ObservingSchedule}
+which reflects the parameters chosen for an observation.  The second prototype
+does not include any processing of the @emph{ObservingSchedule}, but it could
+be used in the future for a comparison between scheduled observation parameters
+and the results of the corresponding observation run.  The
+@emph{ObservingLog} contains results of the observation run in the form of
+a time-based summary of the measurements and telescope behavior
+from a @emph{DataSource}.  Log entries are generated when there is a significant
+change of parameters in the input data stream.
+
+Additionally associated with each @emph{DataSource} is an optional
+@emph{OperationsLog}.  This is a collection of entries made by operations
+personnel or the real-time telescope data system during an observation run.
+An observed problem with antenna power and corresponding time is one example
+of the contents in a log entry.
+Data could be flagged during input processing based on the entries in this log.
+This is another item which is not considered in the second prototype.
+
+Each @emph{DataSource} is made up of many @emph{DataRecord}s which in turn
+are made up of many @emph{DataItem}s.  A @emph{DataItem} is associated with a
+@emph{Measure} as the input stream is processed.  This association
+represents at least two diffent kinds of @emph{DataItem}s:
+those which are "control" or "context" items,
+i.e., define record size or structure; and those which contain the data
+related to the observation run, i.e., measurement values or
+instrument-related data.  The former type of data is used in parsing
+a data stream, the latter type is placed into a
+@emph{TelescopeDataAssociation}.
+
+A @emph{DataRecord} may or may not require decoding before @emph{DataItem}s are
+extracted.  In the general case, it is assumed that decoding is unnecessary.
+Selection Criteria can be applied to a @emph{DataItem} or a
+@emph{DataRecord}.  Finally, the selected @emph{DataItem}s are placed in
+@emph{TelescopeDataAssociation} tables via the @emph{TDAMapping}.
+@page
+@iftex
+@tex
+\epsfxsize=6.5truein
+\epsfbox{DataSource.eps}
+@end tex
+@end iftex
+
+@node Functional Design -- General, Class Design -- VLA-specific, Class Design -- General, Top
+@chapter Functional Design -- General
+@iftex
+@tex
+\epsfxsize=5.5truein
+\epsfbox{Process_Data_Source.eps}
+@end tex
+@end iftex
+The initial functional diagram for processing telescope
+data from a @emph{Data Source} shows the context in which
+the processing is done.  Filling of the
+tables which make up the @emph{Telescope Data Association}
+is based on @emph{User Selection Criteria}.  Observation
+summary information created during the process of filling the TDA tables
+is made available to the user via the @emph{User Display}.
+An @emph{Operations Log} may or may not be available to allow the flagging of
+data or the bypass of decoding input data.
+@page
+@iftex
+@tex
+\epsfxsize=5.5truein
+\epsfbox{Fill_TDA_Tables.eps}
+@end tex
+@end iftex
+
+In this diagram the @emph{Fill TDA Tables} process has been
+functionally decomposed into the following processes:
+@itemize @bullet
+@item
+a process which handles
+selection of observing log entries
+@item
+a process which interprets the input and
+@item
+a process which applies the
+@emph{TDA Mapping}
+@end itemize
+Selection can occur before or after interpretation of the data.
+
+@emph{Interpret and Select Data} obtains data from
+@emph{Data Source}, creating
+labeled @emph{DataItem}s and their associated @emph{Measure}s.  The input
+data stream frequently consists of "header" and "measurement" data.  The
+former is often "control" or "context" information which is processed
+internally by the @emph{Interpret and Select} process.  The latter type of
+data is placed into @emph{Interpreted Data} store for later
+mapping into the TDA hierarchy.
+When applicable, @emph{observing_log_entries} are generated.
+
+It is intended that the internal data store @emph{Input to TDA Mapping} be
+a static mapping which "directs" a @emph{DataItem}, based on its @emph{Label},
+to the target table.  Implementation of the store should be flexible enough
+to allow for ease of change in an input data stream with minimal impact.
+Determination of placement of the @emph{DataItem}s produced by the
+@emph{Data Source}
+is the major piece of work associated with this process.
+
+Further decomposition is ended at this point for the general
+case.
+
+@node Class Design -- VLA-specific, Functional Design -- VLA-specific, Functional Design -- General, Top
+@chapter Class Design -- VLA-specific
+The following diagram shows the classes related to a particular set of
+instances of @emph{TelDataMedia} in the general case, i.e., the
+@emph{VLAArchiveTape} class.  Instances of this hierarchy are
+different based on @emph{FormatRevision}.
+
+Notable differences between this and that of the general case are related to
+the @emph{DataRecord} class and its methods and relationships.  The
+functionality of @emph{DataRecord} is represented in the following classes:
+@itemize @bullet
+@item
+the @emph{LogicalRecord} class and its associated hierarchy,
+@item
+the @emph{PhysicalRecord} class and
+@item
+the @emph{VLADecodedData} class and its associated hierarchy (which is shown
+on another diagram).
+@end itemize
+The binding of the design to a particular @emph{DataSource} introduces
+data layering specific to its structure and content.
+
+A @emph{LogicalRecord} on a @emph{VLAArchiveTape} contains all the data
+relating to a given integration time for an observation.  It can span many
+physical data records.  Each @emph{LogicalRecord} is made up of an ordered set
+of subrecords -- @emph{RCA}, @emph{SDA}, @emph{ADA} and @emph{CDA} (the
+latter two may have multiple instances forming an @emph{ADASet} and
+@emph{CDASet} respectively).  Each of these subrecords is a @emph{DataArea}
+which can be decoded and can have @emph{SelectionCriteria} applied.
+
+The @emph{Revision} of a particular kind of @emph{DataArea} is defined by the
+@emph{FormatRevision} of the @emph{VLAArchiveTape} currently found in
+the @emph{RCA}.  Forcing tape and data area revision numbers to be
+identical dictates the need for a set of @emph{DataArea}s for each
+@emph{FormatRevision} even though some @emph{DataArea}s
+may not have changed.
+If the revision numbers are allowed to differ, however, then
+any given @emph{DataArea} revision might be found in a number of different
+tape revisions, thus
+avoiding a proliferation of instances of a given @emph{DataArea} which has not
+changed.
+It is suggested that the latter be implemented, since changes are usually
+localized to @emph{DataArea}s; in this case, a mapping between
+@emph{FormatRevision} and @emph{DataArea} @emph{Revision} must be implemented.
+
+The items explicitly named as attributes of the @emph{DataArea}s in
+the diagram are
+those that determine the sizes and structures of other records, and those which
+determine whether decoding might be bypassed.  The number of @emph{ADA} records
+in an @emph{ADASet}, for example, is based on the @emph{AntennaCount} found in
+the @emph{RCA}.  Therefore, the constructor (@emph{ADASet}) is dependent on
+@emph{RCA.AntennaCount}.
+
+@page
+@iftex
+@tex
+\epsfxsize=6.5truein
+\epsfbox{VLADataSource.eps}
+@end tex
+@end iftex
+
+@page
+@emph{SelectionCriteria} which determine whether other @emph{DataArea}s
+are decoded or not are applied at the @emph{LogicalRecord} level,
+which in turn are applied to its components.
+For example, the @emph{TimeRange} criterion is applied at the
+@emph{LogicalRecord} level, which is then applied to the @emph{SDA}.
+If the @emph{DateTime} in the @emph{SDA} falls outside
+the selected @emph{TimeRange}, the @emph{ADASet} and @emph{CDASet} need not
+be decoded; hence, the capability to set the @emph{BypassDecode} mode in each
+of these classes.  @emph{SelectionCriteria}
+which can be applied before
+data is decoded follow:
+@itemize @bullet
+@item
+time range
+@item
+source and source qualifier
+@item
+correlator mode
+@item
+observing mode
+@item
+subarray
+@item
+program ID
+@item
+user number
+@end itemize
+The current set of criteria applies to data in the @emph{SDA} only.
+The design is left general enough to allow selection to be applied to
+any @emph{DataArea}.
+
+It is also the case that some @emph{SelectionCriteria} are applied after the
+data is decoded; i.e., selection by:
+@itemize @bullet
+@item
+channel
+@item
+flag
+@item
+antenna
+@item
+frequency
+@item
+band
+@end itemize
+In these cases, the appropriate @emph{SelectionModes} are set in
+the @emph{DecodedData} area before extraction of @emph{DataItem}s.
+
+All decoded telescope data from a @emph{LogicalRecord} is placed into the
+@emph{VLADecodedData} area (not necessarily in the same form as the logical
+record).  This method is used instead of one in which each @emph{DataArea} is
+decoded into its own "decoded instance" for the following reasons:
+@itemize @bullet
+@item
+The @emph{DataArea} information is not self-contained (e.g., the
+@emph{DateTime} value in the @emph{SDA} applies to the data in both the
+@emph{ADASet} and the @emph{CDASet}).  In general, a @emph{DataItem} contains
+entries present in more than one @emph{DataArea}.
+@item
+It is desirable to avoid the inclusion of a method to extract each piece of
+data in a @emph{DataArea} thus avoiding a dependence between the object
+interface and the form of the data.
+A goal in this design is to hide this dependence in
+the @emph{decodeInto} method which is inherited by all @emph{DataArea}s.
+@end itemize
+
+This design decision is subject to change, based on the efficiency of
+implementation.
+
+
+@page
+The next diagram specifies the class hierarchy of @emph{VLADecodedData}.  The
+decoded set of data is made of of many "labeled" @emph{DataItem}s, each of
+which has an associated @emph{Measure}, and @emph{TDAMapping}.  The
+relation of @emph{DataItem}s to @emph{SelectionCriteria} is not shown in
+the VLA case, since it is probable that all @emph{SelectionCriteria} have
+been applied during the decoding process or upon extraction from
+@emph{VLADecodedData}.
+
+@iftex
+@tex
+\epsfxsize=5.5truein
+\epsfbox{VLADecodedData.eps}
+@end tex
+@end iftex
+
+@node Functional Design -- VLA-specific, , Class Design -- VLA-specific, Top
+@chapter Functional Design -- VLA-specific
+There is no @emph{Operations Log} depicted in the VLA-specific context
+diagram.
+For the VLA the log exists on paper; there is yet no
+automated way of processing it in the system.
+
+@iftex
+@tex
+\epsfxsize=5.5truein
+\epsfbox{VLA_Tape.eps}
+@end tex
+@end iftex
+
+Because the data from the VLA data stream is decoded as well as interpreted,
+the diagram containing the decomposition of @emph{Fill Tables From VLA Tape}
+represents the VLA-specific "decoding" process.  There are no other
+differences in the VLA case, save the omission of the @emph{Operations Log}.
+
+@iftex
+@tex
+\epsfxsize=6.0truein
+\epsfbox{Fill_TDA_Tables_From_VLA_Tape.eps}
+@end tex
+@end iftex
+
+@page
+The @emph{Decode VLA Tape} diagram depicts
+the interrelationships of the
+RCA, the SDA, and the ADA and CDA Sets; e.g., the dependence of
+the CDA Set on parameters from the RCA, SDA and ADA.
+
+@iftex
+@tex
+\epsfxsize=5.5truein
+\epsfbox{Decode_VLA_Tape.eps}
+@end tex
+@end iftex
+
+It shows that
+@emph{bypass_decode} is determined by comparison of
+@emph{User Selection Criteria} and the following
+@emph{SDA_parameters}:
+@itemize @bullet
+@item
+date/time
+@item
+source name
+@item
+source qualifier
+@item
+correlator mode
+@item
+observing mode
+@item
+subarray ID
+@item
+program ID
+@item
+user number
+@end itemize
+
+While processing the VLA input data stream changes in the following items in
+the @emph{SDA} generate @emph{observing log entries}:
+@itemize @bullet
+@item
+correlator mode
+@item
+frequency
+@item
+source name
+@item
+source qualifier
+@item
+source position
+@item
+observing mode
+@item
+program ID
+@end itemize
+
+As is shown in this final diagram, the relationships of the VLA-specific data
+can be localized.  It is hoped that the filling of data from other telescope
+sources can follow a similar design.
+
+@contents
+
+@bye
+

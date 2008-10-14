@@ -1,0 +1,2256 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/predefined.tex,v 19.0 2003/07/16 04:18:53 aips2adm Exp $
+
+\chapter{Predefined Functions and Variables}
+\label{predefineds}
+
+\index{predefined functions|(}
+The {\em Glish} language includes predefined 
+functions which necessary for
+writing {\em Glish} scripts.  These include functions for identifying and
+converting types, manipulating vectors and strings, 
+dealing with variable argument lists in
+functions, and manipulating {\tt agent}'s.  {\em Glish} 
+also includes predefined
+global variables for accessing the script's arguments and environment, for
+inspecting and responding to changes in the system's state, for running
+a script as clients (\xref{client-scripts}), and for mathematical constants.
+Each of these are discussed below.
+
+\section{Type Identification}
+\label{predefineds-identification}
+
+\index{predefined functions!type identification|(}
+\index{types!identifying functions|(}
+{\em Glish} provides the following functions for identifying the 
+type of a value:
+\begin{list}{}{}
+
+\item[{\tt is\_boolean(x)}]
+\indfunc{is\_boolean}
+returns true ({\tt T}) if {\tt x}'s type is
+{\tt boolean} and false ({\tt F}) otherwise.    The following analogous
+functions are available for identifying other types:
+\indfunc{is\_byte}
+\indfunc{is\_short}
+\indfunc{is\_integer}
+\indfunc{is\_float}
+\indfunc{is\_double}
+\indfunc{is\_complex}
+\indfunc{is\_dcomplex}
+\indfunc{is\_string}
+\indfunc{is\_regex}
+\indfunc{is\_record}
+\indfunc{is\_function}
+\indfunc{is\_agent}
+\indfunc{is\_file}
+\begin{verbatim}
+    is_byte(x)
+    is_short(x)
+    is_integer(x)
+    is_float(x)
+    is_double(x)
+    is_complex(x)
+    is_dcomplex(x)
+    is_string(x)
+    is_regex(x)
+    is_record(x)
+    is_function(x)
+    is_agent(x)
+    is_file(x)
+\end{verbatim}
+\label{is_boolean-func}
+\label{is_byte-func}
+\label{is_short-func}
+\label{is_integer-func}
+\label{is_float-func}
+\label{is_double-func}
+\label{is_complex-func}
+\label{is_dcomplex-func}
+\label{is_string-func}
+\label{is_record-func}
+\label{is_function-func}
+\label{is_agent-func}
+
+\item[{\tt is\_numeric(x)}] \label{is_numeric-func} \indfunc{is\_numeric}
+\index{types!{\em numeric}}
+returns {\tt T} if {\tt x}'s type is {\em numeric}
+({\tt boolean}, {\tt byte}, {\tt short},
+{\tt integer}, {\tt float}, {\tt double}, {\tt complex} or
+{\tt dcomplex}), {\tt F} otherwise.
+
+\item[{\tt is\_const(x)}] \label{is_const-func} \indfunc{is\_const}
+\index{types!{\em const}}
+returns {\tt T} if {\tt x} is {\tt const} (see \S~\ref{constant-values}),
+i.e. it cannot be modified and cannot be reassigned. Otherwise {\tt is\_const}
+returns {\tt F}.
+
+\item[{\tt is\_modifiable(x)}] \label{is_modifiable-func} \indfunc{is\_modifiable}
+\index{types!modifiable}
+returns {\tt T} if {\tt x} can be modified, otherwise {\tt F} is returned. While
+{\tt x} may not be modifiable, {\tt x} still might be reassignable
+(see \S~\ref{constant-values}).
+
+\item[{\tt is\_nan(x)}] \label{is_nan-func} \indfunc{is\_nan}
+\index{types!not a number}
+returns {\tt T} if {\tt x} is {\em not a number} as defined in the IEEE floating
+point standards, e.g. {\tt is\_nan(0/0)} returns {\tt T}.
+
+\item[{\tt is\_fail(x)}] \label{is_fail-func} \indfunc{is\_fail}
+\index{types!fail}
+returns {\tt T} if {\tt x} is a {\tt fail} value otherwise it returns {\tt F}.
+This function is unique in that passing a {\tt fail} value into it doesn't
+automatically cause it to fail, as is the case with any other function.
+(See \xref{is_fail-func2} for more information.)
+
+\item[{\tt type\_name(x)}] \label{type_name-func} \indfunc{type\_name}
+returns a {\tt string} scalar identifying the
+type of {\tt x}.  For example,
+\begin{verbatim}
+    type_name(5)
+\end{verbatim}
+returns {\tt "integer"} and
+\begin{verbatim}
+    type_name(func (x) x+1)
+\end{verbatim}
+returns {\tt "function"}.  The names of the various types are:
+\begin{verbatim}
+    "boolean"
+    "byte"
+    "short"
+    "integer"
+    "float"
+    "double"
+    "complex"
+    "dcomplex"
+    "string"
+    "regex"
+    "record"
+    "function"
+    "agent"
+    "fail"
+    "file"
+\end{verbatim}
+
+\index{references!names of}
+The name of a {\tt reference} type is the concatenation of the string
+{\tt "ref"} followed by the name of the referred-to
+type.  For example,
+\begin{verbatim}
+    type_name(ref "hi")
+\end{verbatim}
+yields {\tt 'ref string'} as a scalar value.
+
+\item[{\tt full\_type\_name(x)}] \label{full_type_name-func}
+\indfunc{full\_type\_name}
+returns a more detailed description of {\tt x}'s type.
+
+If the value is a vector with more than one element then the function
+reports its size and its type:
+\begin{verbatim}
+    full_type_name(1:10)
+\end{verbatim}
+yields {\tt 'integer [10]'}.
+
+If the value is a {\tt record} then the function identifies each field's
+name and type (recursively, if one of the fields is itself a {\tt record}):
+\index{example!{\tt full\_type\_name()} function}
+\begin{verbatim}
+    full_type_name([a=1, b="how are you?", c=2:5])
+\end{verbatim}
+yields
+\begin{verbatim}
+    'record [a=integer, b=string [3], c=integer [4]]'
+\end{verbatim}
+
+\index{references!names of}
+If the value is a {\tt reference} then the function returns only its
+referred-to type:
+\begin{verbatim}
+    full_type_name(ref 5)
+\end{verbatim}
+returns {\tt 'integer'}.
+
+\item[{\tt field\_names(x)}] \label{field_names-func} \indfunc{field\_names}
+\index{records!fields!names}
+returns a {\tt string} vector listing all
+of the fields in {\tt x}.  For example,
+\begin{verbatim}
+    field_names([a=1, b="how are you?", c=2:5])
+\end{verbatim}
+yields {\tt "a b c"}.
+
+If {\tt x} is not a {\tt record} than an error message is printed and
+{\tt F} is returned.
+
+\item[{\tt has\_field(x,field)}] \label{has_field-func} \indfunc{has\_field}
+returns {\tt T} if {\tt x} is a record
+and contains a field with the given name, {\tt F} otherwise.
+
+\end{list}
+\index{types!identifying functions|)}
+\index{predefined functions!type identification|)}
+
+\section{Type Conversion}
+\label{predefineds-conversion}
+
+\index{predefined functions!type conversion|(}
+\index{types!conversion functions|(}
+The following functions convert their argument to the stated type:
+\indfunc{as\_boolean}
+\indfunc{as\_byte}
+\indfunc{as\_short}
+\indfunc{as\_integer}
+\indfunc{as\_float}
+\indfunc{as\_double}
+\indfunc{as\_complex}
+\indfunc{as\_dcomplex}
+\indfunc{as\_string}
+\begin{verbatim}
+    as_boolean(x)
+    as_byte(x)
+    as_short(x)
+    as_integer(x)
+    as_float(x)
+    as_double(x)
+    as_complex(x)
+    as_dcomplex(x)
+    as_string(x)
+\end{verbatim}
+\label{as_boolean-func}
+\label{as_byte-func}
+\label{as_short-func}
+\label{as_integer-func}
+\label{as_float-func}
+\label{as_double-func}
+\label{as_complex-func}
+\label{as_dcomplex-func}
+\label{as_string-func}
+The argument {\tt x} must be either {\em numeric}- or {\tt string}-valued.
+
+See \xref{type-conversion}, for a discussion of {\em implicit} type
+conversion (i.e., not requiring the use of one of these functions).
+
+\subsection{Boolean Conversions}
+
+\index{types!conversion!to {\tt boolean}}
+Conversion of a numeric values to {\tt boolean} yield {\tt T} if the converted value is
+non-zero.  A {\tt string} value yields {\tt T} if its length is non-zero. For example,
+\begin{verbatim}
+    as_boolean([3.14159, 0])
+\end{verbatim}
+yields {\tt [T, F]}, and
+\begin{verbatim}
+    as_boolean("how are you?")
+\end{verbatim}
+yields {\tt [T, T, T]}, and
+\begin{verbatim}
+    as_boolean(['','a',''])
+\end{verbatim}
+yields {\tt [F, T, F]}, and
+\begin{verbatim}
+    as_boolean(".0000001")
+\end{verbatim}
+yields {\tt T}, and
+\begin{verbatim}
+    as_boolean(".0000001foo")
+\end{verbatim}
+and
+\begin{verbatim}
+    as_boolean("0.")
+\end{verbatim}
+and
+\begin{verbatim}
+    as_boolean(0+9i)
+\end{verbatim}
+yields {\tt T}.
+
+\index{constants!string!empty {\em vs.} no elements}
+Note that an {\em empty} string here means
+a string with no text in it; this is {\em different} from a string
+with no elements.
+\begin{verbatim}
+    as_boolean('')
+\end{verbatim}
+yields {\tt F}, but
+\begin{verbatim}
+    as_boolean("")
+\end{verbatim}
+yields {\tt []}, an empty ({\tt boolean}) vector.
+
+\subsection{Integer Conversions}
+\label{integer-conversion}
+\index{types!conversion!to {\tt integer}}
+A {\tt boolean} value converted to {\tt byte}, {\tt short}, or {\tt integer}
+yields {\tt 1} if the value was {\tt T} and {\tt 0} if {\tt F}.
+
+Conversions between {\tt byte}, {\tt short}, and {\tt integer} types
+yields the same values as the host machine's C++ compiler doing
+the same conversion via a cast.
+
+A {\tt float} or {\tt double} value yields the same {\tt integer} value
+as the host machine's C++ compiler doing the same conversion
+via a cast.  In particular, it is possible for a value like {\tt -3.14159} to
+be converted to {\tt -3} or {\tt -4} depending upon the particular compiler. If
+the direction of  this conversion is important, you can use
+{\tt floor} and {\tt ceiling}:
+\begin{list}{}{}
+
+\item[{\tt ceiling(x)}]
+\indfunc{ceiling}
+\label{ceiling-func}
+returns the smallest integer which is greater than or equal to the
+argument, {\tt x}. This function can be abbreviated as {\tt ceil}. If
+{\tt x} is a vector, {\tt ceiling} is applied to each of the elements
+of the vector.
+
+\item[{\tt floor(x)}]
+\indfunc{floor}
+\label{floor-func}
+returns the largest integer which is less than or equal to the
+argument, {\tt x}. If {\tt x} is a vector, {\tt floor} is applied to
+each of the elements of the vector.
+
+\end{list}
+These will reliably convert floating point numbers to integers.
+
+{\tt complex} or {\tt dcomplex} values behave like {\tt float} or
+{\tt double} values except that {\tt complex} or {\tt dcomplex} values
+also lose their imaginary portion.
+
+A {\tt string} value is converted as per the C (and C++)
+\index{{\em atoi()}}
+routine {\em atoi()}.
+If the value is not a valid integer then it is converted to {\tt 0}.
+
+\subsection{Float and Double Conversions}
+
+\index{types!conversion!to floating-point}
+A {\tt boolean} value converted to {\tt float} or {\tt double} yields
+{\tt 1.0} if {\tt T} and {\tt 0.0} if {\tt F}.
+
+{\tt complex} or {\tt dcomplex} values lose their imaginary portion
+when converted to {\tt float} or {\tt double}.
+
+A {\tt string} value is converted as per the C (and C++)
+\index{{\em atof()}}
+routine {\em atof()}.
+If the value is not a valid floating-point number then it is converted
+to {\tt 0.0}.
+
+\subsection{Complex Conversions}
+
+\index{types!conversion!to complex}
+A {\tt boolean} value converted to {\tt complex} or {\tt dcomplex} yields
+{\tt 1.0+0.0i} if {\tt T} and {\tt 0.0+0.0i} if {\tt F}.
+
+{\tt float} or {\tt double} numbers converted to {\tt complex} or
+{\tt dcomplex} results in a complex number whose real portion is
+equal to the {\tt float} or {\tt double} value, and whose imaginary
+portion is {\tt 0.0}.
+
+A {\tt string} value is converted as per the C (and C++)
+\index{{\em atof()}}
+routine {\em atof()}.
+
+\subsection{String Conversions}
+
+\index{types!conversion!to {\tt string}}
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt boolean}] values when converted to a {\tt string} yields {\tt "T"}
+if true and {\tt "F"} if false.
+
+\item[{\tt byte}], {\tt short}, or {\tt integer} values yield
+their natural string representation.
+
+\item[{\tt float}] values are converted as per {\em printf()}'s ``{\tt \%.6g}''
+format.
+
+\item[{\tt double}] values are converted as per {\em printf()}'s ``{\tt \%.12g}''
+format.
+
+\item[{\tt complex}] values are converted as per {\em printf()}'s ``{\tt \%.6g+\%.6gi}''
+format.
+
+\item[{\tt dcomplex}] values are converted as per {\em printf()}'s ``{\tt \%.12g+\%.12gi}''
+format.
+\end{list}
+\end{sloppy}
+
+The conversion of floating point values to strings are changed by setting the
+{\tt system.print.precision} value or the {\tt print.precision} attribute for an
+individual value (see \xref{system-print-precision}).
+
+\index{types!conversion functions|)}
+\index{predefined functions!type conversion|)}
+
+\section{Manipulating Vectors and Arrays}
+\label{predefined-vectors}
+
+\index{predefined functions!vector manipulation|(}
+\index{vectors!manipulation functions|(}
+The following functions are available for manipulating
+(primarily {\em numeric}) vectors and arrays (see \xref{creating-arrays}
+for information on creating arrays):
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt length(...)}] \label{length-func} \indfunc{length}
+returns a vector in which each of the of elements is the length the vector argument,
+or the number of fields in the argument, if the argument is a {\tt record}.  So,
+\begin{verbatim}
+    length(1:3,5:10,1:10)
+\end{verbatim}
+returns {\tt [3, 6, 10]}. {\tt length} may be abbreviated to {\tt len}.
+\label{len-func}
+
+\item[{\tt sum(...)}] \label{sum-func} \indfunc{sum}
+returns the sum of all of all of its arguments. The arguments
+must be {\em numeric} vectors.  For example,
+\begin{verbatim}
+    sum(4:6, 1, 2)
+\end{verbatim}
+returns {\tt 18}. The value returned is a {\tt double} scalar.
+
+An error is generated and {\tt F} returned if {\tt x} is not {\em numeric\/}.
+
+\item[{\tt prod(...)}] \label{prod-func} \indfunc{prod}
+returns the product of all of its arguments. The arguments
+must be {\em numeric} vectors.  For example,
+\begin{verbatim}
+    prod(1:3, 1, 2)
+\end{verbatim}
+returns {\tt 12}. The value returned is a {\tt double} scalar.
+
+An error is generated and {\tt F} returned an an argument is not {\em numeric\/}.
+
+\indfunc{min} \indfunc{max}
+\item[{\tt min(...)}] \label{min-func} and {\tt max(...)} \label{max-func}
+return the minimum and maximum element
+of the {\em numeric} arguments. For example,
+\begin{verbatim}
+    min(3:5, 1:-3, 6:9)
+\end{verbatim}
+returns {\tt -3}. The value returned is a {\tt double} scalar.
+
+These functions are special cases of the more general function {\tt range(...)},
+\indfunc{range}
+\label{range-func}
+which returns a two-element {\tt double} vector giving the minimum and
+maximum elements of all of the {\em numeric} vector arguments:
+\begin{verbatim}
+    range(1:10)
+\end{verbatim}
+yields {\tt [1, 10]}, but
+\begin{verbatim}
+    range(1:10,5:90,1:-3)
+\end{verbatim}
+returns {\tt [-3,90]}.
+
+An error is generated and {\tt F} returned if {\tt x} is not {\em numeric\/}.
+
+\indfunc{sort}
+\item[{\tt sort(x)}] \label{sort-func}
+returns {\tt x} sorted into ascending order.  {\tt x} must be either
+{\em numeric} or {\tt string}.
+
+\indfunc{sort\_pair}
+\item[{\tt sort\_pair(x,y)}] \label{sort_pair-func}
+rearranges the elements of {\tt y} to reflect the order
+of the elements of {\tt x} ({\tt x} and {\tt y} must have the same length).
+For example,
+\begin{verbatim}
+    sort_pair([3,1,2], "a b c")
+\end{verbatim}
+yields {\tt "b c a"}, since {\tt "b"}
+was paired with the smallest element of {\tt [3,1,2]}, {\tt "c"} with the
+second smallest, and {\tt "a"} with the largest.
+
+\indfunc{unique}
+\item[{\tt unique(x)}] \label{unique-func}
+returns the unique items in {\tt x} sorted into ascending order.
+{\tt x} must be either {\em numeric} or {\tt string}.
+
+\indfunc{order}
+\item[{\tt order(x)}] \label{order-func}
+returns the indices of the sorted elements of {\tt x}.  So, for example,
+\begin{verbatim}
+    x[order(x)] == sort(x).
+\end{verbatim}
+
+\indfunc{imag} \indfunc{real}
+\item[{\tt imag(x)}] \label{imag-func} and {\tt real(x)} \label{real-func}
+return the real or imaginary portion of the {\em numeric} vector argument,
+{\tt x}. For example,
+\begin{verbatim}
+    real(4-9i)
+\end{verbatim}
+returns {\tt 4}.
+
+\item[{\tt complex(x,y)}] \label{complex-func} \indfunc{complex}
+is the inverse of {\tt real(x)} and {\tt imag(x)}. Given two vectors,
+this function creates a vector of complex numbers. If the two
+vectors have the same length the complex numbers are created 
+element by element, taking the real portion from {\tt x} and
+the imaginary portion from {\tt y}. If {\tt x} or {\tt y} is
+a scalar, it is paired with each of the elements of the other.
+So,
+\begin{verbatim}
+    complex(3:5,-1)
+\end{verbatim}
+yields {\tt [3-1i, 4-1i, 5-1i]}. If {\tt x} is already a complex
+number, it is simply returned. If either {\tt x} or {\tt y} is
+a {\tt double} the result is a {\tt dcomplex} otherwise the result
+is a {\tt complex}.
+
+\item[{\tt conj(x)}] \label{conj-func} \indfunc{conj}
+takes the complex conjugate of {\tt x} where {\tt x} is a vector
+of complex numbers.
+
+\item[{\tt arg(x)}] \label{arg-func} \indfunc{arg}
+returns the {\em argument} of a complex number, i.e. 
+\verb-atan( imag(x) / real(x) )-.
+
+\index{predefined functions!mathematical}
+\item[{\tt sqrt(x)}], {\tt exp(x)}, {\tt log(x)}, {\tt ln(x)}, {\tt sin(x)},
+{\tt cos(x)}, {\tt tan(x)}, {\tt asin(x)}, {\tt acos(x)}, and {\tt atan(x)}
+\label{sqrt-func} \label{exp-func} \label{log-func}
+\label{ln-func} \label{sin-func} \label{cos-func}
+\label{tan-func} \label{asin-func} \label{acos-func}
+\label{atan-func}
+\indfunc{sqrt}
+\indfunc{exp}
+\indfunc{log}
+\indfunc{ln}
+\indfunc{sin}
+\indfunc{cos}
+\indfunc{tan}
+\indfunc{asin}
+\indfunc{acos}
+\indfunc{atan}
+return the square root, exponentiation (i.e., $e^x$),
+logarithm (base 10), natural logarithm (base $e$), sine, cosine, tangent,
+arcsine, arccosine, and arctangent of the {\em numeric} vector (array) {\tt x},
+operating on each element in turn.  The computation is done on the value of
+{\tt x} as coerced to {\tt double}, and the returned value is a vector (array)
+of type {\tt double}.  For example,
+\begin{verbatim}
+    sqrt(1:5)
+\end{verbatim}
+yields {\tt [1, 1.41421, 1.73205, 2, 2.23607]}.
+
+An error is generated and {\tt F} returned if {\tt x} is not {\em numeric\/}.
+
+\item[{\tt abs(x)}] \label{abs-func} \indfunc{abs}
+returns the absolute value of the {\em numeric} vector
+{\tt x}.  The result has the same type as {\tt x}.
+
+The absolute value of a {\tt boolean} value is simply that same {\tt boolean}
+value.
+
+The absolute value of a {\tt complex} or {\tt dcomplex} value, {\tt x}, is
+\verb-sqrt( real(x)^2 + imag(x)^2 )-.
+
+If {\tt x} is not {\em numeric\/} an error is generated and
+an undefined value is returned.
+
+\item[{\tt all(x)}] \label{all-func} \indfunc{all}
+returns {\tt T} if {\em every} element of {\tt x} is
+either {\tt T} (if {\tt x}'s type is {\tt boolean}) or non-zero (otherwise).
+It returns {\tt F} if any element of {\tt x} is either {\tt F} or zero.
+For example,
+\begin{verbatim}
+    all(y > 3)
+\end{verbatim}
+returns {\tt T} if-and-only-if every element of {\tt y} is greater than {\tt 3}.
+
+If {\tt x} is not {\em numeric\/} 
+an error is generated and
+an undefined value is returned.
+
+\item[{\tt any(x)}] \label{any-func} \indfunc{any}
+is analogous to {\tt all(x)}; it returns {\tt T}
+if {\em any} element of {\tt x} is either {\tt T} or non-zero, and
+{\tt F} if every element is {\tt F} or zero.  For example,
+\begin{verbatim}
+    any(y > 3)
+\end{verbatim}
+returns {\tt F} if-and-only-if every element of {\tt y} is less than or
+equal to {\tt 3}.
+
+\indfunc{seq}
+\item[{\tt seq(x)}] \label{seq1-func}
+\index{seq function!with one argument}
+returns an {\tt integer} vector of all of the numbers
+between {\tt 1} and {\tt x} if {\tt x} is a scalar:
+\begin{verbatim}
+    seq(5)
+\end{verbatim}
+yields {\tt [1, 2, 3, 4, 5]}, as does:
+\begin{verbatim}
+    seq(5.4)
+\end{verbatim}
+If {\tt x} is less than {\tt 1} or not {\em numeric\/}, an error is
+generated and {\tt F} is returned.
+
+If {\tt x} is not a scalar then its length is used instead:
+\begin{verbatim}
+    seq([3, -5, 2])
+\end{verbatim}
+yields {\tt [1, 2, 3]}.
+This version of {\tt seq()} is often useful
+for generating vector indices. In this case {\tt x} can also be of
+type {\tt string}. 
+(See examples in \xref{boolean-indices}, and \xref{for-loops}.)
+
+\item[{\tt seq(x,y)}] \label{seq2-func}
+\index{seq function!with two arguments}
+starts at {\tt x} and proceeds counting by {\tt 1}
+until reaching {\tt y}, returning the result as either an {\tt integer}
+vector if {\tt x} was an integral value (e.g., {\tt 3} or {\tt 5.0}) or else
+as a {\tt double} vector.  If {\tt y} is less than {\tt x} then the
+function counts downwards.
+
+For example,
+\index{example!{\tt seq()} function}
+\begin{verbatim}
+    seq(3,5)
+\end{verbatim}
+yields {\tt [3, 4, 5]}, while
+\begin{verbatim}
+    seq(5.2, 1)
+\end{verbatim}
+yields {\tt [5.2, 4.2, 3.2, 2.2, 1.2]}.
+
+If {\tt x} or {\tt y} contains more than one element then the first
+element is used.
+
+If {\tt x} or {\tt y} is not {\em numeric\/} then the results are undefined.
+
+\item[{\tt seq(x,y,z)}] \label{seq3-func} 
+\index{seq function!with twoz@with three arguments}
+is similar to the preceding {\tt seq(x,y)} function
+except instead of counting by {\tt 1}, it counts by {\tt z}.  If {\tt x}
+is less than {\tt y} then {\tt z} must be positive, and if {\tt x} is greater
+than {\tt y} then {\tt z} must be negative.  If {\tt z} fails this requirement,
+or if {\tt z} is {\tt 0}, then an error is generated and {\tt F} returned.
+
+For example,
+\begin{verbatim}
+    seq(1,2,.2)
+\end{verbatim}
+yields {\tt [1, 1.2, 1.4, 1.6, 1.8, 2]}.
+
+\index{errors!{\tt seq} resulting in too many elements}
+A call to {\tt seq()} resulting in more than a million elements results
+in an error message and a return value of {\tt F}.
+
+(See \xref{integer-indices}, for other examples of {\tt seq()}.)
+
+\item[{\tt ind(x)}] \label{ind-func} \indfunc{ind}
+returns a vector of indices corresponding to {\tt x},
+which must be either a vector or a record.  Thus,
+\begin{verbatim}
+    ind(x)
+\end{verbatim}
+is equivalent to:
+\begin{verbatim}
+    1:len(x)
+\end{verbatim}
+
+\item[{\tt rep(value, count)}] \label{rep-func} \indfunc{rep}
+takes two parameters the vector {\tt value} and {\tt count}.
+If {\tt count} is a scalar {\tt rep()} returns a vector
+consisting of {\tt count} copies of {\tt value}.  For example,
+\begin{verbatim}
+    rep(6:5,3)
+\end{verbatim}
+yields {\tt [6, 5, 6, 5, 6, 5]}. If, however, {\tt count} is
+a vector whose  length equals {\tt value}'s length, then it
+replicates each of the elements of {\tt value} the number of
+times specified in the respective element of {\tt count}. So,
+\begin{verbatim}
+    rep(6:5,2:3)
+\end{verbatim}
+yields {\tt [6, 6, 5, 5, 5]}, that is it repeats {\tt 6} two
+times, and it repeats {\tt 5} three times.
+
+If called with erroneous arguments, {\tt rep()} reports an
+error and returns {\tt F} instead.
+
+\item[{\tt array(init, ... )}] \label{array-func} \indfunc{array}
+This function is used to create {\em n} dimensional arrays. The
+first argument, {\tt init}, is used to initialize the array. The
+following arguments specify the length of each of the dimensions
+of the array. If the length of {\tt init} is less than the total
+number of elements of the array, {\tt init} is repeated to
+fill the array, and if its length is greater, only enough of the
+initial elements of {\tt init} to fill the array are used.
+For example:
+\begin{verbatim}
+    array(0,3,3)
+\end{verbatim}
+creates a three by three matrix with all of its elements
+initialized to {\tt 0}.
+
+\item[{\tt shape(x)}] \label{shape-func} \indfunc{shape}
+This function returns the shape of {\tt x}.
+
+\item[{\tt cbind(a, b, ... )}] \label{cbind-func} \indfunc{cbind}
+takes any number of parameters which can be either vectors or two
+dimensional arrays, and it augments {\tt a} with the subsequent
+arguments by adding columns to {\tt a}. If two dimensional arrays
+are involved, they must have the same number of rows; otherwise, an
+error message is generated, and the operation will fail. Here
+is an example of binding matricies and vectors:
+\begin{verbatim}
+    cbind(array([1,2],2,2),array([3,4],2,2),10:20)
+\end{verbatim}
+It yields the output:
+\begin{verbatim}
+    [[1:2,]
+        1 1 3 3 10
+        2 2 4 4 11]
+\end{verbatim}
+Note that the {\em extra} elements of vectors are ignored. {\tt cbind}
+can be used with vectors alone:
+\begin{verbatim}
+    cbind(1:6, 100:20, 3:5, 8:0)
+\end{verbatim}
+yeilds:
+\begin{verbatim}
+    [[1:3,]
+        1 100 3 8
+        2 99  4 7
+        3 98  5 6] 
+\end{verbatim}
+
+\item[{\tt rbind(a, b, ... )}] \label{rbind-func} \indfunc{rbind}
+takes any number of parameters which can be either vectors or two
+dimensional arrays, and it augments {\tt a} with the subsequent
+arguments by adding rows to {\tt a}.  If two dimensional arrays are
+involved, they must have the same number of columns; otherwise, an
+error message is generated, and the operation will fail. This
+very similar to {\tt cbind}. Here is an example:
+\begin{verbatim}
+    rbind(array([1,2],2,2),20:10)
+\end{verbatim}
+This example generates the following output:
+\begin{verbatim}
+    [[1:3,]
+        1  1
+        2  2
+        20 19] 
+\end{verbatim}
+
+\end{list}
+\end{sloppy}
+\index{vectors!manipulation functions|)}
+\index{predefined functions!vector manipulation|)}
+
+\section{Value Creators}
+\label{predefineds-creators}
+
+\index{predefined functions!value creation|(}
+This section includes a couple of predefined functions which, in some
+sense, create new values. 
+\begin{sloppy}
+\begin{list}{}{}
+\item[{\tt time()}] \label{time-func} \indfunc{time}
+returns the system time in seconds since 00:00 Universal Coordinated Time,
+January 1, 1970. The value returned is of type double.
+
+\index{random function|(}
+\item[{\tt random()}] \label{random0-func}
+returns a random integer.
+
+\item[{\tt random(n)}] \label{random1-func}
+returns {\tt n} random integers.
+
+\item[{\tt random(start,stop)}] \label{random2-func}
+returns a random integer which is greater than or equal to {\tt start} and
+less than or equal to {\tt stop}.
+\index{random function|)}
+
+\end{list}
+\end{sloppy}
+\index{predefined functions!value creation|)}
+
+\section{String Functions}
+\label{predefineds-string}
+
+\index{predefined functions!string manipulation|(}
+\index{strings!manipulation functions|(}
+
+\subsection{split and paste}
+{\tt paste} \label{paste-func} \indfunc{paste}
+takes a list of values, converts them all to scalar {\tt string}'s,
+and returns their concatenation as a scalar {\tt string} value.
+For example,
+\begin{verbatim}
+    a := [2,3,5]
+    paste( "the first three primes are", a )
+\end{verbatim}
+yields
+\begin{verbatim}
+    the first three primes are [2 3 5]
+\end{verbatim}
+The {\tt []}'s seen here in the string representation of the vector {\tt a}
+only occur for a {\em numeric} value with more than one element.
+
+Similarly,
+\begin{verbatim}
+    paste( "hello", "there" )
+\end{verbatim}
+is equivalent to the string constant
+\begin{verbatim}
+    'hello there'
+\end{verbatim}
+
+By default, the {\tt string} values are concatenated together using a
+\index{paste function!optional {\tt sep=} argument}
+single space.  The optional {\tt sep=} argument specifies
+a {\tt string} to be used instead.  For example,
+\begin{verbatim}
+    paste("hello", "there", "how", "are", "you?",
+          sep="XYZ")
+\end{verbatim}
+yields
+\begin{verbatim}
+    helloXYZthereXYZhowXYZareXYZyou?
+\end{verbatim}
+
+Note that the arguments to {\tt paste} are {\em first} converted to scalar
+{\tt string}'s, and {\em then} concatenated together.  So
+\begin{verbatim}
+    paste( "hello there", 1:3, sep="" )
+\end{verbatim}
+yields
+\begin{verbatim}
+    hello there[1 2 3]
+\end{verbatim}
+and {\em not}
+\begin{verbatim}
+    hellothere[123]
+\end{verbatim}
+
+If a single element string is passed to {\tt paste}, the elements of the string are
+concatenated. For example:
+\begin{verbatim}
+    paste("a b c d e", sep='' )
+\end{verbatim}
+results in the string {\tt "abcde"}. With multiple strings, the individual
+strings are concatenated, but not the individual elements of the strings.
+
+{\tt spaste} \label{spaste-func} \indfunc{spaste}
+is simply a version of {\tt paste} with the separator
+set to an empty string.  It is defined using:
+\begin{verbatim}
+    func spaste(...) paste(...,sep='')
+\end{verbatim}
+This form of {\tt paste} is common enough that it merits its own simple
+form.
+
+{\tt split} \label{split-func} \indfunc{split}
+is basically the inverse of {\em paste}.  It takes a single
+argument, converts it to a scalar {\tt string}, and splits it into words
+at each block of whitespace, just as string constants are constructed
+when enclosed in double-quotes (see \xref{string-constants}).
+Thus
+\begin{verbatim}
+    split('hello there how are you?')
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    "hello there how are you?"
+\end{verbatim}
+that is, it yields a five-element {\tt string} vector.
+
+You can also call
+\index{split function!with two arguments}
+{\tt split} with a second argument.  The second parameter specifies
+where in the string the break should occur, for example
+\index{example!{\tt split()} function}
+\begin{verbatim}
+    split("hello   there how are you", "eo")
+\end{verbatim}
+yields the equivalent of
+\begin{verbatim}
+    ['h', 'll', ' th', 'r', ' h', 'w ar', ' y', 'u']
+\end{verbatim}
+Here the first element is \verb+'h'+, the second is \verb+'ll'+, the
+third \verb+' th'+, and so forth.  The presence of the single leading space
+in \verb+' th'+ may be surprising.  What happened is that first {\tt split}
+converted
+\begin{verbatim}
+    "hello   there how are you"
+\end{verbatim}
+to a scalar value, equivalent to
+\begin{verbatim}
+    'hello there how are you'
+\end{verbatim}
+since the double-quoted constant was constructed all information
+about the number of blanks between words was lost.  Next {\tt split} broke
+the scalar into words at every occurrence of an {\tt 'e'} or an {\tt 'o'},
+but {\em not} at each blank like it would without the second argument.
+If a blank had been included in the second argument then these extra
+blanks naturally disappear:
+\begin{verbatim}
+    split("hello   there how are you", 'eo ')
+\end{verbatim}
+yields the equivalent of
+\begin{verbatim}
+    "h ll th r h w ar y u"
+\end{verbatim}
+Note that you have to enclose the second argument in single-quotes, otherwise
+the blank will be removed.
+
+If the second argument is a null string, the first string is broken up into
+individual characters. Here is an example:
+\begin{verbatim}
+    split("how are you", '')
+\end{verbatim}
+yields the string:
+\begin{verbatim}
+    ['h', 'o', 'w', ' ', 'a', 'r', 'e', ' ', 'y', 'o', 'u']
+\end{verbatim}
+
+\subsection{sprintf}
+\indfunc{sprintf}
+\label{sprintf-func}
+
+The {\tt sprintf}\footnote{{\tt printf} and {\tt fprintf} share the same format
+string syntax and general behavior} function is available for generating strings.
+This function takes the same arguments as the {\em stdio.h} sprintf function.
+This example:
+\begin{verbatim}
+    sprintf("result: 0x%x", 2871)
+\end{verbatim}
+would return the string \verb+'result: 0xb37'+. It uses the \verb+%x+ field
+specifier to output a hexadecimal number. \verb+%x+ is just one of the
+possible field specifiers available with {\tt sprintf} (or {\tt printf} or
+{\tt fprintf}); Table~\ref{sprintf-fields} lists all of the possible field
+specifiers. Each of these field specifiers is prefixed with a percent sign and
+indicates a field in the output string which is replaced with a subsequent
+{\tt sprintf} argument. Each field is replaced with the respective argument following
+the format string. Here is another example:
+\begin{verbatim}
+    sprintf("%4d/%02d/%02d %d:%02d:%02d",1998,8,20,7,46,2)
+\end{verbatim}
+In this case, a string like \verb+'1998/08/20 7:46:02'+ would be returned.
+This example uses the \verb+%d+ field specifier to create a date and time
+string. \verb+%%+ is used to put a percent sign into the result, like:
+\begin{verbatim}
+    sprintf("%d%%", 100)
+\end{verbatim}
+which would create the string \verb+'100%'+. In each case, the result of
+{\tt sprintf} is a string made up of the format string with each field
+specifier replaced with a subsequent argument.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Field Specifer & Input & Output  \\
+\hline
+\hline
+\verb-%d- & integer, short, byte & decimal \\ \hline
+\verb-%x- & integer, short, byte & hexadecimal (uses a-f) \\ \hline
+\verb-%X- & integer, short, byte & hexadecimal (uses A-F) \\ \hline
+\verb-%o- & integer, short, byte & octal \\ \hline
+\verb-%r- & integer, short, byte & roman numeral (uses m,d,c,l,x,v,i) \\ \hline
+\verb-%R- & integer, short, byte & roman numeral (uses M,D,C,L,X,V,I) \\ \hline
+\verb-%s- & string & string \\ \hline
+\verb-%c- & string, integer, short, byte & single character \\ \hline
+\verb-%f- & float, double & floating point \\ \hline
+\verb-%e- & float, double & exponential notation \\ \hline
+\verb-%g- & float, double & the shorter of \verb+%f+ or \verb+%e+ \\ \hline
+\verb-%%- & {\em none} & \verb+%+ \\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ sprintf Fields Specifiers }
+\label{sprintf-fields}
+\end{table}
+
+Each field specifier can have an extra qualifier between the \verb+%+ and the
+conversion character. The format of this qualifier is:
+\begin{list}{}{}
+
+\item[{\em minus sign}]
+if present, indicates that the converted argument should be left adjusted in its field.
+Right adjusted output is the default.
+
+\item[{\em digit string}]
+if present, specifies the minimum field width. In the case of a number, it will
+be printed in a field at least this long; the field is widened if it is too small
+for the argument. The argument will be padded if it is smaller than the specified
+field width. By default, the pad character is a space, but if this digit string
+begins with a zero, then zero is used as the pad character.
+
+\item[{\em period}]
+is used to seperate the width digit string from the next digit string.
+
+\item[{\em digit string}]
+specifies the number of printed digits digits to the right of the decimal point
+for floating point numbers or the maximum number of characters for strings.
+\end{list}
+Each of these qualifier components is optional, though the {\em period} must
+always be used in conjunction with the final {\em digit string}. 
+Table~\ref{sprintf-fields} has some examples.
+
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+Command & Result  \\
+\hline
+\hline
+\verb+sprintf(">%.7s<",'long string')+ & \verb+>long st<+ \\ \hline
+\verb+sprintf(">%7s<",'long string')+ & \verb+>long string<+ \\ \hline
+\verb+sprintf(">%20s<",'long string')+ & \verb+>         long string<+ \\ \hline
+\verb+sprintf(">%-20s<",'long string')+ & \verb+>long string         <+ \\ \hline
+\verb+sprintf(">%-20.7s<",'long string')+ & \verb+>long st             <+ \\ \hline
+\verb+sprintf(">%-20.7f<",pi)+ & \verb+>3.1415927           <+ \\ \hline
+\verb+sprintf(">%20.3f<",pi)+ & \verb+>               3.142<+ \\ \hline
+\verb+sprintf(">%020.3f<",pi)+ & \verb+>0000000000000003.142<+ \\ \hline
+\verb+sprintf(">%20.6e<",pi)+ & \verb->        3.141593e+00<- \\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ sprintf Examples }
+\label{sprintf-examples}
+\end{table}
+
+If {\tt sprintf} is applied to vectors, the format string is applied to each
+element of the vectors. For example:
+\begin{verbatim}
+    print sprintf('%d\t%r\n',1998:2002,1998:2002)
+\end{verbatim}
+would result in the following output:
+\begin{verbatim}
+    1998    mcmxcviii
+     1999   mcmxcix
+     2000   mm
+     2001   mmi
+     2002   mmii
+\end{verbatim}
+The result of {\tt sprintf} is a string, and the misalignment of {\tt 1998}
+and {\tt 1999} is the result of the space added to separate elements of a string.
+{\tt spaste}, for example, could be used to get rid of this misalignment, or
+{\tt printf} could be used instead of {\tt sprintf} with {\tt print}.
+
+\subsection{tr}
+\indfunc{tr}
+\label{tr-func}
+
+The {\tt tr} function can be used to translate strings. It takes two ranges plus a string,
+and it maps characters of the first range occurring in a string to the corresponding character
+of the second range. Here are a couple of simple examples:
+\begin{verbatim}
+    tr('[a-z]','[A-Z]',"This is a string.")
+    tr('[a-z]','[Z-A]',"This is a string.") 
+    tr('[a-m][n-z][A-M][N-Z]','[n-z][a-m][N-Z][A-M]',"This is a string.")
+\end{verbatim}
+The result of these examples would be:
+\begin{verbatim}
+    THIS IS A STRING. 
+    TSRH RH Z HGIRMT. 
+    Guvf vf n fgevat.
+\end{verbatim}
+The first example capitalizes all of the letters, the second jumbles them, and
+the third performs {\em Rot13}.
+
+\indfunc{to\_lower}
+\indfunc{to\_upper}
+\label{to_lower-func}
+\label{to_upper-func}
+There are two other convienence functions based on {\tt tr}, {\tt to\_lower()} and
+{\tt to\_upper()}. These functions convert a string to lower case or upper case.
+
+\subsection{strlen}
+\indfunc{strlen}
+\label{strlen-func}
+{\tt strlen} returns the length of each element of a string. For example:
+\begin{verbatim}
+    strlen("the cow jumped over the moon")
+\end{verbatim}
+would return:
+\begin{verbatim}
+    [3 3 6 4 3 4]
+\end{verbatim}
+
+\index{strings!manipulation functions|)}
+\index{predefined functions!string manipulation|)}
+
+\section{Manipulating Symbols}
+\label{predefineds-symbols}
+
+\index{predefined functions!symbol manipulation|(}
+This section describes a group of functions which allow you to query
+and modify global variables in the {\em Glish} system. These functions
+allow access to the internals of {\em Glish}.
+
+{\tt symbol\_set}  and {\tt symbol\_delete} in particular
+should be used with caution. Deleting symbols with {\tt symbol\_delete}
+in a function which refers to these deleted symbols, for example, yields
+{\em unexpected results}. So while these functions are available, their
+use is discouraged; {\em caveat emptor}.
+
+In several of these function, a string is passed as a parameter. This string
+represents the symbol name which is being manipulated. Record member access
+etc. is not possible with these functions; only global symbol names can be used.
+
+\begin{sloppy}
+\begin{list}{}{}
+\indfunc{symbol\_names}
+\item[{\tt symbol\_names()}] \label{symbol_names0-func}
+\index{symbol\_names function!with no arguments}
+returns the names of all of the {\em global} variables which have been defined.
+
+\item[{\tt symbol\_names(f)}] \label{symbol_names1-func}
+if passed a function, {\tt f}, which takes a single 
+parameter and returns a
+boolean, applies {\tt f} to each of the {\em global} variables,
+and returns only the names of those for which {\tt f} returned {\tt T}. For
+example:
+\begin{verbatim}
+    symbol_names( is_function )
+\end{verbatim}
+returns the names of all of the {\tt global} functions. As another example,
+\begin{verbatim}
+    symbol_names( func (x) {is_numeric(x) && ! is_const(x)} )
+\end{verbatim}
+returns all of the numeric {\em global} variables which are not {\tt const}.
+
+\item[{\tt symbol\_value(name)}] \label{symbol_value-func} \indfunc{symbol\_value}
+this function takes a string, and returns the value of the symbol called {\tt name}.
+If {\tt name} has more then one element, then {\tt symbol\_value} returns the symbol
+value of each as a field in a record. The field names of the record correspond to the
+symbol names. If the string has a single element, the value of that symbol is returned.
+
+\indfunc{symbol\_set}
+\item[{\tt symbol\_set(name,value)}] \label{symbol_set2-func}
+\index{symbol\_set function!with two arguments}
+this function assigns the {\em Glish} value {\tt value} to the 
+symbol with the name
+specified by the {\tt name} parameter. {\tt name} must be a string, and should
+conform to the restrictions on {\em Glish} variable names.
+
+\item[{\tt symbol\_set(rec)}] \label{symbol_set1-func}
+\index{symbol\_set function!with one arguments}
+if passed a record, this function {\em explodes} the record field names into
+{\em global} {\em Glish} variables. That is, each field name  is\ mapped to the
+{\em global} symbol that corresponds to the field name. This global
+symbol is then assigned the field's value.
+
+\item[{\tt symbol\_delete(name)}] \label{symbol_delete-func} \indfunc{symbol\_delete}
+this function deletes any symbol named {\tt name}. Note that this is the only
+way {\tt const} symbols can be deleted.
+
+\item[{\tt is\_defined(name)}] \label{is_defined-func} \indfunc{is\_defined}
+this function returns {\tt T} if there is a symbol called {\tt name}, otherwise
+it returns {\tt F}. This is used to prevent multiple inclusion of scripts
+via {\tt include}.
+
+\end{list}
+\end{sloppy}
+\index{predefined functions!symbol manipulation|)}
+
+\section{{\tt eval} Function}
+\label{eval-func}
+\index{predefined functions!eval|(}
+The {\tt eval} function is used to evaluate a string as a {\em Glish}  statement and
+return the result. This is probably most useful for allowing users
+to enter {\em Glish} commands from a GUI. Here is an example of how {\tt eval} is used:
+\begin{verbatim}
+    x := 10
+    y := 18
+    print eval("y +:= 2", "x * y")
+\end{verbatim}
+In this example, the output is {\tt 200}, and {\tt y} equals {\tt 20}.
+Currently, the strings passed to {\tt eval} are always evaluated in the {\em global}
+scope. This is true even if {\tt eval} is called from a function; this is a bug. The
+result is the following unexpected behavior: \index{bugs!eval}
+\begin{verbatim}
+    x := 10
+    y := 18
+    func foo() { y := 2; return eval("y +:= 2", "x * y") }
+    print foo()
+\end{verbatim}
+This example results in an output of {\tt 200} and the {\em global} {\tt y} equal to
+{\tt 20} (the same as the previous example). This will hopefully be fixed in a
+later release.
+\index{predefined functions!eval|)}
+
+\section{Manipulating Variable Argument Lists}
+
+\index{predefined functions!ellipsis manipulation|(}
+\index{ellipsis!manipulation functions|(}
+Three functions are available for manipulating variable argument lists.
+\indfunc{num\_args}
+The first is {\tt num\_args(...)}, which returns the number of arguments
+with which it was invoked, after first expanding any ellipsis ({\tt ...}) arguments.
+\indfunc{nth\_arg}
+The second is {\tt nth\_arg(n, ...)}, which returns its {\tt n}'th argument,
+numbering {\tt n} itself as 0.
+\indfunc{missing}
+The third is {\tt missing( )}, which returns a vector with {\tt T} in each
+element that corresponds to a missing parameter and {\tt F} elsewhere.
+
+(See \S~\ref{ellipsis} and \S~\ref{missing-func}, for a full discussion of these
+functions.)
+\index{predefined functions!ellipsis manipulation|)}
+\index{ellipsis!manipulation functions|)}
+
+\section{Manipulating Agents}
+\label{predefined-agents}
+
+\index{predefined functions!agent manipulation|(}
+\index{agents!functions to manipulate|(}
+{\em Glish} provides the following functions for manipulating {\tt agent}
+values:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt create\_agent()}] \label{create_agent-func} \indfunc{create\_agent}
+returns a new {\tt agent} value that
+can be used in subsequent {\tt whenever} and {\tt send}
+statements.  That is, the {\tt agent} value can be sent events and
+you can set up {\tt whenever}'s to deal with receiving these events.
+
+For example,
+\index{example!creating an agent}
+\begin{verbatim}
+    a := create_agent()
+    a->hi( "how are you?" )
+
+    whenever a->hi do
+        print $value
+\end{verbatim}
+prints {\tt "how are you?"}.  I am interested in hearing if
+you find {\tt create\_agent()} itself more useful than using
+{\em subsequences} (\xref{subseq}), which provides a more structured
+interface to dealing with {\tt agent}'s.
+
+\item[{\tt client(command,}] {\tt ..., host=F, input=F, suspend=F,
+ping=F, async=F)}
+\label{client-func}\indfunc{client}
+creates a {\em Glish} {\tt client} corresponding to the given command and arguments.
+(See \xref{client-func-long}, for details.)
+
+\item[{\tt shell(command,}] {\tt ..., host=F, input=F, suspend=F,
+ping=F, async=F)}
+\label{shell-func}\indfunc{shell}
+\index{Bourne shell}
+either executes a Bourne shell command and returns a {\tt string} representation
+of its output (if {\tt async=F}), or creates an asynchronous shell client
+that can be sent {\tt stdin} and {\tt EOF} events and that in turn generates
+{\tt stdout} events.  The first of these is discussed in \xref{func-exprs},
+and the second in \xref{async-shell}.
+
+\item[{\tt sync(c)}] \label{sync-func}\indfunc{sync}
+synchronizes the {\em Glish} script's execution with that of client {\tt c}.
+The call to {\tt sync()} does not return until client {\tt c} has
+processed all events/requests previously sent to it.
+
+\item[{\tt relay(src,}]
+{\tt src\_name, ref dest, dest\_name="*")}\label{relay-func}\indfunc{relay}
+relays every
+{\tt src\_name} generated by the agent {\tt src} to the agent {\tt dest},
+renaming the event to {\tt dest\_name}.  If {\tt dest\_name} is {\tt "*"}
+(the default) then {\tt src\_name} is used.
+
+For example,
+\index{example!{\tt relay()} function}
+\begin{verbatim}
+    relay(a, "ready", b, "compute")
+\end{verbatim}
+relays each of {\tt a}'s {\tt ready} events to {\tt b}, renaming them
+{\tt compute}, and
+\begin{verbatim}
+    relay(a, "ready", b)
+\end{verbatim}
+relays {\tt ready} events generated by {\tt a} to {\tt b}, keeping the event's
+name.
+
+\item[{\tt relay\_all(src, ref dest)}] \label{relay_all-func}
+\indfunc{relay\_all}
+relays every event from {\tt src}
+to {\tt dest}; it is equivalent to:
+\begin{verbatim}
+    whenever src->* do
+        dest->[$name]($value)
+\end{verbatim}
+
+\item[{\tt birelay\_event(ref}] {\tt agent1, ref agent2, name)}
+\label{birelay_event-func} \indfunc{birelay\_event}
+relays any ``{\tt name}" event generated by either {\tt agent1} or {\tt agent2}
+to the other agent.  Thus it is equivalent to:
+\begin{verbatim}
+    relay( agent1, name, agent2 )
+    relay( agent2, name, agent1 )
+\end{verbatim}
+
+\item[{\tt birelay\_all(ref}] {\tt agent1, ref agent2)} \label{birelay_all-func}
+\indfunc{birelay\_all}
+relays every event
+generated by either {\tt agent1} or {\tt agent2} to the other agent.
+It is equivalent to:
+\begin{verbatim}
+    relay_all( agent1, agent2 )
+    relay_all( agent2, agent1 )
+\end{verbatim}
+
+\item[{\tt bundle\_events(a,size)}] \label{bundle_events-func}
+causes events sent to {\tt a} to be queued. The {\tt size} argument
+is optional. If it is supplied, the bundled events are sent after
+their total size exceeds {\tt size}, otherwise all of the bundled
+events are written at once when {\tt flush\_events()} is called.
+This can sometimes be useful if {\em many} small events are being
+sent to a client, and the delay seems to long. Often the best way to
+fix this problem is to alter the client's event interface, but this
+provides a quick way to see what sort of performance gain is possible.
+
+\item[{\tt flush\_events(a)}] \label{flush_events-func}
+causes all events which have been bundled for the client {\tt a} but not yet
+sent to be sent to the client. This also
+clears the event bundling so that no more events will be bundled until
+the next call to {\tt bundle\_events()}.
+
+\item[{\tt current\_whenever()}] \label{current_whenever-func}
+\indfunc{current\_whenever}
+\index{whenever statement!identifying}
+returns an index identifying the {\tt whenever} statement whose body
+is currently (or was last) executed in response to an event.
+This index has type {\tt integer} and is suitable for use in an {\tt activate}
+or {\tt deactivate} statement (\xref{activate-stmt}) for controlling the
+activity of the {\tt whenever} statement.
+
+For example, suppose that client {\tt a} generates both {\tt b} and {\tt c}
+events, and you want to respond to {\tt b} events only as long as you
+haven't received a {\tt c} event.  You use the following:
+\begin{verbatim}
+    whenever a->b do
+        {
+        do_b_stuff()
+        w := current_whenever()
+        }
+
+    whenever a->c do
+        {
+        do_c_stuff()
+        deactivate w    # turn off a->b
+        }
+\end{verbatim}
+This example actually has a bug: if {\tt a} generates a {\tt c} event
+before any {\tt b} events, then {\tt w} is not  defined when
+executing the {\tt deactivate} statement, resulting in an error.  (See
+the discussion of {\tt last\_whenever\_executed()} below for a bug-free
+example.)
+
+\item[{\tt last\_whenever\_executed()}] \label{last_whenever_executed-func}
+\indfunc{last\_whenever\_executed}
+\index{whenever statement!identifying}
+returns an index identifying the most recently-executed {\tt whenever}
+statement.  Here, ``executed'' refers to execution of the {\tt whenever}
+statement itself (which ``activates'' the {\tt whenever}), and not its body.
+
+As with {\tt current\_whenever()}, this index has type {\tt integer} and
+is suitable for use in an {\tt activate} or {\tt deactivate} statement
+(\xref{activate-stmt}).  The example used above in describing
+{\tt current\_whenever()} can instead be written~as:
+\index{example!deactivating {\tt whenever} statements}
+\begin{verbatim}
+    whenever a->b do
+        {
+        do_b_stuff()
+        }
+
+    w := last_whenever_executed()
+
+    whenever a->c do
+        {
+        do_c_stuff()
+        deactivate w    # turn off a->b
+        }
+\end{verbatim}
+
+\item[{\tt active\_agents()}] \label{active_agents-func}
+\indfunc{active\_agents}
+\index{agents!list of active}
+returns a record array listing the currently active agents.  For example,
+the following:
+\begin{verbatim}
+    agents := active_agents()
+
+    for ( i in 1:len(agents) )
+        {
+        a := ref agents[i]
+        if ( has_field(a, "locked") )
+            a->clear_lock()
+        }
+\end{verbatim}
+sends a {\tt clear\_lock} event to each agent whose agent record
+has a {\tt locked} field (presumably due to a previously-received
+{\tt locked} event).
+
+Note that the {\tt system} global variable (\xref{system-var}) is an
+agent, so {\tt active\_agents()} ordinarily returns at least one agent.
+
+\item[{\tt whenever\_active(index)}] \label{whenever_active-func}
+\indfunc{whenever\_active}
+\index{whenever statement!active}
+returns {\tt T} if the {\tt whenever} statement identified by {\tt index}
+is active. The {\tt index} is from {\tt last\_whenever\_executed()} or
+{\tt current\_whenever()} above.
+
+\item[{\tt whenever\_stmts(agent)}] \label{whenever_stmts-func}
+\indfunc{whenever\_stmts}
+\index{agents!associated {\tt whenever} statements}
+\index{whenever statement!associated agents}
+returns a record identifying the event names, corresponding
+{\tt whenever} statements associated with {\tt agent}, and which of
+the statements are currently active as a result of {\tt activate} or
+{\tt deactivate} statements.  The record has three fields, {\tt event},
+{\tt stmt} and {\tt active}, which are {\tt string}, {\tt integer} and
+{\tt boolean} vectors, respectively.
+For example,
+\begin{verbatim}
+    a := create_agent()
+    whenever a->foo do print 1
+    whenever a->bar do print 2
+    b := whenever_stmts(a)
+\end{verbatim}
+assigns to {\tt b} a record whose {\tt event} field corresponds to
+the string vector {\tt "foo bar"}, whose {\tt stmt} field holds
+as its first and second elements the indices of the first and second
+{\tt whenever} statements, and whose {\tt active} field holds two
+{\tt T} values.
+
+The following, for example, turns off every {\tt whenever} statement
+associated with some agent's ``{\tt warning}'' event:
+\index{example!deactivating {\tt whenever} statements}
+\begin{verbatim}
+    agents := active_agents()
+
+    for ( i in 1:len(agents) )
+        {
+        a := ref agents[i]
+        w := whenever_stmts(a)
+        mask := w.event == "warning"
+        deactivate w.stmt[mask]
+        }
+\end{verbatim}
+
+\end{list}
+\end{sloppy}
+\index{agents!functions to manipulate|)}
+\index{predefined functions!agent manipulation|)}
+
+\section{Memory Usage}
+\index{predefined functions!memory usage|(}
+\index{values!check memory usage|(}
+\label{alloc-funcs}
+There are a couple of functions available to check memory usage both by the
+{\em Glish} interpreter and by individual values.
+
+\label{sizeof-func}
+The {\tt sizeof()} function will return the amount of memory used by an
+individual value. For example:
+\begin{verbatim}
+    sizeof(1:10)
+    sizeof([x=1:10,y=1:10])
+\end{verbatim}
+might return {\tt 84} and {\tt 372}.
+
+\label{alloc_info-func}
+There is also a function which returns the amount of memory used by the
+{\em Glish} interpreter, {\tt alloc\_info()}. This function uses info from
+{\em Glish}'s allocation library to display both the amount of memory the
+interpreter is currently using and the memory it has allocated but is not
+currently using. A call to \verb+alloc_info()+ would return a record like:
+\begin{verbatim}
+    [used=176424, unused=10664]
+\end{verbatim}
+This function takes no parameters.
+
+\index{values!check memory usage|)}
+\index{predefined functions!memory usage|)}
+
+\section{Global Variables}
+
+\index{variables!global|(}
+{\em Glish} makes available to every script the following global variables:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt pi}] \label{pi-var} \indglobal{pi}
+is an approximation of the mathematical constant $\pi$, which equals
+the area of a unit circle. This global variable approximates $\pi$ to
+24 decimal places.
+
+\item[{\tt e}] \label{e-var} \indglobal{e}
+is an approximation of the mathematical constant $e$. The primary property
+of $e$ is that if \(y = e^x\), then \(\frac{dy}{dx} = e^x\). This global
+variable approximates $e$ to 24 decimal places.
+
+\item[{\tt argv}] \label{argv-var} \indglobal{argv}
+is a list of the arguments (interpreted as {\tt string}'s)
+with which the {\em Glish} script
+was invoked.  Presently the {\em Glish} interpreter is invoked with a
+filename to interpret followed by a list of arguments.
+So, for example, if a script is invoked using:
+\index{example!{\tt argv} global}
+\begin{verbatim}
+    glish script.g hello, how are you
+\end{verbatim}
+then {\tt argv} is a {\tt string} value with 4 elements, ``{\tt hello,}",
+``{\tt how}", ``{\tt are}", and ``{\tt you}".
+
+\item[{\tt environ}] \label{environ-var} \indglobal{environ}
+is a {\tt record} providing access to the {\sc Unix} environment
+(i.e., what in C programs is accessible via
+\index{{\em getenv()}}
+{\em getenv()}).  Each environment
+variable corresponds to a {\tt string}-valued field in the record.
+For example,
+\begin{verbatim}
+    environ.HOME
+\end{verbatim}
+returns the value of the {\tt \$HOME} environment variable.  Naturally
+this can also be referred to using:
+\begin{verbatim}
+    environ["HOME"]
+\end{verbatim}
+
+\index{environment variables!modifying}
+Changing the {\tt environ} global does {\em not} presently affect the
+environment in which {\em Glish} clients are run (though it may in the future).
+
+\item[{\tt system}] \label{system-var} \indglobal{system}
+\index{environment!in which a {\em Glish} script runs}
+\index{interpreter!environment in which scripts run}
+\index{system information}
+\index{information!system}
+is an {\tt agent} record that contains general information about the
+environment (not in an ``environment variable'' sense) in which the
+{\em Glish} script runs.  It also generates events corresponding to changes
+in the environment.
+
+The predefined fields of {\tt system} are:
+\begin{list}{}{}
+
+\item[{\tt version}] \index{system global variable!{\tt version} field}
+\index{interpreter!version}
+gives the version level of the {\em Glish} interpreter.  Presently this field's
+type is {\tt string}, though it may change to {\tt double} in the future to
+facilitate inequality comparisons like ``{\tt system.version >= 2.1}".
+
+\item[{\tt is\_script\_client}]
+\index{system global variable!{\tt is\_script\_client} field}
+\index{script clients!determining if script is a}
+is true ({\tt T}) if the {\em Glish} script is run as a script client
+(\xref{client-scripts}) and false ({\tt F}) if not.
+
+\item[{\tt print.limit}] allows you to limit how much of 
+{\em Glish}
+\index{system global variable!{\tt print.limit} field}
+values is output to the screen (see \xref{system-print-limit}).
+
+\item[{\tt print.precision}] allows you to specify the number
+\index{system global variable!{\tt print.precision} field}
+of significant digits to use in outputting floating point numbers (see
+\xref{system-print-precision}).
+
+\item[{\tt tk}] contains the Tk version number if the {\tt glishtk.g}
+\index{system global variable!{\tt tk} field}
+(see \xref{system-tk}) client script with the Tk widgets is loaded.
+
+\item[{\tt path.include}] path searched by {\tt include} when attempting
+\index{system global variable!{\tt path.bin} field}
+to include a file (see \xref{system-path-include}).
+
+\item[{\tt path.bin.}{\em host}] path searched when starting clients on
+\index{system global variable!{\tt path.bin} field}
+the machine {\em host}.
+
+\item[{\tt output.pager.exec}] the executable to be started to handle
+paging of output, e.g. {\em less} or {\em more}.
+
+\item[{\tt output.pager.limit}] the number of lines where paging begins.
+If set to {\tt 0}, paging is always done; if set to {\tt -1}, paging is
+never done.
+
+\item[{\tt output.log}] place to log input and output.
+(See \xref{command-logging}.)
+
+\item[{\tt output.ilog}] place to log input. (See
+\xref{command-logging}.)
+
+\item[{\tt output.olog}] place to log output. (See
+\xref{command-logging}.)
+
+\item[{\tt output.pager.log}] place to log input and output.
+(See \xref{command-logging}.)
+
+\item[{\tt pid}] process id of the current {\em Glish}
+\index{system global variable!{\tt pid} field}
+\label{system-pid}
+interpreter.
+
+\item[{\tt ppid}] process id of the current {\em Glish}
+\index{system global variable!{\tt ppid} field}
+\label{system-ppid}
+interpreter's parent process.
+
+\item[{\tt limits.max}] contains the maximum values for
+\index{system global variable!{\tt limits.max} field}
+\label{system-limits-max}
+{\em Glish}'s builtin ({\em non-boolean}) numeric types.
+
+\item[{\tt limits.min}] contains the minimum values for
+\index{system global variable!{\tt limits.min} field}
+\label{system-limits-min}
+{\em Glish}'s builtin ({\em non-boolean}) numeric types.
+
+\end{list}
+
+The events generated by {\tt system} are:
+\begin{list}{}{}
+
+\item[{\tt connection\_lost}]
+\index{system global variable!{\tt connection\_lost} field}
+\indtt{connection\_lost}{event}
+\index{predefined events!{\tt connection\_lost}}
+\index{network outages!detecting}
+indicates the loss of the network connection to a remote host.  The
+value of the event names the remote host.  (See \xref{glishd} for
+details as to when this event is generated.)
+
+\item[{\tt connection\_restored}]
+\index{system global variable!{\tt connection\_restored} field}
+\indtt{connection\_restored}{event}
+\index{predefined events!{\tt connection\_restored}}
+\index{network outages!detecting}
+indicates the restoration of the network connection to a remote host.  The
+value of the event names the remote host.  See \xref{glishd} for details
+as to when this event is generated.
+
+\item[{\tt daemon\_terminated}]
+\index{system global variable!{\tt daemon\_terminated} field}
+\indtt{daemon\_terminated}{event}
+\index{predefined events!{\tt daemon\_terminated}}
+indicates that a remote {\em glishd} daemon terminated; normally this
+indicates a problem or bug (see \xref{glishd} for details
+as to when this event is generated).
+
+\end{list}
+
+For example, the following checkpoints some local data whenever the
+network connection to the ``{\tt frontend}'' host drops, and rolls
+back to the checkpoint when connectivity resumes:
+\index{example!detecting network outages}
+\begin{verbatim}
+    whenever system->connection_lost do
+        {
+        if ( $value == "frontend" )
+            do_local_checkpoint()
+        }
+
+    whenever system->connection_restored do
+        {
+        if ( $value == "frontend" )
+            roll_back_to_checkpoint()
+        }
+\end{verbatim}
+
+\item[{\tt script}] \label{script-var} \indglobal{script}
+has one of two possible values.  If the {\em Glish} 
+script is run as a
+client of another script, then {\tt script} is an {\tt agent} record
+(\xref{agent-record}) that can be used to receive events sent by the parent
+script and send events back to the parent (See \xref{client-scripts} for details).
+If the {\em Glish} script is running independently, then {\tt script} is
+the {\tt boolean} value {\tt F}.
+
+\end{list}
+\end{sloppy}
+\index{variables!global|)}
+
+\section{Function Summary by Category}
+
+\index{predefined functions!summary|(}
+Here is a summary of  all of the {\em Glish} functions and 
+variables according
+to their categories.
+
+\subsection{Type Identification}
+Functions for finding out about the type of a value:
+\begin{verbatim}
+    is_boolean(x)
+    is_byte(x)
+    is_short(x)
+    is_integer(x)
+    is_float(x)
+    is_double(x)
+    is_complex(x)
+    is_dcomplex(x)
+    is_string(x)
+    is_regex(x)
+    is_record(x)
+    is_function(x)
+    is_agent(x)
+    is_numeric(x)
+    is_fail(x)
+    is_file(x)
+\end{verbatim}
+each return {\tt T} if {\tt x} has the given type and {\tt F} if it doesn't.
+\begin{verbatim}
+    is_const(x)
+    is_modifiable(x)
+\end{verbatim}
+{\tt is\_const} only returns {\tt T} if {\tt x} is {\tt const}, i.e. cannot be
+reassigned and cannot be modified. {\tt is\_modifiable} returns {\tt T} if {\tt x}
+can be modified.
+\begin{verbatim}
+    type_name(x)
+    full_type_name(x)
+\end{verbatim}
+return a {\tt string} value identifying {\tt x}'s type.
+\begin{verbatim}
+    field_names(x)
+\end{verbatim}
+returns a {\tt string} vector listing all of the fields in the record {\tt x}.
+\begin{verbatim}
+    has_field(x,field)
+\end{verbatim}
+returns {\tt T} if {\tt x} is a {\tt record} with a field named {\tt field}
+in it, {\tt F} otherwise.
+
+\subsection{Type Conversion}
+
+\begin{verbatim}
+    as_boolean(x)
+    as_byte(x)
+    as_short(x)
+    as_integer(x)
+    as_float(x)
+    as_double(x)
+    as_complex(x)
+    as_dcomplex(x)
+    as_string(x)
+\end{verbatim}
+return the value {\tt x} converted to the given type.
+
+\begin{verbatim}
+    floor(x)
+    ceiling(x)
+\end{verbatim}
+converts {\tt x} to a integer value by truncating and promotion respectively.
+
+\subsection{Vector and Array Manipulation}
+
+\begin{verbatim}
+    length(...)
+    len(...)
+\end{verbatim}
+return the lengths of its arguments.
+\begin{verbatim}
+    sum(...)
+    prod(...)
+\end{verbatim}
+returns the sum of all of the elements of all of the arguments.
+\begin{verbatim}
+    min(...)
+    max(...)
+\end{verbatim}
+return the minimum and maximum element among its arguments.
+\begin{verbatim}
+    range(...)
+\end{verbatim}
+returns a 2-element vector giving the minimum of all
+of the arguments in the first element and the maximum of all of the
+arguments in the second.
+\begin{verbatim}
+    sort(x)
+\end{verbatim}
+returns {\tt x} sorted into ascending order.
+\begin{verbatim}
+    sort_pair(x,y)
+\end{verbatim}
+returns {\tt y} rearranged to match the ascending order of {\tt x}.
+\begin{verbatim}
+    unique(x)
+\end{verbatim}
+returns the unique elements {\tt x} sorted in ascending order.
+\begin{verbatim}
+    order(x)
+\end{verbatim}
+returns the indices of the sorted elements of {\tt x}.
+\begin{verbatim}
+    real(x)
+    imag(x)
+\end{verbatim}
+return the real and imaginary portions respectively of {\tt x}
+\begin{verbatim}
+    complex(x,y)
+\end{verbatim}
+creates a complex vector from two numeric vectors. Operates
+element by element, or scalar paired with elements.
+\begin{verbatim}
+    conj(x)
+\end{verbatim}
+returns the complex conjugate of {\tt x}.
+\begin{verbatim}
+    arg(x)
+\end{verbatim}
+returns the {\em argument} of a complex number, {\tt x}.
+\begin{verbatim}
+    sqrt(x)
+    exp(x)
+    log(x)
+    ln(x)
+    sin(x)
+    cos(x)
+    tan(x)
+    asin(x)
+    acos(x)
+    atan(x)
+    abs(x)
+\end{verbatim}
+each return values corresponding to applying the given mathematical function
+element-by-element to {\tt x}.
+\begin{verbatim}
+    all(x)
+\end{verbatim}
+returns {\tt T} if every element of {\tt x} is {\tt T} or non-zero.
+\begin{verbatim}
+    any(x)
+\end{verbatim}
+returns {\tt T} if any element of {\tt x} is {\tt T} or non-zero.
+The functions
+\begin{verbatim}
+    seq(x)
+    seq(x,y)
+    seq(x,y,z)
+\end{verbatim}
+return the integers from {\tt 1} to {\tt x}, or the length of {\tt x}
+if {\tt x} is not a scalar; return the numbers (possibly {\tt double}
+instead of {\tt integer}) from {\tt x} to {\tt y}, incrementing each
+time by {\tt 1}; or return the numbers from {\tt x} to {\tt y} incrementing
+by {\tt z}.
+\begin{verbatim}
+    ind(x)
+\end{verbatim}
+returns a vector of integer indices ranging from {\tt 1} to the length
+of{\tt~x}.
+\begin{verbatim}
+    rep(value,count)
+\end{verbatim}
+returns a vector consisting of {\tt count} copies of {\tt value} if
+{\tt count} is a scalar or {\tt count[i]} copies or each {\tt value[i]}
+if {\tt count} is a vector whose length is equal to {\tt value}'s. Both
+arguments must be {\em numeric}.
+\begin{verbatim}
+    array(init, ...)
+\end{verbatim}
+creates an array initialized to {\tt init} and with dimensions of length
+specified in the subsequent parameters.
+\begin{verbatim}
+    shape(x)
+\end{verbatim}
+return the shape of {\tt x}.
+\begin{verbatim}
+    cbind(a, ...)
+    rbind(a, ...)
+\end{verbatim}
+returns an array which is created by augmenting {\tt a} with the columns
+or rows (respectively) of the following arguments.
+
+\subsection{Value Creators}
+\begin{verbatim}
+    time()
+\end{verbatim}
+returns the system time in seconds since 00:00, January 1, 1970.
+\begin{verbatim}
+    random()
+    random(n)
+    random(start,stop)
+\end{verbatim}
+returns a random integer(s).
+
+\subsection{String Functions}
+\begin{verbatim}
+    paste(...,sep=' ')
+    spaste(...)
+\end{verbatim}
+treat their arguments as {\tt string}'s and return their concatenation,
+using {\tt sep} as a separator (for {\tt paste()}) or
+nothing (for {\tt spaste()}).
+\begin{verbatim}
+    split(s)
+    split(s,sep)
+\end{verbatim}
+splits the string {\tt s} at each run of whitespace (or any character
+in {\tt sep}), returning a multi-element {\tt string} value.
+\begin{verbatim}
+    sprintf(format, ... )
+\end{verbatim}
+format one or more values using {\tt format} and return the resultant
+string.
+\begin{verbatim}
+    strlen(str)
+\end{verbatim}
+return the number of characters in each element of the string {\tt str}.
+\begin{verbatim}
+    tr(r1, r2, str)
+\end{verbatim}
+translate the characters in {\tt str} mapping characters from range
+{\tt r1} to range {\tt r2}.
+\begin{verbatim}
+    to_lower(str)
+    to_upper(str)
+\end{verbatim}
+convert the characters in {\tt str} to {\em lower} or {\em upper}
+case characters.
+
+\subsection{Manipulating Symbols}
+\begin{verbatim}
+    symbol_names()
+    symbol_names(f)
+\end{verbatim}
+returns the names of the variables defined in the system. If passed a function,
+it uses the function to limit the names returned.
+\begin{verbatim}
+    symbol_value(s)
+\end{verbatim}
+takes a string, {\tt s}, and returns the value of the variable with the name {\tt s}.
+If {\tt s} has more then one element a record is returned.
+\begin{verbatim}
+    symbol_set(name,value)
+    symbol_set(rec)
+\end{verbatim}
+sets the value for the variable named {\tt name} to {\tt value} ({\tt name} must be
+a string). If a record is provided, {\tt rec}, it maps the record fields to global
+variables.
+\begin{verbatim}
+    symbol_delete(name)
+\end{verbatim}
+deletes the symbol called {\tt name} ({\tt name} must be a string).
+\begin{verbatim}
+    is_defined(name)
+\end{verbatim}
+returns {\tt T} if the variable called {\tt name} ({\tt name} must be a string) has
+been defined, otherwise returns {\tt F}.
+
+\subsection{Manipulating Variable Arguments}
+\begin{verbatim}
+    num_args(...)
+\end{verbatim}
+returns the number of arguments with which it was invoked.
+\begin{verbatim}
+    nth_arg(n, ...)
+\end{verbatim}
+returns the {\tt n}'th argument with which is was invoked, numbering
+the first argument (i.e., {\tt n}) as~0.
+\begin{verbatim}
+    missing( )
+\end{verbatim}
+returns a {\em boolean} vector with {\tt T} in each element which
+corresponds to a missing parameter.
+
+\subsection{Input and Output}
+\begin{verbatim}
+    is_file(file)
+\end{verbatim}
+check to see if the variable {\tt file} is of file type.
+\begin{verbatim}
+    is_asciifile(filename)
+\end{verbatim}
+return {\tt T} if the file indicated by the {\tt filename} string is an ASCII
+file.
+\begin{verbatim}
+    stat(filename, bytes=100, follow=F)
+\end{verbatim}
+return information about the file indicated by the {\tt filename} string.
+\begin{verbatim}
+    read(file,num=1,what='l')
+\end{verbatim}
+read ASCII characters from a file.
+\begin{verbatim}
+    write(file, ... , sep='\n')
+\end{verbatim}
+write one or more strings to {\tt file}.
+\begin{verbatim}
+    fprintf(file, format, ... )
+\end{verbatim}
+format one or more values using {\tt format} and write to {\tt file}.
+\begin{verbatim}
+    printf(format, ... )
+\end{verbatim}
+format one or more values using {\tt format} and output to user.
+\begin{verbatim}
+    readline(prompt='>>')
+\end{verbatim}
+prompt and collect a string from the user.
+\begin{verbatim}
+    read_value(file)
+\end{verbatim}
+reads a {\em Glish} value saved to the file {\tt file}.
+\begin{verbatim}
+    write_value(value,file)
+\end{verbatim}
+writes the value {\tt value} to the file {\tt file} so that a subsequent
+call to {\tt read\_value()} will recover the value.
+
+\subsection{Manipulating Agents}
+
+\begin{verbatim}
+    create_agent()
+\end{verbatim}
+returns a new {\tt agent} value.
+\begin{verbatim}
+    client(command, ..., host=F, input=F,
+           suspend=F, ping=F, async=F)
+\end{verbatim}
+creates a new {\em Glish} client with the given options.
+\begin{verbatim}
+    shell(command, ..., host=F, input=F,
+          suspend=F, ping=F, async=F)
+\end{verbatim}
+either runs a shell command synchronously ({\tt async=F}) and returns
+a {\tt string} representing its output, or creates an asynchronous
+shell client {\tt async=T}.
+\begin{verbatim}
+    sync(c)
+\end{verbatim}
+waits until client {\tt c} has processed all events/requests previously
+sent to it.
+\begin{verbatim}
+    relay(src, src_name, ref dest, dest_name="*")
+\end{verbatim}
+relays any {\tt src\_name} events generated by {\tt src} to {\tt dest},
+renaming them {\tt dest\_name}.
+\begin{verbatim}
+    relay_all(src, ref dest)
+\end{verbatim}
+relays every event from {\tt src} to {\tt dest}, using the same name.
+\begin{verbatim}
+    birelay_event(ref agent1, ref agent2, name)
+\end{verbatim}
+relays every {\tt name} event generated by either {\tt agent1} or
+{\tt agent2} to the other agent.
+\begin{verbatim}
+    birelay_all( ref agent1, ref agent2 )
+\end{verbatim}
+relays every event generated by either {\tt agent1} or {\tt agent2}
+to the other agent.
+\begin{verbatim}
+    current_whenever()
+\end{verbatim}
+returns an index identifying the {\tt whenever} statement whose body
+is currently (or was last) executed in response to an event.
+\begin{verbatim}
+    last_whenever_executed()
+\end{verbatim}
+returns an index identifying the most-recently executed {\tt whenever}
+statement.
+\begin{verbatim}
+    whenever_stmts(agent)
+\end{verbatim}
+returns a record identifying the event names and {\tt whenever} statement
+indices associated with {\tt agent}.
+\begin{verbatim}
+    active_agents()
+\end{verbatim}
+returns a record array listing currently active agents.
+\begin{verbatim}
+    bundle_events(a)
+    bundle_events(a, size)
+\end{verbatim}
+bundle up events for agent {\tt a} so that can later be sent all at once.
+\begin{verbatim}
+    flush_events(a)
+\end{verbatim}
+force all {\em bundled} events agent {\tt a} to be sent, and stop bundling
+events for {\tt a}.
+
+\subsection{Memory Usage}
+
+\begin{verbatim}
+    sizeof(x)
+\end{verbatim}
+return the amount of storage in bytes required by variable {\tt x}.
+\begin{verbatim}
+    alloc_info()
+\end{verbatim}
+return information about memory usage by {\em Glish}.
+
+\subsection{Global Variables}
+\index{variables!global!summary|(}
+\begin{verbatim}
+    pi
+    e
+\end{verbatim}
+approximations of the mathematical constants $\pi$ and $e$.
+\begin{verbatim}
+    argv
+\end{verbatim}
+holds a {\tt string} vector giving the arguments with 
+which the {\em Glish}
+script was run.
+\begin{verbatim}
+    environ
+\end{verbatim}
+is a {\tt record} whose fields correspond to each environment variable
+set when the {\em Glish} script was run.
+\begin{verbatim}
+    system
+\end{verbatim}
+is an agent record giving information about the execution environment
+of the {\em Glish} system.
+\begin{verbatim}
+    script
+\end{verbatim}
+is either an agent record if a {\em Glish} script is running as a client of
+another {\em Glish} script, or the {\tt boolean} value {\tt F}.
+\index{variables!global!summary|)}
+
+\section{Alphabetic Summary of Functions}
+
+\index{alphabetic summary of functions|(}
+Here we give an index of each function and the page of its description:
+\begin{sloppy}
+\begin{list}{}{}
+
+\item[{\tt abs(x),}] \xref{abs-func}.
+\item[{\tt acos(x),}] \xref{acos-func}.
+\item[{\tt active\_agents(x),}] \xref{active_agents-func}.
+\item[{\tt all(x),}] \xref{all-func}.
+\item[{\tt alloc\_info(x),}] \xref{alloc_info-func}.
+\item[{\tt any(x),}] \xref{any-func}.
+\item[{\tt arg(x),}] \xref{arg-func}.
+\item[{\tt argv,}] \xref{argv-var}.
+\item[{\tt array(init, ... ),}] \xref{array-func}.
+\item[{\tt asin(x),}] \xref{asin-func}.
+\item[{\tt as\_boolean(x),}] \xref{as_boolean-func}.
+\item[{\tt as\_byte(x),}] \xref{as_byte-func}.
+\item[{\tt as\_complex(x),}] \xref{as_complex-func}.
+\item[{\tt as\_dcomplex(x),}] \xref{as_dcomplex-func}.
+\item[{\tt as\_double(x),}] \xref{as_double-func}.
+\item[{\tt as\_float(x),}] \xref{as_float-func}.
+\item[{\tt as\_integer(x),}] \xref{as_integer-func}.
+\item[{\tt as\_short(x),}] \xref{as_short-func}.
+\item[{\tt as\_string(x),}] \xref{as_string-func}.
+\item[{\tt atan(x),}] \xref{atan-func}.
+\item[{\tt birelay\_all( ref agent1, ref agent2 ),}] \xref{birelay_all-func}.
+\item[{\tt birelay\_event(ref agent1, ref agent2, name),}] \xref{birelay_event-func}.
+\item[{\tt bundle\_events(a),}] \xref{bundle_events-func}.
+\item[{\tt cbind(...),}] \xref{cbind-func}.
+\item[{\tt ceiling(x),}] \xref{ceiling-func}.
+\item[{\tt client(command,}] {\tt ..., host=F, input=F, suspend=F, ping=F, async=F)}, \xref{client-func-long}.
+\item[{\tt complex(x),}] \xref{complex-func}.
+\item[{\tt conj(x),}] \xref{conj-func}.
+\item[{\tt cos(x),}] \xref{cos-func}.
+\item[{\tt create\_agent(),}] \xref{create_agent-func}.
+\item[{\tt current\_whenever(),}] \xref{current_whenever-func}.
+\item[{\tt e,}] \xref{e-var}.
+\item[{\tt environ,}] \xref{environ-var}.
+\item[{\tt exp(x),}] \xref{exp-func}.
+\item[{\tt field\_names(x),}] \xref{field_names-func}.
+\item[{\tt flush\_events(a),}] \xref{flush_events-func}.
+\item[{\tt floor(x),}] \xref{floor-func}.
+\item[{\tt fprintf(x, format, ... ),}] \xref{fprintf-func}.
+\item[{\tt full\_type\_name(x),}] \xref{full_type_name-func}.
+\item[{\tt has\_field(x,field),}] \xref{has_field-func}.
+\item[{\tt ind(x),}] \xref{ind-func}.
+\item[{\tt is\_agent(x),}] \xref{is_agent-func}.
+\item[{\tt is\_asciifile(x),}] \xref{is_asciifile-func}.
+\item[{\tt is\_boolean(x),}] \xref{is_boolean-func}.
+\item[{\tt is\_byte(x),}] \xref{is_byte-func}.
+\item[{\tt is\_complex(x),}] \xref{is_complex-func}.
+\item[{\tt is\_const(x),}] \xref{is_const-func}.
+\item[{\tt is\_dcomplex(x),}] \xref{is_dcomplex-func}.
+\item[{\tt is\_defined(x),}] \xref{is_defined-func}.
+\item[{\tt is\_double(x),}] \xref{is_double-func}.
+\item[{\tt is\_fail(x),}] \xref{is_fail-func}.
+\item[{\tt is\_file(x),}] \xref{is_file-func}.
+\item[{\tt is\_float(x),}] \xref{is_float-func}.
+\item[{\tt is\_function(x),}] \xref{is_function-func}.
+\item[{\tt is\_integer(x),}] \xref{is_integer-func}.
+\item[{\tt is\_modifiable(x),}] \xref{is_modifiable-func}.
+\item[{\tt is\_nan(x),}] \xref{is_nan-func}.
+\item[{\tt is\_numeric(x),}] \xref{is_numeric-func}.
+\item[{\tt is\_record(x),}] \xref{is_record-func}.
+\item[{\tt is\_regex(x),}] \xref{is_regex-func}.
+\item[{\tt is\_short(x),}] \xref{is_short-func}.
+\item[{\tt is\_string(x),}] \xref{is_string-func}.
+\item[{\tt last\_whenever\_executed(x),}] \xref{last_whenever_executed-func}.
+\item[{\tt len(...),}] \xref{len-func}.
+\item[{\tt length(...),}] \xref{length-func}.
+\item[{\tt ln(x),}] \xref{ln-func}.
+\item[{\tt log(x),}] \xref{log-func}.
+\item[{\tt max(...),}] \xref{max-func}.
+\item[{\tt min(...),}] \xref{min-func}.
+\item[{\tt nth\_arg(n, ...),}] \xref{nth_arg-func}.
+\item[{\tt num\_args(...),}] \xref{num_args-func}.
+\item[{\tt order(x),}] \xref{order-func}.
+\item[{\tt paste(...,sep=' '),}] \xref{paste-func}.
+\item[{\tt pi,}] \xref{pi-var}.
+\item[{\tt printf(format, ... ),}] \xref{printf-func}.
+\item[{\tt prod(...),}] \xref{prod-func}.
+\item[{\tt random(),}] \xref{random0-func}.
+\item[{\tt random(n),}] \xref{random1-func}.
+\item[{\tt random(start,stop),}] \xref{random2-func}.
+\item[{\tt range(...),}] \xref{range-func}.
+\item[{\tt rbind(...),}] \xref{rbind-func}.
+\item[{\tt read(file),}] \xref{read-func}.
+\item[{\tt read\_value(file),}] \xref{read_value-func}.
+\item[{\tt readline( ),}] \xref{readline-func}.
+\item[{\tt relay(src, src\_name, ref dest, dest\_name="*"),}] \xref{relay-func}.
+\item[{\tt relay\_all(src, ref dest),}] \xref{relay_all-func}.
+\item[{\tt rep(value,count),}] \xref{rep-func}.
+\item[{\tt script,}] \xref{script-var}.
+\item[{\tt seq(x),}] \xref{seq1-func}.
+\item[{\tt seq(x,y),}] \xref{seq2-func}.
+\item[{\tt seq(x,y,z),}] \xref{seq3-func}.
+\item[{\tt shape(a),}] \xref{shape-func}.
+\item[{\tt shell(command,}] {\tt ..., host=F, input=F, suspend=F, ping=F, async=F)}, \xref{shell-func}.
+\item[{\tt sin(x),}] \xref{sin-func}.
+\item[{\tt sizeof(x),}] \xref{sizeof-func}.
+\item[{\tt sort(x),}] \xref{sort-func}.
+\item[{\tt sort\_pair(x,y),}] \xref{sort_pair-func}.
+\item[{\tt spaste(...),}] \xref{spaste-func}.
+\item[{\tt split(s),}] \xref{split-func}.
+\item[{\tt split(s,sep),}] \xref{split-func}.
+\item[{\tt sprintf(format, ... ),}] \xref{sprintf-func}.
+\item[{\tt sqrt(x),}] \xref{sqrt-func}.
+\item[{\tt stat(x),}] \xref{stat-func}.
+\item[{\tt strlen(str),}] \xref{strlen-func}.
+\item[{\tt sum(...),}] \xref{sum-func}.
+\item[{\tt symbol\_delete(name),}] \xref{symbol_delete-func}.
+\item[{\tt symbol\_names(),}] \xref{symbol_names0-func}.
+\item[{\tt symbol\_names(f),}] \xref{symbol_names1-func}.
+\item[{\tt symbol\_set(rec),}] \xref{symbol_set1-func}.
+\item[{\tt symbol\_set(name,val),}] \xref{symbol_set2-func}.
+\item[{\tt symbol\_value(name),}] \xref{symbol_value-func}.
+\item[{\tt sync(c),}] \xref{sync-func}.
+\item[{\tt system,}] \xref{system-var}.
+\item[{\tt tan(x),}] \xref{tan-func}.
+\item[{\tt time(),}] \xref{time-func}.
+\item[{\tt to\_lower(str),}] \xref{to_lower-func}.
+\item[{\tt to\_upper(str),}] \xref{to_upper-func}.
+\item[{\tt tr( r1, r2, str ),}] \xref{tr-func}.
+\item[{\tt type\_name(x),}] \xref{type_name-func}.
+\item[{\tt unique(x),}] \xref{unique-func}.
+\item[{\tt whenever\_active(index),}] \xref{whenever_active-func}.
+\item[{\tt whenever\_stmts(agent),}] \xref{whenever_stmts-func}.
+\item[{\tt write(file, ... ),}] \xref{write-func}.
+\item[{\tt write\_value(value,file),}] \xref{write_value-func}.
+
+\end{list}
+\end{sloppy}
+\index{alphabetic summary of functions|)}
+\index{predefined functions!summary|)}
+\index{predefined functions|)}

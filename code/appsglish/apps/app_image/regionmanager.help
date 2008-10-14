@@ -1,0 +1,3069 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: regionmanager.help,v 19.4 2004/08/25 01:00:44 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{regionmanager}{Create and manipulate regions of interest}
+
+\ahinclude{regionmanager.g}
+
+\ahcategory{image}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{image}{}
+\ahkeyword{region-of-interest}{}
+
+
+\ahmethods{}
+
+
+\medskip
+\noindent
+{\bf Overview of Regionmanager functionality}
+
+\begin{itemize}
+
+\item Create simple pixel-coordinate based regions with functions
+
+\begin{description}
+
+\item \ahlink{box}{images:regionmanager.box}
+\item \ahlink{quarter}{images:regionmanager.quarter}
+%\item \ahlink{polygon}{images:regionmanager.polygon}
+%\item \ahlink{ellipsoid}{images:regionmanager.ellipsoid}
+
+
+\end{description}
+
+
+
+\item Create simple world-coordinate based regions with functions
+
+\begin{description}
+
+\item \ahlink{wrange}{images:regionmanager.wrange} (range along one axis)
+\item \ahlink{wbox}{images:regionmanager.wbox}
+\item \ahlink{wpolygon}{images:regionmanager.wpolygon}
+\item \ahlink{wdbox}{images:regionmanager.wbox}
+\item \ahlink{wdpolygon}{images:regionmanager.wpolygon}
+
+\end{description}
+
+Also related is function \ahlink{setcoordinates}{images:regionmanager.setcoordinates}
+
+
+
+
+\item Create compound regions (from world regions only) with functions
+
+\begin{description}
+
+\item \ahlink{complement}{images:regionmanager.complement}
+\item \ahlink{concatenation}{images:regionmanager.concatenation}
+\item \ahlink{difference}{images:regionmanager.difference}
+\item \ahlink{intersection}{images:regionmanager.intersection}
+\item \ahlink{union}{images:regionmanager.union}
+
+\end{description}
+
+\item The GUI interface is started with function
+\ahlink{gui}{images:regionmanager.gui}.
+
+
+\item I/O of regions in tables with functions
+
+\begin{description}
+
+\item \ahlink{copyregions}{images:regionmanager.copyregions}
+\item \ahlink{deletefromtable}{images:regionmanager.deletefromtable}
+\item \ahlink{namesintable}{images:regionmanager.namesintable}
+\item \ahlink{fromtabletoglobal}{images:regionmanager.fromtabletoglobal}
+\item \ahlink{fromtabletorecord}{images:regionmanager.fromtabletorecord}
+\item \ahlink{fromtabletonakedrecord}{images:regionmanager.fromtabletonakedrecord}
+\item \ahlink{fromglobaltotable}{images:regionmanager.fromglobaltotable}
+\item \ahlink{fromrecordtotable}{images:regionmanager.fromrecordtotable}
+%\item \ahlink{tableregions}{images:regionmanager.tableregions}
+
+\end{description}  
+
+
+\item Convert pixel regions  to world regions with 
+
+\begin{description}
+
+\item \ahlink{pixeltoworldregion}{images:regionmanager.pixeltoworldregion}.
+
+\end{description}
+
+
+\item There are some general utility functions, generally only of interest
+if you are writing scripts.  These are
+
+\begin{description}
+
+\item \ahlink{absreltype}{images:regionmanager.absreltype}
+\item \ahlink{def}{images:regionmanager.def}
+\item \ahlink{done}{images:regionmanager.done}
+\item \ahlink{extractsimpleregions}{images:regionmanager.extractsimpleregions}
+\item \ahlink{ispixelregion}{images:regionmanager.ispixelregion}
+\item \ahlink{isworldregion}{images:regionmanager.isworldregion}
+\item \ahlink{type}{images:regionmanager.type}
+
+\end{description}
+
+
+
+
+\item There are some functions relating to interactive
+creation of regions with the \viewer.  These are
+generally only of interest if you are writing scripts, and are
+
+\begin{description}
+
+\item \ahlink{displayedplane}{images:regionmanager.displayedplane}
+\item \ahlink{psuedotoworldregion}{images:regionmanager.pseudotoworldregion}
+
+\end{description}
+
+
+
+
+\item There are some functions relating to communications.  These are
+generally only of interest if you are writing scripts and are
+
+\begin{description}
+
+\item \ahlink{setselectcallback}{images:regionmanager.setselectcallback}
+\item \ahlink{getselectcallback}{images:regionmanager.getselectcallback}
+
+\end{description}
+
+\end{itemize}
+
+
+
+\medskip
+\noindent
+{\bf Regions and the Regionmanager}
+
+When working with an image, one is generally interested in some part of
+that image on which astrophysical analysis is performed.  This \region\
+(or more generically and simply, the `region') might be the whole image,
+or some subset of it. 
+
+Regions come in a few varieties.  There are simple regular shapes (box,
+ellipsoid), simple irregular shapes (polygon), as well as compound
+regions made by combining other regions (simple or compound).  For
+example unions or intersections of regions.  In addition, the simple
+regions can be pixel-coordinate based or world-coordinate based. 
+However, a compound regions must always comprise world-coordinate based
+regions. 
+
+It is the task of the \regionmanager\ (\tool) to manage your regions; it
+creates, lists and manipulates them.  Apart from a \regionmanager, the
+only other way to create a \region\ is with the
+\ahlink{view}{images:image.view} function of the Image \tool.  This
+allows you to interactively make, with the cursor and an image display,
+a box or polygonal region.  The region so made may be collected by the
+\regionmanager\ (in fact the complete process can be initiated from the
+\regionmanager). 
+
+Like many other \aipspp\ tools, a default \regionmanager\ is created for
+you when you load its definition script (in this case, {\em
+regionmanager.g}).  This pre-made tool is called {\stf drm} (the
+defaultregionmanager).  If it doesn't exist for some reason (you might
+have boldly deleted it maybe), then you can make another one with the
+\ahlink{regionmanager}{images:regionmanager} constructor.  Although a
+\regionmanager\ \tool\ can contain a little bit of state, in general,
+you should not need to make another one.  The {\stf drm} \regionmanager\
+should be all you will ever need. 
+
+The \regionmanager\ has a custom GUI and a command line interface.  It
+is probably fair to say that for the simplest regions, such as a pixel
+box, there is little to choose between making a region with the  GUI
+or the command line interface.  However, for the world regions, the GUI
+is significantly better; it hides the details of handling the coordinate
+information.  Of course, the GUI always invokes the \regionmanager\
+command line for you when it actually creates a region, but it removes
+the need for you to learn the \regionmanager\ command-line syntax. 
+
+
+\begin{ahexample}
+
+\begin{verbatim}
+- include 'regionmanager.g'   
+- drm.type()
+regionmanager
+- drm.gui()
+\end{verbatim}
+
+This loads the \regionmanager\ code and creates the default
+\regionmanager\ \tool\ called {\stf drm} - we ask it to tell us its
+type.  We then start the GUI interface from which you can create all
+sorts of regions. 
+
+\end{ahexample}
+
+
+
+\medskip
+\noindent
+{\bf Simple Pixel and World regions}
+
+Pixel regions are specified purely in terms of pixel coordinates.  Pixel
+coordinates are considered to run from 1 at the bottom left corner (blc) of
+an image to the image shape at the top-right corner (trc).
+
+For example, a pixel region might be box that runs from a bottom
+blc of [20,20] to a trc of [64,90] in a 2D image.  Such a pixel region
+isn't very portable though.  If you are interested in a region about an
+astronomical source, pixel coordinates are only useful for a particular
+image.  In some other image, the source may well have different pixel
+coordinates.  However, pixel regions are easy to make and use, and they
+are valuable. 
+
+So far, we have been talking about absolute pixel coordinates.  However,
+pixel regions can also be specified in relative coordinates.  This is
+controlled through the argument  {\stfaf absrel} which may take on one
+of the values 'abs' (absolute coordinates) 'relref' (relative to the
+reference pixel of the image) or 'relcen' (relative to the center of the
+image).  You can use the \ahlink{summary}{images:image.summary} function
+of the \ahlink{image}{images:image} module to see the reference pixel. 
+The sense of the offset is  $rel = abs - ref$.
+
+You may also define pixel regions in terms of fractional coordinates
+that are in the range [0,1] (blc to trc) - look for argument {\stfaf frac}
+which can be T or F.
+
+
+\begin{ahexample}
+
+From the command line, let's make a simple pixel box region with
+
+\begin{verbatim}
+- include 'image.g'
+- im := image('myimage')
+- const r1 := drm.box([10,20], [30,40])
+- im.statistics(region=r1);
+Number points = 441           
+Flux density  = -1.728895e-03  Jy
+Sum           = -9.522969e-02        Mean     = -2.159403e-04 
+Variance      = 1.518106e-05         Sigma    = 3.896288e-03  
+Rms           = 3.897854e-03  
+
+Minimum value is -1.208747e-02  at [13, 32]
+Maximum value is 1.287862e-02   at [21, 37]
+\end{verbatim}
+
+You have now created a region tool called {\stf r1} which describes a 2D
+box from [10,20] to [30,40] in absolute pixel coordinates.   The region
+is made `const' as well so you can't overwrite it by mistake.  
+We then apply it to an image and evaluate some statistics in the
+specified region.
+
+\end{ahexample}
+
+
+World regions are more portable, because the region is specified in
+terms of the world coordinates (e.g.  RA and DEC, or Frequency etc). 
+You can create a region with one image, and then apply it to another. 
+For example, you might make an RA/DEC world box (i.e.  blc and trc
+specified as RA and DEC) from an optical image.  You can then apply it
+to your radio image of the same source.  The software will look for the
+axes of the region (in this case RA and DEC), and then attempt to match
+them with the image to which the region is being applied.  For each
+matching axis, the region will be applied.  
+
+When you make a world region, you must supply a coordinate system from
+the appropriate image to the \regionmanager.  The coordinate system
+comes from the \ahlink{coordsys}{images:image.coordsys} function
+of the Image tool.  This associates a coordinate with an image pixel
+axis. 
+
+
+\begin{ahexample}
+
+Now let's do an example with a world box.  It is better to make a world
+box with the GUI interface, but the command line is still manageable. 
+First, let's summarise the header of our image (the one from the
+previous example). 
+
+\begin{verbatim}
+- im.summary()
+Image name       : myimage
+Image mask       : Absent
+Image units      : JY/BEAM
+
+Direction system : J2000
+
+
+Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+--------------------------------------------------------------------------- 
+Right Ascension   SIN   155  155  17:42:29.303    90.00 -1.000000e+00 arcsec
+Declination       SIN   178  178 -28.59.18.600    90.00  1.000000e+00 arcsec
+T
+\end{verbatim}
+
+And now we will make a world box with the blc at the reference pixel,
+and the trc offset somewhat.  We use the \ahlink{quanta}{quanta:quanta}
+module for creating associations of values and units; in particular,
+the \ahlink{quantity}{quanta:quanta.quantity} function.
+
+\begin{verbatim}
+- blc := "17:42:29.303 -28.59.18.600";
+- trc := "17:42:28.303 -28.59.10.600";
+- cs := im.coordsys();
+- r2 := drm.wbox(blc=blc,trc=trc,pixelaxes=[1,2],csys=cs)
+- im.boundingbox(r2);
+[blc=[90 90], trc=[103 98], inc=[1 1], bbShape=[14 9], regionShape=[14 9], imageShape=[155 178] ]
+\end{verbatim}
+
+As well as passing in the blc and trc quantities, we have also told the
+\regionmanager\ which axes these values pertain to (they are numbered in
+the order in which they list in the {\cf summary} function), and we
+also supplied it with the coordinate system of the image.  Note that
+with the GUI interface, both the axes and coordinates handling is
+hidden.  If we wished, we could have left out the {\stfaf pixelaxes}
+argument, and it would have defaulted to [1,2].   We then find
+the bounding box of the region when it's applied to the image.
+You can see from the summary listing that it is correct.
+
+\end{ahexample}
+
+
+We generally think about our images as being in some order;
+RA/DEC/Frequency (for the X/Y/Z axes) or whatever.  In the application
+of world regions, this order is unimportant.  If you created a world
+region from an RA/DEC/Frequency image, and applied it to a
+Frequency/DEC/RA image, that image order change would be accounted for. 
+
+Note that for pixel regions however, because the region is not tagged
+with a coordinate system, the order of the image is relevant.  So if you
+made a pixel box from an RA/DEC image and applied it to a DEC/RA image,
+the RA range would be applied to the DEC axis and vice versa.  The pixel
+regions are present for simple usage only. 
+
+
+\medskip
+\noindent
+{\bf Simple pixel regions as world regions}
+
+It is possible to create a world region that is specified in pixel
+coordinates, and maintains the coordinate axis information.  This can be
+useful because compound regions must be world-coordinate based (see
+below).  We can do this because we have defined in the \regionmanager,
+``new'' world units, called ``pix'' (which are then known to the
+\ahlink{quanta}{quanta:quanta} module) and these are recognized in the
+world regions.  Similarly, we have also defined a unit called ``frac''. 
+This allows you to specify world coordinates in units of the fraction of
+the image shape.  For example, the blc of a 2D image has a ``frac''
+coordinate of [0,0] and a trc of [1,1].  But be careful, such regions
+are still not portable to another image, because they are still
+effectively pixel-coordinate based (although masquerading as world
+regions). 
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'image.g'
+- im := imagemaketestimage()
+- cs := im.coordsys()
+- local statsout
+-
+- r1 := drm.wbox(blc="10pix 10pix", trc="20pix 20pix", pixelaxes=[1,2], csys=cs)     
+- im.stats(statsout, region=r1, list=F, verbose=F)
+- print 'Region 1: number points = ', statsout.npts
+Region 1: number points =  121
+-
+- r2 := drm.wbox(blc="30pix 30pix", trc="40pix 40pix", pixelaxes=[1,2], csys=cs)  
+- im.stats(statsout,region=r2, list=F, verbose=F)
+- print 'Region 2: number points = ', statsout.npts
+Region 2: number points =  121
+
+- r3 := drm.union(r1, r2)
+- im.stats(statsout,region=r3, list=F, verbose=F)
+- print 'Region 3: number points = ', statsout.npts
+Region 3: number points =  242
+\end{verbatim}
+In this example we make a union from two pixel boxes masquerading as
+world regions.  
+\end{ahexample}
+
+
+\medskip
+\noindent
+{\bf Compound Regions}
+
+It is often desirable to make a region which combines others.  These are
+called compound regions.  For example, give me the union of 3 regions
+and evaluate the statistics in that union.  Or intersect this region
+with that one and extract the image data from that region.  Compound
+regions are fully recursive; you can nest them as deeply as you like. 
+
+You {\em must} be aware that compound regions can only be made from
+world-coordinated based regions.  You can convert a pixel region to a
+world region with the
+\ahlink{pixeltoworldregion}{images:regionmanager.pixeltoworldregion}
+function (at some point this function will move from the \regionmanager\
+\tool\ to the \ahlink{Image}{images:image} \tool. 
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'image.g'
+- im := image('myimage')
+- cs := im.coordsys();
+-
+- blc := "17:42:29.303 -28.59.18.600";
+- trc := "17:42:28.303 -28.59.10.600";
+- r1 := drm.wbox(blc=blc,trc=trc,pixelaxes=[1,2],csys=cs);
+- im.boundingbox(r1);
+[blc=[90 90] , trc=[103 98] , inc=[1 1], bbShape=[14 9] , regionShape=[14 9] , imageShape=[155 178] ] 
+-
+- blc := "17:42:27.303 -28.59.18.600"
+- trc := "17:42:26.303 -28.59.10.600"
+- r2 := drm.wbox(blc=blc,trc=trc,pixelaxes=[1,2],csys=cs);
+- im.boundingbox(r2);
+[blc=[116 90] , trc=[129 98] , inc=[1 1], bbShape=[14 9] , regionShape=[14 9] , imageShape=[155 178] ] 
+-
+- r3 := drm.union(r1, r2)
+- bb := im.boundingbox(r3)
+- bb
+[blc=[90 90] , trc=[129 98] , regionShape=[40 9] , imageShape=[155 178] ] 
+- 
+- im.statistics(statsout=s1, region=r1, list=F)
+- im.statistics(statsout=s2, region=r2, list=F)
+- im.statistics(statsout=s3, region=r3, list=F)
+-
+- np := prod((bb.trc-bb.blc) + 1)
+- print 'No. pts in r1, r2, r3, bb(r3) = ', s1.npts, s2.npts, s3.npts, np
+No. pts in r1, r2, r3, bb(r3) =  126, 126, 252, 360
+-
+-
+- r4 := drm.intersection(r1, r2)
+- im.boundingbox(r4)
+SEVERE: Caught an exception! Event type=run exception=LCIntersection::LCIntersection - regions do not overlap
+<fail>: Caught an exception! Event type=run exception=LCIntersection::LCIntersection - regions do not overlap
+        File:   servers.g, Line 711
+        Stack:  .()
+                .() 
+
+\end{verbatim}
+
+We make two world boxes and find the bounding box of each.  Then
+we make the union of the two and find the bounding box which we store in
+a record called {\cf bb}.  We then find some statistics over the union
+(supressing the logger output and storing the results in records).
+You can see that the number of points found in the region reflects the
+union, not the bounding box of the union. 
+
+Finally, we make an intersection of our two regions.  Because
+regions r1 and r2 don't actually intersect, a fail is generated.
+
+\end{ahexample}
+
+
+
+\medskip
+\noindent
+{\bf Automatic Extension}
+
+One general philosophy behind the regions software is that if you apply
+a region to an image, but don't explicitly specify all axes of the image
+in that region, then for the unspecified axes, the full image is taken. 
+For example, imagine that from an RA/DEC optical image you made an
+RA/DEC region.  You then applied it to an RA/DEC/Frequency radio
+spectral-line cube.  For the frequency axis, which was not specified in
+the region, all frequency pixels would be selected.  Another
+philosophy is that if, on application, a region extends beyond an image,
+the overhang is silently discarded. 
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'image.g'
+- im.boundingbox(drm.box())
+[blc=[1 1] , trc=[155 178] , inc=[1 1] , bbShape=[155 178] , regionShape=[155 178] , imageShape=[155 178] ] 
+-
+- r1 := drm.box(trc=[20])
+- im.boundingbox(r1)
+[blc=[1 1] , trc=[20 178] , inc=[1 1] , bbShape=[20 178] , regionShape=[20 178] , imageShape=[155 178] ] 
+-
+- r2 := drm.box(trc=[9000,20])
+- im.boundingbox(r2)
+[blc=[1 1] , trc=[155 20] , inc=[1 1] , bbShape=[155 20] , regionShape=[155 20] , imageShape=[155 178] ] 
+\end{verbatim}
+In the first example, none of the axes are specified in the region,
+so it defaults to the full image on all axes.  In the second example
+only the first axis of the trc is specified.  In the third example,
+the trc overhang is silently discarded.
+
+\end{ahexample}
+
+
+
+\medskip
+\noindent
+{\bf Masks}
+
+Some comment about the combination of masks and \regions\ is useful
+here.  Consider a simple polygonal region.  This \region\ is defined by
+a bounding box, the polygonal vertices, and a mask called a \regionmask.
+The \regionmask\ specifies whether a pixel within the bounding box is
+inside or outside the polygon.  For a simple box \region, there is
+obviously no need for a \regionmask.
+
+Now imagine that you wish to recover the mask of an image from a
+polygonal \region.  Now, necessarily, the mask is returned to you in
+regular Boolean array.  Thus, the array shape reflects the
+\ahlink{bounding-box}{images:image.boundingbox} of the polygonal region. 
+If the actual \pixelmask\ that you apply is all good, then the retrieved 
+mask would be good inside of the polygonal region and bad outside of it.  If
+the actual \pixelmask\ had some bad values in it as well, the
+retrieved mask would be bad outside of the polygonal region.  Inside the
+polygonal region it would be bad if the \pixelmask\ was bad.
+
+More simply put, the mask that you recover is just a logical ``and'' of
+the \pixelmask\ and the \regionmask; if the \pixelmask\ is T {\it and} the   
+\regionmask\ is T then the retrieved mask is T (good), else it is F (bad).   
+
+
+
+\medskip
+\noindent
+{\bf Vector Inputs}
+ 
+Many of the functions of a Regionmanager \tool\ take vectors (numeric or
+strings) as their arguments.  We take advantage of the weak-typing of
+Glish so that whenever you see a vector argument, you can assume that
+ 
+\begin{itemize}
+ 
+\item For numeric vectors you can enter as an actual numeric vector    
+(e.g. [1.2,2.5,3]), a vector of strings (e.g. "1.2 2.5 3") or even
+a string with white space and/or comma delimiters (e.g. '1.2 2.5 3').
+ 
+\item For string vectors you can enter as an actual vector of strings
+(e.g.  "1.2 2.5 3") or a string with white space or comma delimiters
+(e.g.  '1.2 2.5 3').
+ 
+\end{itemize}
+
+
+
+\medskip
+\noindent
+{\bf Default Values}
+
+When specifying blc and trc vectors for some regions (usually boxes)
+it can often be that you wish to default  one axis but not others.
+
+For example, you may like to specify a value for axis 2 but leave axis 1
+at its defaults.  This is trivial with the GUI interface (you just don't
+fill in the ones you are not interested in), but is a little harder with
+the command line interface. 
+
+There is a function called \ahlink{def}{images:regionmanager.def} which
+provides a magic value which can be used with pixel boxes for this
+purpose.  For example,
+
+\begin{verbatim}
+- include 'image.g'
+- im := imagefromshape('x', [20,30])
+- r := drm.box(trc=[drm.def(),10])
+- im.boundingbox(region=r)
+[blc=[1 1] , trc=[20 10] , regionShape=[20 10] , imageShape=[20 30] ] 
+\end{verbatim}
+
+You can see that trc for axis 1 has defaulted to
+the shape of the image.
+
+With world boxes, we have defined a magic unit called `default'
+instead. Thus
+
+\begin{verbatim}
+- include 'image.g'
+- im := imagefromshape('x', [20,30])
+- cs := im.coordsys()
+- drm.setcoordinates(cs)
+- r := drm.wbox(trc="0default 10pix")
+- im.boundingbox(region=r)
+[blc=[1 1] , trc=[20 10] , regionShape=[20 10] , imageShape=[20 30] ] 
+\end{verbatim}
+
+
+
+\medskip
+\noindent
+{\bf Error Checking}
+
+Although some error checking is done when the region is created (in
+\glish), much of it does not occur until the region is applied to an
+image.  In particular, when creating a compound region, it is {\em not}
+checked that the compound region contains only world-coordinate based
+regions.  It is only when you apply the region to an image that these
+checks are made.  Any errors that occur will cause exceptions to be
+generated.  Thus, when writing scripts, you should always check for a
+fail status for when you create or use a region. 
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'image.g'
+- const stats := function(imageobject, blc, trc, csys)
+{
+  r1 := drm.wbox(blc=blc, trc=trc, csys=csys)
+  if (is_fail(r1)) {
+     fail
+  } else {
+     ok := imageobject.statistics(r1)
+     if (is_fail(ok)) fail
+  }
+  return T
+}
+\end{verbatim}
+
+This fairly silly function detects if the region creation failed
+(function given invalid arguments) and then returns the fail condition. 
+Statistics are then evaluated from the region and the fail
+status checked in case the region was invalid (or for some
+other reason).
+
+\end{ahexample}
+
+
+
+\medskip
+\noindent
+{\bf How a region is stored in \aipspp}
+
+In \aipspp, a region is itself a \tool.  This means it can be
+transmitted about with \glish, saved to Tables and restored from Tables. 
+A region is actually made with a generic container \tool\ called an
+\ahlink{Itemcontainer}{misc:itemcontainer}.  The regions that you make
+have no intelligence regarding their greater purpose in life (although of course
+an Itemcontainer does have some functions so they can be manipulated).
+All of the knowledge about regions lies with the \regionmanager. 
+It should not be necessary for you to know anything about the insides of
+regions.  You just need to know how to make them and how to use them. 
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'regionmanager.g'
+- r1 := drm.box([10,20], [30,40])
+- r1
+[gui=<function>, done=<function>, get=<function>, has_item=<function>, 
+makeconst=<function>, length=<function>, names=<function>, 
+set=<function>, add=<function>, fromrecord=<function>, 
+torecord=<function>, type=<function>] 
+-
+- r1.torecord()
+[name=LCSlicer, isRegion=3, blc=[10 20] , trc=[30 40] , inc=, 
+fracblc=[F F] , fractrc=[F F] , fracinc=, 
+arblc=[1 1] , artrc=[1 1] , oneRel=T, comment=] 
+\end{verbatim}
+
+First we make a simple pixel-box region.  We then try and print it out. 
+You can see that this isn't very enlightening.  What you see are the
+Itemcontainer's functions.  To really see inside the region, you can use
+the \ahlink{torecord}{misc:itemcontainer.torecord} function of
+Itemcontainer.  This converts the region to a record which you can view
+if you really must (the record is of no functional use when dealing
+with regions).
+
+\end{ahexample}
+
+It's perhaps also useful to know that once you have made a region
+you can't break it.  You can delete it, maybe overwrite it, but you
+can't mistakenly mess up its contents (even with the
+\ahlink{Itemcontainer}{misc:itemcontainer} functions with which it was
+created).  It's user proof - there's a challenge for you !
+
+
+
+
+
+\begin{ahconstructor}{regionmanager}{Construct a regionmanager}
+\ahreturns{Regionmanager tool}
+\begin{ahdescription}
+ 
+This is the only \regionmanager\ constructor.  It should generally be
+unnecessary for you to make one as there is little state in a
+\regionmanager\ (you can set a Coordinate System with
+\ahlink{setcoordinates}{images:regionmanager.setcoordinates}); the
+default \regionmanager\ {\stf drm} should be all you need. 
+
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'regionmanager.g'
+- const myrm := regionmanager()
+- myrm.type()
+regionmanager
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+\begin{ahfunction}{absreltype}{Convert region type value to a string}
+\begin{ahargs}
+  \ahaddarg[in]{absrelvalue}{Region type value}{}{Integer - 1, 2, 3, 4}
+\end{ahargs}
+\ahreturns{String or fail}
+
+\begin{ahdescription}
+
+This function is not intended for general user use.
+
+Regions may be specified with coordinates which are absolute or
+relative.  This function converts the integer code defining the
+absolute/relative type of the coordinates (which is stored in the
+region) into a string (maybe for printing purposes).
+
+The different types are
+
+\begin{verbatim}
+Integer     String      Description
+1            abs        Absolute coordinate
+2            relref     Relative reference pixel
+3            relcen     Relative to center of image
+4            reldir     Relative to some direction
+\end{verbatim}
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r := drm.box(blc=[3,40], trc=[80,90])   # Create region
+- v := r.get('arblc')                     # Get absrel value vector for blc
+- n := length(v)
+- for (i in 1:n) {
++   print drm.absreltype(v[i])            # Print string conversion for each axis
++  }
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{box}{Create a pixel box region}
+\begin{ahargs}  
+  \ahaddarg[in]{blc}{blc of the box}{Unity}{Numeric vector}
+  \ahaddarg[in]{trc}{trc of the box}{Shape}{Numeric vector}
+  \ahaddarg[in]{inc}{increment}{unity}{Numeric vector}
+  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{One of 'abs', 'relref' or 'relcen'}
+  \ahaddarg[in]{frac}{Pixel or fractional coordinates}{F}{T or F}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function creates a multi-dimensional pixel box region.  The box is
+specified by a bottom-left corner, and top-right corner and an increment
+(or stride).  Pixel coordinates are considered to run from 1 at the
+bottom left corner of the image to the image shape at the top-right
+corner of the image. 
+
+You can specify whether the coordinates are given as pixel coordinates
+({\stfaf frac=F}) or fractions of the image shape ({\stfaf frac=T}). 
+Absolute fractions are in the range [0,1]. 
+
+You can also specify whether the coordinates are given as absolute
+coordinates ({\stfaf absrel='abs'}) or relative to the reference pixel
+({\stfaf absrel='relref'}) or relative to the center of the image
+({\stfaf absrel='relcen'}). 
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('myimage')
+- im.shape()
+[155 178 256]
+-
+- r := drm.box()                 # create region
+-
+- im.bb(r)
+[blc=[1 1 1] , trc=[155 178 256] , inc=[1 1 1] , bbShape=[155 178 256] , 
+regionShape=[155 178 256] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+This region, on application to an image, selects the entire image.
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('myimage')
+- im.shape()
+[155 178 256]  
+-
+- r := drm.box(blc=[5,10])
+- im.bb(r)
+[blc=[5 10 1] , trc=[155 178 256] , inc=[1 1 1] , bbShape=[151 169 256] , 
+regionShape=[151 169 256] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+This region is only specified for the first two axes of the blc.  
+Automatic extension rules apply for the other axis and the trc
+(defaults to the shape).
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('myimage')
+- im.shape()
+[155 178 256]
+-
+- r := drm.box(blc="10 10 10", trc="20 20 20", inc="2 2 2")
+- im.boundingbox(r)                                        
+[blc=[10 10 10] , trc=[20 20 20] , inc=[2 2 2] , bbShape=[11 11 11] , 
+regionShape=[6 6 6] , imageShape=[155 178 256] ] 
+-
+- im.stats(stats, region=r, list=F);
+- stats.npts
+216
+\end{verbatim}
+
+This region picks out every other pixel in the 3D box.  The
+``regionShape'' field of the bounding box record does reflect the
+increment whereas ``bbShape'' does not.  You can see that the number of
+points used in determining the statistics (216) reflects the increment
+as well. 
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('myimage')
+- im.shape()
+[64 128]  
+-
+- rmd := drm.def()
+- r := drm.box([-5,-10], [rmd,20], absrel='relcen')
+-
+- im.boundingbox(r)
+[blc=[28 55] , trc=[64 85] , inc=[1 1] , bbShape=[37 31] , 
+regionShape=[37 31] , imageShape=[64 128] ] 
+\end{verbatim}
+
+The region is specified in pixels relative to the center of the image. 
+Note the use of the default value ({\cf drm.def()}) to default the first
+axis of the trc argument to the image shape without having to know the
+image shape. 
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('myimage')
+- im.shape()
+[155 178 256] 
+-
+- im.summary(summ, list=F)
+- summ.refpix
+[90 90 1]
+-
+- r := drm.box([-0.25,-0.3], [0.25, 0.5], frac=T, absrel='relref')
+- im.bb(r)
+[blc=[39 37 1] , trc=[116 178 256] , inc=[1 1 1] , bbShape=[78 142 256] , 
+regionShape=[78 142 256] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+This example shows selection by relative to reference pixel fractional
+coordinates plus auto extension to unspecified axes. 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{complement}{Create the complement of a world region}
+\begin{ahargs}  
+  \ahaddarg[in]{region}{The world region}{}{Region tool}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\tt comp}) creates the complement of
+a world region. 
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- im.shape()
+[155 178]
+-
+- blc := "17:42:29.303 -28.59.18.600"
+- trc := "17:42:28.303 -28.59.10.600"
+- r2 := drm.wbox(blc,trc,[1,2],cs)
+- r3 := drm.complement(r2);
+-
+- im.stats(region=r2)                          # Some output discarded 
+Selected bounding box [90, 90] to [103, 98]         
+No pts   = 126
+-
+- im.stats(region=r3)
+Selected bounding box [1, 1] to [155, 178]     # Some output discarded 
+No pts   = 27464
+\end{verbatim}
+
+As expected,  the number of pixels in the complement
+is $(155*178)-126=27464$
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{concatenation}{Concatenate world regions along a new axis}
+\begin{ahargs}  
+  \ahaddarg[in]{box}{The axis to concatenate along}{}{world box region}
+  \ahaddarg[in]{regions}{World regions}{}{Record containing world regions}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\tt concat}) creates a region which is
+the concatenation along a new axis of the given world regions. 
+
+This function is similar to the
+\ahlink{extension}{images:regionmanager.extension} function.  The
+{\stfaf concatenation} function allows you to take many world regions,
+and concatenate them along one axis (rather than take one region and
+extend it along many axes which is what function {\stff extension}
+does).
+
+For example, you may have generated a different polygonal region for
+each spectral pixel of a spectral-line cube and you wish to concatenate them
+together to form the overall region for use in a deconvolution
+application. 
+
+The axis to concatenate along is specified as a 1-dimensional world box.
+The shape of the 1D box must contain as many pixels (although you
+don't have to specify it in pixels) as there are regions
+to concatenate.   
+
+Because this function is most likely to be used in a script, the
+interface takes a record containing {\stff region} tools, rather than
+the names of the tools themselves (there might be a lot of them). 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('cube')
+- cs := im.coordsys()
+- drm.setcoordinates(cs, verbose=F)      # Don't tell us each time
+                                         # private coordinates used
+- box := drm.wbox(blc="20pix", trc="25pix", pixelaxes=[3])
+- bb := im.boundingbox(box)
+-
+- rec := [=];
+- local x, y;
+- j := 1;
+- for (i in bb.blc[3]:bb.trc[3]) {
++ # Some code in function `mypolygon' generates the 
++ # x and y vectors for this spectral pixel, perhaps interactively
++    
++    mypolygon(x,y);
++    rec[j] := drm.wpolygon(x,y,[1,2])
++    j +:= 1;
++  }
+- rc := drm.concat(box, rec)
+-
+- im.stats(region=rc, axes=[1,2])
+Plane Freq         Npts Sum            Mean           Rms            Sigma          Minimum        Maximum        
+20    1.413724e+09 25   -4.778154e+00  -1.911262e-01  2.578399e-01   1.766359e-01   -4.252437e-01  1.820721e-01   
+21    1.413744e+09 40   -7.476902e+00  -2.990761e-01  3.692736e-01   2.210687e-01   -6.073643e-01  1.634156e-01   
+22    1.413763e+09 32   -2.696485e+00  -1.078594e-01  1.916686e-01   1.617070e-01   -3.295788e-01  1.422531e-01   
+23    1.413783e+09 77   4.889158e-01   1.955663e-02   3.148451e-02   2.518293e-02   -3.671944e-02  6.521463e-02   
+24    1.413803e+09 25   -1.337832e+00  -5.351327e-02  6.296221e-02   3.385893e-02   -1.232493e-01  1.014871e-02   
+25    1.413823e+09 15   1.091297e+00   4.365189e-02   7.252339e-02   5.910932e-02   -6.364560e-02  1.630955e-01   
+
+\end{verbatim}
+
+In this example, we create a 1D box and use it to concatenate 2D xy
+polygons along the z axis.  We then ask for the statistics of each plane
+in the region.  There is a differerent number of pixels per plane 
+as each polygon is different.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{copyregions}{Copy regions from one Table to another}
+\begin{ahargs}  
+  \ahaddarg[inout]{tableout}{The output table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{tablein}{The input table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{confirm}{Prompt for confirmation}{F}{T or F}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahdescription}
+
+This function copies all the regions from one \aipspp\ Table to
+another.  
+
+For the Table \tool\ arguments, you can specify an
+\ahlink{image}{images:image} tool, a \ahlink{table}{table:table} tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table) or a new table (for {\stfaf
+tableout}) which will be created for you.  The new table has no useful
+structure beyond housing the regions for you. 
+
+If desired, you can request confirmation prompting to prevent accidental
+overwrite of existing regions.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- drm.copyregions('newtable', im)
+\end{verbatim}
+
+Creates the output table and copies all the regions
+housed by the image {\sff hcn} via the Image \tool\ {\stf im}.
+\end{ahexample}
+
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{def}{Default pixel coordinate value}
+\ahreturns{Integer}
+
+\begin{ahdescription}
+ 
+This function returns a value which can be used as a default when
+creating pixel regions.  For example, you might wish to make a pixel box
+and default the value of the first axis of the {\stfaf trc} argument (to
+the shape) but specify the value for the second axis. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('quintin')
+- im.shape()
+[155 178 256]  
+-
+- blc := [12,drm.def(),43]
+- trc := [drm.def(),50]
+- r1 := drm.box(blc, trc)
+-
+- im.boundingbox(r1)
+[blc=[12 1 43] , trc=[155 50 256] , inc=[1 1 1] , bbShape=[144 50 214] , 
+regionShape=[144 50 214] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+So you can see that the {\stfaf blc} and {\stfaf trc} elements which were
+given the value {\stfaf drm.def()} have been given default values; 1 for
+the {\stfaf blc} and {\stfaf shape=128} for the {\tt trc}.  Note that {\stfaf 
+trc[3]} was not given.  It has been returned as 256.  It didn't need a
+{\stfaf drm.def()} because it was the last dimension. 
+
+
+\end{ahexample}
+
+
+\begin{ahexample}
+
+Typing {\stfaf drm.def()} is rather cumbersome.  However, it is unique. 
+To make it easier, you could define your own symbol according to
+
+\begin{verbatim}
+- const rmd := drm.def()      
+- blc := [1,23,43]
+- trc := [rmd,50]
+- r1 := drm.box(blc, trc)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{deletefromtable}{Delete regions from a Table}
+\begin{ahargs}  
+  \ahaddarg[in]{tablename}{The table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{confirm}{Prompt for confirmation}{F}{T or F}
+  \ahaddarg[in]{regionname}{Name(s) of the region(s) to delete}{}{Vector of strings}
+\end{ahargs}
+\ahreturns{Bool or fail}
+
+\begin{ahdescription}
+
+This function deletes regions stored in an \aipspp\  Table.  
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} tool, a \ahlink{table}{table:table} tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table).
+
+You specify the name(s) of the regions with the {\stfaf regionname}
+arguments.  If you set {\stfaf regionname='all'} then all regions are
+deleted.  The names of all the regions stored in a Table can be found
+with the function
+\ahlink{namesintable}{images:regionmanager.namesintable}. 
+
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- names := drm.namesintable(im)
+- drm.deletefromtable(im, F, names)
+\end{verbatim}
+ 
+In this example, we delete all of the regions in a table, if there
+are any.  The regions are deleted without confirmation prompting.
+\end{ahexample}
+
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{difference}{Create the difference of two world regions}
+\begin{ahargs}  
+  \ahaddarg[in]{region1}{The first world region}{}{Region tool}
+  \ahaddarg[in]{region2}{The second world region}{}{Region tool}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff diff}) creates
+a region which is the difference of two world regions.  The order
+of the regions is important.
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- drm.setcoordinates(cs)
+-
+- blc := "10pix 10pix"
+- trc := "60pix 60pix"
+- r1 := drm.wbox(blc,trc,[1,2])
+-
+- blc := "50pix 50pix"
+- trc := "80pix 80pix"
+- r2 := drm.wbox(blc, trc, [1,2])
+- 
+- r3 := drm.difference(r1, r2)                 # r1 - r2
+-
+- im.stats(region=r1)                          # Some output discarded 
+Selected bounding box [10, 10] to [60, 60]
+No pts   = 2601
+-
+- im.stats(region=r3)                          # Some output discarded 
+Selected bounding box [10, 10] to [60, 60]
+No pts   = 2480
+-
+-
+- r4 := drm.difference(r2, r1)                 # r2 - r1
+-
+- im.stats(region=r2)                          # Some output discarded 
+Selected bounding box [50, 50] to [80, 80]
+No pts   = 961
+-
+- im.stats(region=r4)                          # Some output discarded 
+Selected bounding box [50, 50, 1] to [80, 80, 64]
+No pts   = 840
+\end{verbatim}
+
+We use pixel units and boxes in this example to make it clear what is
+happening.  The two regions overlap in the top right corner area of
+region {\stf r1} by an area of $11\times11=121$~pixels.  Therefore, the
+difference region {\stf r3} has $2601-121=2480$~pixels in it.  For
+difference region {\stf r4}, the region of overlap is the bottom left
+corner area of region {\stf r2} and still contains 121~pixels.  We expect
+$961-121=840$~pixels in the differnce region.  
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{displayedplane}{Find a region describing the plane displayed by the viewer}
+\begin{ahargs}  
+  \ahaddarg[in]{image}{Image}{}{Image tool}
+  \ahaddarg[in]{ddoptions}{Options from display data}{}{Record}
+  \ahaddarg[in]{zaxispixel}{The pixel of the z (movie) axis}{Unset}{Integer}
+  \ahaddarg[in]{asworld}{T for a world box, F for a pixel box}{T}{T or F}
+\end{ahargs}
+\ahreturns{region tool or fail}
+
+\begin{ahdescription}
+
+This function is for use with the \ahlink{viewer}{viewer:viewer} and is
+not of general user interest.  This function will return a world region
+describing the plane of the image currently displayed by the viewer. 
+Note that this region describes the full plane of the image, not just
+the piece you might have given to the viewer (see example). 
+
+You must provide
+
+\begin{itemize}
+
+\item {\stfaf image} This is the \ahlink{Image}{images:image} \tool\
+that the conversion pertains to. 
+
+\item {\stfaf ddoptions} is a record obtained from the
+\ahlink{Viewerdisplaydata}{viewer:viewerdisplaydata} \tool\ via the
+\ahlink{getoptions}{viewer:viewerdisplaydata.getoptions} function.  It
+contains information about what is displayed. 
+
+\item {\stfaf zaxispixel}  is the current pixel of the movie or Z axis.
+This is the axis that the viewer animator steps along.  It can be obtained
+from  the \ahlink{index}{viewer:viewerdisplaypanel.index} function.
+If it's unset, then the region will not be intersected with the
+present movie axis plane.  It will always be intersected with
+the hidden axes planes.
+
+\end{itemize}
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'image.g'
+- include 'viewer.g'
+- include 'regionmanager.g'
+#
+- im : =image('myimage')
+- print im.shape()
+[10 20 4 5]  
+- r1 := drm.quarter()
+- im.bb(r1)
+[blc=[4 6 1 1] , trc=[8 15 4 5] , inc=[1 1 1 1] , bbShape=[5 10 4 5] , 
+regionShape=[5 10 4 5] , imageShape=[10 20 4 5] ] 
+#
+- displaypanel := dv.newdisplaypanel()
+- displaydata := dv.loaddata(im.name(F), 'raster')
+- displaydata.setoptions([region=r1])
+- displaypanel.register(displaydata)
+#
+- options := displaydata.getoptions()
+- plane := drm.displayedplane(im, options, displaypanel.index())
+- if (is_fail(plane)) fail
+- im.bb(region=plane)
+[blc=[1 1 1 1] , trc=[10 20 1 1] , inc=[1 1 1 1] , bbShape=[10 20 1 1] , 
+regionShape=[10 20 1 1] , imageShape=[10 20 4 5] ] 
+-
+- cs := im.coordsys()
+- dr := drm.intersection(drm.pixeltoworldregion(csys=cs,region=r1), plane)
+- im.bb(dr)
+[blc=[4 6 1 1] , trc=[8 15 1 1] , inc=[1 1 1 1] , bbShape=[5 10 1 1] , 
+regionShape=[5 10 1 1] , imageShape=[10 20 4 5] ] 
+\end{verbatim}
+
+In this example, we use the default Viewer ({\stf dv}) to create a {\stf
+Viewerdisplaypanel} on which we register a {\stf Viewerdisplaydata} which will
+display the specified image as a raster.  A region specifying a quarter
+of the image is given.  The region describing the plane being displayed
+can be seen to reflect the full shape of the image.  To make a region
+describing what is actually being displayed, one can simply intersect it
+with the region given to the viewer, as shown.  Note the conversion of
+the pixel box to a world box before it can be used in the compound
+region. 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{done}{Destroy this regionmanager}
+\ahreturns{Bool or fail}
+\begin{ahdescription}
+ 
+This function destroys the contents of the {\stf regionmanager} \tool\
+(including its GUI).  The \tool\ still exists as a Glish variable, but
+it is no longer a Regionmanager ! You are unlikely to need this
+function. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- const myrm := regionmanager()
+- myrm.done()
+T
+- print 'myrm=', myrm
+myrm=F
+\end{verbatim}
+
+You can see that after calling the {\stf done} function the
+{\cf myrm} variable still exists, but its value is F.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+%
+% The presence of "shape" in the current interface makes it undesirable
+% to offer this function presently
+%
+%\begin{ahfunction}{ellipsoid}{Create a pixel ellipsoid region}
+%\begin{ahargs}  
+%  \ahaddarg[in]{center}{The center of the ellipsoid}{}{Numeric vector}
+%  \ahaddarg[in]{radius}{The radius of the ellipsoid}{}{Numeric vector}
+%  \ahaddarg[in]{shape}{The shape of the image}{}{Numeric vector}
+%  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{One of 'abs', 'relref' or 'relcen'}
+%  \ahaddarg[in]{frac}{Pixel or fractional coordinates}{F}{T or F}
+%  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+%\end{ahargs}
+%\ahreturns{Region tool or fail}
+%\begin{ahdescription}
+%
+%This function (short-hand name {\stff ellipse}) creates a
+%multidimensional pixel ellipsoid region. 
+%\end{ahdescription}
+%\begin{ahexample}  
+%\begin{verbatim}
+%- im := image('hcn')
+%- center := [30,40,50]
+%- radius := [10,20,30]
+%- shape := im.shape();
+%- r1 := drm.ellipsoid(center, radius, shape);
+%- im.boundingbox(r1)
+%-
+%-
+%\end{verbatim}
+%\end{ahexample}
+%\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{extension}{Extend a world region to extra dimensions}
+\begin{ahargs}  
+  \ahaddarg[in]{box}{The world region to extend over}{}{World box region tool}
+  \ahaddarg[in]{region}{The world region to extend}{}{Region tool}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff ext}) creates a region which
+is the extension over specified dimensions along straight lines of the
+given region.  For example, you might like to extend a 2-D polygon to be
+a 3-D `cylindrical polygon' (that is, the polygon is replicated for
+each plane). 
+
+The extension is specified with a world box.  It can be of any
+dimension.  However, you can't put the same axes in the extension box as
+are in the region you are extending. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('cube')
+- cs := im.coordsys()
+- im.shape()
+[155 178 64]  
+-
+- drm.setcoordinates(cs)
+-
+- x := dq.quantity([40,45,48,55,48,43,40], 'pix')
+- y := dq.quantity([40,43,59,60,53,48,45], 'pix')
+- poly := drm.wpolygon(x, y, [1,3])
+- box := drm.wbox(dq.quantity("20pix"), dq.quantity("30pix"), [2])
+- 
+- ext := drm.extension(box, poly, 'a cylindrical polygon')
+-
+- im.boundingbox(poly)
+[blc=[40 1 40] , trc=[55 178 60] , inc=[1 1 1] , bbShape=[16 178 21] ,
+regionShape=[16 178 21] , imageShape=[155 178 256] ] 
+-
+- im.boundingbox(box)
+[blc=[1 20 1] , trc=[155 30 256] , inc=[1 1 1] , bbShape=[155 11 256] ,
+regionShape=[155 11 256] , imageShape=[155 178 256] ]
+-
+- im.boundingbox(ext)
+[blc=[40 20 40] , trc=[55 30 60] , inc=[1 1 1] , bbShape=[16 11 21] ,
+regionShape=[16 11 21] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+In this example we create a 2D polygon in the XZ plane.  We then create
+a 1D box along the Y axis from pixels 20 to 30.  Then we extend the
+polygon with that box to make a series of XZ polygons for the specified Y
+pixels. 
+
+Note that when the {\stfaf box} and {\stfaf poly} regions are applied to the
+image with the {\stfaf boundingbox} function, the auto-extension operation
+is applied.  It is not until the region has as many dimensions as the
+image (the region {\stfaf ext}) that no auto-extension occurs. 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{extractsimpleregions}{Extract all simple regions into a record}
+\begin{ahargs}  
+  \ahaddarg[in]{region}{The region to extend}{}{Region tool}
+\end{ahargs}
+\ahreturns{Record of Region tools or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff esr}) extracts all simple (i.e.
+non-compound) regions from the given region \tool.  This might be useful
+to plot all of the simple regions that made up a compound region.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('cube')
+- cs := im.coordsys()
+- drm.setcoordinates(cs)
+-
+- x := dq.quantity([40,45,48,55,48,43,40], 'pix')
+- y := dq.quantity([40,43,59,60,53,48,45], 'pix')
+- poly := drm.wpolygon(x, y, [1,3])
+- box := drm.wbox(dq.quantity("20pix"), dq.quantity("30pix"), [2])
+- 
+- union := drm.union(box, poly);
+- rec := drm.extractsimpleregions(union)
+- print 'Number of extracted simple regions = ', length(rec)
+2
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{fromglobaltotable}{Save regions into a Table}
+\begin{ahargs}  
+  \ahaddarg[inout]{tablename}{The table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{confirm}{Prompt for confirmation}{F}{T or F}
+  \ahaddarg[in]{verbose}{Report successful saves}{T}{T or F}
+  \ahaddarg[in]{regionname}{Name(s) of the region(s) when saved in the table}{Self naming}{Vector of strings}
+  \ahaddarg[in]{...}{Region(s) to save}{}{Region tool(s)}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahdescription}
+
+This function saves regions into an \aipspp\ Table.  
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} \tool, a \ahlink{table}{table:table} \tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table) or a new table which will be
+created for you.  The new table has no useful structure beyond housing
+the regions for you. 
+
+You can specify the name that each region will have ({\stfaf regionname})
+when it is saved in the Table.  If you don't specify this,
+a name will be made up for you (region1, region2, etc).
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- r1 := drm.box()
+- r2 := drm.quarter()
+- drm.fromglobaltotable(im, T, F, "x1 x2", r1, r2)
+- drm.namesintable(im)
+x1 x2
+\end{verbatim}
+ 
+In this example, we save two regions called  {\stf r1} and {\stf r2} to the
+table (previously containing no regions) referred to by the image \tool\
+{\stf im}.  The regions are renamed to `x1' and `x2' as they are stored.
+
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- r1 := drm.box()
+- r2 := drm.quarter()
+- drm.fromglobaltotable(im, T, F, "", r1, r2)
+- drm.namesintable(im)
+x1 x2
+\end{verbatim}
+ 
+In this example, we save two regions called {\stf r1} and {\stf r2} to
+the table (previously containing no regions) referred to by the image
+tool {\stf im}.  The names for regions are made up for us as we don't
+specify them.  Note that because the regions are specified by the
+special \glish\ `...' argument (it has no actual argument name), we
+must give the {\stfaf regionname} argument explcitly as an empty vector
+of strings (else \glish\ will take the empty string as a region). 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fromrecordtotable}{Save regions stored in a record into a Table}
+\begin{ahargs}  
+  \ahaddarg[inout]{tablename}{The table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{confirm}{Prompt for confirmation}{F}{T or F}
+  \ahaddarg[in]{verbose}{Report successful saves}{T}{T or F}
+  \ahaddarg[in]{regionname}{Name(s) of the region(s) when saved in the table}{}{Vector of strings}
+  \ahaddarg[in]{regionrec}{Region(s) to save}{}{Record of region tool(s)}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahdescription}
+
+This function saves regions into an \aipspp\ Table.  It is just like
+tool \ahlink{fromglobaltotable}{images:regionmanager.fromglobaltotable}
+except that the input regions are stored in a record rather
+than existing in global name space.
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} \tool, a \ahlink{table}{table:table} \tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ Table on disk (any kind of table) or a new Table which will be
+created for you.  The new table has no useful structure beyond housing
+the regions for you. 
+
+You can specify the name that each region will have ({\stfaf
+regionname}) when it is saved in the Table.  If you don't specify this,
+the field name of the corresponding region in the record is used. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- r := [=]
+- r[1] := drm.box()
+- r[2] := drm.quarter()
+- drm.fromrecordtotable(im, T, F, "x1 x2", r)
+- drm.namesintable(im)
+x1 x2
+\end{verbatim}
+ 
+In this example, we save two regions stored in the record {\gvf r} to the
+table (previously containing no regions) referred to by the Image \tool\
+{\stf im}.  The regions are renamed to `x1' and `x2' as they are stored.
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+- im1 := image('hcn')
+- im2 := image('hcn2')
+- r := drm.fromtabletorecord(im1)
+- names := drm.namesintable(im1)
+- drm.fromrecordtotable(im2, T, F, names, r)
+\end{verbatim}
+
+In this example, we recover the regions into a record
+from one image, and then copy them to another.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{fromtabletoglobal}{Restore a region from a Table to Glish}
+\begin{ahargs}  
+  \ahaddarg[in]{tablename}{The table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{verbose}{Report successful restores}{T}{T or F}
+  \ahaddarg[in]{regionname}{Name of the region to restore}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function restores a region from an \aipspp\ Table
+to the global name space of \glish.
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} \tool, a \ahlink{table}{table:table} \tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table). 
+
+You can use the function
+\ahlink{namesintable}{images:regionmanager.namesintable} to find out the
+names of the regions in the Table. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- names := drm.namesintable(im)
+  for (i in 1:length(names)) {
++    cmd := spaste(names[i], ' := drm.fromtabletoglobal(im, regionname=\'', names[i], '\')')
++    print 'cmd=', cmd
++    eval(cmd)
++ }
+cmd= x1 := drm.fromtabletoglobal(im, regionname='x1')
+Successful restore of region x1
+cmd= x2 := drm.fromtabletoglobal(im, regionname='x2')
+Successful restore of region x2
+\end{verbatim}
+
+We find out the names of the regions in the Table, and then restore them
+in a loop with the \glish\ command {\cf eval}; it creates the region
+with the name given in the array {\gvf names}.  Because the output
+region name is not known to the function {\stf fromtabletoglobal}, it
+cannot prompt for confirmation if the symbol already exists 
+in \glish.  That's your job. 
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{fromtabletorecord}{Restore regions from a Table to a record}
+\begin{ahargs}  
+  \ahaddarg[in]{tablename}{The table}{}{Image tool, table tool or String}
+  \ahaddarg[in]{verbose}{Report successful restores}{T}{T or F}
+  \ahaddarg[in]{regionname}{Name of the region(s) to restore}{All}{Vector of strings}
+  \ahaddarg[in]{numberfields}{Number the fields ?}{T}{T or F}
+\end{ahargs}
+\ahreturns{Record or fail}
+
+\begin{ahdescription}
+
+This function restores a region from an \aipspp\ Table
+to the global name space.
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} \tool, a \ahlink{table}{table:table} \tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table). 
+
+If {\stfaf numberfields} is F, then the field names of the
+record are the same as they are in the Table.  Otherwise,
+the regions are put into numbered fields (the field
+names could be anything).
+
+You can use the function
+\ahlink{namesintable}{images:regionmanager.namesintable} to find out the
+names of the regions in the Table. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- rec := drm.fromtabletorecord(im, numberfields=T)
+- print is_region(rec[1])
+\end{verbatim}
+
+The record fields are numbered, not named.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{fromtabletonakedrecord}{Restore all regions from a Table to a naked record}
+\begin{ahargs}  
+  \ahaddarg[in]{tablename}{The table}{}{Image tool, table tool or String}
+\end{ahargs}
+\ahreturns{Record or fail}
+
+\begin{ahdescription}
+
+This function restores all the regions from an \aipspp\ Table to a naked
+record.  By that we mean that the regions themselves are exposed by
+conversion to a record (which you can always do with function
+\ahlink{torecord}{misc:itemcontainer.torecord}) and then all the region
+records are placed into a record themselves.  The field names
+of the record are the names of the regions as stored in the Table.
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} \tool, a \ahlink{table}{table:table} \tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table). 
+
+This function is not intended for general user use since you should
+not generally need to break the encapsulation of a region.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- rec := drm.fromtabletonakedrecord(im)
+- field_names(rec)
+r1 r2 r3
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getselectcallback}{Get the select callback function}
+\ahreturns{A function or 0}
+
+\begin{ahdescription}
+
+This function returns the ``select callback'' function (set with the
+function
+\ahlink{setselectcallback}{images:regionmanager.setselectcallback}).  It
+is part of the communications between the Regionmanager and the \region\
+entry widget.   If you have not set a callback function, this function
+returns 0.
+
+It is not intended for general purpose use and you will break
+some communications if you mess with these functions.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{gui}{Start the GUI interface}
+\begin{ahargs}  
+  \ahaddarg[in]{parent}{Parent of the widget}{F}{Tk frame}
+  \ahaddarg[in]{tlead}{Lead frame}{F}{Tk frame}
+  \ahaddarg[in]{tpos}{Position of GUI relative to lead}{'sw'}{String}
+\end{ahargs}
+\ahreturns{Bool or fail}
+\begin{ahdescription}
+ 
+This function starts the GUI interface for the regionmanager.  You can
+embed the GUI in a parent frame if desired.  For world regions in
+particular, the GUI interface is better than the command line interface.
+Popuphelp is available on many of the buttons, labels and list box
+entries.  In general, look for popuphelp on labels of entry boxes rather
+than the entry boxes themselves. 
+
+The {\stfaf tlead, tpos} arguments are the same as for the Glish/Tk
+frame command and control where the GUI goes.  By default
+it goes where it feels like.   If you dismiss the GUI and
+reissue the {\stff gui} command, it is just remapped, so the
+arguments are ignored.  If you destroy the GUI (under the
+File button) then the arguments for the {\stff gui} command
+are honoured.
+
+Here is an example of how the GUI might look.
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=regionmanager0.ps, width=3.6in}
+\caption{The main Regionmanager GUI}
+\label{fig:gui}
+\end{center}
+\end{figure}
+
+
+The main control panel of the GUI shows three list boxes.  To the left
+is a list of the different types of regions that you can create.  In the
+middle is a list of \ahlink{image}{images:image} \tools\ currently
+available to \glish\ (two in this example).  To the right is the list of
+regions that have been made so far (in this example, some pixel, world
+and compound regions).
+
+Just click on one of the region types in the left hand list box and an
+additional GUI will appear for that region type.  Enter the parameters
+for the region and press the `create' button of the specific region GUI. 
+The new region will then appear in the right-hand list box of the main
+control panel. 
+	
+For world regions, you must select an image from the middle list box
+first, and then click on the region type you wish to create. 
+
+Other buttons on the main GUI function as follows.
+
+\noindent
+
+1. For the `Images' listbox.  The `deselect' button deselects all items
+in the images listbox.
+
+2.  For the `Available Regions' listbox.  The `Delete' button deletes
+any selected regions.  The `Undelete' button can be used to recover the
+region last deleted.  The `Edit' button lets you edit a selected region. 
+The `Copy' button lets you copy one selected region to a new region. 
+The `Rename' button lets you rename one selected region.  The
+`Clipboard' button is in fact a menu from which you can copy the
+selected region to the default clipboard tool ({\stf dcb}) or paste
+a region from {\stf dcb} to \glish.  For the latter operation,
+the region name will be automatically chosen.
+
+3. Along the bottom of the GUI we find the `Refresh' button
+to refresh/update the `Images' and `Available Regions' listboxes
+with images and regions currently available to \glish.
+The `Dismiss' button dismisses the GUI but preserves its
+state.  You can recover it but issuing the {\stff gui}
+function call again.
+
+The other three buttons are used in the communications with
+\ahlink{region entry}{widgets:guientry.region} widgets used for example,
+by the Toolmanager interface.  What happens is that you can initiate,
+from the region entry widget, a connection to the Regionmanager (by
+selecting the RegionmanagerGUI entry from the spanner menu).  Once you
+have done that, the {\stf drm} Regionmanager GUI will be displayed and
+the `Send\&dismiss', `Send' and `Break' buttons will be enabled.  You
+then select the desired region in the `Available Regions' listbox.  You
+then send it to the region entry widget by pressing either the
+`Send\&dismiss' or `Send' buttons.  When you press the former, the
+Regionmanager GUI is dismissed and the connection broken.  When you
+press the latter, the Regionmanager GUI remains and the connection
+persists.  If you want to just break the connection, press the `Break'
+button (these three buttons then disable). 
+
+Note that only one region entry widget at a time can be connected
+to the {\stf drm} Regionmanager GUI (otherwise you  might get
+a bit confused about which regions are going where).
+
+4.  The `File' menu button at the top left of the GUI gives you 5
+choices.  The first three enable you to save regions to Table (e.g.  an
+image), restore then from a Table and delete regions from a Table,
+respectively.  Each of these starts its own GUI for these actions. 
+These are described in \ahlink{saveregions}{widgets:saveregions},
+\ahlink{restoreregions}{widgets:restoreregions}, and
+\ahlink{deleteregions}{widgets:deleteregions}, respectively. 
+
+Regarding their interaction with the Regionmanager, the following
+is relevant.
+
+With the `Save' widget, the regions that you have selected in the
+Regionmanager `Available Regions' listbox are available for saving.
+Whenever you change the Regionmanager selection, the Save widget
+updates.  
+
+With the `Restore' widget, the regions available for restoring to
+\glish\ come from the first selected image in the Regionmanager GUI
+`Images' listbox (or from the Table you type in to the Restore widget).
+
+With the `Delete' widget, the Table that you are deleting regions
+from comes from
+the first selected image in the Regionmanager GUI
+`Images' listbox (or from the Table you type in to the Restore widget).
+
+The other two items in the `File' menu dismiss the Regionmanager GUI
+(preserving its state) and destroy the Regionmanager GUI.  In both
+cases the GUI can be recovered by running the {\stff gui}
+function of the Regionmanager again.
+
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- drm.gui()
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{intersection}{Create the intersection of some world regions}
+\begin{ahargs}  
+  \ahaddarg[in]{...}{World regions and comment}{}{Region tools or record of region tools, and String}
+\end{ahargs}
+\ahreturns{Region tool}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff int}) creates a region which is
+the intersection of the given world regions.   The input regions can
+themselves be compound regions (such as the union or intersection etc). 
+The input regions can be provided as individual region \tools, or a
+record of region \tools\ (see examples).
+
+For arcane \glish\ language reasons, the usual {\stfaf comment} keyword
+is not provided.  But if you provide a string somewhere in the call
+sequence, it will be treated as the comment. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- drm.setcoordinates(cs)
+-
+- blc := "10pix 10pix 1pix"
+- trc := "60pix 60pix 1pix"
+- r1 := drm.wbox(blc=blc, trc=trc, pixelaxes=[1,2,3])
+-
+- x := dq.quantity([50,55,58,65,58,53,50], 'pix')
+- y := dq.quantity([50,53,69,70,63,58,55], 'pix')
+- r2 := drm.wpolygon(x=x, y=y, pixelaxes=[1,2])
+- 
+- r3 := drm.intersection(r1, r2, 'This is the comment')
+- 
+- im.boundingbox(r1)
+[blc=[10 10 1] , trc=[60 60 256] , regionShape=[51 51 256] , imageShape=[155 178 256] ] 
+- im.boundingbox(r2)
+[blc=[50 50 1] , trc=[65 70 256] , regionShape=[16 21 256] , imageShape=[155 178 256] ] 
+- im.boundingbox(r3)
+[blc=[50 50 1] , trc=[60 60 256] , regionShape=[11 11 256] , imageShape=[155 178 256] ]
+-
+- im.stats(region=r3)                           # Some output discarded
+NORMAL: Selected bounding box [50, 50, 1] to [60, 60, 1]
+Number points = 51            
+
+\end{verbatim}
+
+In this example, we use pixel coordinates so that it is clear what is
+happening.  You can see that the number of pixels in the intersection
+(51) is less than the number in the bounding box of the intersection
+(121) because the intersection is actually polygonal and does not fill
+the bounding box. 
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('onno')
+- cs := im.coordsys()
+- x := dq.quantity([3,6,9,6,5,5,3],'pix')
+- y := dq.quantity([3,4,7,9,7,5,5],'pix')
+-
+- regions := [=];
+- regions[1] := drm.wpoly(x,y,[1,2],cs)
+-
+- blc := "17:42:29.303 -28.59.18.600"
+- trc := "17:42:28.303 -28.59.10.600"
+- regions[2] := drm.wbox(blc,trc,[1,2],cs)
+-
+- r3 := drm.intersection(regions,'The mysteries of Glish')
+\end{verbatim}
+
+This example is the same as the prevoius one, except the regions are
+provided to the intersection function in a record, rather than directly in the
+call sequence.
+
+\end{ahexample}  
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{ispixelregion}{Is this region a pixel region ?}
+\begin{ahargs}  
+  \ahaddarg[in]{region}{The region}{}{Region tool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function returns T if the region is a pixel region.
+For any other \glish\ variable it returns F.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- r1 := drm.box()                   # A pixel region
+- r2 := drm.wbox(csys=cs)           # A world region
+- drm.ispixelregion(r1)
+T
+- drm.ispixelregion(r2)
+F
+- x := [20,30]
+- drm.ispixelregion(x)
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{isworldregion}{Is this region a world region ?}
+\begin{ahargs}  
+  \ahaddarg[in]{region}{The region}{}{Region tool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This function returns T if the region is a world region.
+For any other \glish\ variable it returns F.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- r1 := drm.box()                   # A pixel region
+- r2 := drm.wbox(csys=cs)           # A world region
+- drm.isworldregion(r1)
+F
+- drm.isworldregion(r2)
+T
+- x := [20,30]
+- drm.isworldregion(x)
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{namesintable}{Find the names of the regions stored in a Table}
+\begin{ahargs}  
+  \ahaddarg[in]{tablename}{The table}{}{Image tool, table tool or String}
+\end{ahargs}
+\ahreturns{Vector of strings}
+
+\begin{ahdescription}
+
+This function returns the names of regions stored in an \aipspp\ Table.  
+
+For the {\stfaf tablename} argument, you can specify an
+\ahlink{image}{images:image} tool, a \ahlink{table}{table:table} tool,
+or a string.  If you give a string, it should be the name of an existing
+\aipspp\ table on disk (any kind of table). 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- names := drm.namesintable(im)
+- names
+r1 poly2 int0
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{pixeltoworldregion}{Convert a simple pixel region to a world region}
+\begin{ahargs}  
+  \ahaddarg[in]{csys}{The coordinate system to use in the conversion}{}{Image tool}
+  \ahaddarg[in]{shape}{The shape to use for fractional coordinates}{Unset}{Vector of integers}
+  \ahaddarg[in]{region}{The region}{}{Region tool}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function converts the simple pixel regions to world regions.  This
+function is provided because compound regions require world regions. 
+You specify a \ahlink{Coordinate System}{images:coordsys} \tool\ for
+the conversions as well as the pixel region. 
+You only need to supply a shape if the coordinates use fractional
+coordinates. 
+
+Currently, this function can only convert pixel boxes.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- r1 := drm.box([10,20,30], [50,60,70])
+- r2 := drm.pixeltoworldregion(csys=cs, region=r1)
+- drm.isworldregion(r1)
+F
+- drm.isworldregion(r2)
+T
+- im.boundingbox(r1)
+[blc=[10 20 30] , trc=[50 60 70] , inc=[1 1 1] , bbShape=[41 41 41] , 
+regionShape=[41 41 41] , imageShape=[155 178 256] ] 
+-
+- im.boundingbox(r2)
+[blc=[10 20 30] , trc=[50 60 70] , inc=[1 1 1] , bbShape=[41 41 41] , 
+regionShape=[41 41 41] , imageShape=[155 178 256] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+%
+% The presence of "shape" in the current interface makes it undesirable
+% to offer this function presently
+%
+%\begin{ahfunction}{polygon}{Create a pixel polygon region}
+%\begin{ahargs}  
+%  \ahaddarg[in]{x}{The x vector}{}{Numeric vector}
+%  \ahaddarg[in]{y}{The y vector}{}{Numeric vector}
+%  \ahaddarg[in]{shape}{The x and y shape of the image}{}{Numeric vector}
+%  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{One of 'abs', 'relref' or 'relcen'}
+%  \ahaddarg[in]{frac}{Pixel or fractional coordinates}{F}{T or F'}
+%  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+%\end{ahargs}
+%\ahreturns{Region tool}
+%\begin{ahdescription}
+%
+%This function (short-hand name {\stff poly}) creates a 2D pixel
+%polygon region. 
+%
+%You can specify whether the coordinates are given as pixel coordinates
+%({\stfaf frac=F}) or fractions of the image shape ({\stfaf frac=T}). 
+%Absolute fractions are in the range [0,1]. 
+%
+%You can also specify whether the coordinates are given as absolute
+%coordinates ({\stfaf absrel='abs'}) or relative to the reference pixel
+%({\stfaf absrel='relref'}) or relative to the center of the image
+%({\stfaf absrel='relcen'}). 
+%
+%\end{ahdescription}
+%\begin{ahexample}  
+%\begin{verbatim}
+%- im := image('myimage')
+%- x := [3,6,9,6,5,5,3]
+%- y := [3,4,7,9,7,5,5]
+%- r1 := drm.polygon(x, y, im.shape())
+%- bb := im.boundingbox(r1)
+%\end{verbatim}
+%
+%This polygon is specified in absolute pixels.
+%It is intrinsically 2D.    
+%
+%\end{ahexample}
+%\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{pseudotoworldregion}{Convert a Viewer pseudoregion to a world region}
+\begin{ahargs}  
+  \ahaddarg[in]{image}{Image of interest}{}{Image tool}
+  \ahaddarg[in]{pseudoregionvalue}{Psuedoregion event value}{}{Glish record}
+  \ahaddarg[in]{ddoptions}{Options from display data}{}{Record}
+  \ahaddarg[in]{intersect}{Intersect with move plane ?}{T}{T or F}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+
+\begin{ahdescription}
+
+This function is for use with the {\cf pseudoregion} event emitted by a
+\ahlink{Displaypanel}{viewer:viewerdisplaypanel} created by a
+\ahlink{Viewer}{viewer:viewer}.  This function converts the
+pseudo-region (a region of 2-dimensions only) into a true world region
+by application of the Coordinate System.  If the record is empty, the
+returned region describes the entire image. 
+
+This function is not intended for general-user use. 
+
+You must provide
+
+\begin{itemize}
+
+\item {\stfaf image}  This is the Image \tool\ that the conversion pertains to.
+
+\item {\stfaf pseudoregionvalue} is the \$value of the \glish\ {\cf
+pseudoregion} event emitted by a 
+\ahlink{Displaypanel}{viewer:viewerdisplaypanel} (created by a \viewer).
+
+\item  {\stfaf ddoptions} is a record obtained from the display data \tool\
+via the  \ahlink{getoptions}{viewer:viewerdisplaydata.getoptions}
+function.  It contains information about what is displayed.
+
+\end{itemize}
+
+If {\stfaf intersect=T} then the pseudoregion is intersected with
+the plane of the current movie axis and hidden axes.  
+If {\stfaf intersect=F} then the pseudoregion is intersected with
+the current hidden axes pixels only.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'image.g'
+include 'viewer.g'
+include 'regionmanager.g'
+#
+im : =image('myimage')
+displaypanel := dv.newdisplaypanel()
+displaydata := dv.loaddata(im.name(F), 'raster')
+r1 := drm.quarter()
+displaydata.setoptions([region=r1])
+displaypanel.register(displaydata)
+#
+whenever displaypanel->pseudoregion do {
+  options := displaydata.getoptions()
+  region := drm.pseudotoworldregion(im, $value, options)
+  if (is_fail(region)) fail
+  im.statistics(region=region)
+}
+\end{verbatim}
+
+In this example, we use the default viewer ({\cf dv}) to create a {\cf
+displaypanel} on which we register a {\cf displaydata} which will
+display the specified image as a raster.  A region specifying a quarter
+of the image is given.  When the user interactively generates a region, the
+event is caught and the pseudo-region event converted to a true world
+region with the default regionmanbager, {\cf drm}.  The region is then
+used to evaluate statistics from the image.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{quarter}{Create a quarter pixel region}
+\begin{ahargs}  
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+\begin{ahdescription}
+
+This function creates a  region which selects
+one quarter of the image by area centered on the image
+center for the first two dimensions.  It selects
+all pixels for higher dimensions.  It might be useful for
+deconvolution (CLEAN).  This region is implemented with the
+\ahlink{pixel box}{images:regionmanager.box} function.
+
+\end{ahdescription}
+\begin{ahexample}  
+\begin{verbatim}
+- r1 := drm.quarter()
+- im := image('hcn')
+- im.boundingbox(r1)
+[blc=[40 46 1] , trc=[116 134 256] , inc=[1 1 1] , bbShape=[77 89 256] , 
+regionShape=[77 89 256] , imageShape=[155 178 256] ] 
+\end{verbatim}
+
+You can see that auto extension to the third axis is occurring.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setcoordinates}{Set new default Coordinate System}
+\begin{ahargs}
+  \ahaddarg[in]{csys}{Default Coordinate System for use in world regions}{}{Coordinate tool}
+  \ahaddarg[in]{verbose}{Issue message each time used}{T}{T or F}
+\end{ahargs}
+
+
+\ahreturns{Bool}
+\begin{ahdescription}
+ 
+This function allows you to (re)set the default Coordinate System
+used by the functions that make world regions.  If you don't specifiy a
+Coordinate System when you make the world region, the default Coordinate
+System, if there is one, is used.   The Coordinate System is
+stored in a {\stf coordinates} \tool\ and is created with
+the \ahlink{coordsys}{images:coordsys} \toolfunction.
+
+Normally, the world region creating functions like
+\ahlink{wbox}{images:regionmanager.wbox} and
+\ahlink{wpolygon}{images:regionmanager.wpolygon} will issue a message
+each time the private Coordinate System is used.  However, if you set
+{\stfaf verbose=F} then this will not occur. 
+
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('quiqui')
+- cs := im.coordsys()
+- drm.setcoordinates(cs)
+- r1 := drm.wbox()
+Using private CoordinateSystem from image "quiqui"
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+ 
+
+
+
+\begin{ahfunction}{setselectcallback}{Set the callback function when GUI region selection is made}
+\begin{ahargs}  
+  \ahaddarg[in]{callbackFunction}{The function}{}{A function}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+
+This function sets the select callback function (retrievable with the function
+\ahlink{getselectcallback}{images:regionmanager.getselectcallback}).  It
+is part of the communications between the Regionmanager and the \region\
+entry widget. 
+
+It is not intended for general purpose use and you will break
+some communications if you mess with these functions.
+
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{String}
+\begin{ahdescription}
+ 
+This function returns the string `regionmanager'.  If you have
+a \tool, but don't know what kind it is, this function usually exists
+to tell you that.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- if (is_defined('thing') && is_record(thing) &&
++     has_field(thing, 'type') && is_function(thing.type) 
++     && thing.type() == 'regionmanager') {
++    print 'yippee'
++ } else {
++    print 'it is a sad day that we do not have a regionmanager'
++ };
+\end{verbatim}
+
+Imagine we have been given a \glish\ variable called {\gvf thing} in
+some function but we can't guarentee its a Regionmanager, as expected. 
+To write robust code, we need to check that it is.  This bit of code
+does that.  Note the use of the short cut ``\&\&'' operator.  A
+statement is only evaluated if the statement to the left is true.  
+
+\end{ahexample}
+
+\end{ahfunction}
+ 
+
+
+\begin{ahfunction}{union}{Create a union of world regions}
+\begin{ahargs}  
+  \ahaddarg[in]{...}{World regions and comment}{}{Region tools or record of region tools, and String}
+\end{ahargs}
+\ahreturns{Region tool}
+
+\begin{ahdescription}
+
+This function takes a minimum of two world regions and creates a region which
+is the union of the given regions.  The input regions can themselves be
+compound regions (such as the union or intersection etc).   The input
+regions can be provided as individual region \tools, or a record
+of region \tools\ (see examples).
+
+For arcane \glish\ language reasons, the usual {\stfaf comment} keyword
+is not provided.  But if you provide a string somewhere in the call
+sequence, it will be treated as the comment. 
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('onno')
+- cs := im.coordsys()
+- x := dq.quantity([3,6,9,6,5,5,3],'pix')
+- y := dq.quantity([3,4,7,9,7,5,5],'pix')
+- r1 := drm.wpoly(x,y,[1,2],cs)
+-
+- blc := "17:42:29.303 -28.59.18.600"
+- trc := "17:42:28.303 -28.59.10.600"
+- r2 := drm.wbox(blc,trc,[1,2],cs)
+-
+- r3 := drm.union(r1,r2,'The mysteries of Glish')
+- 
+- im.shape()
+[155 178 256]  
+- im.boundingbox(r1)
+[blc=[3 3 1] , trc=[9 9 256] , inc=[1 1 1] , bbShape=[7 7 256] ,
+regionShape=[7 7 256] , imageShape=[155 178 256] ] 
+- im.boundingbox(r2)
+[blc=[90 90 1] , trc=[103 98 256] ,  inc=[1 1 1] , bbShape=[14 9 256] ,
+regionShape=[14 9 256] , imageShape=[155 178 256] ] 
+- im.boundingbox(r3)
+[blc=[3 3 1] , trc=[103 98 256] ,  inc=[1 1 1] , bbShape=[101 96 256] ,
+regionShape=[101 96 256] , imageShape=[155 178 256] ] 
+-
+- im.stats(region=r1)
+Selected bounding box [3, 3, 1] to [9, 9, 256]
+Number points = 6400          
+-
+- im.stats(region=r2)
+Selected bounding box [90, 90, 1] to [103, 98, 256]
+Number points = 32256         
+-
+- im.stats(region=r3) 
+Selected bounding box [3, 3, 1] to [103, 98, 256]
+Number points = 38656         
+\end{verbatim}
+
+When the polygon only is applied, it is auto extended along the third
+axis.  The {\stff statistics} function finds 6400 pixels in the region,
+which is $6400/256=25$ pixels per plane.  Likewise, when the box only is
+applied, the {\stff statistics} function finds 32256 pixels in the
+region, which is $32256/256=126$ pixels per plane.  When the union is
+applied, the {\stff statistics} function finds 38656 pixels in the
+region.  First it finds the union of the polygon and box (which are
+specified only in the XY plane) and that union is extended.  Thus we
+expect $(25+126)*256=38656$ pixels in the region of the union, as found.
+
+\end{ahexample}  
+
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('onno')
+- cs := im.coordsys()
+- x := dq.quantity([3,6,9,6,5,5,3],'pix')
+- y := dq.quantity([3,4,7,9,7,5,5],'pix')
+-
+- regions := [=];
+- regions[1] := drm.wpoly(x,y,[1,2],cs)
+-
+- blc := "17:42:29.303 -28.59.18.600"
+- trc := "17:42:28.303 -28.59.10.600"
+- regions[2] := drm.wbox(blc,trc,[1,2],cs)
+-
+- r3 := drm.union(regions,'The mysteries of Glish')
+\end{verbatim}
+
+This example is the same as the prevoius one, except the regions are
+provided to the union function in a record, rather than directly in the
+call sequence.
+
+\end{ahexample}  
+
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{wbox}{Create a world box region}
+\begin{ahargs}  
+  \ahaddarg[in]{blc}{blc of the box}{Unity}{Vector of quantities}
+  \ahaddarg[in]{trc}{trc of the box}{Shape}{Vector of quantities}
+  \ahaddarg[in]{pixelaxes}{Which pixel axes}{[1,2,...]}{Vector of integers}
+  \ahaddarg[in]{csys}{Coordinate System}{Private Coordinate System}{coordinates tool}
+  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs' or last}{Vector of
+            strings from 'abs', 'relref' and 'relcen'}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool}
+
+\begin{ahdescription}
+
+This function creates a multi-dimensional world box region; the
+corners of the box are specified in world coordinates.  However, the box
+is not a true world volume in that its sides do not follow world
+contours.  Its sides are parallel to the pixel axes.  If you are in a
+region of high world coordinate contour non-linearity (e.g.  near a
+pole), you are probably better off using a world polygon. 
+
+The box is specified by a bottom-left corner, and a top-right corner. 
+The coordinates are given as quantities, and you can give a vector of
+quantities (e.g.  {\cf blc := dq.quantity("1rad 20deg")} or a
+quantity of a vector (e.g.{\cf blc := dq.quantity([10,30], 'rad')}). 
+
+You can specify whether the coordinates are given as absolute coordinates
+({\stfaf absrel='abs'}) or relative to the reference pixel ({\stfaf 
+absrel='relref'}) or relative to the center of the image ({\stfaf
+absrel='relcen'}).  You can specify this for each axis (the same for the
+blc and trc).   If you specify less values than the number of
+values in {\stfaf blc} or {\stfaf trc} then the last value you
+did specify is used as the default for all higher numbered axes
+(e.g. {\stfaf absrel='relref'} means {\stfaf absrel="relref relref"}
+for two axes).
+
+You specify which pixel axes in the image the {\stfaf blc} and {\stfaf
+trc} vector refer to with the {\stfaf pixelaxes} argument.  If you
+don't, it defaults to [1,2,...].  This specification is an important
+part of world regions. 
+
+You must also specify the Coordinate System with the {\stfaf csys}
+argument.  The Coordinate System is encapsulated in a {\stfaf coordinates}
+tool and can be recovered from an image with the
+\ahlink{coordsys}{images:image.coordsys} tool function.  You can
+also set a default Coordinate System in the \regionmanager\ with the
+\ahlink{setcoordinates}{images:regionmanager.setcoordinates} 
+function.
+
+In the \regionmanager\ we have defined units `pix' and `frac'; these are
+then known to the \ahlink{quanta}{quanta:quanta} system.  This means
+that you can effectively define a pixel box (except for the stride
+capability) as a world box with most of the advantages of world regions
+(can be used for compound regions).  However, it is still not very
+portable to other images because the coordinates are pixel based,
+not world based. 
+
+Note that the need to deal with the {\stfaf pixelaxes} and {\stfaf csys}
+is hidden from you when using the \ahlink{gui}{images:regionmanager.gui}
+interface of the \regionmanager. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- r := drm.wbox()
+\end{verbatim}
+
+This region, on application to an image, will select the entire
+image.
+
+\end{ahexample}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('ada')
+- cs := im.coordsys()
+- cs.summary()
+
+Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+--------------------------------------------------------------------------- 
+Frequency                64   16  1.413350e+09     1.00  1.968717e+04 Hz
+Velocity                          1.378053e+02     1.00 -4.174021e+00 km/s
+Declination       SIN   178   89 -28.59.18.600    90.00  1.000000e+00 arcsec
+Right Ascension   SIN   155   31  17:42:29.303    90.00 -1.000000e+00 arcsec
+-
+-
+- blc := dq.quantity("17:42:29.303 -28.59.18.600")
+- trc := "17:42:28.303 -28.59.10.600"
+- r1 := drm.wbox(blc=blc,trc=trc,pixelaxes=[3,2],csys=cs)
+- im.boundingbox(r1)
+[blc=[1 90 90] , trc=[64 98 103] , regionShape=[64 9 14], imageShape=[64 178 155] ] 
+\end{verbatim}
+
+We have specified an RA and DEC for the blc and the trc (they should
+be quantities; for blc we do that explicitly, but for the trc
+we just give a vector of strings which is automatically converted
+for us to a vector of quantities).
+
+From the {\stff summary} listing you can see that RA and DEC correspond
+to pixel axes 3 and 2 respectively (don't be confused by the dual
+listing for the spectral axis) so that is why the {\stfaf pixelaxes}
+argument is set to [3,2].  If we had set blc/trc in DEC/RA order then we
+would have put {\stfaf pixelaxes=[2,3]}.  For the unspecified frequency
+axis, all pixels are selected. 
+
+\end{ahexample}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('bork')
+- cs := im.coordsys()
+- cs.summary()
+
+Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+--------------------------------------------------------------------------- 
+Right Ascension   SIN   155   31  17:42:29.303    90.00 -1.000000e+00 arcsec
+Declination       SIN   178   89 -28.59.18.600    90.00  1.000000e+00 arcsec
+
+
+- drm.setcoordinates(cs)
+T
+- blc := "-10pix -28.59.18.6"
+- trc := "10pix  -28.59.1.6"
+- r1 := drm.wbox(blc=blc,trc=trc,absrel="relref abs")   # pixelaxes defaults to [1,2]
+Using private CoordinateSystem from image "bork"
+- im.boundingbox(r1)
+[blc=[80 90] , trc=[100 107] , regionShape=[21 18] , imageShape=[155 178] ] 
+\end{verbatim}
+
+In this example, we use pixel coordinates relative to the reference
+pixel for the RA axis and absolute world coordinates for the DEC axis. 
+We also set the state of the \regionmanager\ with a Coordinate
+System to use when making world regions.  You can see that when the
+region was made, a message was issued reminding you that the internal
+Coordinate System from the image {\sff bork} was being used. 
+
+\end{ahexample}  
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys()
+- cs.summary()
+
+Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+--------------------------------------------------------------------------- 
+Right Ascension   SIN   155   31  17:42:29.303    90.00 -1.000000e+00 arcsec
+Declination       SIN   178   89 -28.59.18.600    90.00  1.000000e+00 arcsec
+Frequency                64   16  1.413350e+09     1.00  1.968717e+04 Hz
+Velocity                          1.378053e+02     1.00 -4.174021e+00 km/s
+T 
+-
+- blc := "1.414E9Hz"
+- trc := "1.4145GHz"
+- r := drm.wbox(blc=blc, trc=trc, pixelaxes=[3], csys=cs)
+- im.boundingbox(r)
+[blc=[1 1 34] , trc=[155 178 59] , regionShape=[155 178 26] , imageShape=[155 178 64] ] 
+\end{verbatim}
+
+In this example we only specified a region for the frequency axis (note
+we used different units for the blc and trc).  Therefore, on
+application, the region selected for the RA and DEC axes is
+automatically the full image.  
+
+\end{ahexample}
+\end{ahfunction}
+
+%
+% I don't yet want to offer this interface to users
+%
+%\begin{ahfunction}{wdbox}{Create a world box region}
+%\begin{ahargs}  
+%  \ahaddarg[in]{blc}{blc of the box}{Unity}{Numeric vector or string}
+%  \ahaddarg[in]{trc}{trc of the box}{Unity}{Numeric vector or string}
+%  \ahaddarg[in]{csys}{Coordinate System}{}{coordinates tool}
+%  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{Vector of
+%            strings from 'abs', 'relref' and 'relcen'}
+%  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+%\end{ahargs}
+%\ahreturns{Region tool}
+%
+%\begin{ahdescription}
+%
+%This is an alternative simpler and less flexible interface to the
+%\ahlink{wbox}{images:regionmanager.wbox} function for creating a world
+%box.  Instead of quantities, you can just specify vectors of real
+%numbers where the units are the native units of the axis.  It is assumed
+%that the {\stfaf pixelaxes} of the values specified in the {\stfaf blc} and
+%{\stfaf trv} vectors are in monotonically increasing order ([1,2,3,...]). 
+%
+%\end{ahdescription}
+%
+%\begin{ahexample}
+%\begin{verbatim}
+%- im := image('hcn')
+%- cs := im.coordsys()
+%- im.summary(native=T)                # Ask for native units
+%Image name       : hcn
+%Image mask       : Absent
+%Image units      : JY/BEAM
+%
+%Direction system : J2000
+%Frequency system : LSR
+%Velocity  system : RADIO
+%Rest Frequency   : 1.414e+09 Hz
+%
+%
+%	Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+%-------------------------------------------------------------------------- 
+%Right Ascension   SIN   155   31  4.635980e+00    90.00 -4.848137e-06 rad
+%Declination       SIN   178   89 -5.059448e-01    90.00  4.848137e-06 rad
+%Frequency                64   16  1.413350e+09     1.00  1.968717e+04 Hz
+%Velocity                          1.378053e+02     1.00 -4.174021e+00 km/s
+%T 
+%-
+%-
+%- blc := im.toworld([10,20,1])
+%- blc
+%[4.6364236 -0.506284097 1.41335003e+09]  
+%- trc := im.toworld([140,30,33])
+%[4.63570295 -0.506235641 1.41398002e+09]  
+%-
+%- r := drm.wdbox(blc, trc, cs)
+%- im.boundingbox(r)                                                        
+%[blc=[10 20 1] , trc=[140 30 33] , shape=[155 178 64] ] 
+%\end{verbatim}
+%
+%In this example, we first summarize the header but ask for the
+%coordinate incormation in native format.  In this consistency exercise,
+%we ask the \ahlink{toworld}{images:image.toworld} tool function to convert
+%some pixel coordinates to native world coordinates.  We then construct
+%the world box from those native world coordinates, and verify that the
+%bounding box is the same as the original absolute pixel coordinates. 
+%
+%\end{ahexample}
+%
+%\end{ahfunction}
+
+
+
+\begin{ahfunction}{wpolygon}{Create a world polygon region with quantities}
+\begin{ahargs}  
+  \ahaddarg[in]{x}{The x vector}{}{Quantity vector}
+  \ahaddarg[in]{y}{The y vector}{}{Quantity vector}
+  \ahaddarg[in]{pixelaxes}{which pixel axes}{[1,2]}{Vector of integers or strings}
+  \ahaddarg[in]{csys}{Coordinate System}{Privaet Coordinate System}{coordinates tool}
+  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{String from
+            'abs', 'relref' and 'relcen'}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff wpoly}) creates a 2D world
+polygon region.  The polygon is specified by an {\stfaf x} and a {\stfaf y}
+vector.  These must be quantities of a vector (the 
+\ahlink{world box}{images:regionmanager.wbox} function
+allows both
+quantities of vectors and vectors of quantities).  This means that the
+units are common to all elements of each vector.  Thus, {\cf
+dq.quantity([1,2,3],'rad')} (a quantity of a vector) is different from
+{\cf dq.quantity("1rad 2rad 3rad")} (a vector of quantities) although
+the information that they specify is the same. 
+
+You specify which pixel axes in the image the {\stfaf x} and {\stfaf 
+y} vectors pertain to with the {\stfaf pixelaxes} argument.  If you don't,
+it defaults to [1,2].  This specification is an important part of
+world regions. 
+
+You can specify whether the {\stfaf x} and {\stfaf y} vector coordinates are
+given as absolute coordinates ({\stfaf absrel='abs'}) or relative to the
+reference pixel ({\stfaf absrel='relref'}) or relative to the center of the
+image ({\stfaf absrel='relcen'}).  This argument applies to both the axes
+of the polygon. 
+
+You must also specify the Coordinate System with the {\stfaf csys}
+argument.  The Coordinate System is encapsulated in a {\stfaf coordinates}
+\tool\ and can be recovered from an image with the
+\ahlink{coordsys}{images:image.coordsys} function.  You can
+also set a default Coordinate System in the Regionmanager with the
+\ahlink{setcoordinates}{images:regionmanager.setcoordinates} 
+function.
+
+In the \regionmanager\ we have defined units `pix' and `frac'; these are
+then known to the \ahlink{quanta}{quanta:quanta} system.  This means
+that you can effectively define a pixel box (except for the stride
+capability) as a world box with most of the advantages of world regions
+(can be used for compound regions).  However, it is still not very
+portable to other images because the coordinates are pixel based,
+not world based. 
+
+Note that the need to deal with the {\stfaf pixelaxes} and {\stfaf csys}
+is hidden from you when using the \ahlink{gui}{images:regionmanager.gui}
+interface of the \regionmanager. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('onno')
+- cs := im.coordsys()
+- im.shape()
+[155 178 64]  
+- x := dq.quantity([3,6,9,6,5,5,3],'pix')
+- y := dq.quantity([3,4,7,9,7,5,5],'pix')
+- r1 := drm.wpolygon(x=x, y=y, pixelaxes=[2,3], csys=cs)
+- im.statistics(region=r1)
+Selected bounding box [1, 3, 3] to [155, 9, 9]
+Creating new statistics storage image
+
+Number points = 3875           
+Sum           = -9.457746e+01         Mean     = -2.440709e-02  
+Variance      = 2.599452e-02          Sigma    = 1.612282e-01   
+Rms           = 1.630445e-01   
+
+Minimum value at [50, 7, 5] = -6.885301e-01  
+Maximum value at [155, 3, 5] = 6.562161e-01   
+\end{verbatim}
+
+We applied the 2D polygon, defined in the YZ plane with absolute pixel
+coordinates, to a 3D image.  Therefore, the first (X) axis was
+automatically extended to the whole image. 
+
+\end{ahexample}
+
+\end{ahfunction}
+
+
+
+%
+% I don't yet want to offer this interface to users
+%
+%\begin{ahfunction}{wdpolygon}{Create a world polygon region}
+%\begin{ahargs}  
+%  \ahaddarg[in]{x}{The x vector}{}{Numeric vector}
+%  \ahaddarg[in]{y}{The y vector}{}{Numeric vector}
+%  \ahaddarg[in]{pixelaxes}{which pixel axes}{}{Vector of integers}
+%  \ahaddarg[in]{csys}{Coordinate System}{}{coordinates tool}
+%  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs'}{String from
+%            'abs', 'relref' and 'relcen'}
+%  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+%\end{ahargs}
+%\ahreturns{Region tool}
+%
+%\begin{ahdescription}
+%
+%This is an alternative simpler and less flexible interface (short-hand 
+%name {\stff wdpoly}) to the
+%\ahlink{wpolygon}{images:regionmanager.wpolygon} function for creating a world
+%box.  Instead of quantities, you can just specify vectors of real
+%numbers where the units are the native units of the axis. 
+%
+\end{ahdescription}
+%
+%\begin{ahexample}  
+%\begin{verbatim}
+%- im := image('hcn')
+%- cs := im.coordsys()
+%- im.summary(native=T)                # Ask for native units
+%Image name       : hcn
+%Image mask       : Absent
+%Image units      : JY/BEAM
+%
+%Direction system : J2000
+%Frequency system : LSR
+%Velocity  system : RADIO
+%Rest Frequency   : 1.414e+09 Hz
+%
+%
+%Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+%-------------------------------------------------------------------------- 
+%Right Ascension   SIN   155   31  4.635980e+00    90.00 -4.848137e-06 rad
+%Declination       SIN   178   89 -5.059448e-01    90.00  4.848137e-06 rad
+%Frequency                64   16  1.413350e+09     1.00  1.968717e+04 Hz
+%Velocity                          1.378053e+02     1.00 -4.174021e+00 km/s
+%T 
+%-
+%-
+%- x := [3,6,9,6,5,5,3]
+%- y := [3,4,7,9,7,5,5]
+%- for (i in 1:length(x)) {
+%     p := [x[i],y[i]]
+%     w := im.toworld(p)
+%     x2[i] := w[1]
+%     y2[i] := w[2]
+%  }
+%- x2
+%[4.63646243 4.6364458 4.63642916 4.63644579 4.63645134 4.63645134 4.63646243]  
+%- y2
+%[-0.506366508 -0.506361663 -0.506347122 -0.506337423 -0.506347118 -0.506356814 -0.506356812]  
+%-
+%- r1 := drm.wdpoly(x2, y2, [1,2], cs)
+%-
+%- im.boundingbox(r1)
+%[blc=[3 3 1] , trc=[9 9 64] , shape=[155 178 64] ] 
+%-
+%- im.statistics(region=r1)
+%Selected bounding box [3, 3, 1] to [9, 9, 64]
+%Creating new statistics storage image
+%No pts   = 1600           
+%Sum      = -5.565460e+01         Mean     = -3.478412e-02  
+%Variance = 2.029609e-02          Sigma    = 1.424643e-01   
+%Rms      = 1.466061e-01   
+%
+%Minimum value at [6, 5, 21] = -6.073643e-01  
+%Maximum value at [8, 8, 57] = 4.203035e-01   
+%
+%
+%\end{verbatim}
+%\end{ahexample}
+%
+%\end{ahfunction}
+
+
+\begin{ahfunction}{wmask}{Create a world mask region}
+\begin{ahargs}  
+  \ahaddarg[in]{expr}{Boolean expression}{}{String}
+\end{ahargs}
+\ahreturns{Region tool}
+
+\begin{ahdescription}
+
+This function creates a mask region.   This region can be applied
+on-the-fly to images.  The expression must be Boolean.
+
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := imagemaketestimage('zz')
+- r := drm.wmask(expr='zz>0')
+- im.statistics(region=r)
+\end{verbatim}
+
+The mask region effectively creates a (notional) Boolean
+lattice.    In this example, when the pixel values
+are greater than zero, the lattice is True (good), else
+False.  The statistics, when evaluated, are then
+only computed when the mask region is True.
+
+\end{ahexample}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := imagemaketestimage('zz')
+- drm.setcoordinates(im.coordsys())
+#
+- r1 := drm.wbox(...)                 # Make a world box
+- r2 := drm.wmask(expr='zz>0')        # Make a mask region
+- r3 := drm.intersection (r1,r2)      # Intersect them
+- im.statistics(region=r3)            # Find statistics
+\end{verbatim}
+
+In this example, the mask is only applied when
+the pixels fall in the specified box.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{wrange}{Create a world region for a pixel range on one axis}
+\begin{ahargs}  
+  \ahaddarg[in]{range}{World range}{}{Numeric or quantum vector}
+  \ahaddarg[in]{pixelaxis}{The pixel axis of interest}{}{Integer}
+  \ahaddarg[in]{csys}{Coordinate System}{Private Coordinate System}{coordinates tool}
+  \ahaddarg[in]{absrel}{Absolute or relative coordinates}{'abs' or last}{Vector of
+            strings from 'abs', 'relref' and 'relcen'}
+  \ahaddarg[in]{comment}{A comment stored with the region}{}{String}
+\end{ahargs}
+\ahreturns{Region tool or fail}
+\begin{ahdescription}
+
+This function creates a region which selects all pixels except for the
+axis specified.  For that axis it selects just the pixels specified
+by the range.  The region created is just a world box.
+
+\end{ahdescription}
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys();
+- drm.setcoordinates(cs);
+-
+- im.toworld([1,1,10]) 
+[4.63647352 -0.506376202 1.41352721e+09]  
+- im.toworld([1,1,20])
+[4.63647352 -0.506376202 1.41372408e+09]  
+-
+- r := drm.wrange(range="1.41352721MHz 1.4137240MHz", pixelaxis=3, csys=cs)
+- im.boundingbox(r)
+[blc=[1 1 10] , trc=[155 178 20] , inc=[1 1 1] , bbShape=[155 178 11] , 
+ regionShape=[155 178 11] , imageShape=[155 178 64] ] 
+\end{verbatim}
+
+To show that it works, we converted from pixel to world coordinate
+for pixel 10 and 20 on the third axis.  These values, with a unit
+change to MHz from GHz were then input into the {\stff wrange} function
+and the bounding box shows that we recover 10 and 20 pixels.
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('hcn')
+- cs := im.coordsys();
+- drm.setcoordinates(cs);
+- r := drm.wrange(range="10pix 20pix", pixelaxis=3, csys=cs)
+- im.boundingbox(r)
+[blc=[1 1 10] , trc=[155 178 20] , inc=[1 1 1] , bbShape=[155 178 11] , 
+ regionShape=[155 178 11] , imageShape=[155 178 64] ] 
+-
+- r := drm.wrange(range=[10, 20], pixelaxis=3, csys=cs)
+- im.boundingbox(r)
+[blc=[1 1 10] , trc=[155 178 20] , inc=[1 1 1] , bbShape=[155 178 11] , 
+ regionShape=[155 178 11] , imageShape=[155 178 64] ] 
+-
+\end{verbatim}
+
+This shows how you can easily select a few planes of an image
+using pixel units.  If you give a numeric vector for the range
+(second example) it assumes pixel units.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+ 
+\end{ahobject}
+
+%% Global functions
+
+\begin{ahfunction}{is\_region}{Is this a valid region tool?}
+\begin{ahargs}
+  \ahaddarg[in]{thing}{The thing to test}{}{Any}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahdescription}
+  
+Determine if a given \glish\ variable is a {\stf region} \tool.  
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r1 := drm.box()
+- is_region(r1)
+T
+- r2 := [10,20]
+- is_region(r2)
+F   
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+ 
+
+\end{document}

@@ -1,0 +1,313 @@
+\def\eps@scaling{.95}
+\def\epsscale#1{\gdef\eps@scaling{#1}}
+\def\plotfiddle#1#2#3#4#5#6#7{\centering \leavevmode
+    \vbox to#2{\rule{0pt}{#2}}
+    \special{psfile=#1 voffset=#7 hoffset=#6 vscale=#5 hscale=#4 angle=#3}}
+
+Currently there are eleven operations pre-defined within Dish. These operations
+are general utilities available from the basic Dish Gui. All operations
+have two basic buttons: a green Apply button which will execute the given
+operation and a yellow Dismiss button which will close the operation frame
+but retain all information in that frame for subsequent use.
+
+\subsubsection{Averaging}
+
+The Averaging operation offers several options for performing the averaging 
+(Figure~\ref{fig:aversel}). Alignment which may be either None, By Velocity,
+or By X-Axis, 2) Rest Frequency, which allows shifting to match the first
+in the average (for example, for averaging spectra from transients), 3)
+Weighting which may be None, Tsys and Time or by RMS, and 4) which will
+use any selections chosen from the Selection Operation prior to averaging.
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{aversel.ps}{6.5in}{0}{70}{70}{-220}{-50}
+  \caption{\label{fig:aversel}Example window showing basic Dish frame with 
+the Averaging and Selection Operation frames open.}
+\end{flushleft}
+\end{figure}
+
+
+\subsubsection{Baselines}
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{dishbaseline.ps}{1.25in}{0}{85}{85}{-160}{-0}
+  \caption{\label{fig:baseline}Example window showing basic Dish frame with 
+the Baseline Operation frame open. In this example, one baseline region is 
+selected and a 5th order polynomial will be shown overlayed on top of the 
+spectrum.}
+\end{flushleft}
+\end{figure}
+
+The Baseline operation allows either a polynomial fit or a sinusoid fit.
+The baseline regions may be typed into the regions entry box at the bottom
+of the frame, or selected via cursor (the Plot Ranges and Cursor Active
+buttons should both be checked). The baseline operation frame can be
+seen in Figure~\ref{fig:baseline}.
+
+The default action is to calculate the baseline and show it. Once the fit
+seems satisfactory, the 'Subtract' button must be checked and the fit
+'Apply'd. This will remove the baseline and display the resultant
+spectrum. The baseline fit may be viewed from the results manager.
+The current ranges selected will be displayed in the entry field. A history
+of these is preserved within a cache which can be viewed by clicking on 
+the down-arrow button. The RMS of the fit is displayed to the right of
+the frame. Units for ranges or fit parameters (sinusoid only) may be
+converted between channels and X-Axis units using the Convert button.
+
+\subsubsection{Calculator}
+
+The Calculator operation is a general tool for manipulating spectra in ways
+not facilitated by the basic set of operations. Spectra may be transferred
+into the calculator stack through the use of the Copy/Paste to Clipboard
+facility.
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{calculator.ps}{6.25in}{0}{85}{85}{-260}{-100}
+  \caption{\label{fig:calculator}Example window showing basic Dish frame 
+with the Calculator Operation frame open}
+\end{flushleft}
+\end{figure}
+
+The Copy/Paste facility is activated by the right mouse button. A popup
+menu appears with a two copy options and a paste option. 
+``Copy to clibpoard'' will copy whatever is
+selected in the Calculator stack listbox to the Clipboard; the 
+Clipboard is simply a
+convenient virtual storage area. ``Copy to results manager'' copy whatever
+is selected in the Calculator stack listbox to the results manager.
+``Paste from clipboard'' retrieves whatever was most recently
+sent to the clipboard. For example, in Figure~\ref{fig:calculator}, the
+Results Manager spectrum ``average3'' was copied into the Calculator stack. 
+An ``\_1'' designation was
+added to the label to distinguish it from the same value in the Results Manager.
+The spectrum
+was then multiplied by a factor, producing ``average3\_1\_2''. The additional
+id tag is an underscore and the stack number.
+
+The available functions may be seen in the figure. In addition, it works
+as any standard Reverse Polish Notation calculator. Numbers, vectors and
+arrays may be typed into the entry field. The calculator will only work
+with SDRECORDs, numbers, vectors and arrays.
+
+\subsubsection{Function on Data}
+
+The Function on Data operation is another means of manipulating the displayed
+data. The string typed in the entry box of this operation is evaluated by
+glish after any of the standard macros are replaced by their equivalent
+glish.  The result of this evaluation is then reassigned to the data
+array of the last viewed SDRECORD.  The standard macros and their
+meanings are:
+\begin{description}
+\item[DATA] sdrecname.data, the data record of sdrecname.
+\item[DESC] sdrecname.data.desc, the data description record of sdrecname.
+\item[ARR] sdrecname.data.arr, the data array.
+\item[HEADER] sdrecname.header, the header record.
+\item[NS\_HEADER] sdrecname.ns\_header, the ns\_header record.
+\end{description}
+In the above definitions, sdrecname is whatever the name of the last
+viewed data set.  For these macro substitutions to work, they must
+be given as upper case (to distinguish them from their lower case
+equivalents, in which no substitution would occur).
+
+Since whatever this text evaluates to after macro substituion is
+reassigned to the data array, it must have the exact same shape
+as the data array initial had.
+
+Basic scaling or manipulations can be obtained by typing expressions
+that operate on ARR. For example, a simple scaling can be obtained by 
+typing the function ``ARR*1.5'', and then pressing ``Apply''. 
+Any function available from
+within \glish\ or known at the command line (e.g. a function defined by the
+user during the run of Dish), can be accessed and used in these expressions.
+
+\subsubsection{G Fit}
+
+The Gaussian Fitting operation is not contained under the main operation
+menu. Instead, it is available directly from the plotter. Pushing the ``G Fit''
+button calls up the interface window. The number of gaussians to fit is
+set by the ``No. components'' slider and entry field. The number can either be
+typed in or the slider can be adjusted to the number of gaussians desired. 
+This number will be reflected in the number of component buttons created
+below. Depressing a component button makes it active, allowing setting
+of its properties.
+
+Depressing the green ``Estimate'' button generates an auto-estimate of a 
+component, generating an approximate flux, pos, and width (height, center,
+width for the gaussian). Depressing the green ``Fit profile'' button will
+generate a fit based on that guess. Interactive estimates for each component
+can be obtained by pressing the component button followed by the ``Inter''
+button (below the ``Estimates'' title). This prompts the user to:
+``Put cursor at line center and click (any)'' and then ``Put cursor at
+line HWHM and click (any)''. This fills the flux, pos and width fields
+with the appropriate guess. Continue with the next component and then hit
+``Fit profile'' when all have been defined.
+
+The Plot menu at the top of the frame allows the user to specify which 
+aspects of the fit to view: Estimate, Fit, Residuals. Each of these may be
+toggled on-off interactively.
+
+\begin{figure}
+\begin{flushleft}
+   \plotfiddle{dishgauss.eps}{5.5in}{0}{85}{85}{-250}{-0}
+  \caption{\label{fig:regrid.ps}Example window showing the GUI gaussian
+fitting interface}
+\end{flushleft}
+\end{figure}
+
+\begin{figure}
+\begin{flushleft}
+%%  \plotfiddle{dishplotter1.eps}{5.5in}{0}{85}{85}{-350}{-50}
+\plotfiddle{dishplotter1.eps}{6.85in}{0}{75}{75}{-290}{40}
+  \caption{\label{fig:regrid.ps}Plot showing the results of a 2-component
+gaussian fit to line profile. The fit and residuals only are displayed. The
+chalkboard feature has been used to draw a label indicating the line (``HI'').
+fitting interface}
+\end{flushleft}
+\end{figure}
+
+
+
+\subsubsection{Re-gridding}
+
+The Re-gridding operation is a more generalized version of the Smoothing 
+Operation as it allows both finer and coarser adjustments of the grids.
+Currently, it allows Hanning, Boxcar and Gaussian smoothing along with
+Spline and Fourier Transform Interpolations.
+
+\begin{figure}
+\begin{flushleft}
+   \plotfiddle{regrid.ps}{5.5in}{0}{85}{85}{-250}{-150}
+  \caption{\label{fig:regrid.ps}Example window showing basic Dish frame with 
+the Regrid Operation frame open}
+\end{flushleft}
+\end{figure}
+
+
+\subsubsection{Saving}
+
+The Saving operation allows the user to store and organize spectra into
+named working sets. The working set must first be defined through the
+File Menu option ``Open'' (selecting on Read and Write). Once the working
+set is defined, any displayed spectrum may be written to the working
+set on disk.
+
+\subsubsection{Selection}
+
+The Selection operation allows a number of selection criteria to be chosen
+to create new working sets which are subsets of existing working sets. The
+available entry fields are: Object Name, Record, Scan, Date, LST, and Rest Frequency.
+Typing into any of these fields is allowed but the selection will only be
+used if the check box on the right is marked. A history of selected ranges
+or names will be preserved. For numerical selections, ranges may be made
+as follows:
+
+\begin{verbatim}
+Record,Scan Entry:
+8,9,10				# Select scans 8, 9 and 10
+8,[10:13],17			# Select scans 8, 10, 11, 12, 13, and 17
+\end{verbatim}
+
+For Object Name selection you can type in a single name by typing any
+characters except quotes (single or double) and square brackets.  That
+name will be used in the selection.  The ``*'' can be used as a
+wildcard.  For multiple source names you can either enclose the 
+source names with double quotes or you can use
+the glish bracket syntax to indicate a vector of source names.
+The following examples illustrate these differences:
+
+\begin{verbatim}
+This is one long source name   # a single source name
+"This is five source names"    # turned into five strings by glish
+['This','is','five','source','names'] # same as previous example
+['This','is three','source names'] # three sources
+\end{verbatim}
+
+The ``All'' button will display all relevant values for the given entry
+field in a separate pop-up window.
+
+\subsubsection{Smoothing}
+
+The Smoothing operation is a more specific tool than the Re-gridding operation.
+It offers easy Hanning, Boxcar and Gaussian smoothing.
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{smoothing.ps}{5.5in}{0}{85}{85}{-250}{-160}
+  \caption{\label{fig:smoothing}Example window showing basic Dish frame with 
+the Smoothing Operation frame open}
+\end{flushleft}
+\end{figure}
+
+\subsubsection{Statistics}
+
+The Statistics operation calculates basic statistics on an interval of
+the spectrum. The interval must be defined by the cursor (activate
+the Plot Range and Cursor Active buttons) and then left click on the
+left and right regions of the spectrum which are of interest. The
+region will appear in the Range entry field and the Start and Stop
+fields will be populated by the beginning and end of the range;
+NOTE: currently, only the first range in the rangebox will be used
+for the calculation of statistics. If you want changes to the start and
+stop range for your interval, those changes should be edited or entered
+at the start/stop entries. 
+The units may be converted
+between X-Axis units and channels through the convert button (similar
+to the Baseline operation capability). The Apply button will calculate
+the Peak value, the location of the peak, the Area over the region,
+the location of the centroid (half area), the rms, and the minimum.
+These values may be written as a record to the clipboard through the
+``Copy to CB'' button. The record looks as follows:
+
+\begin{verbatim}
+- statrec:=dcb.paste()
+- statrec
+[peak=2.09596825, area=29425582.1, min=-0.26479581, rms=0.580018938, scan=20, ce
+ntroid=2.22369707e+10, vpeak=2.22353317e+10] 
+-
+\end{verbatim}
+
+In addition, the data may be written to a file through the ``Print to File''
+button. This pulls up a frame which prompts the user for a filename. If
+the file exists, it will append the values to the end of the file. The
+file looks as follows:
+
+\begin{verbatim}
+  scan  start          stop           atPeak         Centroid 
+    20  2.2225160e+10  2.2245390e+10  2.2235332e+10  2.2236971e+10 
+        Peak           Area           Mininum        rms 
+        2.0959682e+00  2.9425582e+07 -2.6479581e-01  5.8001894e-01 
+\end{verbatim}
+
+\begin{figure}
+\begin{flushleft}
+  \plotfiddle{statistics.ps}{6.25in}{0}{85}{85}{-260}{-100}
+  \caption{\label{fig:statistics}Example window showing basic Dish frame 
+with the interval Statistics Operation frame open}
+\end{flushleft}
+\end{figure}
+
+\subsubsection{Write to File}
+
+This operation allows convenient output to a disk file in the current directory.
+It automatically defaults to the file name of ``scan\_number.spc''; for example
+if you Write to File while looking at scan 20, the file will be ``20.spc''.
+The file looks as follows:
+
+\begin{verbatim}
+     FREQ              other axis 
+       Hz              other unit 
+22203023360.000000    -3.907563 
+22203086216.617188    -4.986684 
+22203149073.234375    -4.020397 
+22203211929.851562    -4.558375 
+22203274786.468750    -4.556173 
+22203337643.085938    -3.856671 
+22203400499.703125    -4.001695 
+22203463356.320312    -3.464213 
+22203526212.937500    -4.438780 
+22203589069.554688    -3.296077 
+...etc.
+\end{verbatim}
+

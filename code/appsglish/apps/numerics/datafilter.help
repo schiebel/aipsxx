@@ -1,0 +1,223 @@
+%% Copyright (C) 1999,2000,2001,2002,2003,2004
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: datafilter.help,v 1.3 2004/08/25 01:43:19 cvsmgr Exp $
+
+\documentclass{article}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{datafilter}{Filtering operations on data arrays}
+
+\ahinclude{image.g}
+
+\ahcategory{mathematics}
+   %
+   %ahkeyword registers module keywords
+   %
+\ahkeyword{mathematics}{}
+
+\ahmethods{}
+
+%
+
+\medskip
+\noindent{\bf Summary}
+
+The Datafilter \tool\ provides some simple filtering operations for Glish arrays.
+
+Here is an example where we create a noisy sinusoid with outliers. First
+we filter the data; you can see how the median filter removes outliers
+(as well as compressing the noise). Then we also median clip the
+original data showing how  the outliers are effectively removed.
+
+\begin{ahexample}
+\begin{verbatim}
+
+# Generate Gaussian distribution
+
+- include 'randomnumbers.g'
+- n := 500
+- r := randomnumbers();
+- g := r.normal(0.0, 0.5, n);
+- r.done()
+
+# Generate data ; sin wave plus noise
+
+- x := (1:n) / 10 / pi
+- y := sin(x) + g
+#
+- include 'pgplotter.g'
+- p0 := pgplotter ()
+- p0.plotxy (x, y, title='Sin + noise', plotlines=F)
+
+# Now add some outliers
+
+- ii := 1:n
+- for (i in ii[ii%50 == 0]) {
+  y[i] *:= 20;
+}
+#
+- p1 := pgplotter()
+- p1.plotxy (x, y, title='Sin + noise + outliers', plotlines=F)
+
+# Generate Datafilter tool
+
+- include 'datafilter.g'
+- df := datafilter();
+
+# Median filter returns filtered data
+
+- y2 := df.filter (y, method='median', width=10)
+#
+- p2 := pgplotter()
+- p2.plotxy (x, y2, title='Median filtered', plotlines=F)
+
+# Median clip returns a Boolean mask
+
+- m := df.medianclip (y, width=10, clip=5)
+#
+- p3 := pgplotter()
+- p3.plotxy (x, y, title='Median clipped', plotlines=F, mask=m)
+\end{verbatim}
+
+
+
+\begin{ahconstructor}{datafilter}{Construct a Datafilter tool}
+\ahreturns{datafilter \tool\ or fail}
+\begin{ahdescription}
+
+Construct a Datafilter tool.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'datafilter.g'
+- df := datafilter()
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+
+
+\begin{ahfunction}{done}{Destroy this tool}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+If you no longer need to use the Datafilter \tool, calling this function will
+destroy it. 
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'datafilter.g'
+- df := datafilter()
+- df.done()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{filter}{Filter a data array}
+\begin{ahargs}
+  \ahaddarg[in]{data}{Input numeric data array}{}{Numeric Glish vector}
+  \ahaddarg[in]{width}{Width of running median filter}{5 points}{Positive integer}
+  \ahaddarg[in]{method}{The method type}{'median'}{String (case insensitive) from 'median' or 'mean'}
+  \ahaddarg[in]{progress}{See progress reports on median filter every progress points}{No reports}{Positive integer}
+\end{ahargs}
+\ahreturns{Numeric vector or fail}
+
+\begin{ahdescription}
+
+This function running-filters a data array with a variety of kernels over
+the specified width.  It returns the filtered data vector.
+
+As yet, input masks are not handled.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'datafilter.g'
+- df := datafilter()
+- d2 := df.filter(d, method='median', width=10)     # Data array 'd' assumed pre-made
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{medianclip}{Median clip a data array}
+\begin{ahargs}
+  \ahaddarg[in]{data}{Input numeric data array}{}{Numeric Glish vector}
+  \ahaddarg[in]{width}{Width of running median filter}{5 points}{Positive integer}
+  \ahaddarg[in]{clip}{The clipping amount}{5}{Positive numeric value}
+  \ahaddarg[in]{progress}{See reports on median filter computation every progress points}{No reports}{Positive integer}
+\end{ahargs}
+\ahreturns{Boolean mask or fail}
+
+\begin{ahdescription}
+
+This function generates a median clipped mask from a data array.  It
+does this by computing the median filtered array (d1).  Then it finds
+the absolute differences from this (d2). Then it computes the median
+filter of d2 forming d3.  The absolute differences (d2) are then
+compared point by point with d3. Any value 
+$d2 > clip*d3$ is flagged as bad (mask==F).
+
+The function returns a Boolean mask vector.  Values of T are good and values
+of F are the ones detected as outliers (bad).
+
+As yet, input masks are not handled.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'datafilter.g'
+- df := datafilter()
+- m := df.medianclip(d, width=10, clip=5)     # Data array 'd' assumed pre-made
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+
+
+
+
+
+
+\end{document}
+

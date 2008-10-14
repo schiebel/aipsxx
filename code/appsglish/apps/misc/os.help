@@ -1,0 +1,603 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: os.help,v 19.1 2004/08/25 01:35:01 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{os}{Functions to perform system-specific operations}
+
+\ahinclude{os.g}
+
+\ahkeyword{glish}{}
+\ahkeyword{os}{}
+\ahkeyword{file}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+The os tool is used to perform system-specific operations, in
+particular operations on files --- for example:
+\begin{itemize}
+\item testing if a file exists
+\item getting a directory listing
+\item getting the size of file(s)
+\item getting the free space on a device
+\item dealing with path names
+\item copying, moving, or removing a file or directory
+\end{itemize}
+Most functions have a switch telling if a symbolic link has
+to be followed.
+\\When a path name is given, it can contain environment
+variables (e.g. \texttt{\$HOME}) and/or tildes (e.g. \texttt{$\sim$}
+or \texttt{$\sim$user}).
+
+Note that glish has some built-in functions to do file IO.
+It also has the \texttt{stat} function to obtain file information.
+However, those functions do not handle environment variables and
+tilde expansion.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+  include 'os.g'
+  dos.fileexists ('~/file.name');
+  dos.freespace ('.');
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahfunction}{isvalidpathname}{test if path names are valid}
+\begin{ahdescription}
+This function tests if the given path names are valid.
+It tests if files with the given names exists or can be created.
+\end{ahdescription}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path names}{}{vector of strings}
+\end{ahargs}
+\ahreturns{vector of bools}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fileexists}{test if files exists}
+\begin{ahdescription}
+This function tests if the given files exists.
+If \texttt{follow==T} symbolic links will be followed.
+\end{ahdescription}
+\begin{ahargs}
+ \ahaddarg[in]{file}{file names}{}{vector of strings}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of bools}
+\end{ahfunction}
+
+
+\begin{ahfunction}{dir}{return a vector of strings with directory listing}
+\begin{ahdescription}
+Get a vector of strings containing the names of files in the given directory.
+Other arguments can be given to select specific files.  To simply list
+the files in a human-readable format, use dos.ls() instead.
+\begin{description}
+\item \texttt{pattern} can be given to select specific file names
+using a file name pattern as given in a shell. E.g. \texttt{pattern='*.g'}
+to get all .g files.
+\\By default no name selection is done.
+\item \texttt{types} can be given to select on a file (access) types.
+It is a string containing zero or more letters indicating the required type(s).
+There are two groups of types:
+\begin{itemize}
+\item \texttt{r d s} indicate regular file, directory, resp. symbolic
+link.
+\item \texttt{R W X} indicate readable, writable, resp. executable.
+\end{itemize}
+If one or more letters from a group are given, only such files will
+be selected.
+\\By default no type selection is done.
+\item \texttt{all} can be given to indicate that file names starting
+with a . should be selected.
+\\By default they are not selected.
+\\Note that even if a pattern \texttt{'.*'} is given, \texttt{all=T}
+should be given to get those files.
+\end{description}
+If \texttt{follow==T} symbolic links will be followed.
+In that case using 's' in the \texttt{types} argument makes no sense.
+\end{ahdescription}
+\begin{ahargs}
+ \ahaddarg[in]{directoryname}{directory name}{'.'}{string}
+ \ahaddarg[in]{pattern}{file name pattern}{''}{string}
+ \ahaddarg[in]{types}{which types?}{''}{string}
+ \ahaddarg[in]{all}{also dot files?}{F}{bool}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+  dos.dir (pattern='*.pg')   #get all files ending in .pg
+  dos.dir (types='rX')       #get all regular executable files
+  v:=dos.dir ('~/aips++/test', types='d')    # get directories
+  for (nm in v) {                            # (potential tables)
+    if (dos.filetype(spaste('~/aips++/test/',nm)) == 'Table') {
+      print nm;                                      #show tables
+    }
+  }
+\end{verbatim}
+\end{ahexample}
+\ahreturns{vector of strings or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{ls}{directory listing}
+\begin{ahdescription}
+This function lists directories in a human-readable format, like the unix
+command ls.  To retrieve a glish record containing files in a directory,
+use dos.dir() instead.
+\end{ahdescription}
+\begin{ahargs}
+ \ahaddarg[in]{dir}{directory name}{current directory}{string}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- dos.ls()
+aips++.inputsv2.table mymsgs                tkeep3.g              
+aips++.records.table  tkeep.g                                     
+junk_SP               tkeep2.g                                    
+T 
+- dos.ls('/')
+aips++     dev        home       lost+found opt        sbin       users      
+bin        etc        initrd     misc       proc       tftpboot   usr        
+boot       export     lib        mnt        root       tmp        var        
+T 
+- 
+\end{verbatim}
+\end{ahexample}
+\ahreturns{T or F}
+\end{ahfunction}
+
+\begin{ahfunction}{mkdir}{create directories}
+\begin{ahdescription}
+Create directories. An error is given if a directory already exists.
+By default parent directories are not created if they don't exist yet.
+\end{ahdescription}
+\begin{ahargs}
+ \ahaddarg[in]{directoryname}{directory names}{}{vector of strings}
+ \ahaddarg[in]{makeparent}{make parent directories if needed}{F}{bool}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fullname}{expand path names}
+\begin{ahdescription}
+Expand path names to their full absolute names by substituting
+environment variables (e.g. \texttt{\$HOME}), applying tilde expansion,
+and prefixing a relative name with the working directory.
+It also takes care that parts . and .. are removed and that multiple
+slashes are replaced by a single slash. A possible trailing slash is
+also removed.
+\\Note that it does not substitute symbolic links.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.fullname ('~mhaller')
+/home/rzmws0/mhaller
+  dos.fullname ('~mhaller//./../')
+/home/rzmws0
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+\end{ahargs}
+\ahreturns{vector of strings}
+\end{ahfunction}
+
+
+\begin{ahfunction}{dirname}{get directory part in path names}
+\begin{ahdescription}
+After the path names are expanded to their full names (see above), it
+returns the directory part of each full name.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.dirname ('~mhaller')
+/home/rzmws0
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+\end{ahargs}
+\ahreturns{vector of strings}
+\end{ahfunction}
+
+
+\begin{ahfunction}{basename}{get file part in path names}
+\begin{ahdescription}
+After the path names are expanded to their full names (see above), it
+returns the file part of each full name.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.basename ('~mhaller')
+mhaller
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+\end{ahargs}
+\ahreturns{vector of strings}
+\end{ahfunction}
+
+
+\begin{ahfunction}{filetype}{determine file type}
+\begin{ahdescription}
+Determine the file type of each file. It also recognizes tables.
+\\By default it follows a symbolic link.
+\\The string returned can have the following values:
+\begin{description}
+\item Table
+\item Directory
+\item Regular File
+\item SymLink
+\item Invalid     (meaning that the file does not exist)
+\item Unknown
+\end{description}
+Note that in principle the type 'SymLink' can only be
+returned when \texttt{follow=F}.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.filetype ('~/aips++/test/hol.ms')
+Table
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{filename}{file name}{}{vector of strings}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of strings}
+\end{ahfunction}
+
+
+\begin{ahfunction}{filetime}{return the file time}
+\begin{ahdescription}
+Return for each file the time the file was last accessed (1),
+modified (2), or its status changed (3). Default is 2 (time modified).
+\\The time returned is the Modified Julian Date (as UTC).
+\\By default it follows a symbolic link.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.filetime ('~/aips++/test/hol.ms')
+# 51638.4
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+ \ahaddarg[in]{whichtime}{which time to return}{2}{integer}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of doubles or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{filetimestring}{return the file time string}
+\begin{ahdescription}
+Return for each file the time the file was last accessed (1),
+modified (2), or its status changed (3). Default is 2 (time modified).
+\\The time returned is the local time.
+\\By default it follows a symbolic link.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.filetimestring ('~/aips++/test/hol.ms')
+# 04-Apr-2000/12:43:27
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+ \ahaddarg[in]{whichtime}{which time to return}{2}{integer}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of doubles or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{size}{determine file or directory sizes}
+\begin{ahdescription}
+Determine the file sizes in bytes.
+When a file is a directory, the size is the sum of the sizes of
+all files in the directory, including all files in subdirectories.
+It is similar to the UNIX command \texttt{du -s}.
+\\By default it follows a symbolic link.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.size ('~/aips++/test/hol.ms')
+# 2.59398e+07
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of doubles or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{freespace}{determine freespace on file systems}
+\begin{ahdescription}
+Determine the free space (in bytes) on the file systems containing the
+given files or directories.
+\\By default it follows a symbolic link.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.freespace ('~/aips++/test/hol.ms')
+# 1.09639e+09
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path name}{'.'}{vector of strings}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{vector of doubles or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{copy}{copy a file, directory, or symlink}
+\begin{ahdescription}
+Copy a file, directory (recursively), or symbolic link.
+\\If the source is a directory, the entire directory (including all
+subdirectories) is copied (similar to UNIX command \texttt{cp -r}).
+However, unlike that UNIX command the source directory itself is
+not copied. Only its contents are copied.
+\\If the source is a file or symlink and the target is a directory,
+the source is copied to that directory (similar to UNIX command
+\texttt{cp}).
+
+By default a source symbolic link is followed. In that case the
+symbolic link is not copied, but the file or directory it links to.
+
+An error is given if the target already exists, unless
+\texttt{overwrite=T}. In that case the target will be removed first.
+\end{ahdescription}
+\begin{ahexample}
+This command copies the entire MeasurementSet to /aips++2/gvandiep.
+Note that the name of the MeasurementSet has to be given in the target.
+\begin{verbatim}
+  dos.copy ('~/aips++/test/hol.ms', '/aips++2/gvandiep/hol.ms')
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{source}{path name of source}{}{string}
+ \ahaddarg[in]{target}{path name of target}{}{string}
+ \ahaddarg[in]{overwrite}{overwrite if target exists?}{F}{bool}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{move}{move a file, directory, or symlink}
+\begin{ahdescription}
+Move a file, directory (recursively), or symbolic link.
+It can also move across file systems.
+\\If the source is a directory, the entire directory (including all
+subdirectories) is moved (similar to UNIX command \texttt{mv}).
+However, unlike that UNIX command the source directory itself is
+not moved. Only its contents are moved.
+\\If the source is a file or symlink and the target is a directory,
+the source is moved to that directory (similar to UNIX command
+\texttt{mv}).
+
+By default a source symbolic link is followed. In that case the
+symbolic link is not moved, but the file or directory it links to.
+
+An error is given if the target already exists, unless
+\texttt{overwrite=T}. In that case the target will be removed first.
+\end{ahdescription}
+\begin{ahexample}
+This command moves the entire MeasurementSet to /aips++2/gvandiep.
+Note that the name of the MeasurementSet has to be given in the target.
+\begin{verbatim}
+  dos.move ('/aips++2/gvandiep/hol.ms', '~/aips++/test/hol.ms')
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{source}{path name of source}{}{string}
+ \ahaddarg[in]{target}{path name of target}{}{string}
+ \ahaddarg[in]{overwrite}{overwrite if target exists?}{F}{bool}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{remove}{remove files, directories, or symlinks}
+\begin{ahdescription}
+Remove one or more files, directories (optionally recursively), or
+symbolic links.
+\\If the source is a directory, it will be by default be removed
+recursively. If \texttt{recursive=F} only the directory will be
+removed. In that case it results in an error if it is not empty.
+
+By default a source symbolic link is followed. In that case not only the
+symbolic link is removed, but also the file or directory it links to.
+
+By default an error is given if the target to be deleted does not
+exist. This can be prevented by giving \texttt{mustexist=F}.
+\end{ahdescription}
+\begin{ahexample}
+This command removes an entire MeasurementSet.
+\begin{verbatim}
+  dos.remove ('~/aips++/test/hol.ms');
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{pathname}{path names}{}{vector of strings}
+ \ahaddarg[in]{recursive}{remove directories recursively?}{T}{bool}
+ \ahaddarg[in]{mustexist}{does the file need to exist?}{T}{bool}
+ \ahaddarg[in]{follow}{follow symlink?}{T}{bool}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{lockinfo}{get info about table use and locking}
+\begin{ahdescription}
+Get info about use and locking of a table.
+If so, give the pid of the process using or locking it.
+The function \texttt{showtableuse} uses this function to print
+a message about the use and locking of a table.
+
+It returns a vector of 3 integer elements.
+The first element tells if the table is used or locked.
+\\0 = not used
+\\1 = used, but not locked
+\\2 = read-locked
+\\3 = write-locked
+\\The second element gives the pid of the process using or locking the table.
+\\The third element is 1 if the lock is permanent (otherwise 0).
+
+Note that multiple processes can use a table or hold a read-lock.
+This function gives the pid of only one of those processes.
+\end{ahdescription}
+\begin{ahexample}
+Note that this example is done better by function \texttt{showtableuse}.
+\begin{verbatim}
+  res := dos.lockinfo ('~/aips++/test/hol.ms');
+  if (res[1] != 0) {
+    print (paste ('The table is used (and maybe locked) by process', res[2]));
+  }
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{tablename}{table name}{}{string}
+\end{ahargs}
+\ahreturns{vector of 2 integers or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{showtableuse}{tell if a table is used or locked}
+\begin{ahdescription}
+Tell if a table is used or locked in another process.
+A message is sent to the logger telling if the table is used or locked
+and by which process.
+
+Note that multiple processes can use a table or hold a read-lock.
+This function gives the pid of only one of those processes.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.showtableuse ('~/aips++/test/hol.ms');
+# NORMAL: Table ~/aips++/test/hol.ms is opened
+# (but not locked) in process 5242
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{tablename}{table name}{}{string}
+\end{ahargs}
+\ahreturns{T or F}
+\end{ahfunction}
+
+
+\begin{ahfunction}{mail}{mail a message to a user}
+\begin{ahdescription}
+Mail a message to one or more recipients. It is also possible to give
+zero or more cc- and bcc-addresses.
+Note that \verb+\n+ can be used to create multiple lines in the message.
+If the sender is given as a boolean, it is assumed that the
+message contains lines containing the sender, subject, etc..
+Otherwise the message is prepended with such lines.
+
+The mailer to be used can be defined in the aipsrc variable
+\texttt{os.mailer}. It defaults to \texttt{mailx}.
+
+The function is used by bug and ask. Currently it uses a shell
+command to do the mailing.
+\end{ahdescription}
+\begin{ahexample}
+The following command sends a message with noordam as the sender.
+\begin{verbatim}
+  dos.mail ('line1\nline2', 'gvd mhaller', 'noordam', 'some subject',
+            cc='tcornwel@nrao.edu wyoung@nrao.edu')
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{message}{message to send}{}{string}
+ \ahaddarg[in]{recipient}{whom to send the message}{}{string}
+ \ahaddarg[in]{sender}{whom the message comes from}{T}{string}
+ \ahaddarg[in]{subject}{subject of the email}{''}{string}
+ \ahaddarg[in]{cc}{whom to cc the message}{''}{string}
+ \ahaddarg[in]{bcc}{whom to bcc (blind copy) the message}{''}{string}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{edit}{edit a file}
+\begin{ahdescription}
+This command starts a shell to edit a file.
+It can only be used in a GUI environment. An editor like vi should
+not be used, because it does not start up in a separate window.
+The shell may be synchronous or asynchronous (default). Use the
+synchronous option if the file is needed immediately.
+\\
+The default editor is emacs.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  dos.edit ('file.cc');
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+ \ahaddarg[in]{file}{file to be edited}{}{string}
+ \ahaddarg[in]{editor}{editor to be used}{emacs}{string}
+ \ahaddarg[in]{async}{Run asynchronously}{T}{boolean}
+\end{ahargs}
+\ahreturns{T or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{string}
+\begin{ahdescription}
+This tool function returns the string ``os''.  If you have
+a tool, but don't know what kind it is, this function usually exists
+to tell you what kind of tool you have.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+  myos := os()
+  print 'type=', myos.type()
+# type=os
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+ 
+\begin{ahfunction}{done}{end the os tool}
+\ahreturns{bool}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}
+

@@ -1,0 +1,744 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/funcs.tex,v 19.0 2003/07/16 04:18:46 aips2adm Exp $
+
+\chapter{Functions}
+\label{functions}
+
+\index{functions|(}
+{\em Glish} provides a flexible mechanism for defining and calling functions.
+\index{functions!as data type}
+These functions are a data type that  can be assigned to variables or
+record fields, passed as arguments to other functions, and returned as results
+of functions.
+
+\section{Simple Examples}
+
+\index{example!of using functions|(}
+Before delving into the details of functions, first look at some
+simple examples.  Here's a function that returns the difference
+of its arguments:
+\begin{verbatim}
+    function diff(a, b) a-b
+\end{verbatim}
+It can also be written:
+\begin{verbatim}
+    function diff(a, b)
+        {
+        return a - b
+        }
+\end{verbatim}
+Here's a version that prints its arguments before returning their difference:
+\begin{verbatim}
+    function diff(a, b)
+        {
+        print "a =", a
+        print "b =", b
+        return a - b
+        }
+\end{verbatim}
+In the following version the second parameter is optional and if not
+present is set to~{\tt 1}, so the function becomes a ``decrementer":
+\begin{verbatim}
+    function diff(a, b=1) a-b
+\end{verbatim}
+
+Suppose you defined {\em diff} using this last definition.  If
+you call it using:
+\begin{verbatim}
+    diff(3, 7)
+\end{verbatim}
+it returns {\tt -4}.  If you call it using:
+\begin{verbatim}
+    diff(3)
+\end{verbatim}
+it returns {\tt 2}.  If you call it using:
+\begin{verbatim}
+    diff(b=4, a=7)
+\end{verbatim}
+it returns {\tt 3}, because  $7-4 = 3$.
+
+Every function definition is an expression (See \cxref{expressions}).  When
+the definition is executed, it returns a value whose type is {\tt function}.
+You can then assign the value to a variable or record field.  For example,
+\begin{verbatim}
+    my_diff := function diff(a, b=1) a-b
+\end{verbatim}
+assigns a {\tt function} value representing the given function to
+{\tt my\_diff}.  Later you can make the call:
+\begin{verbatim}
+    my_diff(b=4, a=7)
+\end{verbatim}
+and the result will be {\tt 3}, just as it will be if you call
+{\tt diff} instead of {\tt my\_diff}.  With this sort of assignment you
+can also leave out the function name:
+\begin{verbatim}
+    my_diff := function(a, b=1) a-b
+\end{verbatim}
+Now {\tt my\_diff} is the only name of this function.
+\index{example!of using functions|)}
+
+\section{Function Definitions}
+
+\index{functions!definition syntax}
+\index{functions!defined with {\tt function} keyword}
+\index{{\tt function}}
+A function definition looks like:
+\begin{quote}
+    {\tt function {\em name} ( {\em formal$_1$}, {\em formal$_2$}, $\ldots$ ) {\em body}}
+\end{quote}
+\index{{\tt func}!as abbreviation for {\tt function}}
+The keyword {\tt function} can be abbreviated {\tt func}.
+Each part of this definition is discussed below.
+
+\index{expressions!functions}
+\index{functions!as expressions}
+Function definitions are {\em expressions\/}; they can occur anywhere
+an expression can.  In particular because expressions are also
+{\em statements\/}, a function definition can also occur anywhere
+a statement occurs.
+
+\section{Function Names}
+
+\index{functions!names!optional}
+\index{functions!names!global}
+In a function definition, {\em name} is the name associated with the function.
+As indicated in the examples above, {\em name} is optional.  If it is present
+while compiling the function definition {\em Glish} creates a variable
+with that name whose value is the resulting {\tt function} value.  This name
+can then be used to call the function.
+
+If the name is missing then presumably the function definition is being
+used in an expression. The resulting {\tt function} value is then assigned
+to a variable or passed as an argument to another function.  To illustrate
+the latter, here is a function that takes two parameters, a vector and
+another function.  It prints out the result of applying the function
+to each element in the vector:
+\begin{verbatim}
+    func apply(array, f)
+        {
+        for ( a in array )
+            print "f(", a, ") =", f(a)
+        }
+\end{verbatim}
+You then call this function as follows:
+\begin{verbatim}
+    square := func(x) x^2
+    apply( 1:10, square )
+\end{verbatim}
+to print out the squares of the first ten positive integers.
+You can also  call it using:
+\begin{verbatim}
+    apply( 1:10, func(x) x^2 )
+\end{verbatim}
+
+\section{Function Parameters}
+
+\index{functions!parameters|(}
+\index{functions!parameters!formal}
+Each function definition includes zero or more formal parameters,
+enclosed within {\tt ()}'s.  Each {\em formal} looks like:
+\begin{quote}
+    {\em type} {\em name} {\tt =} {\em expression}
+\end{quote}
+{\em type} and {\tt =} {\em expression} are optional.  ({\em formal\/}'s have
+one other form, ``{\tt ...}", discussed in \xref{ellipsis}.)
+
+\subsection{Parameter Names}
+\label{param-names}
+
+\index{functions!parameters!names}
+{\em name} serves
+as the name of a local variable that during a function call is initialized
+with the corresponding actual argument.  (See \xref{scoping}, for a discussion
+of local variables.)
+As in most programming languages,
+\index{functions!parameter matching!left-to-right}
+actual arguments match with formal parameters left-to-right:
+\begin{quote}
+    {\tt function diff(a, b) a-b}
+
+    $\ldots$
+
+    {\tt diff(3, 7)}
+\end{quote}
+matches {\tt 3} with {\tt a} and {\tt 7} with {\tt b}.  Argument
+\index{functions!parameter matching!by name}
+matching can also be done ``{\em by name}'':
+\begin{verbatim}
+    diff(b=1, a=2)
+\end{verbatim}
+matches {\tt 1} with {\tt b} and {\tt 2} with {\tt a}.
+
+\subsection{Parameter Defaults}
+
+\index{functions!parameters!defaults}
+If the function definition {\em formal} includes an 
+\indopone{=}{default parameter value}
+{\tt =} {\em expression},
+an actual argument for that formal parameter can
+be left out when calling the function.  The actual argument is instead
+initialized using {\em expression}
+({\em expression} is referred to as the formal's {\em default}).
+As you saw above, you can define {\tt diff} as:
+\begin{verbatim}
+    function diff(a, b=1) a-b
+\end{verbatim}
+in which case a call with only one argument will match that argument
+with {\tt a} and initialize {\tt b} to {\tt 1}.  A call using by-name
+\index{functions!parameter matching!by name}
+argument matching, though, can not specify {\tt b} and not {\tt a},
+because {\tt a} has no {\em default}:
+\begin{verbatim}
+    diff(b = 3)
+\end{verbatim}
+is illegal.
+
+You can instead  define {\tt diff} with:
+\begin{verbatim}
+    function diff(a=0, b) a-b
+\end{verbatim}
+so that only {\tt b} is required in a call. This makes {\tt diff}
+a ``negation'' function.  A call like:
+\begin{verbatim}
+    diff(6)
+\end{verbatim}
+is now illegal, because {\tt 6} matches {\tt a} and not {\tt b}; but
+the call
+\begin{verbatim}
+    diff(b = 6)
+\end{verbatim}
+is legal and returns {\tt -6}. Arguments 
+\label{purposefully-omitted-arguments}
+which have defaults can 
+simply be left out, as long as their absence is denoted. The previous
+invocation can also be written as:
+\begin{verbatim}
+    diff(,6)
+\end{verbatim}
+The first argument is purposefully left out, therefore  it is  assigned
+the default value.   You can test for missing arguments using the
+{\tt missing()} function. (See \xref{missing-func}.)
+
+Note that while match-by-position
+and match-by-name arguments can be intermixed, a parameter must
+\index{functions!parameters!only specified once in a call}
+be specified only once.  For example,
+\begin{verbatim}
+    diff(3, 4, a=2)
+\end{verbatim}
+is illegal because {\tt a} is matched twice, first to {\tt 3} and
+then to {\tt 2}.  Furthermore, once a match-by-name argument is given
+no more match-by-position arguments can be given, because  their
+position is indeterminate:
+\begin{verbatim}
+    diff(a = 3, 2)
+\end{verbatim}
+is illegal, since it's unclear what parameter {\tt 2} is meant to match.
+
+\subsection{Parameter Types}
+
+\index{functions!parameters!types|(}
+A formal parameter definition can also include a type.  Presently,
+the type is one of {\tt ref}, {\tt const}, or {\tt val}.
+The type indicates the relationship between the actual argument and
+the formal parameter.
+
+\index{functions!parameters!{\tt ref}}
+If the formal parameter's type is {\tt ref}
+then the formal is initialized as a reference to the actual
+argument.  In this case, the actual argument (outside of the function)
+can be modified with the {\tt ref} parameter. (See \xref{assignment} regarding {\tt val}
+assignment and \xref{references}, for a full discussion of references.)
+
+\index{functions!parameters!{\tt val}}
+\index{functions!parameters!default type as {\tt val}}
+The {\tt val} parameter type indicates that the parameter can be modified,
+but changes won't be reflected in the actual parameter which is passed into
+the the function. The default type for parameters is {\tt val}.
+
+\index{functions!parameters!{\tt const}}
+If the type is {\tt const}, then it's initialized as
+a {\tt const} value. A {\tt const} parameter cannot be modified in the
+course of executing the function. Attempts to modify {\tt const} parameters
+result in errors (See \xref{constant-values} for a discussion of {\tt const}
+values).
+
+\subsubsection{Using {\tt ref} Parameters} 
+\index{example!function with {\tt ref} parameter}
+Here is an example of a function with a {\tt ref} parameter that
+increments its argument:
+\begin{verbatim}
+    function bump(ref x)
+        {
+        val x +:= 1
+        }
+\end{verbatim}
+After executing:
+\begin{verbatim}
+    y := 3
+    bump(y)
+\end{verbatim}
+{\tt y}'s value is {\tt 4}.  Note though that the following call:
+\begin{verbatim}
+    bump(3)
+\end{verbatim}
+is perfectly legal and does {\em not} change the value of the
+constant {\tt 3} to {\tt 4}!
+
+Here's another example of using a {\tt ref} parameter:
+\begin{verbatim}
+    # sets any elements of x > a to 0.
+    func remove_outliers(ref x, a)
+        {
+        x[x > a] := 0
+        }
+\end{verbatim}
+\index{functions!parameters!types|)}
+
+\subsubsection{Parameter and Return Value Efficiency} 
+\label{passing-efficiency}
+\index{functions!parameters!passing efficiency}
+\index{functions!return!efficiency}
+For the most part, when  writing a function you do not  have to worry
+about parameter passing efficiency. This is because all values in {\em
+Glish} are stored and then accessed using {\em copy-on-write}.
+(See \xref{copy-on-write}.)  Copy-on-write means that if two 
+values are assigned to be equal then they  share the 
+same underlying storage until one is modified.
+
+This same mechanism is used when passing parameters or returning values.
+The default parameter type is {\tt val}, but the parameter is only really
+copied if the parameter is modified in the function. So large parameters are
+only copied if necessary. Using a {\tt const} parameter type provides a way
+to ensure that a given parameter does not change and, as a result, is not
+copied. With return values, the value being returned is never modified 
+after the {\tt return} statement, and as a result, return values are
+not copied in the process of returning from the function.
+\subsubsection{Future Directions} 
+\index{possible future changes!parameter typing}
+In the future {\em Glish} will support more explicit typing of parameters.
+For example, it will be possible to define a function like:
+\begin{verbatim}
+    function abs(val numeric x)
+\end{verbatim}
+In this case if {\tt abs} is called with a non-{\em numeric} value
+{\em Glish} detects the type clash and generates an error.
+
+\subsection{Extra Arguments}
+\label{ellipsis}
+
+You can write functions that take a variable number of parameters
+by including the special parameter
+\index{ellipsis|(}
+``{\tt ...}" (called {\em ellipsis})
+in the function definition.
+For example, here's a function that returns the sum of all its arguments,
+\index{example!function with variable arguments}
+regardless how many there~are:
+\begin{verbatim}
+    func total(...)
+        {
+        local result := 0
+        for ( i in 1:num_args(...) )
+            result +:= nth_arg(i, ...)
+        return result
+        }
+\end{verbatim}
+
+Two functions are available for dealing with variable argument lists.\indfunc{num\_args}
+The function {\tt num\_args} \label{num_args-func}
+returns the number of arguments with which it is called.
+\index{functions!{\tt nth\_arg()} function|(}
+\indfunc{nth\_arg}
+The {\tt nth\_arg} \label{nth_arg-func} function 
+returns a copy of the argument specified by its first
+argument, with the first argument numbered as {\tt 0}.  For example,
+\begin{verbatim}
+    num_args(6,2,7)
+\end{verbatim}
+returns {\tt 3} and
+\begin{verbatim}
+    nth_arg(3, "hi", 1.023, 42, "and more")
+\end{verbatim}
+returns {\tt 42}.
+\index{functions!{\tt nth\_arg()} function|)}
+
+\index{possible misfeatures!{\tt num\_args()} function}
+\index{possible misfeatures!{\tt nth\_arg()} function}
+There's a temptation to expect {\tt num\_args} and {\tt nth\_arg} to
+return information about ``{\tt ...}" if they're not given an argument
+list, but presently they do not.  Probably they will be changed to
+do so in the future.
+
+\index{ellipsis!allowed operations}
+Note that the only operation allowed with ``{\tt ...}" is to pass it
+as an argument to another function.  It cannot otherwise appear in
+an expression.  When passing it to a function, it is expanded into
+\index{ellipsis!expanded as list of {\tt const} references}
+a list of {\tt const} references to the actual arguments matched
+by the ellipsis.  For example,
+\index{example!function with variable arguments}
+\begin{verbatim}
+    func many_min(x, ...)
+        {
+        if ( num_args(...) == 0 )
+            return x
+        else
+            {
+            ellipsis_min := many_min(...)
+
+            if ( ellipsis_min < x )
+                return ellipsis_min
+            else
+                return x
+            }
+        }
+\end{verbatim}
+returns the minimum of an arbitrary number of arguments.
+
+\index{ellipsis!matching following parameters}
+When an ellipsis is used in a function definition then any parameters
+listed after it must be matched by name (or by default).  Furthermore,
+the corresponding arguments must come after those to be matched by
+the ellipsis.  For example, given:
+\begin{verbatim}
+    func dump_ellipsis(x, ..., y)
+        {
+        for ( i in num_args(...) )
+            print i, nth_arg(i,...)
+        }
+\end{verbatim}
+both of the following calls are illegal:
+\begin{verbatim}
+    dump_ellipsis(1, 2, 3)
+    dump_ellipsis(1, y=2, 3)
+\end{verbatim}
+In the first {\tt y} is not matched, and in the second the actual
+argument {\tt 3} is not matched (in particular, it is not matched
+by the ellipsis).  The following, though, is legal:
+\begin{verbatim}
+    dump_ellipsis(1, 2, y=3)
+\end{verbatim}
+and results in the ellipsis matching the single argument {\tt 2}.
+
+\label{defaulted-ellipsis}
+\index{ellipsis!default values}
+An ellipsis can also have a default value specified. This value is 
+used as the value for any arguments which are purposefully left
+out. In the following,
+\begin{verbatim}
+    func add(...=0)
+        {
+        local ret := 0;
+        for ( i in num_args(...) )
+            ret +:= nth_arg(i,...)
+        }
+\end{verbatim}
+{\tt add} is defined so that any arguments purposefully left
+out will be set to zero. So the following invocation,
+\begin{verbatim}
+    print add(1,2,,,5)
+\end{verbatim}
+prints {\tt 8}. The two arguments between the {\tt 2} and the {\tt 5}
+default to {\tt 0}.
+
+\label{ellipsis-vector-construction}
+\index{ellipsis!vector construction}
+An ellipsis can be used to construct a vector. This allows all of the
+parameters to be captured as a vector:
+\begin{verbatim}
+    func args(...) { return [...] }
+\end{verbatim}
+this returns the parameters as a vector. So given the following
+invocations,
+\begin{verbatim}
+    args(1,5,8)
+    args(4,3:5,1)
+\end{verbatim}
+the result of the first is {\tt [1, 5, 8]}, and the result of the second
+is {\tt [4, 3, 4, 5, 1]}. It is important to note, however, that if one
+of the arguments is not an array value, e.g. a {\tt record}, an error
+results.
+
+\index{ellipsis|)}
+\index{functions!parameters|)}
+
+\section{Missing Parameters}
+\index{functions!{\tt missing()} function|(}
+\label{missing-func}
+
+The {\tt missing} function \indfunc{missing}
+\label{missing-func-example}
+is used to check the status of the function arguments. It returns
+a boolean vector that has one element for each argument. If an element
+of the vector has the value {\tt T}, it indicates that the corresponding
+argument is {\em missing} and, as a result,  
+is filled in by a default value. 
+The following two functions,
+\begin{verbatim}
+    func m1(...=0) missing()
+    func m2(a=1,b=2,c=3,...) missing()
+\end{verbatim}
+simply return the result of the call to {\tt missing}. The result of the
+following invocation,
+\begin{verbatim}
+    m1(2,3,,5,)
+\end{verbatim}
+is {\tt [F, F, T, F, T]}. This indicates that the third and fifth 
+parameters are  missing. The results of the following two invocations,
+\begin{verbatim}
+    m2(2,,3,4,5)
+    m2(2)
+\end{verbatim}
+are {\tt [F, T, F, F, F]} and {\tt [F, T, T]} respectively. The first
+result indicates that only the second parameter is missing, while the
+second indicates that the second and third parameters are  missing.
+\index{functions!{\tt missing()} function|)}
+
+\section{The Function Body}
+
+\index{functions!body|(}
+\index{functions!body!as expression}
+\index{functions!body!as statement block}
+The body of a Glish function has one of two forms:
+\begin{quote}
+    {\em expression}
+
+    {\tt \{ {\em statement$_1$ statement$_2$ $\ldots$} \} }
+\end{quote}
+When a function using the first form is called, it evaluates {\em expression}
+and returns the result as the value of the function call.  With the second
+form, the statements are collected in a statement block (See 
+\S~\ref{statement-block} and \S~\ref{local-stmt}), and then the
+statements are executed sequentially. The value of the last statement executed
+is returned.  Most statements
+\index{statements!return values}
+do not have a value associated with them.  If the last executed statement
+is one of these, the function call returns {\tt F}.  If the last executed
+statement is an expression (See \xref{expr-statement}) or a {\tt return}
+statement (See \xref{return-stmt}) then the call returns
+the value of the expression.
+
+\index{recursion!in function calls}
+Functions may call themselves either directly or indirectly; there is
+no limit on the recursive invocation depth other than the available
+memory.
+
+\subsection{Scoping}
+\label{scoping}
+
+\index{scope|(}
+{\em Glish} supports three levels of scoping: {\em function}, {\em global}, and
+{\em local\/}.
+
+\subsubsection{{\em function} Scope}
+\index{variables!function scope|(}
+By default, all variables which are assigned within a
+function are local to that function; they have {\em function scope}. So for
+example:
+\begin{verbatim}
+    function my_sin(y)
+        { 
+        x := sin(y)
+        return x
+        }
+\end{verbatim}
+In this example, the {\tt x} that is  assigned to in the function
+is local to this function. It will not modify a {\em global} {\tt x} if one
+is defined. Note however that another {\em Glish} 
+value is used in this function,
+{\tt sin}. This is a {\em global} function, and because  global variables are
+accessible in functions, the {\em global} {\tt sin} variable can be used. If {\tt sin}
+is modified:
+\begin{verbatim}
+    function my_func(x)
+        {
+        sin := 2^x
+        return sin
+        }
+\end{verbatim}
+then {\tt sin} will be a variable that  is local to this function, and the
+{\em global} {\tt sin} will not be modified.
+\index{variables!function scope|)}
+    
+\subsubsection{{\em global} Scope}
+\index{variables!global scope|(}
+\index{scope!modifier!global|(}
+A {\em global} variable persists throughout the execution of the
+{\em Glish} program, and sometimes functions must be able to 
+modify these variables
+as well as access their values. For example, the following:
+\begin{verbatim}
+    x := 1
+    function bump_x() { global x +:= 1 }
+    bump_x()
+    print x
+\end{verbatim}
+will print the value {\tt 2}. Here the {\tt global} keyword is used to specify
+that a function variable should correspond to a {\em global} variable.
+If the {\tt global} keyword is left out, {\tt x} will be local
+to the function. When assignment is made to these function variables which
+have been tagged as {\tt global}, the global variable of the same name is
+modified. The {\tt global} keyword can also be used without the assignment:
+\begin{verbatim}
+    function bump_x_2()
+        {
+        global x
+        x +:= 1
+        }
+\end{verbatim}
+Here \verb+bump_x_2+ and \verb+bump_x+ are functionally equivalent. 
+In either case,
+subsequent use of the variable within the function will actually operate on
+the global variable of the same name. The syntax of the {\tt global} statement
+mirrors that of {\tt local} (See \xref{local-stmt}), but {\tt global}'s
+semantics are the inverse of {\tt local}'s.
+\index{scope!modifier!global|)}
+\index{variables!global scope|)}
+
+\subsubsection{{\em local} Scope}
+\index{variables!local scope|(}
+\index{scope!modifier!local|(}
+The {\tt local} scope variable specifies that a particular variable
+is local to the current statement block.  This variable was introduced
+in \S~\ref{local-stmt}.  In this example:
+\begin{verbatim}
+    function trix(x)
+        {
+        y := x^2
+        local z := x^3
+        {
+            local y := x^4, w
+            w := 100
+            print x,y,z,w
+        }
+        print x,y,z
+        }
+\end{verbatim}
+the {\tt local} in front of the assignment of {\tt z} is not needed because
+by default assigned variables in a function default to {\em function}
+scope. 
+Here {\tt x}, {\tt y}, and {\tt z} are local
+to the function block. Another {\tt y} is introduced in the inner statement
+block along with {\tt w}; these are local to the inner block. The invocation
+of {\tt trix(2)} results in this output:
+\begin{verbatim}
+2 16 8 100
+2 4 8
+\end{verbatim}
+
+Variables of {\em local} and {\em function} scope usually cease to exist
+once the statement block with which they are associated exits. (See
+\S~\ref{persistent-vars} for some exceptions.) When the function is next
+called, the variable is recreated but with no trace of its former value.
+All function parameters are {\em local} to the function body.
+\index{scope!modifier!local|)}
+\index{variables!local scope|)}
+
+\subsubsection{{\em wider} Scope}
+\index{scope!modifier!wider|(}
+\label{wider}
+Dividing variables into either {\em global} variables that  are
+accessible from anywhere or {\em local} variables that are only accessible
+within a give function is often sufficient.  There are times when access is
+needed to variables which are defined in a {\em wider} scope but that are
+are still not {\em global}. Here is a simple example:
+\begin{verbatim}
+    function object(x)
+        {
+        value := x
+        ret := [=]
+        ret.get := func ( )  { return value }
+        ret.set := func (nv) { wider value
+                               value := nv }
+        return ret
+        }
+\end{verbatim}
+\label{func-closure}
+This example creates as simple function closure; the {\tt object} function
+defines two functions which share a common variable. Without the {\em wider}
+statement, the {\tt set} function will not be able to modify the shared
+variable, i.e. {\tt value}.
+
+The {\em wider} statement allows modification access to a variable defined
+in a wider scope. Without this statement, modification of a variable makes
+it local to the function by default.
+\index{scope!modifier!wider|)}
+\index{scope|)}
+
+\subsection{Persistent Local Variables}
+\label{persistent-vars}
+
+\index{variables!local!persistent|(}
+There are two ways  local variables can survive beyond the
+end of the function call that created them.  Here ``survive" does
+not mean that subsequent calls to the function see the previous
+value, but that the value continues to exist after the initial
+function call returns.
+
+The first way is by returning a {\tt reference} to the variable. This
+used to be the preferred way of returning big values in 
+{\em Glish}, but because
+{\em copy-on-write} (See \xref{passing-efficiency}) was added to {\em Glish},
+you do not need to worry about this issue.
+References, however, can still be returned (See \xref{references}).
+
+\begin{sloppy}
+\index{functions!variables surviving due to {\tt whenever}}
+The second way local variables survive is if the function body
+or a statement block with {\em local} variables executes a {\tt whenever}
+statement.  The {\tt whenever} statement specifies actions to be taken at
+a future time, asynchronously to the execution of the statements in the
+{\em Glish} program (See \xref{whenever-stmt}, and 
+particularly \cxref{events}).
+For example, the following:
+\index{example!function variables which persist}
+\begin{verbatim}
+    # Waits for x->foo, prints y
+    # when it comes
+    func announce_upon_foo(x, y)
+        {
+        whenever x->foo do
+            print y
+        }
+    announce_upon_foo(x, 14)
+    work()
+    more_work()
+    etc()
+\end{verbatim}
+will print {\tt 14} whenever {\tt x} generates a {\tt foo} event.
+The value of {\tt y} (which, being a parameter, is {\em local} to
+the function body) is remembered even after the call to {\tt
+announce\_upon\_foo} returns.  You can later add another call:
+\begin{verbatim}
+    announce_upon_foo(x, "hi there")
+\end{verbatim}
+and when {\tt x} generates {\tt foo} events both {\tt 14} and {\tt "hi there"}
+will be printed (in an indeterminate order).
+\end{sloppy}
+
+When the function executes a {\tt whenever} {\em all} of its local
+variables are preserved and can be accessed within the statements
+of the {\tt whenever}'s body.  If those statements modify the variables
+then the modifications persist:
+\begin{verbatim}
+    func announce_upon_foo(x, y)
+        {
+        whenever x->foo do
+            {
+            print y
+            y +:= 1
+            }
+        }
+    announce_upon_foo(x, 14)
+    announce_upon_foo(x, 7)
+\end{verbatim}
+will print {\tt 14} and {\tt 7} upon {\tt x}'s first {\tt foo} event,
+{\tt 15} and {\tt 8} upon the second, and so on.
+
+\begin{sloppy}
+Persistent local variables are particularly important for {\em subsequences\/}.
+(See \xref{subseq}.)
+\end{sloppy}
+\index{variables!local!persistent|)}
+\index{functions!body|)}
+\index{functions|)}

@@ -1,0 +1,117 @@
+
+======================================================================
+Title:                  Reviewers guidelines for glish code
+Person responsible:     Ralph Marson (rmarson@nrao.edu)
+Originator of proposal: Ralph Marson (rmarson@nrao.edu)
+Exploders targeted:     aips2-glish, aips2-workers
+Time table:
+        Date of issue:          1998 January 5          Done
+        Comments due:           1998 January 14         Done
+        Revised proposal:       1996 January 19         Done
+        Final comments due:     1996 January 22
+        Decision date:          1996 January 26
+
+Statement of goals:
+
+With C++ code we have a set of guidelines that are considered to be
+"good coding practise" when operating in the AIPS++ development
+environment. As glish code will also be reviewed it is necessary to
+have a similar set of guidelines to aid reviewers.
+
+Proposed changes:
+
+I intend to make the following the guidelines for reviewers. In some
+minor details this disagrees with standards in Note 197. I would
+change note 197 rather than these guidelines. 
+
+Because no glish code (with one exception) has been reviewed this
+would not have much impact on existing code.
+
+             Reviewers guidelines for glish code
+
+Ensure all code is either in a global function, a glish closure object
+or a distributed object.
+
+* General considerations
+** All public functions and arguments are in lower case. Private
+   functions may use mixed case and underscores.
+** No use of underscores in public function/argument names unless
+   imitating a glish builtin eg., is_image() imitates the glish
+   is_record() function.
+** minimal use of abbreviations in public function/argument names
+   except for very common functions or abbreviations.
+** not too many arguments to functions. ie keep it simple.
+** all lines end with a semicolon
+** pragma include once line exists.
+** all necessary include files so that the glish script can be
+   included independent of any other includes.
+** Does not write messages to the user on the terminal. Instead it
+   uses the logger or a status/help area that is created by the glish
+   script using tk.
+** Minimise the use of defaulted arguments. One function should do one 
+   thing only. eg obj.summary()                 - prints summary to the logger
+                  obj.printsummary(printername) - prints summary to printer
+   rather than    obj.summary(toprinter=F, printername='')
+   Some discretion can be used with this point.
+** logging is at an appropriate level
+** gui functions use the functions in the guiutils module (eg
+   guiframework) to ensure that a standard layout is presented to the
+   user. For more complicated gui's the Motif Style guide, as discussed 
+   in Note 197 is the reference. Gui functions should test if
+   have_gui() is true.
+** existence of a const global test function with a called  filenametest()
+   which executes every function, checks it returns expected results and
+   returns T or F. Fail is an alternative for F.
+** demo scripts are optional const global functions called filenamedemo(),
+   filenamedemo1() ... These functions should be in the same file as
+   the objects and global functions. All test functions should suppress 
+   all gui output even at the expense of leaving gui-related functions 
+   untested. 
+** help file exists.
+*** Is integrated into the reference manual with the appropriate links.
+*** Both HTML and postscript versions markup with no errors
+*** Is understandable and comprehensive.
+*** Has important cross-references that work
+
+* Global function guidelines
+** Only to be used when absolutely necessary as they clutter the
+   namespace and give rise to unexpected bugs later.
+** Must be 'const'
+
+* Glish closure object/distributed object guidelines
+** Uses private and public records to hold the private & public functions
+** Public functions do not overlap. ie there is only one function for
+   doing a specific task.
+** class name is a noun if there can be more than one of them (eg., table),
+   or a verb if there is usually only one (eg., logger). Exception to
+   this rule are allowed if they follow its spirit.
+** main constructor is the name of the class.
+** public record has a print.limit of 1 (aips2-glish email #42)
+** the public record is returned by reference
+** the functions in the public record are const
+** constructor returns a const object
+** functions return fail if something goes wrong (or document what
+   they do when things do not work).
+** Try and use common names amongst different objects. Current
+   standards are:
+*** open - attach the object to a file
+*** summary - summarise the object state
+*** gui - display the gui/browser/editor/displayer
+*** done - disable the object, saving itself to disk if
+           necessary. This function should free up resources used
+           by the object.
+*** shape - the length of each axis on the object
+*** length - the total number of values in the object.
+*** ok - checks the object is consistent returns T or F
+** use defaultclass (and an abbreviation) for common objects
+   that are premade by the script (eg defaultlogger aliased to dl).
+** do not allow null objects. Every object should be functional.
+
+* Distributed object guidelines
+** Uses version 2 of the DO system.
+** C++ code is in class called DOmyclass (and file DOmyclass.{h,cc})
+   note that the only capitalized letters are 'DO'.
+   eg. C++ class is:    ComponentList.{h,cc}   (under implement)
+       glish script is: componentlist.g        (under implement)
+       C++ DO is:       DOcomponentlist.{h,cc} (under implement)
+       C++ app is:      componentlist.cc       (under apps)

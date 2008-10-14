@@ -1,0 +1,47 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: rpfits2ms
+#-----------------------------------------------------------------------------
+# This utility converts an RPFITS file to MS2 format using livedatareducer in
+# batch mode.
+#
+# Original: 2001/07/11 Mark Calabretta
+# $Id: rpfits2ms,v 19.0 2003/07/16 03:35:10 aips2adm Exp $
+#-----------------------------------------------------------------------------
+# Check the number of arguments.
+  if [ $# -eq 1 ]
+  then
+     RPIN=$1
+     export RPIN
+  elif [ $# -eq 2 ]
+  then
+     RPIN=$1
+     MSOUT=$2
+     export RPIN MSOUT
+  elif [ $# -gt 2 ]
+  then 
+     echo "Usage: rpfits2ms <RPFITS input> [<MS2 output>]"
+     exit 1
+  fi
+
+
+# Check that AIPSPATH is defined.
+  if [ "$AIPSPATH" = "" ]
+  then
+     echo "AIPSPATH is undefined, please invoke aipsinit."
+     exit 1
+  else
+#    Make sure that we use the AIPS++ Glish installation.
+     AIPSBIN=`echo $AIPSPATH | awk '{print $1"/"$2"/bin"}'`
+     PATH=${AIPSBIN}:$PATH
+     export PATH
+  fi
+
+
+# Start livedata.
+  glish -l rpfits2ms.g
+
+# Clean up.
+  rm -f glish.core
+
+  exit 0

@@ -1,0 +1,358 @@
+%% Copyright (C) 1999,2000,2001,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: vpmanager.help,v 19.1 2004/08/25 01:21:21 cvsmgr Exp $
+\begin{ahtool}{vpmanager}{Tool for specifying voltage patterns and primary beams}
+\ahinclude{vpmanager.g}
+
+\begin{ahdescription}
+The vpmanager, or voltage pattern manager, creates a table with the
+description of one or more voltage patterns (vp) or primary beams
+(pb).  There is a mapping between telescope name and the vp or pb
+description.  The vp description table can be read by imager's
+\ahlink{setvp}{imager:imager.setvp} method, which instantiates the
+corresponding voltage patterns from the descriptions and applies them
+to the images.  While the vp description table can have multiple
+telescopes in it, limitations to the internal visibility buffers
+currently limit the functionality within imager to a single telescope.
+\end{ahdescription}
+
+\subsubsection*{What {\tt vpmanager} does:}
+
+\begin{description}
+\item[Set a Given Telescope's VP/PB model] The vpmanager recognizes the
+names of several telescopes: ATCA, GBT, GMRT, HATCREEK, 
+NMA, NRAO12M, NRAO140FT, OVRO, VLA, WSRT.  New telescopes and their default
+VP/PB models will need to be added to the system.
+\item[Common VP/PB Models] Many common voltage pattern (vp) and primary beam (pb)
+models have been coded into \aipspp.  Currently, the recognized models include
+DEFAULT, ATCA\_L1, ATCA\_L2, ATCA\_L3, ATCA\_S, ATCA\_C, ATCA\_X, GBT, GMRT,
+HATCREEK, NRAO12M, NRAO140FT, OVRO, VLA, VLA\_INVERSE, VLA\_NVSS,
+VLA\_2NULL, VLA\_4, VLA\_P, VLA\_L, VLA\_C, VLA\_X, VLA\_U, VLA\_K, VLA\_Q,
+WSRT, and WSRT\_LOW.  In all cases, the VP/PB model and the beam squint (if present)
+scale linearly with wavelength.  If DEFAULT is selected, the approrpiate VP/PB model
+is selected for the telescope and observing frequency.
+\item[1-D Beam Models] Most beam models are rotationally symmetric (excepting
+beam squint).  From the beam parameterization in terms of the various coefficients
+and other terms, an internal lookup table with 10000 elements is created for application
+of the VP/PB to an image.
+\item[Beam Squint] The VP/PB models include beam squint.  The VLA\_L,
+VLA\_C, VLA\_X, VLA\_U, VLA\_K, and VLA\_Q models (which are the
+defaults for those VLA bands), have the appropriate squint magnitude and orientation,
+though the orientation has not been verified through processing actual data.
+\item[Multiple VP/PB Models for one MS] The VPManager can have VP information for multiple
+telescopes.  However, the internals of imager cannot yet deal with
+VP/PB's for multiple telescopes.  In the case of a MS with multiple
+telescopes present, the primary beam of the first telescope present in
+the MS will be used, even if it is not the first telescope specified
+in the VP description table produced by vpmanager.
+\item[Antenna-dependent Voltage Patterns] are not yet supported.
+\item[Two-dimensional Voltage Pattern Images] are supported via
+\ahlink{setpbimage}{synthesis:imager.vpmanager.setpbimage}.
+\end{description}
+
+\end{ahdescription}
+
+
+\begin{ahexample}
+The following example shows a simple way to make
+a new voltage pattern table.
+
+Note that this can be more easily
+done from the \ahlink{toolmanager}{tasking:toolmanager}.
+\begin{verbatim}
+include 'vpmanager.g'
+# 
+# make the vpmanager
+#
+algore := vpmanager();
+#
+# Lets say we want an Airy Disk voltage pattern for our
+# HATCREEK data, but we want to use the system default
+# for the OVRO data:
+#
+algore.setpbairy(telescope='HATCREEK', dopb=T, dishdiam='6.0m', blockagediam='0.6m',
+  maxrad='2arcmin', reffreq='100GHz', dosquint=F);
+#
+algore.setcannedpb(telescope='OVRO', dopb=T, commonpb='DEFAULT', dpsquint=F);
+#
+algore.summarizevps();
+#
+algore.saveastable(tablename='California.Beaming');
+#
+\end{verbatim}
+\end{ahexample}
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{vpmanager}{Construct a vpmanager tool}
+\begin{ahdescription}
+The vpmanager constructor has no arguments.
+\end{ahdescription}
+\end{ahconstructor}
+
+\begin{ahfunction}{saveastable}{Save the vp or pb descriptions as a table}
+\begin{ahdescription}
+Save the vp or pb descriptions as a table.  Each description is in a different
+row of the table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tablename}{Name of table to save vp descriptions in}{}{String}
+\end{ahargs}
+\end{ahfunction}
+
+
+\begin{ahfunction}{summarizevps}{Summarize the currently accumulated VP descriptions}
+\begin{ahdescription}
+Summarize the currently accumulated VP descriptions to the logger.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{verbose}{Print out full record?  Otherwise, print summary.}{T}{Bool}
+\end{ahargs}
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{Terminate the vpmanager}
+\begin{ahdescription}
+Eliminate the current vpmanager.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setcannedpb}{Select a vp/pb from our library of common pb models}
+\begin{ahdescription}
+We have many vp/pb models ready to go for a variety of telescopes.  If 'DEFAULT' is
+selected, the system default for that telescope and frequency is used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{commonpb}{List of common vp/pb models: DEFAULT code figures it out}{DEFAULT}{String}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setpbairy}{Make an airy disk vp}
+\begin{ahdescription}
+Information sufficient to create a portion of the Airy disk voltage pattern.
+The Airy disk pattern is formed by Fourier transforming a uniformly illuminated aperture
+and is given by
+\begin{equation}
+vp_p(i) = ( areaRatio * 2.0 * j_{1}(x)/x 
+                  - 2.0 * j_{1}(x*lengthRatio)/(x*lengthRatio) )/ areaNorm,
+\end{equation}
+where areaRatio is the dish area divided by the blockage area, lengthRatio
+is the dish diameter divided by the blockage diameter, and 
+\begin{equation}
+x = \frac{i * maxrad * 7.016 * dishdiam/24.5m}{N_{samples} * 1.566 * 60}.
+\end{equation}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{dishdiam}{Effective diameter of dish}{25m}{Quantity}
+\ahaddarg{blockagediam}{Effective diameter of subreflector blockage}{2.5m}{Quantity}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setpbcospoly}{Make a vp/pb from a polynomial of scaled cosines}
+\begin{ahdescription}
+A voltage pattern or primary beam of the form
+\begin{equation}
+VP(x) = \sum_{i} ( coeff_{i} \cos^{2i}( scale_{i} x).
+\end{equation}
+This is a generalization of the WSRT primary beam model.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{coeff}{Vector of coefficients of cosines}{0}{Vector of Double}
+\ahaddarg{scale}{Vector of scale factors of cosines}{0}{Vector od Doubles}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{isthispb}{Do these parameters describe a PB or a VP?}{}{String: 'PB'|'VP'}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setpbgauss}{Make a Gaussian vp/pb}
+\begin{ahdescription}
+Make a Gaussian primary beam given by
+\begin{equation}
+PB(x) =  e^{- (x/(halfwidth*\sqrt{1/\log(2)})) }.
+\end{equation}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{halfwidth}{Half power half width of the Gaussian at the reffreq}{0.5deg}{Quantity}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{isthispb}{Do these parameters describe a PB or a VP?}{}{String: 'PB'|'VP'}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setpbinvpoly}{Make a vp/pb as an inverse polynomial}
+\begin{ahdescription}
+The inverse polynomial describes the inverse of the VP or PB
+as a polynomial of even powers:
+\begin{equation}
+1/VP(x) = \sum_{i} coeff_{i} * x^{2i}.
+\end{equation}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{coeff}{Coefficients of even powered terms}{[0]}{Vector of Doubles}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{isthispb}{Do these parameters describe a PB or a VP?}{}{String: 'PB'|'VP'}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setpbnumeric}{Make a vp/pb from a user-supplied vector}
+\begin{ahdescription}
+Supply a vector of vp/pb sample values taken on a regular grid between x=0 and
+x=maxrad.  We perform sinc interpolation to fill in the lookup table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{vect}{Vector of vp/pb samples uniformly spaced from 0 to maxrad}{0}{Vector of Doubles}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{isthispb}{Do these parameters describe a PB or a VP?}{}{String: 'PB'|'VP'}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+\begin{ahfunction}{setpbimage}{Make a vp/pb from a user-supplied image}
+\begin{ahdescription}
+Experimental: Supply an image of the E Jones elements. The format of the 
+image is:
+\begin{description}
+\item[Shape] nx by ny by 4 complex polarizations (RR, RL, LR, LL or
+XX, XY, YX, YY) by 1 channel.
+\item[Direction coordinate] Az, El
+\item[Stokes coordinate] All four ``stokes'' parameters must be present
+in the sequence RR, RL, LR, LL or XX, XY, YX, YY.
+\item[Frequency] Only one channel is currently needed - frequency 
+dependence beyond that is ignored. 
+\end{description}
+One or two images may be specified - the real (must be present) and
+imaginary parts (optional). 
+
+Note that beamsquint must be intrinsic to the images themselves.
+This will be accounted for correctly by regridding of the images
+from Az-El to Ra-Dec according to the parallactic angle.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{realimage}{Real part of vp as an image}{``''}{String}
+\ahaddarg{imagimage}{Imaginary part of vp as an image}{``''}{String}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setpbpoly}{Make a vp/pb from a polynomial}
+\begin{ahdescription}
+The VP or PB is described as a polynomial of even powers:
+\begin{equation}
+VP(x) = \sum_{i} coeff_{i} * x^{2i}.
+\end{equation}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescope}{Which telescope in the MS will use this vp/pb?}{}{String}
+\ahaddarg{othertelescope}{If telescope=="OTHER", specify name here}{}{String}
+\ahaddarg{dopb}{Should we apply the vp/pb to this telescope's data?}{T}{Bool}
+\ahaddarg{coeff}{Coefficients of even powered terms}{0}{Vector of Doubles}
+\ahaddarg{maxrad}{Maximum radial extent of the vp/pb (scales with 1/freq)}{0.8deg}{Quantity}
+\ahaddarg{reffreq}{Frequency at which maxrad is specified}{1GHz}{Quantity}
+\ahaddarg{isthispb}{Do these parameters describe a PB or a VP?}{}{String: 'PB'|'VP'}
+\ahaddarg{squintdir}{Offset of RR beam from pointing center, azel frame (scales with 1/freq)}{Measure}{Measure}
+\ahaddarg{squintreffreq}{Frequency at which the squint is specified}{1GHz}{Quantity}
+\ahaddarg{dosquint}{Enable the natural beam squint found in the common vp model}{F}{Bool}
+\ahaddarg{paincrement}{Increment in Parallactic Angle for asymmetric (ie, squinted) vp application}{360deg}{Quantity}
+\ahaddarg{usesymmetricbeam}{Not currently used}{F}{Bool}
+\end{ahargs}
+\ahreturns{itemcontainer}
+\end{ahfunction}
+
+\end{ahtool}

@@ -1,0 +1,691 @@
+\iffalse %
+
+          LaTeX Style: editbar.sty  2.0
+
+          Written by:  Michael R. Van Geest
+                       Unisys Corp.
+                       M.S. 4522
+                       2276 Highcrest Road
+                       Roseville, MN 55113
+
+          Internet:    mrv@unirsvl.rsvl.unisys.com
+
+          Date:        August 17, 1994
+
+          TeX Drivers Supported: DVIPS    
+
+
+          General Information:
+
+             editbar.sty is a LaTeX style to be used to print edit bars
+             (change bars) with PostScript as the final output.
+
+             DVIPS is the only driver currently supported, but others could
+             be used.
+
+             Generation of edit bars on one page and/or spanning 
+             multiple pages.
+
+             The output routine of LaTeX is modified to include the edit
+             bar commands to span multiple pages.
+
+
+          Macro usage:
+
+             ebarsetup   - Place after \begin{document}
+
+             ebarcleanup - Place before \end{document}
+                           It is adviseable to put a \clearpage before
+                           \ebarcleanup.
+
+             genebaron   - Start generating edit bars.
+
+                           Put in a \hbox to 0pt to not affect letter spacing.
+
+                              Example: \hbox to 0pt{\genebaron\hss}
+
+                           If the first item in a sentence or data item,
+                           put \hskip0pt before it.
+
+                              Example: \hskip0pt\hbox to 0pt{\genebaron\hss}
+
+             genebaroff  - End generating edit bars.
+
+
+          Counters that can be modified are:
+
+             \ebaroddside   - Distance in points from the left side of the
+                              paper to where the edit bar on the odd side
+                              of the paper is placed.
+
+                              Currently set to 508.
+      
+             \ebarevenside  - Distance in points from the left side of the
+                              paper to where the edit bar on the even side
+                              of the paper is placed.
+
+                              Currently set to -30.
+
+             \ebarbarheight - Height of edit bar in points on current line. 
+                              Currently set to 12 (1 pica).
+              
+             \ebarbarwidth  - Edit bar width in points, currently set to 2.
+
+
+          Auxilary files that are created are: 
+
+            \jobname.ebo - Edit bar out file.
+
+                           \count0 is written to this file in the output
+                           routine by the \write command.
+
+            \jobname.ebi - Edit bar in file.  The contents of \jobname.ebo
+                           are copied to this file after 1 pass of LaTeX.
+                           This file is used as input to the genebaron
+                           and genebaroff macros to find out which page(s)
+                           to place the edit bars.
+
+          Notes:  1. The .ebo and .ebi files must be deleted if revisions
+                     are made to the original .tex file.
+
+                  2. Three passes must be run to ensure correct ebar
+                     generation.
+
+                     Pass 1 - Write editbar on and off to .ebo file
+
+                     Pass 2 - Read editbar on and offs from .ebi file 
+                              generated on pass one.  
+
+                              If spanning pages, write ebar span on and
+                              off macros to the aux file.  
+
+                              The reason this is done, is because TeX reads
+                              ahead a couple of pages, and will set count
+                              registers incorrectly, resulting in incorrect
+                              page spanning.  
+
+                              By writing edit bar page span macros to the aux
+                              file, the next pass can do an ifx to check
+                              that the edit bar is spanning the correct pages.
+
+                     Pass 3 - Read editbar on and offs from pass two.
+                              Also check for macros written to aux file
+                              from pass 2 for edit bar page spanning.
+
+
+          Restrictions:
+
+             -  Does not span multiple chapters.  The edit bar must
+                end at the chapter.  This is because count0 is used 
+                as the edit bar counter to place on odd or even sides 
+                if two sided styles are used.  If one sided styles
+                are used, the odd side edit bar code is used.
+
+             -  Nested edit bars are not supported.
+
+                Examples:
+
+                   \genebaron Text \genebaron text \genebaroff
+     
+                   \genebaron Text \genebaroff text \genebaroff
+
+             -  Does support paper resolution.  The DVIPS
+                PostScript def Resolution is used.
+
+             -  Edit bars in Longtable.sty should work.
+
+
+          Sample Usage:
+
+             \documentstyle[editbar]{book}
+             %
+             \begin{document}
+             %
+             \ebarsetup{}%
+             %
+             Paragraph on page 1
+             %
+             \newpage 
+             This paragraph \hbox to 0pt{\genebaron\hss}has an edit bar on it.
+             %  
+             \newpage
+             %
+             This is a paragraph that has an edit bar around it.
+             %
+             This \genebaroff{}is a paragraph with end edit bar that ends it.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             More stuff.
+             %
+             \clearpage\ebarcleanup{}%
+             \end{document}
+
+\fi %
+
+\def\fileversion{v2.0}
+\def\filedate{17AUG94}
+\wlog{Style-Option: `editbar' \fileversion \space\space <\filedate> (M.R.V.G.)}
+
+% Dimen Register - truepagetotal
+%
+% This is set in the sample output routine.  Must be used for edit bars
+% to work correctly.
+%
+\newdimen\truepagetotal
+%
+%
+% Read Register - ebarin
+% Edit Bar read in file
+%
+\newread\ebarin
+
+% Write Register - ebarout
+% Edit Bar write out file
+%
+\newwrite\ebarout
+
+% Count Register - ebarnest
+%
+\newcount\ebarnest
+\ebarnest=0
+
+% Count Register - ebarcount
+%
+\newcount\ebarcount
+\ebarcount=0
+
+% Count Register - ebaroddside
+%
+\newcount\ebaroddside
+\ebaroddside=420
+%% \ebaroddside=508
+
+% Count Register - ebarevenside
+%
+\newcount\ebarevenside
+\ebarevenside=50
+%% \ebarevenside=-30
+
+% Count Register - ebarbarwidth
+%
+\newcount\ebarbarwidth
+\ebarbarwidth=2
+
+% Count Register - ebarbarheight
+%
+\newcount\ebarbarheight
+\ebarbarheight=12
+
+% Count Register - ebarpagesspan
+%
+\newcount\ebarpagesspan
+\ebarpagesspan=0
+
+% Count Register - ebaroncapture
+%
+\newcount\ebaroncapture
+\ebaroncapture=0
+
+% Count Register - ebaroncapturesave
+%
+\newcount\ebaroncapturesave
+\ebaroncapturesave=0
+
+% Count Register - ebaroffcapture
+%
+\newcount\ebaroffcapture
+\ebaroffcapture=0
+
+% Count Register - ebarsubtract
+%
+\newcount\ebarsubtract
+\ebarsubtract=0
+
+% If - ifebarfileopen
+% Checks to see if the ebarfile is open
+%
+\newif\ifebarfileopen
+%
+% If - ifebarspanpages
+% Checks for ebar spanning pages
+%
+\newif\ifebarspanpages
+\ebarspanpagesfalse %
+%
+% Def - Text for ifx checking on ebar page spanning
+%
+\def\ebarcheckonmsg{ebarspanon}
+\def\ebarcheckoffmsg{ebarspanoff}
+%
+%    ebarsetup
+%
+%    Sets up the input and output ebar files     
+%
+%    Place at the top of the document
+%
+\globaldefs1%
+\def\ebarsetup{% 
+\immediate\openin\ebarin=\jobname.ebi %
+\ifeof\ebarin%
+   \typeout{No file \jobname.ebi}%
+   \global\ebarfileopenfalse%
+\else%
+   \global\ebarfileopentrue%
+\fi%
+\immediate\openout\ebarout=\jobname.ebo %
+}%
+%
+%    ebarcleanup
+%
+%    Closes the ebar output file, then opens the ebar output file for read,
+%    then copies the ebar output file to the ebar input file for the next
+%    pass to read the ebar input file
+%
+%    Place at the end of the document
+%
+\def\ebarcleanup{%
+\message{ebarcleanup}
+\immediate\closein\ebarin%
+\immediate\closeout\ebarout%
+%%
+\immediate\openin\ebarin=\jobname.ebo %
+\immediate\openout\ebarout=\jobname.ebi %
+%%
+\ebarfileopentrue%
+%%
+\loop%
+   \immediate\read\ebarin to \ebarinin%
+   \ifeof\ebarin%
+     \ebarfileopenfalse%
+   \fi%
+   \ifebarfileopen%
+     \immediate\write\ebarout{\ebarinin}%
+\repeat%
+%%
+\closein\ebarin%
+\closeout\ebarout%
+}%
+%
+%    ebargeton
+%
+%    Gets the next ebar reference from the ebar input file
+%
+%    Specifically, gets the relative page number output from the prior
+%    pass of genebar macro
+%
+\def\ebargeton{%
+\immediate%
+\ifeof\ebarin%
+%
+\else%
+   \immediate\read\ebarin to \ebarinon%
+   \global\ebaroncapture=\ebarinon%
+   \global\ebaroncapturesave=\ebarinon%
+\fi%
+}
+%
+%    ebargetoff
+%
+%    Gets the next ebar reference from the ebar input file
+%
+%    Specifically, gets the relative page number output from the prior
+%    pass of genebar macro
+%
+\def\ebargetoff{%
+\immediate%
+\ifeof\ebarin%
+%
+\else%
+   \immediate\read\ebarin to \ebarinoff%
+   \global\ebaroffcapture=\ebarinoff%
+\fi%
+}
+%
+%    endebarthispage
+%
+%    Check edit bar status to end an edit bar on this page
+%
+\def\endebarthispage{%
+   \expandafter\ifx\csname EBARSPANONat%
+      Count\romannumeral\ebarcount%
+      Page\romannumeral\count0%
+      \endcsname%
+      \ebarcheckonmsg
+%
+% TRUE Statement, Macro is defined
+%
+      \message{Ebar Spanning Pages On}
+      \global\ebarspanpagestrue
+   \fi %
+%
+   \ifebarspanpages
+      \genebaroffpage{}%
+   \fi%
+}%
+%
+%    beginebarnextpage
+%
+%    Check edit bar status to begin an edit bar on next page
+%
+\def\beginebarnextpage{%
+   \ifebarspanpages
+      \genebaronpage{}%
+   \fi%
+   \expandafter\ifx\csname EBARSPANOFFat%
+      Count\romannumeral\ebarcount%
+      Page\romannumeral\count0%
+      \endcsname%
+      \ebarcheckoffmsg
+%
+% TRUE Statement, Macro is defined
+%
+      \message{Ebar Spanning Pages Off}
+      \global\ebarspanpagesfalse
+   \fi
+}%
+%
+%    ebarspecialstart, ebarspecialodd, ebarspecialeven, and ebarspecialend
+%
+%    Start, Odd and even pages, and end special macros
+%                              
+\newtoks\ebarendline
+\ebarendline={ }%
+%
+%
+\def\ebarspecialstart{%
+   \special{ps:%
+      /SPECIALSTART pop                    %  FOR DEBUGGING PostScript
+      Resolution 72 div /Point exch def    %  Get points conversion
+      currentpoint exch pop                %  Get current Y point       
+      Point \the\ebarbarheight\the\ebarendline %
+      mul sub  /Y1point exch def           %  Get current Y point 
+                                           %    minus ebar height
+      }%
+}%
+%
+\def\ebarspecialodd{%
+      \special{ps:%
+      /SPECIALODD pop                           %  FOR DEBUGGING PostScript
+         Point \the\ebaroddside\the\ebarendline %
+         mul   /Xpoint exch def                 %  Get X point
+         }%
+}%
+%
+\def\ebarspecialeven{%
+      \special{ps:%
+      /SPECIALEVEN pop                           %  FOR DEBUGGING PostScript
+         Point \the\ebarevenside\the\ebarendline %
+         mul  /Xpoint exch def                   %  Get X point
+         }%
+}%
+%
+\def\ebarspecialend{%
+   \special{ps:%
+      /SPECIALEND pop                          %  FOR DEBUGGING PostScript
+      gsave                                    %
+      Point \the\ebarbarwidth\the\ebarendline  %
+      mul setlinewidth                         %  Edit Bar width
+      currentpoint exch pop \the\ebarsubtract\the\ebarendline % 
+                                               %  Get current Y point
+      Point mul sub /Y2point exch def          %  minus adjustment
+      Xpoint Y1point moveto                    %
+      Xpoint Y2point lineto stroke             %
+      grestore}%
+}%
+%
+%    genebaron
+%
+%    Writes the relative page number to the ebar output file,
+%    reads from the ebar input file if open and generates the ebar on
+%
+%    Place where the ebar will occur
+%
+\def\genebaron{%
+   \write\ebarout{\the\count0}%
+   \global\advance\ebarcount by 1 %
+\ifeof\ebarin%
+\else%
+   \global\advance\ebarnest by 1 %
+%
+   \ifnum\ebarnest=1 %
+   \else%
+     \@latexerr{Edit bar are nested, bad results can occur.}%
+               {Please use genebaroff before using genebaron}%
+   \fi%
+%
+   \ebargeton%                                        % Get ebar on page
+   \ebargetoff%                                       % Get ebar off page
+%
+   \global\ebarpagesspan=\ebaroffcapture%             % Get page span
+   \global\advance\ebarpagesspan by -\ebaroncapture%
+%
+   \ifnum\ebarpagesspan>0%
+%
+    \immediate\write \@auxout{\gdef\string\EBARSPANONat%
+       Count\romannumeral\ebarcount%
+       Page\romannumeral\ebaroncapture{ebarspanon}}
+    \immediate\write \@auxout{\gdef\string\EBARSPANOFFat%
+       Count\romannumeral\ebarcount%
+       Page\romannumeral\ebaroffcapture{ebarspanoff}}
+%
+   \fi %
+%
+   \special{ps:%
+   /GENEBARON pop                    %  FOR DEBUGGING PostScript
+   }%
+%
+   \ebarspecialstart%
+%
+   \if@twoside%
+      \ifodd\ebaroncapture%
+         \ebarspecialodd%
+      \else%
+         \ebarspecialeven%
+      \fi%
+   \else%
+      \ebarspecialodd%
+   \fi%
+\fi%
+}%
+%
+%    genebaronpage
+%
+%    Fake ebar on for page begin
+%
+%
+\def\genebaronpage{%
+\ifeof\ebarin%
+\else%
+   \special{ps:%
+   /GENEBARONPAGE pop                    %  FOR DEBUGGING PostScript
+   }%
+   \ebarspecialstart%
+%
+   \if@twoside%
+      \ifodd\count0%
+         \ebarspecialodd%
+      \else%
+         \ebarspecialeven%
+      \fi%
+   \else%
+      \ebarspecialodd%
+   \fi%
+\fi%
+}%
+%
+%    genebaroff
+%
+%    Writes the relative page number to the ebar output file, and
+%    generates special code for end
+%
+%    Place where the ebar will occur
+%
+\def\genebaroff{\write\ebarout{\the\count0}%
+\ifeof\ebarin%
+\else%
+   \global\ebarsubtract=0 %
+   \global\advance\ebarnest by -1 %
+%
+   \ifnum\ebarnest=0 %
+   \else%
+     \@latexerr{Edit bar are nested, bad results can occur.}%
+               {Please use genebaron before using genebaroff}%
+   \fi%
+%
+   \special{ps:%
+   /GENEBAROFF pop                    %  FOR DEBUGGING PostScript
+   }%
+   \ebarspecialend%
+\fi%
+}%
+%
+%    genebaroffpage
+%
+%    Fake ebar off for page end
+%
+\def\genebaroffpage{%
+\ifeof\ebarin%
+\else%
+   \global\ebarsubtract=\pagegoal % Get pagegoal
+   \ifdim\truepagetotal < \pagegoal %
+      \global\advance\ebarsubtract by -\truepagetotal      % subtract truepagetotal
+    \else
+      \global\advance\ebarsubtract by -\pagegoal           % subtract pagegoal
+   \fi
+%
+   \global\divide\ebarsubtract by 65536 % Divide by scaled points
+%
+   \special{ps:%
+   /GENEBAROFFPAGE   pop              %  FOR DEBUGGING PostScript
+   }%
+   \ebarspecialend%
+\fi%
+}%
+%
+%
+\globaldefs0%
+%
+% Sample shipout routine changes
+%
+
+%% \def\@outputpage{\begingroup\catcode`\ =10
+%%      \let\-\@dischyph \let\'\@acci \let\`\@accii \let\=\@acciii
+%%     \if@specialpage
+%%      \global\@specialpagefalse\@nameuse{ps@\@specialstyle}\fi
+%%      \if@twoside
+%%        \ifodd\count\z@ \let\@thehead\@oddhead \let\@thefoot\@oddfoot
+%%             \let\@themargin\oddsidemargin
+%%           \else \let\@thehead\@evenhead
+%%           \let\@thefoot\@evenfoot \let\@themargin\evensidemargin
+%%      \fi\fi
+%% %
+%%      {\setbox0=\vbox{\unvcopy\@outputbox}      % MRV 07JAN94
+%%       \global\truepagetotal=\ht0}              % Get true page total
+%% %
+%%      \shipout
+%%      \vbox{\normalsize \baselineskip\z@ \lineskip\z@
+%%            \let\par\@@par %% 15 Sep 87
+%%            \vskip \topmargin \moveright\@themargin
+%%            \vbox{\setbox\@tempboxa
+%%                    \vbox to\headheight{\vfil \hbox to\textwidth
+%%                                        {\let\label\@gobble \let\index\@gobble
+%%                                          \@thehead}} %% 22 Feb 87
+%%                  \dp\@tempboxa\z@
+%%                  \box\@tempboxa
+%%                  \vskip \headsep
+%% %
+%%                  \box\@outputbox
+%% %
+%%                  \endebarthispage%
+%% %
+%%                  \baselineskip\footskip
+%%                  \hbox to\textwidth{\let\label\@gobble
+%%                            \let\index\@gobble  %% 22 Feb 87
+%%                            \@thefoot}}}\global\@colht\textheight
+%%            \endgroup\stepcounter{page}\let\firstmark\botmark%
+%% %
+%%            \beginebarnextpage{}}
+%% %
+
+\catcode`\@=11%
+\def \@shipoutsetup {%
+     \@resetactivechars
+     \let\-\@dischyph
+     \let\'\@acci\let\`\@accii\let\=\@acciii
+     \if@specialpage
+       \global\@specialpagefalse\@nameuse{ps@\@specialstyle}%
+     \fi
+     \if@twoside
+       \ifodd\count\z@ \let\@thehead\@oddhead \let\@thefoot\@oddfoot
+            \let\@themargin\oddsidemargin
+       \else \let\@thehead\@evenhead
+          \let\@thefoot\@evenfoot \let\@themargin\evensidemargin
+       \fi
+     \fi
+     \reset@font
+     \normalsize
+     \baselineskip\z@skip \lineskip\z@skip \lineskiplimit\z@
+     \let\par\@@par          %% 15 Sep 87
+}
+\def\@outputpage{
+  \let \protect \noexpand
+%
+     {\setbox0=\vbox{\unvcopy\@outputbox}      % MRV 07JAN94
+      \global\truepagetotal=\ht0}              % Get true page total
+%
+  \shipout \vbox{%
+    \set@typeset@protect
+    \aftergroup\set@typeset@protect
+    \@shipoutsetup
+    \@begindvi
+    \vskip \topmargin
+    \moveright\@themargin \vbox {%
+      \setbox\@tempboxa \vbox to\headheight{%
+        \vfil
+        \color@hbox
+          \normalcolor
+          \hbox to\textwidth {%
+            \let \label \@gobble
+            \let \index \@gobble
+            \let \glossary \@gobble %% 21 Jun 91
+            \@thehead
+            }%
+        \color@endbox
+        }%                        %% 22 Feb 87
+      \dp\@tempboxa \z@
+      \box\@tempboxa
+      \vskip \headsep
+      \box\@outputbox
+%
+      \endebarthispage%
+%
+      \baselineskip \footskip
+      \color@hbox
+        \normalcolor
+        \hbox to\textwidth{%
+          \let \label \@gobble
+          \let \index \@gobble      %% 22 Feb 87
+          \let \glossary \@gobble   %% 21 Jun 91
+          \@thefoot
+          }%
+      \color@endbox
+      }%
+    }%
+  \global \@colht \textheight
+  \stepcounter{page}%
+  \let\firstmark\botmark
+%
+  \beginebarnextpage{}
+%
+}

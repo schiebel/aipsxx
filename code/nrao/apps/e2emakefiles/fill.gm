@@ -1,0 +1,67 @@
+#
+# Make file for a pipeline to process VLA data: filling only
+#
+PIPESTATE	= pipelinestate
+VERSION		+= fill.0.01
+#
+# Assumes definition of variables by e2epipeline
+#
+# archive   : location of archive
+# pname     : publication name
+# project   : project name
+# archfiles : archive files to load
+# tbeg      : beginning time (can be unset)
+# tend      : end time (can be unset)
+# msname    : MeasurementSet name
+# calonly   : Fill calibrators only?
+#
+# Fill the MS from the data tapes
+#
+${PIPESTATE}/fill:
+	glish include "vlafiller.g";
+	glish result := T;
+	glish v:=vlafiller();
+	glish include 'e2emiscutils.g';
+	glish badfiles := e2emiscutils().badarchivefiles();
+	glish for (tape in archfiles) {
+	glish   if(!any(tape==badfiles)) {
+	glish     note('Filling ', msname, ' from tape ', tape);
+	glish     result := result && v.diskinput(tape);
+	glish     result := result && v.output(msname);
+	glish     if(!is_unset(project)) result := result && v.selectproject(project);
+	glish     if(calonly) result := result && v.selectcalibrator('*');
+	glish	  result := result && v.selecttime(start=tbeg, stop=tend);
+	glish     result := result && v.fill();
+	glish   }
+	glish }
+	glish v.done();
+	glish include 'imager.g'; imgr:=imager(msname);imgr.done();
+	glish include 'table.g';
+	glish if(!tableexists(msname)) {return throw('Failed to create MS ', msname)};
+	glish t:=table(msname);
+	glish if(is_fail(t)) fail;
+	glish if(t.nrows()==0) {return throw('MS ', msname, ' has no rows')};
+	glish t.done();
+	glish include "ms.g";
+	glish m:=ms(msname);
+	glish if(is_fail(m)) fail;
+	glish m.summary(verbose=T);
+	glish m.done();
+	glish if(result) shell('touch $@');
+#
+# Threads
+#
+threads.g: ${PIPESTATE}/fill
+	glish include "e2emsutils.g";
+	glish msutils := e2emsutils(msname);
+	glish msutils.summary();
+	glish msutils.writethreads();
+	glish msutils.done();
+#
+# This target definition overrides those in previous makefiles
+#
+all:	root ${PIPESTATE}/fill threads.g
+#
+# Root file
+#
+.include "root.gm"

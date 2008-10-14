@@ -1,0 +1,306 @@
+%!
+/ellipsedict 8 dict def
+ellipsedict /mtrx matrix put
+
+
+/ellipse % x y xrad yrad - ellipse with half-axes
+ { 0 360 earc
+ } def
+
+/earc % x y xrad yrad ang1 ang2 - elliptical arc with half-axes on the axes
+      % angles in the coordinate system of the original circle
+ { ellipsedict begin
+    /ang2 exch def
+    /ang1 exch def
+    /yrad exch def
+    /xrad exch def
+    /y exch def
+    /x exch def
+    /savematrix mtrx currentmatrix def
+    x y translate
+    xrad yrad scale
+    newpath 0 0 1 ang1 ang2 arc
+    savematrix setmatrix
+   end
+ } def
+
+
+/rectvals % x1 y1 x2 y2  - rectangle parameters
+ { 
+    /y2 exch def
+    /x2 exch def
+    /y1 exch def
+    /x1 exch def
+    /xc x1 x2 add 2 div def
+    /yc y1 y2 add 2 div def
+    /xw x2 x1 sub def
+    /yw y2 y1 sub def
+ } def
+
+/box % xc yc xw yw - draw rectangle 
+ {
+    rectvals
+    x1 y1 moveto
+    xw 0 rlineto 0 yw rlineto xw neg 0 rlineto 0 yw neg rlineto
+ } def
+
+/ebox % x1 y1 x2 y2 - draw ellipse in a rectangle
+ {
+    rectvals
+    xc yc xw 2 div yw 2 div ellipse
+ } def
+
+
+/loop % xc yc xr yr ang - draw half loop in given direction, radii are given
+ {
+    neg dup 90 sub exch 90 add earc
+ } def
+
+
+/pop4 % pops 4 values off the stack
+{
+    4 {pop} repeat
+} def
+
+/rbox % x1 y1 x2 y2 rad - draw rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+
+/urbox % x1 y1 x2 y2 rad - draw upper rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 lineto
+    x1 y2 lineto
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+/lrbox % x1 y1 x2 y2  - draw lower rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 y1 moveto
+    x2 y1 lineto
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 lineto
+} def
+
+
+/obox % x1 y1 x2 y2 - draw oval splined box
+{
+    rectvals
+    /rad 6 def 
+    xc y1 moveto
+    x2 y1 x2 y1 x2 yc curveto
+    x2 y2 x2 y2 xc y2 curveto
+    x1 y2 x1 y2 x1 yc curveto
+    x1 y1 x1 y1 xc y1 curveto
+} def
+
+
+/leftshow	%stack: string; point at left of line
+{
+  show 
+} def
+
+/centershow	%stack: string; point at center of line
+{
+   dup stringwidth pop 2 div neg 0 rmoveto show 
+} def
+
+/rightshow	%stack: string; point at right of line
+{
+   dup stringwidth pop neg 0 rmoveto show 
+} def
+
+/Inch {72 mul} def
+/SheetClip	% sheetname tx ty px py pw ph mi sx sy rot SheetClip
+		% All dimensions in inches
+		% tx,ty title, px,py origin, pw,ph clipping box
+		% sx,sy sheet coordinate in pixels of upper left point
+		% mi inches/pixels, assumes negative y axis
+		% rotate page if rot is non-zero
+ {
+   /rot exch def
+   /sy exch def
+   /sx exch def
+   Inch /mi exch def
+   Inch /ph exch def
+   Inch /pw exch def
+   Inch /py exch def
+   Inch /px exch def
+   Inch /ty exch def
+   Inch /tx exch def
+   /sheetname exch def
+   gsave
+   rot 0 ne { [0 -1 1 0 0 11 Inch] concat } if
+   tx ty  moveto 
+   (Module: ) show modulename show 
+   (  Sheet: ) show sheetname show 
+   moddate () ne {(  Time: ) show moddate show} if
+   newpath px py moveto
+   pw 0 rlineto 0 ph neg rlineto pw neg 0 rlineto
+   clip newpath
+   px py translate mi dup scale sx neg sy translate
+  } def
+/Sheet % sheetname Sheet
+ {
+   1.0 10.0 1.0 9.5 6.5 8.0 0.01 0 0 0 SheetClip
+  } def
+/Module {/modulename exch def} def
+/Modtime {/moddate exch def} def
+/ShowSheet {showpage grestore} def
+/PlainFont     /Helvetica findfont 12 scalefont def
+/LabelFont     /Helvetica-Oblique findfont 12 scalefont def
+/BoldLabelFont /Helvetica-BoldOblique findfont 12 scalefont def
+/BoldFont      /Helvetica-Bold findfont 12 scalefont def
+/Plain {PlainFont setfont} def
+/Bold {BoldFont setfont} def
+/Label {LabelFont setfont} def
+/BoldLabel{BoldLabelFont setfont} def
+Plain
+2 setlinecap
+1 setlinewidth
+/moddate () def
+
+% define color names
+/red     {0.00 1 1 sethsbcolor} def
+/yellow  {0.17 1 1 sethsbcolor} def
+/green   {0.33 1 1 sethsbcolor} def
+/cyan    {0.50 1 1 sethsbcolor} def
+/blue    {0.67 1 1 sethsbcolor} def
+/magenta {0.83 1 1 sethsbcolor} def
+/white   {0.00 0 1 sethsbcolor} def
+/black   {0.00 0 0 sethsbcolor} def
+/redfill     {0.00 0.35 1 sethsbcolor} def
+/yellowfill  {0.17 0.35 1 sethsbcolor} def
+/greenfill   {0.33 0.35 1 sethsbcolor} def
+/cyanfill    {0.50 0.35 1 sethsbcolor} def
+/bluefill    {0.67 0.35 1 sethsbcolor} def
+/magentafill {0.83 0.35 1 sethsbcolor} def
+/whitefill   {1 setgray} def
+/blackfill   {0.8 setgray} def
+(uvci) Module (Mon Apr  3 13:14:11 1995 ) Modtime
+%%EndProlog
+
+
+%%Page: 1 2
+
+(2: SkyModel  Panel: \(0,0\)) 1 10.5 0.5 10 7.5 9.5 0.01 0 0 0 SheetClip
+301 -567 moveto 520 -567 lineto [] 0 setdash black stroke 398 -540 moveto 398
+-548 lineto [] 0 setdash black stroke 301 -568 moveto 301 -584 lineto
+[] 0 setdash black stroke 520 -568 moveto 520 -591 lineto [] 0 setdash black
+stroke 388 -566 moveto 398 -549 lineto [] 0 setdash black stroke 398 -549 moveto
+408 -566 lineto [] 0 setdash black stroke 126 -431 moveto 414 -431 lineto
+[] 0 setdash black stroke 204 -401 moveto 204 -412 lineto [] 0 setdash black
+stroke 414 -432 moveto 414 -481 lineto [] 0 setdash black stroke 126 -432 moveto
+126 -485 lineto [] 0 setdash black stroke 194 -430 moveto 204 -413 lineto
+[] 0 setdash black stroke 204 -413 moveto 214 -430 lineto [] 0 setdash black
+stroke 475 -283 moveto 495 -283 lineto [] 0 setdash black stroke 485 -254 moveto
+485 -264 lineto [] 0 setdash black stroke 485 -284 moveto 485 -291 lineto
+[] 0 setdash black stroke 475 -282 moveto 485 -265 lineto [] 0 setdash black
+stroke 485 -265 moveto 495 -282 lineto [] 0 setdash black stroke 431 -292 540
+-349 box [] 0 setdash white fill 432 -293 540 -313 box [] 0 setdash white fill
+434 -293 537 -297 box [] 0 setdash white fill 434 -298 537 -310 box [] 0 setdash
+white fill 436 -308 moveto black Bold (SimpleSkyModel) leftshow 434 -311 537
+-312 box [] 0 setdash white fill 432 -313 moveto 539 -313 lineto [] 0 setdash
+black stroke 432 -324 moveto 539 -324 lineto [] 0 setdash black stroke 432 -330
+526 -343 box [] 0 setdash white fill 433 -330 434 -343 box [] 0 setdash white
+fill 435 -340 moveto black Plain (combineStokes) leftshow 431 -292 540 -349 box
+[] 0 setdash black stroke 480 -365 moveto 480 -472 lineto [] 0 setdash black
+stroke 431 -459 moveto black Plain (Stokes) leftshow 480 -350 moveto 484 -357
+lineto 480 -364 lineto 476 -357 lineto 480 -350 lineto 480 -350 lineto
+[] 0 setdash black stroke 480 -477 4 4 ellipse [] 0 setdash gsave  black
+fill grestore black stroke 326 -482 502 -539 box [] 0 setdash white fill 327
+-483 430 -503 box [] 0 setdash white fill 329 -483 499 -487 box [] 0 setdash
+white fill 329 -488 499 -500 box [] 0 setdash white fill 368 -498 moveto black
+Bold (RealFunctionND) leftshow 329 -501 499 -502 box [] 0 setdash white fill 327
+-503 moveto 501 -503 lineto [] 0 setdash black stroke 327 -514 moveto 501 -514
+lineto [] 0 setdash black stroke 327 -520 502 -533 box [] 0 setdash white fill
+328 -520 329 -533 box [] 0 setdash white fill 330 -530 moveto black Plain
+(Float operator\(Vector<Float>\)) leftshow 326 -482 502 -539 box [] 0 setdash
+black stroke 24 -486 228 -543 box [] 0 setdash white fill 25 -487 227 -506 box
+[] 0 setdash white fill 27 -487 225 -491 box [] 0 setdash white fill 27 -492 225
+-504 box [] 0 setdash white fill 68 -502 moveto black Bold (ComplexFunctionND)
+leftshow 27 -505 225 -506 box [] 0 setdash white fill 25 -507 moveto 227 -507
+lineto [] 0 setdash black stroke 25 -518 moveto 227 -518 lineto [] 0 setdash
+black stroke 25 -524 227 -536 box [] 0 setdash white fill 26 -524 27 -537 box
+[] 0 setdash white fill 28 -534 moveto black Plain
+(Complex operator\(\)\(Vector<Float>\)) leftshow 24 -486 228 -543 box
+[] 0 setdash black stroke 246 -503 moveto black Plain (DFT) leftshow 233 -516 4
+4 ellipse [] 0 setdash black stroke 238 -516 moveto 325 -516 lineto [] 0 setdash
+black stroke 463 -592 572 -675 box [] 0 setdash white fill 464 -593 571 -612 box
+[] 0 setdash white fill 466 -593 569 -597 box [] 0 setdash white fill 466 -598
+569 -610 box [] 0 setdash white fill 468 -608 moveto black Bold
+(RealGridfunction) leftshow 466 -611 569 -612 box [] 0 setdash white fill 464
+-613 moveto 571 -613 lineto [] 0 setdash black stroke 464 -619 571 -631 box
+[] 0 setdash white fill 465 -619 466 -632 box [] 0 setdash white fill 467 -629
+moveto black Plain (Lattice) leftshow 464 -632 571 -644 box [] 0 setdash white
+fill 465 -632 466 -645 box [] 0 setdash white fill 467 -642 moveto black Plain
+(Origin) leftshow 464 -645 571 -657 box [] 0 setdash white fill 465 -645 466
+-658 box [] 0 setdash white fill 467 -655 moveto black Plain (Dx) leftshow 464
+-663 moveto 571 -663 lineto [] 0 setdash black stroke 463 -592 572 -675 box
+[] 0 setdash black stroke 83 -278 289 -400 box [] 0 setdash white fill 84 -279
+288 -298 box [] 0 setdash white fill 86 -279 286 -283 box [] 0 setdash white
+fill 86 -284 286 -296 box [] 0 setdash white fill 153 -294 moveto black Bold
+(FunctionND) leftshow 86 -297 286 -298 box [] 0 setdash white fill 84 -299
+moveto 288 -299 lineto [] 0 setdash black stroke 84 -305 288 -317 box
+[] 0 setdash white fill 85 -305 86 -318 box [] 0 setdash white fill 87 -315
+moveto black Plain (ndim) leftshow 84 -318 288 -330 box [] 0 setdash white fill
+85 -318 86 -331 box [] 0 setdash white fill 87 -328 moveto black Plain
+(nParameters) leftshow 84 -331 288 -343 box [] 0 setdash white fill 85 -331 86
+-344 box [] 0 setdash white fill 87 -341 moveto black Plain (Parameters)
+leftshow 84 -349 moveto 288 -349 lineto [] 0 setdash black stroke 84 -355 288
+-367 box [] 0 setdash white fill 85 -355 86 -368 box [] 0 setdash white fill 87
+-365 moveto black Plain (Range operator\(\)\(Vector<Domain>\)) leftshow 84 -368
+288 -380 box [] 0 setdash white fill 85 -368 86 -381 box [] 0 setdash white fill
+87 -378 moveto black Plain (evaluateOnGrid\(Lattice\)) leftshow 84 -381 288 -393
+box [] 0 setdash white fill 85 -381 86 -394 box [] 0 setdash white fill 87 -391
+moveto black Plain (smoothToGrid\(Lattice\)) leftshow 83 -278 289 -400 box
+[] 0 setdash black stroke 380 -157 591 -253 box [] 0 setdash white fill 381 -158
+590 -177 box [] 0 setdash white fill 383 -158 588 -162 box [] 0 setdash white
+fill 383 -163 588 -175 box [] 0 setdash white fill 456 -173 moveto black Bold
+(SkyModel) leftshow 383 -176 588 -177 box [] 0 setdash white fill 381 -178
+moveto 590 -178 lineto [] 0 setdash black stroke 381 -184 590 -196 box
+[] 0 setdash white fill 382 -184 383 -197 box [] 0 setdash white fill 384 -194
+moveto black Plain (defaultGrid) leftshow 381 -197 590 -209 box [] 0 setdash
+white fill 382 -197 383 -210 box [] 0 setdash white fill 384 -207 moveto black
+Plain (coordinateSystem) leftshow 381 -215 moveto 590 -215 lineto [] 0 setdash
+black stroke 381 -221 590 -233 box [] 0 setdash white fill 382 -221 383 -234 box
+[] 0 setdash white fill 384 -231 moveto black Plain
+(RealFunctionND skyPlane\(stokes\)) leftshow 381 -234 590 -246 box [] 0 setdash
+white fill 382 -234 383 -247 box [] 0 setdash white fill 384 -244 moveto black
+Plain (FourierFunctionND uvPlane\(stokes\)) leftshow 380 -157 591 -253 box
+[] 0 setdash black stroke 281 -585 379 -642 box [] 0 setdash white fill 282 -586
+378 -605 box [] 0 setdash white fill 284 -586 376 -590 box [] 0 setdash white
+fill 284 -591 376 -603 box [] 0 setdash white fill 287 -601 moveto black Bold
+(DeltaFunctions) leftshow 284 -604 376 -605 box [] 0 setdash white fill 282 -606
+moveto 378 -606 lineto [] 0 setdash black stroke 282 -612 378 -624 box
+[] 0 setdash white fill 283 -612 284 -625 box [] 0 setdash white fill 285 -622
+moveto black Plain (x[n], y[n], flux[n]) leftshow 282 -630 moveto 378 -630
+lineto [] 0 setdash black stroke 281 -585 379 -642 box [] 0 setdash black stroke
+117 -151 264 -208 box [] 0 setdash white fill 118 -152 263 -171 box [] 0 setdash
+white fill 120 -152 261 -156 box [] 0 setdash white fill 120 -157 261 -169 box
+[] 0 setdash white fill 161 -167 moveto black Bold (Functional) leftshow 120
+-170 261 -171 box [] 0 setdash white fill 118 -172 moveto 263 -172 lineto
+[] 0 setdash black stroke 118 -183 moveto 263 -183 lineto [] 0 setdash black
+stroke 118 -189 263 -201 box [] 0 setdash white fill 119 -189 120 -202 box
+[] 0 setdash white fill 121 -199 moveto black Plain (Range operator\(Domain\))
+leftshow 117 -151 264 -208 box [] 0 setdash black stroke 175 -238 moveto 195
+-238 lineto [] 0 setdash black stroke 185 -209 moveto 185 -219 lineto
+[] 0 setdash black stroke 184 -239 moveto 184 -277 lineto [] 0 setdash black
+stroke 175 -237 moveto 185 -220 lineto [] 0 setdash black stroke 185 -220 moveto
+195 -237 lineto [] 0 setdash black stroke ShowSheet
+
+%%Trailer

@@ -1,0 +1,109 @@
+Title:                  Proposal for Measures in MeasurementSet
+Person responsible:     Bob Garwood (bgarwood@nrao.edu)
+Originator of proposal: Bob Garwood (bgarwood@nrao.edu)
+Exploders targeted:     aips2-gbt, aips2-astro-design
+Time table:
+        Date of issue:          1996 January 19		Done
+        Comments due:           1996 January 24		Done
+        Revised proposal:       1996 January 26		Done
+        Final comments due:     1996 January 29		Done
+	Decision date:		1996 January 31         Done
+
+Note: much of this proposal is necessarily vague pending some
+feedback with the Measure class.  It may be necessary to
+revise these changes within the next few months.
+
+Statement of goals:
+
+To begin the process of integrating the Measures classes with 
+the MeasurementSet class.  This will result in feedback to
+the developing Measures classes.  It should be easy to construct
+a Measure from a field of a MeasurementSet.
+
+Proposed changes:
+
+	Background: Measure is the abstract base class for a set of
+classes dealing with coordinates.  These derived classes include
+MDirection, MPosition, MEpoch, MFrequency, etc.  
+A Measure can be thought as having a value (generally a
+collection of Quantities, which is currently a typedef
+for Quantum<Double>) and a reference (which describes
+the coordinate system and possibly some offsets and references
+for the reference - the later variations are not particularly
+well documented at this point so I'm not sure what is meant
+there).
+
+	- A MEASURE_TYPE keyword will be associated with each column
+	  in a MeasurementSet.  The value of this keyword will be
+	  a string indicating one of the basic Measure types.
+	- This MEASURE_TYPE will apply to all values in that
+	  column.
+	- All columns must have a MEASURE_TYPE keyword (an
+	  empty string implies an unknown measure).
+	- The type of all PredefinedColumns will be enforced
+	  by the MS::validate() function.
+
+       	- Within a column, the reference CAN vary (i.e. a column can 
+	  contain a mixture of coordinate systems all of the same basic 
+	  type, J2000, GALACTIC, B1950, etc).
+
+
+   It is not yet clear how to references will be stored, the following
+is a suggestion that will be possible once Records can be stored
+in keywords and table columns. 
+
+	- MEASURE_REFERENCE - This keyword would also be required for
+          all columns.  If this keyword is a Record, then that Record 
+	  contains sufficient information to reconstruct the reference
+	  for the entire column (i.e. the reference is constant for
+	  every element in the column and this Record describes that
+	  reference); if this keyword is a String, then its value is
+	  the name of column of Records where the value of each row in
+	  that column is the reference for the corresponding column.
+
+	  I propose that the reference column name be constructed as
+	  follows: 
+	
+	- column_MEASURE_REFERENCE
+	  where column is the name of the column containing the
+	  Measure values (e.g. SKY_POINT might have a
+	  SKY_POINT_MEASURE_REFERENCE column which would contain the
+	  individual references for each row of SKY_POINT).
+
+	The exact details of what information will go in
+such a Record is not yet clear and will certainly depend on the
+specific type of Measure.
+
+	As far as the user is concerned, the following member
+functions are proposed to aid in the construction of a
+Measure.
+
+	o A Function which returns a Measure for a given column
+	  and row number.  This will require that the specific
+	  Measure types be constructible and assignable from
+	  the base class (they currently are not).
+	o A function that indicates whether or not the measure reference
+	  is constant for that column 
+	o the ability to put a Measure into a column.
+	o Ultimately a column engine that allows Column<MeasureType>
+
+
+   Putting a Measure into a column:
+	(1) For non-constant reference columns, the MS member functions
+	    will put the Measure in with the reference it has, doing
+	    all the mechanics behind the scene.  If you want to choose
+	    a specific reference, then you must first convert the
+	    Measure to that reference before attempting to store it.
+        (2) For constant reference columns, if the reference for
+            the input Measure differs from the column:
+		(a) the MeasurementSet code will throw an exception
+		(b) Glish or tablebrowser access should:
+		    silently convert the input Measure to the
+	                Measure of the column and
+		    emit a warning 
+                    If no conversion is possible an error results.
+
+
+    MeasurementSet will provide member functions to
+    convert a const reference column into a non-const reference 
+    column and vice versa.

@@ -1,0 +1,853 @@
+(omt_version 5 0)
+#  %W% %G%  
+
+(omt_module
+ (key 1)
+ (anno description "$Id: ms2scn.omt,v 19.0 2003/07/16 03:38:22 aips2adm Exp $
+$Log: ms2scn.omt,v $
+Revision 19.0  2003/07/16 03:38:22  aips2adm
+exhale: Base release 19.000.00
+
+Revision 18.0  2002/06/07 19:41:51  aips2adm
+exhale: Base release 18.000.00
+
+Revision 17.0  2001/11/12 18:29:42  aips2adm
+exhale: Base release 17.000.00
+
+Revision 16.0  2001/05/02 22:51:21  aips2adm
+exhale: Base release 16.000.00
+
+Revision 15.0  2000/10/26 14:01:28  aips2adm
+exhale: Base release 15.000.00
+
+Revision 14.0  2000/03/23 14:30:45  aips2adm
+exhale: Base release 14.000.00
+
+Revision 13.0  1999/08/10 17:00:04  aips2adm
+exhale: Base release 13.000.00
+
+Revision 12.0  1999/07/14 21:42:14  aips2adm
+exhale: Base release 12.000.00
+
+Revision 11.0  1998/10/03 04:29:49  aips2adm
+exhale: Base release 11.000.00
+
+Revision 10.0  1998/07/20 15:07:44  aips2adm
+exhale: Base release 10.000.00
+
+Revision 9.0  1997/08/25 18:21:34  aips2adm
+exhale: Base release 09.000.00
+
+Revision 8.1  1997/05/23 07:01:40  hjv
+Creation
+
+$Purpose: ...
+$Usage: Modify with OMTool only
+
+Description goes here
+")
+ (anno show_method_arg_types NO)
+ (anno show_method_arg_values NO)
+ (anno unique_methods NO)
+ (name ms2scn)
+ (language C++)
+ (fcode_max 0)
+ (omt_model
+  (omt_class
+   (key 3)
+   (anno description "")
+   (name NStarSet)
+   (method
+    (key 72)
+    (anno virtual_method YES)
+    (anno description "The virtual destructor does nothing in the baseclass.
+")
+    (name ~NStarSet))
+   (method
+    (key 89)
+    (name getSetNumber)
+    (type Int))
+   (method
+    (key 90)
+    (name setSetNumber)
+    (type void)
+    (arglist
+     (arg
+      (key 91)
+      (name aNumber)
+      (type Int))))
+   (field
+    (key 73)
+    (anno cxx_field_access private)
+    (name itsHdr)
+    (type "elements from SSH.dsf")))
+  (omt_class
+   (key 7)
+   (anno description "Each Newstar file starts with a General File Header, which identifies
+the file in terms of contents and name, maintains a revision count and
+has pointers to the various sets and subgroups in the file.
+")
+   (name NStarGeneralFileHeader)
+   (method
+    (key 29)
+    (anno description "A Newstar General File Header is defined by its type and
+a filename. The type can be any of the enum values in 
+NStarFileType and is translated into a string (\".SCN\" or \".WMP\")
+in itsHdr.ID:
+
+  if (aType == SCN) {
+     strncpy(itsHdr.ID,\".SCN\",4);
+  } else if (....)
+
+The name is copied into the NAME field (padded with spaces):
+
+    strset(itsHdr.NAME,' '); // I'm not sure about strset, could be another
+    strncpy(itsHdr.NAME,aName,aName.length());
+
+The current date and time are set in both CDAT/CTIM and RDAT/RTIM, RCNT is
+initialized to 1, LEN is set to sizeof(itsHdr), DATTP is set to
+5 (HP/Sun, please check). The link fields are initialized to zero.
+
+    ")
+    (name NStarGeneralFileHeader)
+    (arglist
+     (arg
+      (key 74)
+      (name aType)
+      (type GFHType))
+     (arg
+      (key 75)
+      (name aName)
+      (type String))))
+   (method
+    (key 8)
+    (anno description "To be implemented for ID, LEN,  VER, CDAT,CTIM,RDAT,
+RTIM, RCNT, NAME and DATTP
+
+This series of accessor functions can be used to inspect
+the attributes of the header. These functions are typesafe 
+and contain any necessary typeconversions.
+
+Example:
+
+   Date NStartGeneralFileHeader::getRevisionDate()
+   {
+      return Date(itsHdr.RDAT);
+   }
+
+")
+    (name get*)
+    (type *))
+   (method
+    (key 10)
+    (anno description "To be implemented for NAME and DATTP.
+
+This series of accessor functions can be used to set those
+attributes that can be modified from the outside world.
+
+For a GeneralFileHeader, most attributes are detemined
+automatically or at construction time.
+
+These memberfunctions are typesafe and contain any
+necessary typeconversions.
+
+     void NStarGEneralFileHeader::setDataType(Int aType)
+     {
+         itsHdr.DATTP = aType;
+     }
+")
+    (name set*)
+    (type void)
+    (arglist
+     (arg
+      (key 76)
+      (name ....))))
+   (method
+    (key 11)
+    (name addSet)
+    (arglist
+     (arg
+      (key 12)
+      (name aSet)
+      (type NStarSet&))))
+   (method
+    (key 33)
+    (anno description "Write itsHdr to aFile and return aFile.
+")
+    (name write)
+    (type ostream&)
+    (arglist
+     (arg
+      (key 34)
+      (name aFile)
+      (type ostream&))))
+   (field
+    (key 13)
+    (anno cxx_field_access private)
+    (anno description "This attribute is a struct derived from GHF.dsc.
+")
+    (name itsHdr)
+    (type "elements from GFH.dsc")))
+  (omt_class
+   (key 14)
+   (name NStarSetHeader)
+   (method
+    (key 15)
+    (name set*)
+    (arglist
+     (arg
+      (key 16)
+      (name ...))))
+   (method
+    (key 17)
+    (name get*)
+    (arglist))
+   (method
+    (key 18)
+    (anno description "Add a NStarScan to the list. We may add checks for the
+Hour-Angle etc.
+
+Ownership of aScan is passed to the NStarSetHeader.
+")
+    (name addScan)
+    (arglist
+     (arg
+      (key 92)
+      (name aScan)
+      (type NStarScan*))))
+   (method
+    (key 93)
+    (anno description "Set the Interferometer table for this set. Note that the 
+table is NOT owned by the set, but should be deleted
+by the application.
+")
+    (name setIfrTable)
+    (arglist
+     (arg
+      (key 94)
+      (name aTable)
+      (type NStarIfrTable*))))
+   (method
+    (key 95)
+    (anno description "The destructor deletes all Scans in itsScans.
+")
+    (name ~NStarSetHeader))
+   (method
+    (key 96)
+    (anno cxx_method_access protected)
+    (anno description "Fill in the address of the IFR table:
+
+   if (!itsHdr.IFRP && itsTable) { // No pointer, but we have a table
+       // So write if necessary and set pointer
+       itsHdr.IFRP=itsTable->getAddress(aFile);
+   }
+
+Then calulate the offset to the first scan (using seek and
+getLenght()) and store that in the data pointer.
+
+Write itsHdr and invoke write(aFile) on all scans in itsScan.
+")
+    (name doWrite)
+    (arglist
+     (arg
+      (key 97)
+      (name aFile)
+      (type ostream&))))
+   (field
+    (key 19)
+    (anno cxx_field_access private)
+    (name itsHdr)
+    (type "elements from STH.dsc"))
+   (field
+    (key 98)
+    (anno cxx_field_access private)
+    (name itsScans)
+    (type List<NStarScan*>))
+   (field
+    (key 99)
+    (anno cxx_field_access private)
+    (name itsIfrTable)
+    (type NStarIfrTable*)))
+  (omt_class
+   (key 20)
+   (name NStarScan)
+   (method
+    (key 100)
+    (anno description "Set itsData to the pointer passed. Ownership of the data
+is NOT passed to the NStarScan, deletion is at the discretion
+of the application.
+
+")
+    (name setData)
+    (arglist
+     (arg
+      (key 101)
+      (name anArray)
+      (type Int8*))))
+   (method
+    (key 102)
+    (anno description "Write header and data to the output file.
+
+Note that the class could reformat the data if the use of
+an alternative format would be advisable.
+")
+    (name write)
+    (arglist
+     (arg
+      (key 103)
+      (name aFile)
+      (type ofstream&))))
+   (field
+    (key 21)
+    (anno cxx_field_access private)
+    (name itsHdr)
+    (type "elements from SCH.dsc"))
+   (field
+    (key 22)
+    (anno cxx_field_access private)
+    (name itsData)
+    (type Int8*)))
+  (omt_class
+   (key 36)
+   (anno description "A Newstar File is an ordered collection of sets. The type of the file
+determines the kind of sets that are allowed in it. All files start with a 
+common header, modeled here as an NStarGeneralFileHeader.
+
+For our present purpose we only model the writing of SCN files (consisting 
+of sets with visibility data). All examples in the documentation will be 
+for SCN files. However, the design makes it easy to reading back data and
+to add different filetypes.
+
+A Newstar File, as said, is an ordered collection of sets. Sets are
+ordered in two ways. First by there construction order, a simple sequential
+number starting at zero. This set-number is maintainded in the
+generic part of all types of sets, modeled here as a NStarSet. The 
+implementation of this ordering, as a double linked list, is also 
+implemented in the NStarSet (with the list-head and count in the
+NStarGeneralFileHeader). 
+
+Secondly, sets are ordered along up to eigth coordinate axes. The 
+coordinate along these axes is refered to as the SetID, consisting of
+eight integer values. The identification in terms of a set id is maintained
+in so called sub-group headers that are implemented as a nested
+double linked list. We model  subgroups in class
+NStarSubGroupHeader.
+
+
+Class NStarFile models a Newstar file of any type. If consists of a 
+NStarGeneralFileHeader, a list of NStarSets and a list of NStarSubGroups
+to maintain the set identification. In fact we need to keep only
+a single Set and SubGroup in memory, since the others, once written,
+can be retrieved by traveling the links. We will not do this for efficiency
+purposes. Data belonging to each set is not owned by the NStarFile
+and can be deleted at the discretion of the application.
+
+The interface to the NStarFile is relatively simple. A file is created for
+a certain type and with a certain filename. This initializes the 
+GeneralFileHeader. The constructor could be exteneded by trying 
+to open an existing file for reading and updating.
+
+Then the application can add NStarSets to the file. The Set (of proper type)
+are created by the application. Offering them through addSet passes
+the ownership of the Set to NStarFile. 
+
+Sets will only be written to disk when write() is called. This updates
+the general file header and writes any sets that were not yet written.
+
+Values in Sets passed through addSet can be modified before a write().
+
+Note that subgroups are not visible outside NStarFile. Memberfunctions
+could be added to allow retrieval of a Set based on set-number or
+set-ID. 
+")
+   (name NStarFile)
+   (method
+    (key 37)
+    (anno description "The constructor initializes itsFileName to the passed name
+(it might do some formatting on the name). The GFH is
+initialized with the passed name and type.
+
+In the constructor, itsFile is opened with itsFileName for 
+writing. For read/write applications, this could be extended
+by trying opening for update first (reading back itsGFH, all 
+subgroups and the last SetHeader).
+
+")
+    (name NStarFile)
+    (arglist
+     (arg
+      (key 104)
+      (name aType)
+      (type NStarFileType))
+     (arg
+      (key 105)
+      (name aName)
+      (type String))))
+   (method
+    (key 79)
+    (anno description "The destructor deletes all objects in itsSets and itsGroups.
+No flushing is done.
+")
+    (name ~NStarFile))
+   (method
+    (key 80)
+    (anno description "This function passes a NStarSet to the file. The NStarFile
+does a setSetNumber() on the set, using the information
+from itsSets:
+
+   if (itsSets.isEmpty()) {
+     aSet->setSetNumber(0);
+   } else {
+     aSet->setSetNumber(itsSets.last()->getSetNumber()+1);
+   }
+
+The set is appended to itsSets and appropriate 
+SubGroupsHeaders are created (***to be defined***).
+
+")
+    (name addSet)
+    (type Bool)
+    (arglist
+     (arg
+      (key 106)
+      (name aSet)
+      (type NStarSet*))
+     (arg
+      (key 107)
+      (name aSetID)
+      (type Int[8]))))
+   (method
+    (key 83)
+    (anno description "This memberfunction first invokes itsGFH.write(itsFile).
+Then itsSets is scanned for any Set that was not yet
+written to disk. If such a set exists it is written and proper 
+links are set in the surrounding sets *** to be defined ***
+
+The list of SubGroups is updated and written as well,
+itsGFH is always written again at the end.
+
+")
+    (name write)
+    (type Bool))
+   (method
+    (key 108)
+    (anno description "Returns a reference (non-const) to itsGFH.
+")
+    (name getGeneralFileHeader)
+    (type NStarGeneralFileHeader&))
+   (field
+    (key 39)
+    (anno cxx_field_access private)
+    (anno description "The full pathname for the NStarFile.
+")
+    (name itsFileName)
+    (type String))
+   (field
+    (key 109)
+    (anno cxx_field_access private)
+    (anno description "The output stream for the file. Could be replaced by 
+an fstream for read/write purposes.
+
+")
+    (name itsFile)
+    (type ofstream))
+   (field
+    (key 40)
+    (anno cxx_field_access private)
+    (anno description "The GFH for this NStarFile. Note that the GFH is only 
+accessible through memberfunction getGFH which
+returns a reference to this attribute.
+")
+    (name itsGFH)
+    (type NStarGeneralFileHeader))
+   (field
+    (key 41)
+    (anno cxx_field_access private)
+    (anno description "The full list of SubGroupHeaders. We keep the
+SubGroupHeaders as a plain list: the leveled 
+structure of the headers is maintained in the
+SubGroupHeader objects.
+
+*** Need some easy way to walk the list ***
+")
+    (name itsGroups)
+    (type List<NStarSubGroupHeader*>))
+   (field
+    (key 42)
+    (anno cxx_field_access private)
+    (anno description "The list of NStarSets currently in memory. In the present
+design sets are kept in memory as long as the NStarFile
+object exists. This could easily be changed to keeping 
+them until a write happened.
+
+")
+    (name itsSets)
+    (type List<NStarSet*>))
+   (field
+    (key 84)
+    (anno cxx_field_access public)
+    (anno description "This embedded enum enumerates the various
+possible Newstar Files.
+")
+    (name "enum NStarFileType { SCN, WMP }")))
+  (omt_class
+   (key 44)
+   (name NStarIfrTable)
+   (method
+    (key 110)
+    (anno description "")
+    (name write)
+    (type TMSBoolean)
+    (arglist
+     (arg
+      (key 117)
+      (name aFile)
+      (type ofstream&))))
+   (method
+    (key 112)
+    (name getAddress)
+    (type size_t)
+    (arglist))
+   (method
+    (key 113)
+    (anno description "If itsAddress is zero, invoke write(aFile).
+Return getAddress().")
+    (name getAddress)
+    (type size_t)
+    (arglist
+     (arg
+      (key 114)
+      (name aFile)
+      (type ofstream&))))
+   (method
+    (key 118)
+    (name NStartIfrTable)
+    (arglist
+     (arg
+      (key 119)
+      (name Vector<Int>))))
+   (field
+    (key 115)
+    (anno cxx_field_access private)
+    (name itsAddress)
+    (type size_t))
+   (field
+    (key 116)
+    (anno cxx_field_access private)
+    (name itsData)
+    (type Int16[STHIFR])))
+  (omt_class
+   (key 46)
+   (name NStarSubGroupHeader)
+   (method
+    (key 85)
+    (name NStarSubGroupHeader)
+    (arglist))
+   (method
+    (key 86)
+    (name get*)
+    (type *))
+   (method
+    (key 87)
+    (anno cxx_method_access private)
+    (name set*)
+    (type *))
+   (field
+    (key 88)
+    (anno cxx_field_access private)
+    (name itsHdr)
+    (type "elements from SGH.dsc")))
+  (omt_class
+   (key 120)
+   (anno description "Main program ms2scn opens the MeasurementSet and
+checks if it is valid. 
+
+Then a convertor object is created for the 
+MeasurementSet and the name of a SCN file.
+
+   aConvertor.prepare();
+   aConvertor.convert();
+   aConvertor.write();
+")
+   (name ms2scn)
+   (method
+    (key 121)
+    (name main))
+   (field
+    (key 122)
+    (anno cxx_field_access private)
+    (name aConvertor)
+    (type ConvertToSCN))
+   (field
+    (key 123)
+    (anno cxx_field_access private)
+    (name aMS)
+    (type MeasurementSet))
+   (field
+    (key 124)
+    (anno cxx_field_access private)
+    (name aName)
+    (type String)))
+  (omt_class
+   (key 125)
+   (name ConvertToSCN)
+   (method
+    (key 126)
+    (anno description "Initialize itsMS to aMs, initialize itsSCN to SCN and
+aName.
+")
+    (name ConvertToSCN)
+    (arglist
+     (arg
+      (key 127)
+      (name aMS)
+      (type MeasurementSet&))
+     (arg
+      (key 128)
+      (name aName)
+      (type String))))
+   (method
+    (key 129)
+    (anno description "Loop over the MeasurementSet to get some 
+global information: itsNrBands, itsIfrTable,
+itsHAStart, itsHAEnd.
+
+For the while we assume no mosaicing is done.
+")
+    (name prepare)
+    (type Bool))
+   (method
+    (key 130)
+    (anno description "Loop over the number of bands and create set-headers,
+adding them to itsSCN.
+")
+    (name convert)
+    (type Bool))
+   (method
+    (key 131)
+    (anno description "Invoke write() on itsSCN.
+")
+    (name write)
+    (type Bool))
+   (field
+    (key 132)
+    (anno cxx_field_access private)
+    (name itsMS))
+   (field
+    (key 133)
+    (anno cxx_field_access private)
+    (name itsSCN)
+    (type NStarFile))
+   (field
+    (key 134)
+    (anno cxx_field_access private)
+    (name itsIfrTable::NStarIfrTable))
+   (field
+    (key 135)
+    (anno cxx_field_access private)
+    (name itsNrBands)
+    (type Int))
+   (field
+    (key 136)
+    (anno cxx_field_access private)
+    (name itsHAStart)
+    (type Double))
+   (field
+    (key 137)
+    (anno cxx_field_access private)
+    (name itsHAEnd)
+    (type Double)))
+  (generalization_relation
+   (key 23)
+   (superclass 3)
+   (subclasses 14))
+  (binary_association
+   (key 47)
+   (role
+    (key 48)
+    (primary 36)
+    (is_assembly)
+    (mult 1 2))
+   (role
+    (key 49)
+    (primary 7)
+    (mult 1 2)))
+  (binary_association
+   (key 50)
+   (role
+    (key 51)
+    (primary 36)
+    (is_assembly)
+    (mult 1 2))
+   (role
+    (key 52)
+    (primary 3)
+    (mult 0 *)))
+  (binary_association
+   (key 53)
+   (role
+    (key 54)
+    (primary 14)
+    (mult 1 2))
+   (role
+    (key 55)
+    (primary 44)
+    (mult 1 2)))
+  (binary_association
+   (key 56)
+   (role
+    (key 57)
+    (primary 14)
+    (is_assembly)
+    (mult 1 2))
+   (role
+    (key 58)
+    (primary 20)
+    (mult 0 *)))
+  (binary_association
+   (key 59)
+   (role
+    (key 60)
+    (primary 36)
+    (is_assembly)
+    (mult 1 2))
+   (role
+    (key 61)
+    (primary 46)
+    (mult 0 *)))
+  (binary_association
+   (key 138)
+   (role
+    (key 139)
+    (primary 120)
+    (mult 1 2))
+   (role
+    (key 140)
+    (primary 125)
+    (mult 1 2))))
+ (omt_image
+  (sheet
+   (key 2)
+   (name "Structure of Newstar Files")
+   (model_type Object)
+   (width 650)
+   (height 800)
+   (background_color white)
+   (foreground_color black)
+   (ClassBox
+    (key 65)
+    (represents 46)
+    (frame
+     (loc 30 390)
+     (dimensions 183 96)))
+   (ClassBox
+    (key 26)
+    (represents 7)
+    (frame
+     (loc 63 255)
+     (dimensions 241 122)))
+   (ClassBox
+    (key 24)
+    (represents 20)
+    (frame
+     (loc 380 679)
+     (dimensions 183 96)))
+   (ClassBox
+    (key 66)
+    (represents 36)
+    (frame
+     (loc 36 5)
+     (dimensions 290 187)))
+   (ClassBox
+    (key 64)
+    (represents 44)
+    (frame
+     (loc 55 578)
+     (dimensions 165 122)))
+   (ClassBox
+    (key 27)
+    (represents 3)
+    (frame
+     (loc 335 236)
+     (dimensions 180 96)))
+   (ClassBox
+    (key 25)
+    (represents 14)
+    (frame
+     (loc 406 399)
+     (dimensions 181 161)))
+   (AssociationImage
+    (key 68)
+    (represents 59)
+    (nodes 66 65)
+    (points
+     (44 193)
+     (44 389)))
+   (AssociationImage
+    (key 70)
+    (represents 47)
+    (nodes 66 26)
+    (points
+     (100 193)
+     (100 254)))
+   (AssociationImage
+    (key 71)
+    (represents 50)
+    (nodes 66 27)
+    (points
+     (115 193)
+     (115 216)
+     (423 216)
+     (423 235)))
+   (GeneralizationImage
+    (key 28)
+    (represents 23)
+    (supernode 27
+     (509 333)
+     (509 373))
+    (node 25
+     (509 375)
+     (509 398)))
+   (AssociationImage
+    (key 69)
+    (represents 53)
+    (nodes 25 64)
+    (points
+     (405 507)
+     (134 507)
+     (134 577)))
+   (AssociationImage
+    (key 67)
+    (represents 56)
+    (nodes 25 24)
+    (points
+     (520 561)
+     (520 678))))
+  (sheet
+   (key 141)
+   (name "Conversion class")
+   (model_type Object)
+   (width 650)
+   (height 800)
+   (background_color white)
+   (foreground_color black)
+   (ClassBox
+    (key 142)
+    (represents 120)
+    (frame
+     (loc 104 101)
+     (dimensions 168 96)))
+   (ClassBox
+    (key 143)
+    (represents 125)
+    (frame
+     (loc 118 275)
+     (dimensions 179 174)))
+   (AssociationImage
+    (key 144)
+    (represents 138)
+    (nodes 142 143)
+    (points
+     (194 198)
+     (194 274)))))
+ (savekey_max 144))

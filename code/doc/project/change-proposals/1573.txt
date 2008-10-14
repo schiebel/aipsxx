@@ -1,0 +1,131 @@
+
+Title:                  Proposal for data handling in aips++
+Person responsible:     Tim Cornwell (tcornwel@nrao.edu)
+                        and Ger van Diepen (gvd@nfra.nl)
+Originator of proposal: Wim Brouw (Wim.Brouw@csiro.au)
+Exploders targeted:     aips2-sys, aips2-lib, aips2-workers 
+Time table:
+        Date of issue:          1998/07/31              Done
+        Comments due:           1998/08/24              Done (1998/09/09)
+        Revised proposal:       1998/09/01		Done (1998/09/11)
+        Final comments due:     1998/09/21
+        Decision date:          1998/09/28
+
+Statement of goals:
+
+To properly manage the distribution and update of data necessary to
+operate aips++ executable and test code.
+
+Proposed changes:
+
+1. Background
+
+There are three types of data the proposal tries to address:
+a. data (in Table form always) that is essential to operate (a part of)
+   aips++. The only data I know of at the moment is the leap-second
+   Table, the Observatories and Source Tables.
+b. data that is necessary to operate some parts of the system (always
+   in Table format), or to operate better. Examples are Planetary
+   ephemeris, dUt data, Global data like Magnetic Field model, GPS
+   satellite orbits for better operation; say VLAcatalog for part operations
+c. data for demo and test programs (e.g. test MSs, FITS files) that will
+   become part of the distributed system (maybe optionally). Apart
+   from data for tests of conversions (FITS reader e.g.), this data
+   will be in Table format. 
+
+A fourth category are the '.out', '.in' and '.exec' files for test
+programs of C++ modules. They will not be part of any user distributed
+system. This data will be part of the source code only.
+
+2. Current handling
+
+Currently data is all in the source tree, distributed in data, apps
+and implement directories. The major drawbacks:
+- - size for inhales (especially after changes)
+- - update of data (e.g. for dUt half-weekly) entails for somebody the
+  sequence checkin-update-checkout, and for all other sites checkout
+- - no mechanism for binary distributions to include the data
+- - no standard placement
+
+3. Proposed handling
+
+- - Data repository at central site
+
+All data as described in 1. resides in the aips++ ftp pub area. It can
+be either in its own /data area, or as an import/data area (I have a
+slight preference for the former). The data directory has two level
+sub-directories. The first one will be the package (aips, dish etc), the
+second one the type of data (test, optional, mandatory).
+No selection within the package/sub is possible.
+Examples:
+- leap seconds available in aips/mandatory
+- DE200 ephemeris available in data/aips/optional
+- VLA calibrator list in data/synthesis/mandatory (or data/nrao/mandatory?)
+- GPS satellite orbits in data/aips/optional
+
+Observatory local data (say GPS data monitored at Onservatory in a region
+around observatory) belongs at the observatory.
+
+Data is not part of the RCS system, but part of the regular central backup.
+
+
+- - Data repository at user sites
+
+In the aips++ tree a data directory exists at the 'docs' level. It
+could be argued that it should be at the 'bin' level (like libexec),
+but it is more natural at the former one (data will be identical for
+all installations, as, by the way, it should be for libexec). The
+test/mandatory/optional level suggested above should not be present. It is
+also probably advisable (to keep installation configuration to a
+minimum) not to have the package level either.
+
+- - Data manipulation
+
+. new data files are checked in into the ftp area by the designer. If
+  that is not possible for security or other reasons, it could be
+  checked in into a data/ tree in the master, and transferred by some
+  exhale type mechanism.
+. at the central sites cron jobs run to update files that have to be
+  updated at regular intervals (like most of the Measures data). It is
+  a matter of policy whether this update runs on the ftp area (my
+  preference, I think), or on the master copy, if it exists.
+. in making a binary distribution, data from the data/mandatory is
+  included in the distribution.
+. data from the data/{optional,test} tree is transferred by selections in the
+  initial configure script, or by using a separate update script (with
+  selection options for package and type.
+. files are maintained in a gzipped format on the ftp area. The most current
+  one has the proper name (say TAI_UTC). The previous version is available as
+  TAI_UTC.yymmdd.gz
+
+Expected Impact:
+
+The following system changes have to be made:
+- - provide appropiate directory trees in ftp and master and user areas,
+  bearing probably in mind a future directory restructuring 
+- - make appropiate changes to binary-maker; exhale, inhale, mktree and
+  comparable scripts
+- - change configure script
+- - provide one or more cron jobs for updating (this should maybe also
+  send a mail message to a list if update done on a table)
+- - provide a user (at aips2adm level I suppose) with scripts to
+  download selectable parts of the data
+
+The proposed changes will make it easier for an end-user to install
+and maintain an up-to-date aips++ system. It is clear that it also is
+a first step towards a more operational attitude of the project, which
+will, of course, again use limited resources.  The scheme will only
+work if the ftp area is up-to-date in all areas. In that respect I
+just noticed that the import area contains old versions. Among others
+Glish version 2.5; wcslib 2.3.  ao,
+
+Proposed documentation changes:
+
+- - update system manual to reflect changes and additions
+- - update installation manual (if and when)
+- - add some comments about data files in either Cookbook or starting
+  aips++
+
+
+
+

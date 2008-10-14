@@ -1,0 +1,159 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: calmanager.help,v 19.1 2004/08/25 01:23:11 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+
+\begin{document}
+
+\begin{ahobject}{calibrationmanager}{Data manager for calibration data items}
+
+\ahinclude{calmanager.g}
+\ahcategory{aips}
+
+\ahcategory{map}
+
+   %
+   %ahkeyword registers module keywords
+   %
+\ahkeyword{map}{}
+\ahkeyword{calibration}{}
+
+\ahmethods{}
+
+%
+%
+
+%%\medskip
+%%\noindent{\bf Summary}
+
+\bigskip
+{\bf Overview of {\tt calibrationmanager} tool functions}
+
+A calibration data item is a data item representing different forms of
+applied calibration.  The calibration data manager allows the
+creation of calibration data items of the following type:
+
+\begin{itemize}
+
+\item \ahlink{general}{map:calibrationmanager.general} - a calibration
+data item of general type, formed by specifying a calibration table
+name along with general selection and interpolation parameters.
+
+\item \ahlink{vp}{map:calibrationmanager.vp} - a voltage pattern
+calibration data item, applied in the image plane, and formed from a
+default beam response or from a specified voltage pattern table.
+
+\end{itemize}
+
+
+\begin{ahconstructor}{calibrationmanager}{Create a calibration data manager}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{{\tt calibrationmanager tool} or fail}
+\begin{ahdescription}
+
+Constructs a calibration data manager, which can be used to create calibration
+data items of the enumerated types. The default calibration data manager is
+called {\tt dcm}, and is created when the the file {\tt
+calibrationmanager.g} is included.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+mycm := calibrationmanager()
+\end{verbatim}
+
+This creates a calibration manager called {\tt mycm}.
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+%%% Functions
+
+\begin{ahfunction}{general}{Create a general calibration data item}
+\begin{ahargs}
+  \ahaddarg{t}{Interpolation interval (sec)}{0.0}{Float}
+  \ahaddarg{table}{Name of calibration table}{}{String}
+  \ahaddarg{select}{Calibration table TaQL selection}{}{String}
+\end{ahargs}
+\ahreturns{{\tt calibration data item} or fail}
+
+\begin{ahdescription}
+
+This function creates a calibration data item from a specified
+calibration table name, associated TaQL selection string, and an
+interpolation interval (set to zero to use the existing time sampling
+in the calibration table).
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mycm:= calibrationmanager();
+item1:= mycm.general(t=0.0, table='cal1.gcal', select='FIELD_NAME=="3C84"')
+\end{verbatim}
+
+Create a calibration data item {\tt item1} representing calibration by
+the table "cal1.gcal", selected only for solutions obtained on 3C84,
+and interpolated at the current calibration time sampling.
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{vp}{Create a voltage pattern calibration data item}
+\begin{ahargs}
+   \ahaddarg{usedefaultvp}{Look up the default VP for this telescope and frequency?}{T}{Bool}
+   \ahaddarg{vptable}{If usedefaultvp is false, provide a VP Table made with vpmanager}{}{String}
+   \ahaddarg{dosquint}{Activate the beam squint in the VP model}{True}{Bool}
+   \ahaddarg{parangleinc}{Parallactice angle increment for squint application}{360deg}{Quantity}
+\end{ahargs}
+\ahreturns{{\tt calibration data item} or fail}
+
+\begin{ahdescription}
+
+This function creates a voltage pattern calibration data item from
+either a default beam response, or from a voltage pattern table
+created by the \ahlink{vpmanager}{imager:vpmanager}. This image-plane
+correction is applied during imaging; especially in mosaicing.
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+mycm:= calibrationmanager();
+item1:= mycm.vp(usedefaultvp=T, dosquint=F);
+\end{verbatim}
+
+Create a calibration data item {\tt item1} representing default
+voltage pattern calibration with the squint term disabled.
+
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+\end{document}
+
+

@@ -1,0 +1,867 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: newsimulator.help,v 19.9 2005/07/22 16:36:41 ttsutsum Exp $
+\begin{ahmodule}{newsimulator}{Module for simulation of telescope data}
+\ahinclude{newsimulator.g}
+
+\begin{ahdescription} 
+
+{\tt newsimulator} provides a unified interface for simulation of
+telescope processing. It can create a MeasurementSet from scratch or
+read in an existing MeasurementSet, it can predict synthesis data onto
+the (u,v) coordinates or single dish data onto (ra,dec) points, and it
+can corrupt this data through Gaussian errors or through specific
+errors residing in (anti-) calibration tables.
+
+{\bf {\tt newsimulator} is substantially different from (and better than)
+\ahlink{simulator}{simulator}. Scripts written for one will not work
+for the other.}
+
+In the observing phase, {\tt newsimulator} tries to act like a
+(simple) telescope. You first make a {\tt newsimulator} tool, with the
+name of the MeasurementSet that you wish to construct. Next you use
+the various {\tt set*} methods to set up the observing (sources,
+spectral windows, {\em etc.}). Each such setup should be given a
+unique name that will be used in the next step. Then you call the {\tt
+  observe} method for each observing scan you wish to make. Here you
+specify the source name, spectral windoow name, and observing
+times. After this, you have a MeasurementSet that is complete but
+empty. In the next phase, you fill the MeasurementSet with data from a
+model and then corrupt the measurements (if desired). To fill it in
+with a model, use the predict method. Finally, to apply errors, first
+set up the various effects using the relevant {\tt set*} methods, and
+then call corrupt.
+
+Some important points (mostly for the {\em cognoscenti}):
+\begin{itemize}
+\item One call to {\tt observe} generates one scan (all rows have
+the same SCAN\_NUMBER).
+\item The start and stop times specified to {\tt observe} need not be
+  contiguous and so one can simulate antenna drive times.
+\item Currently there is no facility for patterns of observing, such
+  as mosaicing, since it is easy to do this via sequences of calls of
+  {\tt observe}.
+\item The heavy duty columns (DATA, FLAG, IMAGING\_WEIGHT, {\em etc.}
+  are tiled. New tiles are generated for each scan. Thus the TSM files
+  will not get very large.
+\end{itemize}
+
+{\tt newsimulator} changes some columns to the MeasurementSet to store
+results of processing. The following columns in the MS are
+particularly important:
+\begin{description}
+\item[DATA] The original observed visibilities are in a column
+called DATA. These are normally not altered by any processing in
+\aipspp. However, this simulation program does overwrite these
+values.
+\item[CORRECTED\_DATA] During a calibration process, as carried out by
+{\em e.g.} \ahlink{calibrater}{calibrater}, the visibilities may be
+corrected for calibration effects. This corrected visibilities are
+stored in a column CORRECTED\_DATA which is created on demand.
+\item[MODEL\_DATA] During various phases of processing, the
+visibilities as predicted from some model are required. These 
+model visibilities are stored in a column MODEL\_DATA. The 
+\ahlink{ft}{imager:imager.ft} function of the \ahlink{imager}{imager:imager}
+tool should be used to calculate the model visibility for a
+model image or \ahlink{componentmodels}{componentmodels}.
+\end{description}
+
+Standard tools such as the \ahlink{table}{table} module and the
+\ahlink{ms}{ms} can be used to access and possibly change these (and
+all other) columns.
+
+\end{ahdescription}
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{newsimulator}{Tool for simulation}
+\begin{ahdescription}
+newsimulator is a tool that performs simulation of synthesis data, including
+(optionally) creation of a MeasurementSet, prediction of model data, and
+corruption by various physical effects.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{newsimulator}{Construct a newsimulator tool}
+\begin{ahdescription}
+This is used to construct {\tt newsimulator} tools.  A newsimulator tool
+can either be instantiated from an existing MeasurementSet, predicting
+and/or corrupting data on the given coordinates, or it can be used to
+create a fundamentally new MeasurementSet from descriptions of the
+array configuration and the observational parameters.  This
+is useful for making a newsimulator
+tool which will make a MeasurementSet from scratch.  In order to
+do this, you must also run {\tt setconfig}, {\tt setfield}, 
+{\tt setspwindow}, {\tt setfeed}, and {\tt settimes}.  Creating the
+actual MS is performed by {\tt observe}.  Data can be {\tt predict}-ed
+and then {\tt corrupted}-ed.  In this
+example, we read in the antenna coordinates from an ASCII file:
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ms}{MeasurementSet to be created}{'MS'}{Table name}
+\end{ahargs}
+\ahreturns{newsimulator tool}
+\begin{ahexample}
+\begin{verbatim}
+  tabname := 'VLAC.LOCAL.TAB';  asciifile := 'VLAC.LOCAL.STN'
+  mytab := tablefromascii(tabname, asciifile);
+  xx:=[]; yy:=[]; zz:=[]; diam:=[];
+  xx := mytab.getcol('X');  
+  yy := mytab.getcol('Y');
+  zz := mytab.getcol('Z');
+  diam := mytab.getcol('DIAM');
+#
+  mysim := newsimulator('NEW1.ms');
+# do configuration
+  posvla := dm.observatory('vla');  #  dm.observatory('ALMA') also works!
+  mysim.setconfig(telescopename='VLA', x=xx, y=yy, z=zz, dishdiameter=diam, 
+	        mount='alt-az', antname='VLA',
+                coordsystem='local', referencelocation=posvla);
+
+# Initialize the spectral windows    
+  mysim.setspwindow(spwname='CBand', freq='5GHz',
+		    deltafreq='50MHz',
+		    freqresolution='50MHz',
+		    nchannels=1,
+		    stokes='RR RL LR LL');
+  mysim.setspwindow(spwname='LBand', freq='1.420GHz',
+		    deltafreq='3.2MHz',
+		    freqresolution='3.2MHz',
+		    nchannels=32,
+		    stokes='RR LL');
+  
+  
+# Initialize the source and calibrater
+  mysim.setfield(sourcename='My cal',
+		 sourcedirection=dm.direction('J2000','00h0m0.0','+45.0.0.000'),
+		 calcode='A');
+  mysim.setfield(sourcename='My source',
+		 sourcedirection=dm.direction('J2000','01h0m0.0','+47.0.0.000'));
+  
+  mysim.setlimits(shadowlimit=0.001, elevationlimit='8.0deg');
+  mysim.setauto(autocorrwt=0.0);
+
+  mysim.settimes(integrationtime='10s', usehourangle=F, referencetime=dm.epoch('utc', 'today'));
+
+  mysim.observe('My cal', 'LBand', starttime='0s', stoptime='300s');
+  mysim.observe('My source', 'LBand', starttime='310s', stoptime='720s');
+  mysim.observe('My cal', 'CBand', starttime='720s', stoptime='1020s');
+  mysim.observe('My source', 'CBand', starttime='1030s', stoptime='1500s');
+
+  mysim.setdata(spwid=1, fieldid=1);
+  mysim.predict(modelimage='M31.MOD');
+  mysim.setdata(spwid=2, fieldid=2);
+  mysim.predict(modelimage='BigLBand.MOD');
+  mysim.close();
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahconstructor}{newsimulatorfromms}{Construct a newsimulator tool from a MS}
+\begin{ahdescription}
+This is used to construct {\tt newsimulator} tools operating on
+an existing MS.  Data can be predicted and/or corrupted on the MS's given coordinates.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ms}{MeasurementSet to be processed}{'MS'}{Table name}
+\end{ahargs}
+\ahreturns{newsimulator tool}
+\begin{ahexample}
+\begin{verbatim}
+mysim := newsimulatorfromms('3C273XC1.MS');
+mysim.predict('3C273XC1.modelImage');
+mysim.setnoise(simplenoise='10mJy');
+mysim.setgain(interval='100s', amplitude=[0.01, 0.01]);
+mysim.corrupt();
+mysm.close();
+
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+%%%%%%%%   Begin basic functions
+
+\begin{ahfunction}{close}{Close the newsimulator tool}
+\begin{ahdescription}
+This is used to close {\tt newsimulator} tools. Note that the
+data is written to disk. This is a synonym for done.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{Done}{Close the newsimulator tool}
+\begin{ahdescription}
+This is used to close and {\tt newsimulator} tools. Note that the
+data is written to disk. This is a synonym for close.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{name}{Provide the name of the attached MeasurementSet}
+\begin{ahdescription}
+Returns the name of the attached MeasurementSet.
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{summary}{Summarize the current state}
+\begin{ahdescription}
+Writes a summary of the properties of the newsimulator to the
+default logger.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{String or fail}
+\begin{ahdescription}
+This function returns the string `newsimulator'.  It is used so that  in
+a script, you can make sure this \glish\ variable is a newsimulator
+\tool.
+\end{ahdescription}
+\end{ahfunction}
+
+
+%%%%%%%%   Begin create functions
+
+\begin{ahfunction}{settimes}{Set integration time, {\em etc.}}
+geg\begin{ahdescription} The start and stop times are referenced to
+{\tt referencetime}.  Use either starttime/stoptime or startha/stopha.
+If the hour angles are specified, then the start and stop times are
+calculated such that the start time is later than the reference time,
+but less than one day later.  The hour angles refer to the first
+source observed.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{integrationtime}{Integration time}{'10s'}{Quantity}
+\ahaddarg{usehourangle}{Use starttime/stoptime as hour angles - else they are referenced to referencetime}{T}{Bool}
+\ahaddarg{referencetime}{Reference time for starttime and stoptime}{'50000d'}{Epoch}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{observe}{Observe a given configuration}
+\begin{ahdescription}
+Observe a given source with a given spectral window for the specified
+times, including start, stop, integration, and gap times.  The start
+and stop times are referenced to {\tt referencetime}.  Use either
+starttime/stoptime or startha/stopha.  If the hour angles are
+specified, then the start and stop times are calculated such that the
+start time is later than the reference time, but less than one day
+later.  The hour angles refer to the first source observed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sourcename}{Name of source or field (must be specified)}{None}{String}
+\ahaddarg{spwname}{Unique user-supplied name for this spectral window}{None}{String}
+\ahaddarg{starttime}{Start time referenced to referenceepoch}{'0s'}{Quantity}
+\ahaddarg{stoptime}{Stop time referenced to referenceepoch}{'3600s'}{Quantity}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setlimits}{Set limits for observing}
+\begin{ahdescription}
+Data are flagged for two conditions:
+\begin{description}
+\item[Below elevation limit] If either of the antennas point below the
+  specified elevation limit then the data are flagged. The elevation
+  is calculated correctly for antennas at different locations (such as
+  occurs in VLBI).
+\item[Shadowing] If one antenna shadows another such that the
+  fractional (geometric) blockage is greater than the specified limit
+  then the data are flagged. No correction for blockage is made for
+  shadowed but non-flagged points.
+\end{description}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{shadowlimit}{Maximum fraction of geometrically shadowed area before flagging occurs}{1e-6}{Double}
+\ahaddarg{elevationlimit}{Minimum elevation angle before flagging occurs}{'10deg'}{Quantity}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setauto}{Set autocorrelation weight}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{autocorrwt}{Weight to assign autocorrelations (0=none)}{0.0}{Float}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setconfig}{Set the antenna configuration}
+\begin{ahdescription}
+Set the positions of the antennas.  Note that the name of the telescope will
+control which voltage pattern is applied to the data.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{telescopename}{Name of the telescope we are simulating (determines VP)}{'VLA'}{String}
+\ahaddarg{x}{Vector of x values of all antennas [currently m]}{[]}{Vector}
+\ahaddarg{y}{Vector of y values of all antennas [currently m]}{[]}{Vector}
+\ahaddarg{z}{Vector of z values of all antennas [currently m]}{[]}{Vector}
+\ahaddarg{dishdiameter}{Vector of diameters of all antennas [currently m]}{[]}{Vector}
+\ahaddarg{mount}{Vector of mount types of all antennas (recognized mounts are 'ALT-AZ', 'EQUATORIAL', 'X-Y', 'ORBITING', 'BIZARRE'}{[]}{Vector of strings}
+\ahaddarg{antname}{Vector of names of all antennas}{[]}{Vector of strings}
+\ahaddarg{coordsystem}{Coordinate system of antenna positions [x,y,z]}{'global'}
+{String: 'global' | 'local' | 'longlat'}
+\ahaddarg{referencelocation}{Reference location [required for local coords]}{}{MPosition}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+ diam := [25, 25, 25, 25, 25]
+ xx := [50, 100, 150, 200, 250]
+ yy := [2, -5, -20, -50, -100]
+ zz := [-0.5, -1.0, -1.5, -2.0, -2.5]
+ posvla := dm.observatory('vla');
+ mysim.setconfig(telescopename='VLA', x=xx, y=yy, z=zz, dishdiameter=diam, 
+                mount='alt-az', antname='VLA',
+                coordsystem='local', referencelocation=posvla);
+\end{verbatim}
+\end{ahexample}
+In this example we configure an array  of 5 dishes set at the VLA position. 
+We use the measures tool to give us the location of the vla.
+\end{ahfunction}
+
+\begin{ahfunction}{setknownconfig}{Set the antenna configuration to a
+known array}
+\begin{ahdescription}
+Sets the configuration to a known array such as VLAA, VLBA, EVN or
+ATCA6.0A. The arrays are those known to
+\ahlink{newsimhelper}{newsimhelper}. All the information needed by
+setconfig is filled in.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{arrayname}{Name of the telescope configurationwe are simulating}{'VLAA'}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+ mysim.setknownconfig('ATCA6.0A');
+\end{verbatim}
+\end{ahexample}
+In this example we configure an array  of 5 dishes set at the VLA position. 
+We use the measures tool to give us the location of the vla.
+\end{ahfunction}
+
+\begin{ahfunction}{setfeed}{Set the feed parameters}
+\begin{ahdescription}
+The goal is to let the feed parameters be specified for each antenna and
+each spectral window.  At this moment, you only have the choice between
+'perfect R L' and 'perfect X Y' (i.e., you cannot invent your own
+corrupted feeds yet).  Doesn't need to be run if you want perfect R and
+L feeds.  
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode for specifying feed parameters (currently, perfect only)}{'perfect R L'}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setfield}{Set one or more observed fields}
+\begin{ahdescription}
+Set one or more observed fields, including name, coordinates, calibration code.
+Can be invoked multiple times for a complex observation.
+Must be invoked at least once before {\tt observe}.
+
+If the distance to the object is set then the phase term includes a
+curvature for the near-field effect at the center of the image.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sourcename}{Name of source or field (must be specified)}{'unknown'}{String}
+\ahaddarg{sourcedirection}{Coordinates of source to be observed}{}{MDirection}
+\ahaddarg{calcode}{Calibration code}{''}{String}
+\ahaddarg{distance}{Distance to the object}{'0km'}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+  mysim.setconfig(telescopename='VLA', x=xx, y=yy, z=zz, dishdiameter=diam, 
+                mount='alt-az', antname='VLA',
+                coordsystem='local', referencelocation=dm.observatory('vla'));
+
+  mysim.setspwindow(spwname='XBAND', freq='8GHz', deltafreq='50MHz',
+                   freqresolution='50MHz', nchannels=1, stokes='RR
+                   LL');
+  dir0 := dm.direction('B1950',  '16h00m0.0', '50d0m0.000')
+  mysim.setfield(sourcename='SIMU1', sourcedirection=dir0,
+                integrations=1, xmospointings=1, ymospointings=1,
+                mosspacing=1.0);
+  mysim.observe('SIMU1', 'XBAND', integrationtime='10s', usehourangle=T,
+                starttime='0s', stoptime='3600s', 
+                referencetime=reftime);
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setmosaicfield}{Set observed mosaic fields}
+\begin{ahdescription}
+Set mosaic fields by internally invoking {\tt setfield} multiple times.
+Currently only handle a rectangular mosaicing pattern.
+Either setfield or setmosaicfield must be invoked at least once before {\tt observe}.
+                                                                                
+If the distance to the object is set then the phase term includes a
+curvature for the near-field effect at the center of the image.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sourcename}{Name of source or field (must be specified).}{'unknown'}{String}
+\ahaddarg{calcode}{Calibration code}{''}{String}
+\ahaddarg{fieldcenter}{Coordinates of mosaic field center}{}{MDirection}
+\ahaddarg{xmosp}{Number of mosaic pointing in horizontal direction}{1}{Int}
+\ahaddarg{ymosp}{Number of mosaic pointing in vertical direction}{1}{Int}
+\ahaddarg{mosspacing}{Spacing between mosaic pointings}{'1arcsec'}{Quantity}
+\ahaddarg{distance}{Distance to the object}{'0km'}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+  mysim.setconfig(telescopename='VLA', x=xx, y=yy, z=zz, dishdiameter=diam,
+                mount='alt-az', antname='VLA',
+                coordsystem='local', referencelocation=dm.observatory('vla'));
+                                                                                
+  mysim.setspwindow(spwname='XBAND', freq='8GHz', deltafreq='50MHz',
+                   freqresolution='50MHz', nchannels=1, stokes='RR
+                   LL');
+  dir0 := dm.direction('B1950',  '16h00m0.0', '50d0m0.000')
+  mysim.setmosaicfield(sourcename='SIMU1', fieldcenter=dir0,
+                       xmosp=2, ymosp=2, mosspacing='154.5arcsec');
+  mysim.settimes(integrationtime='10s');
+  mysim.observe('SIMU1_1', 'XBAND', starttime='0s', stoptime='100s');
+  mysim.observe('SIMU1_2', 'XBAND', starttime='110s', stoptime='210s');
+  mysim.observe('SIMU1_3', 'XBAND', starttime='220s', stoptime='320s');
+  mysim.observe('SIMU1_4', 'XBAND', starttime='330s', stoptime='430s');
+                                                                                
+\end{verbatim}
+\end{ahexample}
+In this example, a 2x2 mosaic pattern is set centered around the direction 
+specified (dir0). The setmosaicfield name each mosaic field with i
+sourcename+'\_i', where i= 1..4.
+\end{ahfunction}
+
+\begin{ahfunction}{setspwindow}{Set one or more spectral windows}
+\begin{ahdescription}
+Set one or more spectral windows for the observations, including starting
+frequency, number of channels, channel increment and resolution, and stokes
+parameters observed.  Can be invoked multiple times for a complex observation.
+Must be invoked at least once before {\tt observe}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwname}{Unique user-supplied name for this spectral window}{'XBAND'}{String}
+\ahaddarg{freq}{Starting frequency}{'8.0GHz'}{Quantity}
+\ahaddarg{deltafreq}{Frequency increment per channel}{'50.0MHz'}{Quantity}
+\ahaddarg{freqresolution}{Frequency resolution per channel}{'50.0MHz'}{Quantity}
+\ahaddarg{nchannels}{Number of channels}{1}{Int}
+\ahaddarg{stokes}{Stokes types to simulate}{'RR LL'}{String}
+\end{ahargs}
+
+\begin{ahexample}
+
+To simulate a two spectral window (or two IF's in VLA jargon) data
+set, use setpwid as follows (here we are simulating 16 channels, 50MHz
+wide channel for each spectral window)
+\begin{verbatim}
+
+mysim.setspwindow(spwname='CBAND', freq='2GHz', deltafreq='50MHz',
+                   freqresolution='50MHz', nchannels=16, stokes='RR LL');
+
+mysim.setspwindow(spwname='SBAND', freq='5GHz', deltafreq='50MHz',
+                   freqresolution='50MHz', nchannels=16, stokes='RR LL');
+
+
+\end{verbatim}
+
+Note that the spwname is used in {\tt observe} to determine which spectral window
+is used.
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setdata}{Set the data parameters selection for subsequent processing}
+\begin{ahdescription}
+This setup tool function selects which data are to be used
+subsequently. After invocation of setdata, only the selected data are
+operated on. 
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwid}{Spectral Window Ids (1 relative) to select}{1}{Vector of Ints}
+\ahaddarg{fieldid}{Field Ids (1 relative) to select}{1}{Vector of Ints}
+\ahaddarg{msselect}{TQL select string applied as a logical "and" with the other selections}{}{String}
+\ahaddarg{async}{Run asynchronously in the background?}{!dowait}{Bool}
+\end{ahargs}
+\end{ahfunction}
+
+%%%%%%%%   Begin predict functions
+
+\begin{ahfunction}{predict}{Predict astronomical data from an image}
+\begin{ahdescription}
+Predict astronomical data from an image.  The (u,v) coordinates already
+exist, either from a MeasurementSet we have read in or by generating the
+MeasurementSet coordinates and empty data through {\tt create()}.  We
+simply predict onto these coordinates.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{modelImage}{Name of image from which to predict visibilities}{''}{String}
+\ahaddarg{complist}{Name of component list}{}{String}
+\ahaddarg{incremental}{Add this model to the existing Data Visibilities?}{F}{Bool}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setoptions}{Set various processing options}
+\begin{ahdescription}
+
+For most of these, set the options for {\tt predict} details.  See also {\tt imager} help
+for more details.
+
+To simulate single dish data, use gridft=SD and gridfunction=PB.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ftmachine}{Fourier transform machine}{'gridft'}{String: 'gridft'|'SD'}
+\ahaddarg{cache}{Size of gridding cache in complex pixels}{0}{Int}
+\ahaddarg{tile}{Size of a gridding tile in pixels (in 1 dimension)}{16}{Int}
+\ahaddarg{gridfunction}{Gridding function}{'SF'}{String: 'SF'|'BOX'|'PB'}
+\ahaddarg{location}{Location used in phase rotations}{}{position measure}
+\ahaddarg{padding}{Padding factor in image plane (>=1.0)}{1.3}{Float}
+\ahaddarg{facets}{Number of facets}{1}{Int}
+\ahaddarg{maxdata}{Maximum data to write to a single TSM file (MB)}{2000}{Double}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysim.setoptions(cache=10000000, tile=32, 
+gridfunction='BOX', dm.location('vla'))
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{setvp}{Set the voltage pattern model for subsequent processing}
+\begin{ahdescription}
+Set the voltage pattern model (and hence, the primary beam) used for a Telecope.
+There are currently two ways to set the voltage pattern: by using the extensive
+list of defaults which the system knows about, or by creating a voltage pattern
+description with the \ahlink{vpmanager}{imager:vpmanager}.  The default voltage patterns
+include both a high and a low frequency VP for the WSRT, a VP for each observing
+band at the AT, several VP's for the VLA, including the approrpiate beam squint for
+each observing band, and  Gaussian for the BIMA dishes.
+If you are simulating a telescope which doesn't yet exist, you will need to supply
+a model voltage pattern using the \ahlink{vpmanager}{imager:vpmanager}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{dovp}{Multiply by the voltage pattern (ie, primary beam) when simulating }{T}{Bool}
+\ahaddarg{usedefaultvp}{Look up the default VP for this telescope and frequency?}{T}{Bool}
+\ahaddarg{vptable}{If usedefaultvp is false, provide a VP Table made with vpmanager}{}{Table}
+\ahaddarg{dosquint}{Activate the beam squint in the VP model}{T}{Bool}
+\ahaddarg{parangleinc}{Parallactice angle increment for squint application}{360deg}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+imgr.setvp(dovp=T, usedefaultvp=F, 
+vptable='MyAlternateVLAPBModel.TAB', dosquint=F);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%   Begin corrupt functions
+
+\begin{ahfunction}{corrupt}{Corrupt the data with visibility errors}
+\begin{ahdescription}
+Add errors specified by the {\tt set} functions (such as noise, 
+gains, polarization leakage, bandpass, etc) to the synthesis data.
+This is only visibility-based effects, not image-plane effects such as
+pointing errors and voltage patterns, which get applied in {\tt predict}.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+MSNewsimulator mysim('3C273XC1.MS');
+mysim.predict('3C273XC1.FAKE.IMAGE');
+mysim.setnoise( mode='simplenoise', simplenoise='0.1Jy');
+mysim.setpa( mode='calculate');
+mysim.corrupt();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{reset}{Reset the corruption terms}
+\begin{ahdescription}
+Reset the visibility corruption terms: this means that {\tt corrupt}
+introduces no errors.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setbandpass}{Set the bandpasses}
+\begin{ahdescription}
+Set the level of bandpass errors. The error distributions are normal, mean
+zero, with the variances as specified. (Not yet implemented).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode of operation}{'calculate'}{String: 'calculate'|'table'}
+\ahaddarg{table}{Name of table}{''}{String}
+\ahaddarg{interval}{Coherence interval e.g. '1h'}{'1h'}{Quantity}
+\ahaddarg{amplitude}{Variances errors in amplitude and phase}{[0, 0]}{2-Vector of Double}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setgain}{Set the gains}
+\begin{ahdescription}
+Set the level of gain errors. The error distributions are normal, mean
+zero, with the variances as specified.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode of operation}{'calculate'}{String: 'calculate'|'table'}
+\ahaddarg{table}{Name of table}{''}{String}
+\ahaddarg{interval}{Coherence interval e.g. '10s'}{'10s'}{Quantity}
+\ahaddarg{amplitude}{Variances of errors in amplitude and phase}{[0, 0]}{2-Vector of Double}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setleakage}{Set the polarization leakage}
+\begin{ahdescription}
+Set the level of polarization leakage between feeds.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode of operation}{'calculate'}{String: 'calculate'|'table'}
+\ahaddarg{table}{Name of table}{''}{String}
+\ahaddarg{interval}{Coherence interval e.g. '5.0h'}{'5.0h'}{Quantity}
+\ahaddarg{amplitude}{Variance of pol leakage amplitude errors; currently, just real}{0.0}{Double}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setnoise}{Set the noise level}
+\begin{ahdescription}
+Set various system parameters from which the thermal (ie, random additive) noise level 
+will be calculated.  The noise will vary with dish diameter, antenna efficiency,
+system temperature, opacity, sky temperature, etc.  The noise will increase with
+the airmass if {\tt tau} is greater than zero.  The noise is calculated according to
+the {\it Brown Equation} (ie, R.L. Brown's calculation of MMA sensitivity, 3Oct95):
+\begin{equation}
+\Delta S = \frac{ 4 \sqrt{2} [ T_{rx}e^{\tau A} + T_{atm} ( e^{\tau A} - \epsilon_{l}) + T_{cmb}] }
+                {  \epsilon_{q} \epsilon_{a} \pi D^2 \sqrt{\Delta \nu \Delta t }}
+\end{equation}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode of operation}{'calculate'}{String: 'table'|'simplenoise'|'calculate'}
+\ahaddarg{table}{Name of noise table if not simplenoise or not calculated}{''}{String}
+\ahaddarg{simplenoise}{Level of noise if not Table or not Calculated}{'0.0Jy'}{Quantity}
+\ahaddarg{antefficiency}{antenna efficiency}{0.8}{Float}
+\ahaddarg{correfficiency}{Correlation efficiency}{0.85}{Float}
+\ahaddarg{spillefficiency}{Forward spillover efficiency}{0.85}{Float}
+\ahaddarg{tau}{Atmospheric Opacity}{0.0}{Float}
+\ahaddarg{trx}{Receiver temp (ie, all non-atmospheric Tsys contributions) [K]}{50}{Float}
+\ahaddarg{tatmos}{Temperature of atmosphere [k]}{250.0}{Float}
+\ahaddarg{tcmb}{Temperature of cosmic microwave background [K]}{2.7}{Float}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setpa}{Corrupt phase by the parallactic angle}
+\begin{ahdescription}
+Corrupt phase by the parallactic angle
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{mode}{Mode of operation}{'calculate'}{String: 'calculate'|'table'}
+\ahaddarg{table}{Name of table}{''}{String}
+\ahaddarg{interval}{Interval for parallactic angle application, e.g. '10s'}{'10s'}{Quantity}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{setseed}{Set the seed for the random number generator}
+\begin{ahdescription}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{seed}{Seed}{185349251}{Int}
+\end{ahargs}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahobject}{newsimhelper}{Tool to help newsimulator}
+\begin{ahdescription}
+{\tt newsimhelper} helps \ahlink{newsimulator}{newsimulator} by
+providing information such as antenna locations in a convenient
+form. {\tt newsimhelper} usually need not be called directly.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{newsimhelper}{Construct a newsimhelper tool}
+\begin{ahdescription}
+This is used to construct {\tt newsimhelper} tools. An optional
+argument is the name of a table containing the antenna locations drawn
+from Craig Walker's SCHED data file. Usually the table in the
+AIPS++ data repository (geodetic/SCHED\_locations) is adequate and
+should be used (the default).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{schedtable}{Table of antenna locations}{unset}{Table}
+\end{ahargs}
+\ahreturns{newsimhelper tool}
+\begin{ahexample}
+\begin{verbatim}
+include 'newsimhelper.g';
+- ns:=newsimhelper()
+- ns.getarrays()
+VLAA VLAB VLAC VLAD VLBA EVN ATCA6.0A ATCA6.0B ATCA6.0C ATCA6.0D
+ATCA1.5A ATCA1.5B ATCA1.5C ATCA1.5D ATCA0.75A ATCA0.75B ATCA0.75C
+ATCA0.75D ATCA0.375 ATCA0.210 ATCA0.122A ATCA0.122B ATCA0.244 
+- ns.getarray('ATCA0.244')
+[names=ATCA_01 ATCA_03 ATCA_05 ATCA_07 ATCA_09 ATCA_37, diam=[22 22 22
+22 22 22] , telescope=ATCA0point244, x=[-4.75245e+06 -4.75242e+06
+-4.75239e+06 -4.75235e+06 -4.75232e+06 -4.7494e+06] , y=[2.79033e+06
+2.79038e+06 2.79043e+06 2.79048e+06 2.79054e+06 2.7955e+06] ,
+z=[-3.20049e+06 -3.20049e+06 -3.20049e+06 -3.20049e+06 -3.20049e+06
+-3.20049e+06] , mount=alt-az alt-az alt-az alt-az alt-az alt-az,
+offset=[0 0 0 0 0 0] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+%%%%%%%%   Begin basic functions
+
+\begin{ahfunction}{close}{Close the newsimhelper tool}
+\begin{ahdescription}
+This is used to close {\tt newsimhelper} tools.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{String or fail}
+\begin{ahdescription}
+This function returns the string `newsimhelper'.  It is used so that  in
+a script, you can make sure this \glish\ variable is a newsimhelper
+\tool.
+\end{ahdescription}
+\end{ahfunction}
+
+
+%%%%%%%%   Begin create functions
+
+\begin{ahfunction}{getarrays}{Get all arrays known to newsimhelper}
+\begin{ahdescription} 
+{\tt newsimhelper} contains definitions of various arrays. These are
+defined in terms of the names (the DBNAME column) in the
+SCHED\_locations file located in the data repository geodetic area.
+The names currently known are:
+
+VLAA VLAB VLAC VLAD VLBA EVN ATCA6.0A ATCA6.0B ATCA6.0C ATCA6.0D
+ATCA1.5A ATCA1.5B ATCA1.5C ATCA1.5D ATCA0.75A ATCA0.75B ATCA0.75C
+ATCA0.75D ATCA0.375 ATCA0.210 ATCA0.122A ATCA0.122B ATCA0.244 
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getarray}{Get a specific array}
+\begin{ahdescription} 
+{\tt newsimhelper} contains definitions of various arrays. These are
+defined in terms of the names (the DBNAME column) in the
+SCHED\_locations file located in the data repository geodetic area.
+The names currently known are:
+
+VLAA VLAB VLAC VLAD VLBA EVN ATCA6.0A ATCA6.0B ATCA6.0C ATCA6.0D
+ATCA1.5A ATCA1.5B ATCA1.5C ATCA1.5D ATCA0.75A ATCA0.75B ATCA0.75C
+ATCA0.75D ATCA0.375 ATCA0.210 ATCA0.122A ATCA0.122B ATCA0.244 
+
+{\tt getarray} returns a record containing the information in
+a format ready to be used in \ahlink{newsimulator}{newsimulator}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{arrayname}{Name of array}{'VLAD'}{String}
+\end{ahargs}
+\ahreturns{newsimhelper tool}
+\begin{ahexample}
+\begin{verbatim}
+include 'newsimhelper.g';
+- ns:=newsimhelper()
+- ns.getarrays()
+VLAA VLAB VLAC VLAD VLBA EVN ATCA6.0A ATCA6.0B ATCA6.0C ATCA6.0D
+ATCA1.5A ATCA1.5B ATCA1.5C ATCA1.5D ATCA0.75A ATCA0.75B ATCA0.75C
+ATCA0.75D ATCA0.375 ATCA0.210 ATCA0.122A ATCA0.122B ATCA0.244 
+- ns.getarray('ATCA0.244')
+[names=ATCA_01 ATCA_03 ATCA_05 ATCA_07 ATCA_09 ATCA_37, diam=[22 22 22
+22 22 22] , telescope=ATCA0point244, x=[-4.75245e+06 -4.75242e+06
+-4.75239e+06 -4.75235e+06 -4.75232e+06 -4.7494e+06] , y=[2.79033e+06
+2.79038e+06 2.79043e+06 2.79048e+06 2.79054e+06 2.7955e+06] ,
+z=[-3.20049e+06 -3.20049e+06 -3.20049e+06 -3.20049e+06 -3.20049e+06
+-3.20049e+06] , mount=alt-az alt-az alt-az alt-az alt-az alt-az,
+offset=[0 0 0 0 0 0] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getallstations}{Get all stations known to newsimhelper}
+\begin{ahdescription} 
+{\tt newsimhelper} contains definitions of various arrays. These are
+defined in terms of the names (the DBNAME column) in the
+SCHED\_locations file located in the data repository geodetic area.
+The names currently known are:
+
+VLAA VLAB VLAC VLAD VLBA EVN ATCA6.0A ATCA6.0B ATCA6.0C ATCA6.0D
+ATCA1.5A ATCA1.5B ATCA1.5C ATCA1.5D ATCA0.75A ATCA0.75B ATCA0.75C
+ATCA0.75D ATCA0.375 ATCA0.210 ATCA0.122A ATCA0.122B ATCA0.244 
+
+{\tt getallstations} returns a string containing all station names
+known to {\tt newsimhelper}.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+include 'newsimhelper.g';
+- ns:=newsimhelper()
+- ns.getallstations()            
+ALGOPARK ARECIBO ATCA_01 ATCA_02 ATCA_03 ATCA_04 ATCA_05 ATCA_06
+ATCA_07 ATCA_08 ATCA_09 ATCA_10 ATCA_104 ATCA_104 ATCA_11 ATCA_12
+ATCA_13 ATCA_14 ATCA_15 ATCA_16 ATCA_17 ATCA_18 ATCA_19 ATCA_20
+ATCA_21 ATCA_22 ATCA_23 ATCA_24 ATCA_25 ATCA_26 ATCA_27 ATCA_28
+ATCA_29 ATCA_30 ATCA_31 ATCA_32 ATCA_33 ATCA_34 ATCA_35 ATCA_36
+ATCA_37 AZORES BLKBUTTE BR-VLBA BREST CAMB32 CARNUSTY CHLBOLTN CRIMEA
+DS14 DSS14 DSS15 DSS43 DSS45 DSS63 DSS65 EFLSBERG ELY FD-VLBA FORTLEZA
+FORTORD FORTORDS GBANK_TS GBT GGAO7108 GILCREEK GO GOLDMARS GOLDS_TS
+GOLDVENU GORF7102 GRASSE HALEAKAL HARTRAO HATCREEK HAYSTACK HN-VLBA
+HOBART26 HOFN HOHENFRG HOHNBERG HRAS_085 JB_Mk_2 JODLMKI KALYAZIN
+KARLBURG KASHIM34 KASHIMA KAUAI KOKEE KP-VLBA KP12 KWAJAL26 LA-VLBA
+MADRD_TS MADRID64 MARCUS MARPOINT MATERA MEDICINA METSAHOV MIZNAO10
+MK-VLBA MOJAVE12 MOPRA NL-VLBA NOBEY_6M NOTO NRAO140 NRAO20 NRAO85_1
+NRAO85_3 NYALES20 OHIGGINS ONSALA60 ONSALA85 OV-VLBA OVRO_130 OVRO_MMA
+PARKES PENTICTN PICOVEL PIETOWN PLATTVIL PRESIDIO PT_REYES RICHMOND
+ROBLD_TS ROBLED32 SANTIA12 SC-VLBA SESHAN25 SEST SHANGHAI TDBIN_TS
+TIDBIN64 TIGOCONC TIGOWTZL TORUN TOULOUSE TROMSONO TRYSILNO TSUKUBA
+URUMQI USSURIYSK USUDA_64 USUDA_TS VLA VLA_E1 VLA_E10 VLA_E12 VLA_E14
+VLA_E16 VLA_E18 VLA_E2 VLA_E20 VLA_E24 VLA_E28 VLA_E3 VLA_E32 VLA_E36
+VLA_E4 VLA_E40 VLA_E48 VLA_E5 VLA_E56 VLA_E6 VLA_E64 VLA_E7 VLA_E72
+VLA_E8 VLA_E9 VLA_MAS VLA_N1 VLA_N10 VLA_N12 VLA_N14 VLA_N16 VLA_N18
+VLA_N2 VLA_N20 VLA_N24 VLA_N28 VLA_N3 VLA_N32 VLA_N36 VLA_N4 VLA_N40
+VLA_N48 VLA_N5 VLA_N56 VLA_N6 VLA_N64 VLA_N7 VLA_N72 VLA_N8 VLA_N9
+VLA_OUT VLA_W1 VLA_W10 VLA_W12 VLA_W14 VLA_W16 VLA_W18 VLA_W2 VLA_W20
+VLA_W24 VLA_W28 VLA_W3 VLA_W32 VLA_W36 VLA_W4 VLA_W40 VLA_W48 VLA_W5
+VLA_W56 VLA_W6 VLA_W64 VLA_W7 VLA_W72 VLA_W8 VLA_W9 VNDNBERG WB_RT0
+WB_RT1 WB_RT2 WB_RT3 WB_RT4 WB_RT5 WB_RT6 WB_RT7 WB_RT8 WB_RT9 WB_Tied
+WESTFORD WETTZELL YEBES YELLOWKN YLOW7296 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+\end{ahmodule}

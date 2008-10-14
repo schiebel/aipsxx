@@ -1,0 +1,154 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: choice.help,v 19.2 2004/08/25 01:58:08 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+\begin{ahfunction}{choice}{Have a user select one of a number of choices}
+
+\ahinclude{choice.g}
+
+\ahkeyword{gui}
+
+\begin{ahdescription}
+
+Choice is used to have the user select one of several strings. It
+puts up a gui box with some descriptive text, and a button for each
+choice. A default choice can be indicated.  When left unset, the
+the first choice is the default. The default is used if it is not
+possible to put up a GUI or a timeout occurs.  
+
+This function is used by the tasking system, but might be of use to
+people writing their own scripts.
+
+The types, when specified, should be chosen from those known
+to the \ahlink{widgetserver}{widgets:widgetserver}.  These
+include ``plain'', ``action'', ``halt'', and ``dismiss''.
+When types is unset (its default value) all buttons will be ``plain''.
+
+When a default is specified, it indicates which element of choices
+is returned when no GUI can be displayed or a timeout occurs.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{description}{Descriptive text for the choices}{}{string}
+  \ahaddarg{choices}{One of these choices will be returned}{}{string array}
+  \ahaddarg{types}{Button types for choices}{unset}{string array}
+  \ahaddarg{default}{Which choice is the default one}{1}{integer}
+  \ahaddarg{interactive}{If interactive, use a GUI, otherwise return the first choice.}{}{boolean}
+  \ahaddarg{timeout}{How long to wait for the user to respond}{}{integer}
+  \ahaddarg{widgetset}{Which widgetserver to use}{dws}{widgetserver}
+\end{ahargs}
+\ahreturns{string}
+
+\begin{ahexample}
+\begin{verbatim}
+# all plain buttons, default choice is no
+result := choice('Do you want to quit?', ['no', 'yes'])
+if (result == 'yes') {print 'Bye!'; exit; };
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+# halt and dismiss button types, choice is yes
+result := choice('Do you want to quit?', ['no', 'yes'], 
+                 ['dismiss', 'halt'], 2)
+if (result == 'yes') {print 'Bye!'; exit;};
+\end{verbatim}
+\end{ahexample}
+
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{donechoice}{A choice dialog appropriate for done()}
+
+\ahinclude{choice.g}
+
+\ahkeyword{gui}
+
+\begin{ahdescription}
+This is a \ahlink{choice}{guiutils:choice} appropriate for use with
+a tool done function.  Done which may be invoked by pressing a 
+``Done'' button on the tool GUI.  Since done is used to destroy
+the tool, it is often desirable to ensure that the user really
+meant to invoke that function.  This function exists so that
+the choice dialog boxes used with done all have a similar
+appearance.  Only the descriptive text will vary.
+
+This function returns a boolean T if the user has pressed
+the "yes" button.  In all other cases, a F will be returned.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{description}{Descriptive text for the choices}{}{string}
+  \ahaddarg{widgetset}{Which widgetserver to use}{dws}{widgetserver}
+\end{ahargs}
+\ahreturns{boolean}
+
+\begin{ahexample}
+\begin{verbatim}
+amidone := donechoice();
+if (amidone) {print 'This tool has been destroyed';};
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{exitchoice}{A choice dialog appropriate for exit}
+
+\ahinclude{choice.g}
+
+\ahkeyword{gui}
+
+\begin{ahdescription}
+This is a \ahlink{choice}{guiutils:choice} appropriate for use with
+a GUI ``Exit'' button.  According to the GUI Guidelines, ``Exit'' is
+used to allow the user to exit from glish.   It is usually desirable 
+to ensure that the user really
+meant to exit glish.  This function exists so that
+the choice dialog boxes used with ``Exit'' all have the same
+appearance.
+
+This function returns a boolean T if the user has pressed
+the "yes" button.  In all other cases, a F will be returned.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{widgetset}{Which widgetserver to use}{dws}{widgetserver}
+\end{ahargs}
+\ahreturns{boolean}
+
+\begin{ahexample}
+\begin{verbatim}
+reallyexit := exitchoice();
+if (reallyexit) {print 'Bye!'; exit;};
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+\end{document}

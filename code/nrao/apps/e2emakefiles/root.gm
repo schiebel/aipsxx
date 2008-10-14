@@ -1,0 +1,28 @@
+#
+# Root make file
+#
+PIPESTATE	= pipelinestate
+VERSION		+= root.0.01
+#
+# This target must always be invoked
+#
+root:
+	glish global environ;
+	glish global e2edir := environ.E2EROOT;
+	glish shell('mkdir -p pipelinestate');
+	glish include "logger.g";
+	glish if(is_record(dl)) dl.screen();
+	glish global system;
+	glish system.output.pager := F;
+	glish include "servers.g";
+	glish whenever defaultservers.alerter()->["fail error"] do {
+	glish   print "Script exited because a server failed ", \$$value.value;
+	glish   exit(1);
+	glish };
+	glish include 'sysinfo.g';
+	glish for (f in field_names(sysinfo())) note(f, ":", sysinfo()[f]());
+	glish note('Pipeline makefile versions ${VERSION}');
+#
+# Simplest make rule
+#
+all: root

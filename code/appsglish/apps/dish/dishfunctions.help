@@ -1,0 +1,3151 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%
+
+{\bf User functions}
+
+\begin{ahfunction}{accum}{Add spectrum to the accumulator.}
+\begin{ahdescription}
+This function is used in averaging scans.  The spectrum stored in the 
+globalscan1 spectrum is added to the accumulator for later averaging.
+Optionally, a scan number or vector of scan numbers can be supplied to this
+function, and those will be added to the accumulator.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scans}{scan numbers to add to accumulator}{globalscan1}{integer or vector of integers}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+ d.sclear()           # clear the accumulator
+ d.getc(35)           # retrieve calibrated scan 35
+ d.accum()            # add the scan to the accumulator
+ d.getc(36)           # retrieve calibrated scan 36
+ d.accum()            # add the scan to the accumulator
+ d.ave()              # average scans in the accumulator
+ d.show()             # display the result on the plotter
+
+ Equivalently:
+
+ d.sclear()           # clear the accumulator
+ d.accum([35,36])     # add the scans to the accumulator
+ d.ave()              # average scans in the accumulator
+ d.show()             # display the result on the plotter
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{addstack}{Append new scans to the stack.}
+\begin{ahdescription}
+This function is used to add new scan numbers to the ``stack''.  The stack is
+a construct (simply a vector of integers) which is used to organize a list
+of scans which will be operated on in some common way.  Generally, it is used
+to assemble a list of scans which can then be averaged.
+\begin{ahargs}
+\ahaddarg{beg}{The beginning scan number}{F}{integer}
+\ahaddarg{end}{The ending scan number}{beg}{integer}
+\ahaddarg{inc}{the increment}{1}{integer}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+d.addstack(10,50,2)       # append even scans from 10 through 50 to the stack
+d.addstack(102)           # append scan 102 to the stack
+d.addstack(105,108)       # append scans 105 through 108 to the stack
+d.aver(d.tellstack())     # average all scans in the stack
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ave}{Average the contents of the accumulator.}
+\begin{ahdescription}
+This function is used in averaging scans.  It averages all contents of the
+accumulator and stores the result in the globalscan1 record.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+ d.sclear()    # clear the accumulator
+ d.getc(35)    # retrieve calibrated scan 35
+ d.accum()     # add the scan to the accumulator
+ d.getc(36)    # retrieve calibrated scan 36
+ d.accum()     # add the scan to the accumulator
+ d.ave()       # average scans in the accumulator
+ d.show()      # display the result on the plotter
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{aver}{Average a group of scans or subscans.}
+\begin{ahdescription}
+This function permits flexible averaging and selection/averaging of 
+scans.  The scanlist should contain a vector of integers indicating
+which scans to average, and the subscanlist optionally specifies which
+records within each scan to include.  The subscanlist can either be a
+vector of integers or a string identifier, as outlined here:
+\begin{itemize}
+\item{} subscanlist = [1,2,3] : this will select only records 1-3 for
+averaging from the specified scans.
+\item{} subscanlist = 'even'  : this will select every even numbered record 
+from the specified scans. (e.g., [2,4,6,8,...]).
+\item{} subscanlist = 'odd'   : this will select every odd numbered record
+from the specified scans. (e.g., [1,3,5,7,...]).
+\item{} subscanlist = 'n/m'   : this will select only record n from each
+group of m records.  For example:
+\begin{itemize}
+\item{} '1/4' will select records [1,5,9,13,...]
+\item{} '3/4' will select records [3,7,11,15,...]
+\end{itemize}
+\end{itemize}
+\begin{ahargs}
+\ahaddarg{scanlist}{a vector of scan numbers}{}{vector of integers}
+\ahaddarg{subscanlist}{a vector of subscans or 'odd','even','n/m'}{all}{vector of integers}
+\ahaddarg{weighting}{NONE, RMS, TSYS}{RMS}{string}
+\ahaddarg{alignment}{NONE, VELOCITY, XAXIS}{NONE}{string}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+myavg := d.aver([2,3,4],[1,3]);  # myavg will contain the average of
+                                 # subscans 1 and 3 in scans 2-4.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{avgpols}{Average the polarizations in the globalscan1
+spectrum}
+\begin{ahdescription}
+This function is used to average polarizations
+stored in the globalscan1 spectrum.
+
+The result is stored in the globalscan1 array.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+d.getc(35)
+d.show()
+d.avgpols()
+d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{base}{Perform a polynomial baseline fit, all in one 
+function.  An alternative step-by-step method is to use the nfit, setregion, 
+bshape, and baseline functions}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{SDRecord to fit}{Currently displayed data}{boolean}
+\ahaddarg{order}{order of polynomial}{none}{integer}
+\ahaddarg{range}{range for computing polynomial baseline}{none}{string}
+\ahaddarg{action}{'subtract' or 'show'}{'subtract'}{string}
+\end{ahargs}
+\ahreturns{Boolean if action='show' \\
+SDRecord if action='subtract'}
+\begin{ahexample}
+\begin{verbatim}
+mybl := d.base(order=2,action='subtract',range='[50:400],[1500:2000]')
+                                        # This will perform a 2nd order poly.
+                                        # fit to the currently displayed scan.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{baseline}{Perform a polynomial baseline fit to spectrum in {\it globalscan1}}
+\begin{ahdescription}
+This function will use the values of {\it nfit} and {\it nregion} to fit and
+subtract a polynomial function from the spectrum in {\it globalscan1}. 
+The result is then stored in the {\it globalscan1} spectrum.  This 
+operation can also be acheived using {\it d.base} with the action set to 
+'subtract'.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.nfit(2)
+- d.setregion()
+Use the left button to set location, right button to exit
+region =  [23 152 300 644 807 1009] 
+- d.bshape()
+- d.baseline()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{bdrop}{Set number of channels to drop from the beginning of
+a spectrum, used only in displaying.}
+\begin{ahdescription}
+This function will restrict the viewing of channels to greater than
+bdrop when using the display function {\it show}.  If no value is given,
+the current setting of bdrop is returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{value}{The number of channels to drop}{}{integer}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.bdrop(100)
+- d.edrop(100)
+- d.show()
+- d.bdrop()
+100
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{bias}{Add a bias to the scan in memory}
+\begin{ahdescription}
+This function will add a bias to the scan in memory. The bias should
+be a vector of the same shape as the scan's number of polarizations, or
+a single value to be applied to all polarizations.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{factor}{The constant or vector to add}{none}{float or vector of floats}
+\end{ahargs}
+\ahreturns{boolean (T if successful)}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.plotc(159)
+- d.bias([-2.0,-0.5]);
+- d.show();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{boxcar}{Perform a boxcar smoothing}
+\begin{ahdescription}
+This function will perform a boxcar smooth using the specified window in
+channels on the spectrum in {\it globalscan1}.
+This function automatically performs decimation. Use the {\it
+smooth} or {\it regrid} functions for more options.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{smooth\_width}{The smoothing width}{3}{integer}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.boxcar(5)
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{bshape}{Show the baseline fit}
+\begin{ahdescription}
+This function will use the values of {\it nfit} and {\it nregion} to evaluate
+a polynomial fit on the spectrum in {\it globalscan1}. It will display this
+fit overlayed on the spectrum. This is effectively doing a {\it d.base} with
+the action set to 'show'.  To subtract the fit after displaying it, use
+{\it d.baseline}.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.nfit(2)
+- d.setregion()
+Use the left button to set location, right button to exit
+region =  [23 152 300 644 807 1009]
+- d.bshape()
+- d.baseline()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{cal}{Apply calibration to a scan (GBT only currently).}
+\begin{ahdescription}
+This function applies a calibration to the data based on information in the
+STATE table of the MS, in particular, it utilizes the OBSMODE column to
+determine a procedure type, switching signal, and switching state. In addition,
+information on the procedure size and procedure sequence number are used.
+This function is called by calib (with proc=T or proc=F).
+
+The function applies a number of corrections:
+\begin{enumerate}
+\item determine elevation, frequency; solve for opacity,gain correction.
+\item determine units used, solve for appropriate efficiency factor from table.
+\begin{displaymath}
+factor = \frac{e^{\tau (1/sin(elev))}}{\eta_x}
+\end{displaymath}
+where $\eta_x$ is the efficiency factor determined by the user selected units.
+\item based on procedure, calibrate data. Typically, this entails calibrating
+"cal on" and "cal off" phases of signal (on source) and reference (off source)
+observations, where the "cal" is a known noise diode.
+e.g.,
+\begin{displaymath}
+V_{sig}(\nu) = \frac{(V_{sig,on}(\nu) w_{sig,on} + V_{sig,off}(\nu) w_{sig,off})}{w_{sig,on} + w_{sig,off}}
+\end{displaymath}
+Similarly for the reference observation, leading the difference spectrum:
+\begin{displaymath}
+T_{diff}(\nu) = <T_{sys,ref}> \frac{V_{sig}(\nu) - V_{ref}(\nu)}{V_{ref}(\nu)}
+\end{displaymath}
+where, $<T_{sys,ref}>$ is:
+\begin{displaymath}
+< T_{sys,ref}(\nu) > = < \frac{T_{cal}(\nu) V_{ref}(\nu)}{V_{ref,on}(\nu) - V_{ref,off}(\nu)} >
+\end{displaymath}
+\end{enumerate}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number}{no default}{integer}
+\ahaddarg{baseline}{toggle baseline subtraction on or off}{F (off)}{boolean}
+\ahaddarg{range}{range for baseline}{F (full range)}{channel range vector}
+\ahaddarg{order}{order of baseline fit}{1}{integer}
+\ahaddarg{units}{units for calibrated result; 1=TA*, 2=TMB, 3=S}{1}{integer}
+\ahaddarg{flipsr}{flip sense of signal and reference}{F}{boolean}
+\ahaddarg{fold}{fold data - FSWITCH data only}{F}{boolean}
+\ahaddarg{flipfold}{flip sense of fold - FSWITCH data only}{F}{boolean}
+\ahaddarg{proc}{calibrate full procedure or single scan}{T}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.cal(9,proc=F); #calibrate only scan 9 regardless of whether it is part
+                   #of a larger multi-scan procedure.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{calib}{Apply calibration to a scan (GBT only currently).}
+\begin{ahdescription}
+This function applies a calibration to the data based on information in the
+STATE table of the MS, in particular, it utilizes the OBSMODE column to
+determine a procedure type, switching signal, and switching state. In addition,
+information on the procedure size and procedure sequence number are used.
+
+This function calls cal.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number}{no default}{integer}
+\ahaddarg{baseline}{toggle baseline subtraction on or off}{F (off)}{boolean}
+\ahaddarg{range}{range for baseline}{F (full range)}{channel range vector}
+\ahaddarg{order}{order of baseline fit}{1}{integer}
+\ahaddarg{units}{units for calibrated result; 1=TA*, 2=TMB, 3=S}{1}{integer}
+\ahaddarg{flipsr}{flip sense of signal and reference}{F}{boolean}
+\ahaddarg{fold}{fold data - FSWITCH data only}{F}{boolean}
+\ahaddarg{flipfold}{flip sense of fold - FSWITCH data only}{F}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.calib(9,baseline=T,order=5); #calibrate scan 9 and subtract a 5th order
+                                 #polynomial
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{clearrm}{Clear all variables from results manager}
+\begin{ahdescription}
+This function removes all entries from the results manager.
+\end{ahdescription}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.clearrm();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{clip}{Clip/Edit data (set flags)}
+\begin{ahdescription}
+This function will flag all channels within the specified range, based on
+a threshhold value.  Only channels in the given range will be considered for
+flagging. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{cliplevel}{threshold for clipping}{no default}{float}
+\ahaddarg{channelrange}{range of channels to flag}{all}{vector of integers}
+\ahaddarg{clipdir}{clip direction -- clip above ('high') or below ('low') the
+threshhold}{high}{string}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.clip(0.4,[100:500]);
+- d.clip(-.3,[100:300],'low');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{copy}{Copy a variable in the global record to another 
+location}
+\begin{ahdescription}
+This function copies a named variable in the global record to another variable
+name. For example, this can be used to copy the contents of offscan1 into
+the globalscan1 record.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{fromhere}{Current variable name}{no default}{string}
+\ahaddarg{tohere}{Desired variable name}{no default}{string}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- d.uniput('echan',100);
+- d.upr('echan')
+echan  =  100
+- d.copy('echan','emoment')
+- d.upr('emoment')
+emoment  =  100
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{dcbase}{Subtract a DC baseline (0th order poly) from the spectrum}
+\begin{ahdescription}
+This function will subtract a 0th order polynomial from the spectrum in
+{\it globalscan1}.  Ther range of channels used for the baseline determination
+is set by either d.nregion or d.setregion.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.dcbase()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{Delete a single entry from the stack.}
+\begin{ahdescription}
+This function is used to remove an entry from the ``stack''.  The stack is
+a construct (simply a vector of integers) which is used to organize a list
+of scans which will be operated on in some common way.  Generally, it is used
+to assemble a list of scans which can then be averaged.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.addstack(10,50,2) 
+- d.tellstack()       
+21  entries in the stack.
+[10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50] 
+- d.delete(22)
+- d.tellstack()
+20  entries in the stack.
+[10 12 14 16 18 20 24 26 28 30 32 34 36 38 40 42 44 46 48 50] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{divide}{Divide globalscan1 by offscan1.}
+\begin{ahdescription}
+This function will divide the contents of globalscan1 by offscan1.
+\begin{ahexample}
+\begin{verbatim}
+- d.divide();
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Exits dish and destroys the current dish tool.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.done()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{edrop}{Set number of channels to drop from the end of
+a spectrum, used only in displaying.}
+\begin{ahdescription}
+This function will restrict the viewing of channels to less than 
+edrop when using the display function {\it show}.  If no value is given,
+the current setting of edrop is returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{value}{The number of channels to drop}{}{integer}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.bdrop(100)
+- d.edrop(100)
+- d.show()
+- d.edrop()
+100
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{empty}{Clear the stack.}
+\begin{ahdescription}
+This function is used to clear the ``stack''.  The stack is
+a construct (simply a vector of integers) which is used to organize a list
+of scans which will be operated on in some common way.  Generally, it is used
+to assemble a list of scans which can then be averaged.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.addstack(10,50,2)
+- d.tellstack()
+21  entries in the stack.
+[10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50] 
+- d.empty()
+- d.tellstack()
+No entries currently in the stack.
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{filein}{Sets the scan group used by scan access functions.}
+\begin{ahdescription}
+Several scan groups (Measurement sets or saved data) can be available in the
+results manager at once.  This function sets which of those available functions
+is used when scan access routines (getr, getc, getscan) are called.  If a
+scan group is not in the results manager yet but has been filled and saved
+to disk, it can be opened with the d.open command.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{wsname}{scan group name; must already be 'opened' (exist in the Result
+s Manager)}{no default}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.filein('dishdemo2');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{fileout}{Sets the scan group that can be written to.}
+\begin{ahdescription}
+This specifies a scan group to which spectra may be saved. If the scan group
+doesn't already exist in the results manager, fileout will create it. 
+If the file doesn't exist in the results manager but is on disk,
+the user can load it with the appropriate permissions for writing as:
+
+d.open(filename,access="w") 
+
+If the user wants to create a new
+blank scan group for subsequent storage, specify:
+d.fileout(filename)
+where filename is a unique disk file name.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sgname}{scan group name}{no default}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.fileout('testfileout');	
+New file  testfileout  is created
+- d.save();	# saves the currently viewed plot to testfileout
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{files}{Prints the currently set values for filein and fileout.}
+\begin{ahdescription}
+Shows the current values for the filein and fileout settings.  The filein
+setting indicates which data are accessed with getc, getr, and getscan.  The
+fileout setting indicates which scan group is written to by the save and
+keep functions.  If the parameter quiet is F, a glish record with this
+information is returned.  If quiet=T, the information is printed to the screen.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{quiet}{suppress printing}{F}{boolean}
+\end{ahargs}
+\ahreturns{a glish record with two values: filein and fileout (if quiet=F)}
+\begin{ahexample}
+\begin{verbatim}
+- d.open('ohtest_SP')
+- d.fileout('testout')
+NORMAL: New file testout is created
+- d.files()
+Current filein is  :  ohtest_SP1
+Current fileout is :  testout
+T 
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{find}{Search all glish variables for a specified string.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{myfoo}{string to look for in all currently defined glish variables}{}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.find('smo')    # returns any variables that have 'smo' in them
+dishsmooth dishsmoothgui
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{flag}{Flag data based on various specifications.}
+\begin{ahdescription}
+This function allows a simple non-GUI means of flagging data; the viewer
+and msplot allow GUI flagging of data. If no scan is specified, it will flag
+all scans in the data according to the other parameters (e.g., all channels
+within a range can be flagged in this way). If no integration is specified,
+it will flag all integrations. If no polarization is specified, it will
+flag all polarizations. If no channel is specified, it will flag all channels.
+If you wish to unflag data, use flag=F.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number(s) to flag}{F}{integer or vector of ints}
+\ahaddarg{ints}{integration number}{F}{integer or vector of ints}
+\ahaddarg{polarization}{polarization number(s) to flag}{F}{integer or vector of ints}
+\ahaddarg{channel}{channel (range) to flag}{F}{integer or vector of ints}
+\ahaddarg{flag}{flag (T) or unflag (F)}{T}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+d.open('stjul13SP');
+d.gms();
+d.plotc(36)
+d.flag(36,channel=100:120)      #flag all subscans, polarizations of scan 
+                                #36 in the channel range of 100:120
+d.plotc(36)                     #you should see the range masked
+d.flag(36,flag=F);              #unset all flagging
+d.plotc(36)                     #it's back!
+d.flag(36,channel=500:550,polarization=1)
+d.plotc(36)                     #you should see a gap just in the first 
+                                #polarization
+d.flag(36,flag=F);
+d.flag(36,1)                    #flag just the first integration
+d.plotc(36)                     #should look okay though it doesn't 
+                                #include the first integration
+d.plotc(36,1)                   #masked
+d.plotc(36,2)                   #okay
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{galactic}{Provide coordinates of the globalscan1 spectrum 
+in the Galactic reference frame.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{quiet}{indicate whether the results should be printed (quiet=F) or 
+returned as a glish record (quiet=T)}{F}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.galactic();
+1.91025363 deg 41.4198054 deg GALACTIC
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gauss}{Fit gaussian profiles.}
+\begin{ahdescription}
+This function is used to fit one or more gaussian curves to the spectrum in the 
+globalscan1 array.  The gaussian
+fit function must have initial guesses for the center, width and height of
+the features being fit.  You can allow the function to guess these parameters
+on its own, you can enter initial guesses as a parameter, or you can enter 
+guesses interactively using the mouse cursor.  You can also restrict the range
+of the spectrum to be fit.
+
+The {\it ngauss} parameter
+specifies the number of gaussians to be fit simultaneously.  The {\it guess}
+parameter is an optional array specifying initial guesses for the height, center
+and width of each component to be fit.  See the example below to get a feel
+for the format required to enter initial guesses using this parameter.  
+The most convenient way to provide initial guesses for the gaussian parameters,
+though, is via the mouse cursor.  To enter initial guesses in
+this way, set the parameter {\it prompt} to T when calling the gauss function.
+You will then be prompted in the plotter message area to click on the plot
+to specify the range of values to be fit and the locations of the features.
+
+If your spectrum has more than one
+polarization shown, use the {\it pol} parameter to specify which polarization
+to fit.  Only one is fit at a time.  The {\it bchan} and {\it echan} parameters
+are used to restrict the range of data used for the fit.  These are useful for
+fitting components which are not dominant in a spectrum.  The units for the
+{\it bchan} and {\it echan} values must be specified in pixels, but the plot
+should not be shown in pixels when the function is called.  Range 
+limits can alternatively be specified interactively by setting the parameter 
+{\it prompt} to T.  
+
+The remaining parameters are flags.  Set {\it plotfit} to T (the default)
+if you want to see the fit plotted on the data.  Set {\it plotresid} to T
+to see residuals.  Set {\it ploteach} to T if you have a multicomponent fit
+(that is, {\it ngauss} > 1) and you want to see each component's fit plotted
+individually.  Finally, set {\it ret} to T if you want the function to return 
+a glish record containing the results of the fit.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ngauss}{number of gaussians to fit}{no default}{integer}
+\ahaddarg{guess}{array with the guesses for height,center, and width}{function will guess if none given}{float}
+\ahaddarg{prompt}{prompt for mouse entry of limits and initial guesses}{F}{boolean}
+\ahaddarg{pol}{polarization number to use}{1}{integer}
+\ahaddarg{bchan}{beginning channel number (pixel) of range to be fit}{1}{integer}
+\ahaddarg{echan}{ending channel number (pixel) of range to be fit}{full range}{integer}
+\ahaddarg{plotfit}{flag to show fit on plot}{T}{boolean}
+\ahaddarg{plotresid}{flag to show residuals on plot}{F}{boolean}
+\ahaddarg{ploteach}{flag to show plots of individual components on plot}{F}{boolean}
+\ahaddarg{ret}{return fit components as a glish array?}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean (if ret=F) or a glish record (if ret=T)}
+\begin{ahexample}
+\begin{verbatim}
+- d.gauss(1);	# fit a single gaussian using auto-guess values
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- # fit a gaussian using an initial guess and restricting the channel range
+- myguess:=array(0,2,3)   # initialize an array which will contain the guesses
+- myguess[1,1]:= 1.2      # height of component 1
+- myguess[1,2]:= 110.2    # center of component 1
+- myguess[1,3]:= 0.2      # width of component 1
+- myguess[2,1]:= 0.6      # height of component 2
+- myguess[2,2]:= 114.8    # center of component 2
+- myguess[2,3]:= 0.2      # width of component 2
+- d.gauss(1,myguess,bchan=1100,echan=1300);
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- d.gauss(1,prompt=T);	# prompt for interactive entry of range limits and
+-                       # initial guesses
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- result := d.gauss(2,ret=T)
+Gauss:  1
+Center: 2.216355e+01   Height: 1.116988e-02    Width: 1.457546e-04
+C-err : 1.172879e-06   H-err : 1.840365e-04    W-err: 2.926720e-06
+Gauss:  2
+Center: 2.216288e+01   Height: 3.880797e-03    Width: 7.887906e-04
+C-err : 8.028110e-06   H-err : 8.039411e-05    W-err: 2.059391e-05
+- print result.h
+[0.011169876 0.00388079719] 
+- print result.c
+[22.1635453 22.1628813] 
+- print result.w
+[0.000145754649 0.000788790639] 
+- print result.herr
+[0.000184036544 8.03941075e-05] 
+- print result.cerr
+[1.17287918e-06 8.02811046e-06] 
+- print result.werr
+[2.92671975e-06 2.05939141e-05] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gbtsum}{Summarize scans in GBT projects from the /home/gbtdata area (GB only)}
+\begin{ahdescription}
+This function is used to list a scan summary of data on disk without the need
+to fill that data first.  It works only in Green Bank, for GBT data.
+The directory prefix /home/gbtdata/ is not necessary in the project name.
+Output can be sent to an ASCII file if desired.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{projname}{the project name}{no default}{string}
+\ahaddarg{source}{source name}{all}{string}
+\ahaddarg{bscan}{beginning scan to list}{first}{int}
+\ahaddarg{escan}{end scan to list}{last}{int}
+\ahaddarg{verbose}{list extra information?}{F}{boolean}
+\ahaddarg{filename}{optional name of ASCII file to write}{none}{string}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.gbtsum('standards_jul13')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getc}{Retrieve calibrated data (from the CORRECTED\_DATA column)}
+\begin{ahdescription}
+This provides data access directly to the CORRECTED\_DATA column. If the scan
+is specified and no integrations, the data is averaged with a TSYS weighting
+scheme (weighting is equal to the integration time divided by the square of
+the system temperature).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{the scan number}{no default}{integer}
+\ahaddarg{int}{the integration number}{All integrations}{integer}
+\ahaddarg{pol}{the polarization number}{All polarizations}{boolean}
+\ahaddarg{nif}{the IF number}{1}{integer}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- myrec := d.getc(9);	#will average all of the calibrated data from scan 9
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getr}{Retrieve raw data (from the FLOAT\_DATA column)}
+\begin{ahdescription}
+This provides data access directly to the FLOAT\_DATA column. If the scan
+is specified and no integrations, the data is averaged with a TSYS weighting
+scheme (weighting is equal to the integration time divided by the square of
+the system temperature).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{the scan number}{no default}{integer}
+\ahaddarg{phase}{the phase number}{no default}{integer}
+\ahaddarg{int}{the integration number}{All integrations}{integer}
+\ahaddarg{pol}{the polarization number}{All polarizations}{boolean}
+\ahaddarg{nif}{the IF number}{1}{integer}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- myrec := d.getr(9,1);	#will average all of the phase 1 data from scan 9
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getscan}{Retrieve a scan (SDRecord) from a scan group.}
+\begin{ahdescription}
+This is a data access utility for retrieving a single record from the group.
+It is useful for exploring uncalibrated data in detail.  The getc function
+should be used instead for general scan retrieval of calibrated scans.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scannumber}{the scan number}{no default}{integer}
+\ahaddarg{subscan}{the subscan number}{1}{integer}
+\ahaddarg{resync}{update the cache}{F}{boolean}
+\ahaddarg{setgs}{copy the result to the globalscan array?}{T}{boolean}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- myrec := d.getscan(422,2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getvf}{Prints the velocity and frequency for a
+specified channel.}
+\begin{ahdescription}
+This function will print the value of the velocity and frequency for a
+specified channel (units of km/s and Hz) of the currently displayed
+spectrum.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{chan}{channel of interest}{no default}{integer}
+\ahaddarg{dop}{Doppler convention}{RADIO}{RADIO, OPTICAL or TRUE}
+\ahaddarg{refframe}{Reference Frame}{LSRK}{LSRK, LSRD, BARY, GEO, TOPO or GALACTO}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.getvf(1)
+Channel  1     RADIO LSRK 1.40984264e+09 46301.7957
+T 
+- d.getvf(1,'OPTICAL','BARY')
+Channel  1     OPTICAL BARY 1.40992869e+09 54737.4952
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getvfarray}{Return the velocities and frequencies for 
+the globalscan1 spectrum.}
+\begin{ahdescription}
+This function will return vectors of the velocities and frequencies for
+the currently viewed spectrum.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{dop}{Doppler convention}{RADIO}{RADIO, OPTICAL or TRUE}
+\ahaddarg{refframe}{Reference Frame}{LSRK}{LSRK, LSRD, BARY, GEO, TOPO or GALACTO}
+\end{ahargs}
+\ahreturns{Record with four fields: v (array of velocities),  f
+(array of frequencies), refframe, and doppler}
+\begin{ahexample}
+\begin{verbatim}
+- a := d.getvfarray('OPTICAL','BARY')
+- a.f[1]
+1.40992869e+09 
+- a.v[1]
+54737.4952 
+- a.refframe
+BARY 
+- a.doppler
+OPTICAL 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gms}{Summarize the scans in the currently opened data set.}
+\begin{ahdescription}
+This will provide information on the MeasurementSet opened in DISH.
+By default, it will display only the first in a sequence of scans for a
+given procedure. The verbose flag allows the user to specify viewing of 
+all scans.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{verbose}{indicate level of output}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.gms();
+Scan     Object   Proctype    SWState   SWtchsig   Procseqn   Procsize
+   5       S171      OffOn PSWITCHOFF     TPWCAL          1          2
+   7       S171      OffOn PSWITCHOFF     TPWCAL          1          2
+   9       S171      Track    FSWITCH      FSW01          1          1
+  15     OrionA  RALongMap    FSWITCH      FSW01          1         31
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gsflag}{Flag some channels in the globalscan1 spectrum}
+\begin{ahdescription}
+This function is used to flag a channel range in the globalscan1 spectrum.
+Channels can be specified with the mouse cursor or with a parameter in the
+function call line.  Also see the {\it clip} function for other flagging
+options.
+
+If no value is passed for the bchan and echan parameters, the function will
+prompt you for input from the mouse to specify a flagging range.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{pol}{polarization to flag; 0 means flag all}{0}{integer}
+\ahaddarg{bchan}{beginning channel in range}{F}{integer}
+\ahaddarg{echan}{ending channel in range}{bchan}{integer}
+\ahaddarg{flagval}{flag (T) or unflag (F)}{T}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.gsflag()   # interactive flagging of all displayed polarizations
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- d.gsflag(pol=1,bchan=123)   # flag a single channel in a single polarization
+\end{verbatim}
+\end{ahexample}
+\begin{ahexample}
+\begin{verbatim}
+- d.gsflag(bchan=100,echan=200,flagval=F)   # unflag the specified range
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{gsget}{Retrieves the globalscan1 record to a glish variable}
+\begin{ahdescription}
+This function is used to retrieve the globalscan1 record into a glish variable.
+It is useful to more advanced DISH users who wish to access and modify the
+sdrecord directly.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- xx := d.gsget()             # get the globalscan1 record
+- dd.data.arr[1,10:20] := 0   # modify the data array
+- d.gsput(xx)                 # return the modified data to globalscan1
+- d.show()                    # see the result
+\end{verbatim}
+\end{ahexample}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{gsput}{Sends an sdrecord from glish to the globalscan1 record}
+\begin{ahdescription}
+This function is used to place a glish value into the globalscan1 record.
+The entry must be a valid sdrecord.  This function is
+useful to more advanced DISH users who wish to access and modify the
+sdrecord directly.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sdrec}{sdrecord to place into globalscan1}{}{sdrecord}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- xx := d.gsget()             # get the globalscan1 record
+- dd.data.arr[1,10:20] := 0   # modify the data array
+- d.gsput(xx)                 # return the modified data to globalscan1
+- d.show()                    # see the result
+\end{verbatim}
+\end{ahexample}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{gsread}{Retrieve a spectrum saved to disk into the globalscan1 record}
+\begin{ahdescription}
+Use this function to retrieve a globalscan1 record from a disk file.
+The globalscan1 value must have been saved previously using d.gswrite.
+This function may be useful for storing and organizing individual spectra.
+Also see the {\it save} function and its associated retrieval functions.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{filename}{}{string}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- d.show()   # You should already have some spectrum available for this example
+- d.gswrite('ngc1068_before_baseline')  # save the preliminary result
+- d.baseline()                          # operate on the globalscan1 data
+- d.show()
+- d.gsread('ngc1068_before_baseline')   # retrieve the preliminary result
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{sdrecord}
+\end{ahfunction}
+
+\begin{ahfunction}{gswrite}{Write the globalscan1 spectrum to disk}
+\begin{ahdescription}
+Use this function to write the globalscan1 to disk.  It can be retrieved at
+a later time using the {\it gsread} function.
+This function may be useful for storing and organizing individual spectra.
+Also see the {\it save} function.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{filename}{}{string}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- d.show()   # You should already have some spectrum available for this example
+- d.gswrite('ngc1068_before_baseline')  # save the preliminary result
+- d.baseline()                          # operate on the globalscan1 data
+- d.show()
+- d.gsread('ngc1068_before_baseline')   # retrieve the preliminary result
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Toggles mapping of DISH main gui (results manager).}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{hanning}{Perform a hanning smooth}
+\begin{ahdescription}
+This function will perform a hanning smooth on the globalscan1 spectrum.
+{\it hanning} utilizes the underlying {\it smooth} and {\it regrid}
+functions. Please see these functions for more options.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.hanning()
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{header}{Print formatted header information to the
+command line window};
+\begin{ahdescription}
+This function provides basic header information on the globalscan1 spectrum.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.header()
+Proj : A40_3              Src  : S6                 Proc : Track          
+Obs  : Lockman            RA   : 15:31:33.712       PType: SIMPLE         
+Scan : 303                Dec  : -002.25.23.477     OType: LINE           
+Seq  : 1/1                Epoch: J2000              Swtch: FSWITCH        
+Date : 2002-07-03         Az   : -179.087           Swsig: FSW01          
+Time : 02:09:41.983 UT    El   : 49.320             Ints : 2              
+
+Tsys : 1.41               Trx  : 7.46               Tcal : 1.62           
+Tsys : 1.41               Trx  : 13.76              Tcal : 1.66           
+
+BW   : 4.995    (MHz)     Res  : 4.883    (kHz)
+Expos: 29.914             Durat: 119.931        
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{help}{Provide simple help on dish functions}
+\begin{ahdescription}
+This function provides simple help on the specified {\bf dish} function.
+In addition, it will optionally drive the web browser to the location of the
+more extended help.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{dishfn}{Name of dish function}{no default}{String}
+\ahaddarg{driveweb}{Drive the browser to the URM help}{F}{Boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.help('calib') 
+dish.dish.dish.calib.function
+
+ calib -- Function -- dish.dish.dish
+  Apply calibration to a scan (GBT only currently).
+ Useage:  calib(scan, baseline, range, order, units)
+
+You may find more information in the on-line documentation available
+via your web browser.  Type the command
+
+   web()
+
+to view more about dish.dish.dish.calib.function.
+
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{history}{Add a string or vector of strings to the history of
+a current SDRecord.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{SDRecord to add history to}{no default}{SDRecord}
+\ahaddarg{history}{text to add to history}{no default}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.history(myrec,'1.5*(on-off)/off');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{imagems}{Make an image from all scans in a MeasurementSet.}
+\begin{ahdescription}
+This command is a more general facility than its complement {\bf makeim}.
+Where {\bf makeim} will operate only on the scans for a given procedure,
+{\bf imagems} will operate on all the scans found within a MeasurementSet;
+this is particularly useful for creating a data cube from several mapping
+procedures around the same region. Like {\bf makeim}, it 
+will construct a data cube (position-position-frequency).
+It uses the {\bf imager} tool to achieve this. The
+user selects the MeasurementSet into which all of the mapping scans have been
+filled, specifying 
+the channel range
+over which to produce the cube (start, stop). An optional averaging is
+offered through the step argument. The cell size can also be
+optionally specified with the number and units; both cellx and celly
+must be specified to over-ride the default calculated value (e.g.,
+cellx='4arcmin',celly='4arcmin'). The default gridding function is the boxcar (BOX);
+PB (primary beam) and SF (prolate spheroidal) may also be specified.  For
+the BOX and SF gridding functions, the size of function can be specified
+through the convsupport argument.  The units of convsupport are pixels in
+the resulting image and this specifies a radial size of the convolving
+function. For BOX, a convsupport of 0 (the default)
+corresponds to nearest cell gridding.  A convsupport of 1 is boxcar of width 3 
+(-1, 0, and +1).  For SF gridding, the default size is 1 a radius of 1 pixel.
+Larger values may produce images with better noise characteristics at 
+the expense of a loss of spatial resolution.  There is no gridding along
+the frequency axis (data are mearly averaged into the nearest frequency channel
+as they are gridded on to the image).  The default value is chosen when
+convsupport has a boolean or non-numeric value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{msname}{MeasurementSet name}{no default}{string}
+\ahaddarg{start}{starting channel}{no default}{integer}
+\ahaddarg{stop}{stopping channel}{no default}{integer}
+\ahaddarg{step}{number of channels to average over for final cube}{1}{integer}
+\ahaddarg{imname}{name of output image}{scanimage}{string}
+\ahaddarg{spwid}{spectral window id number}{F}{integer}
+\ahaddarg{nx}{number of cells in x}{F}{integer}
+\ahaddarg{ny}{number of cells in y}{F}{integer}
+\ahaddarg{cellx}{cell size in x}{F}{string}
+\ahaddarg{celly}{cell size in y}{F}{string}
+\ahaddarg{gridfn}{gridfunction to use; BOX, PB or SF}{BOX}{string}
+\ahaddarg{convsupport}{convolution support radius for BOX or SF}{F}{integer}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.imagems('cloud_SP',520,1000,imname='cloud.im');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{imcal}{Calibrate an imaging/mapping procedure}
+\begin{ahdescription}
+This uses the calib function to calibrate the individual scans in an imaging
+or mapping procedure (currently RALongMap or DECLatMap).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number}{no default}{integer}
+\ahaddarg{baseline}{toggle baseline subtraction on or off}{F}{boolean}
+\ahaddarg{range}{range for baseline}{F(full range)}{string}
+\ahaddarg{order}{order of baseline fit}{1}{integer}
+\ahaddarg{units}{units for calibrated result}{1=TA*,2=TMB,3=S}{integer}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.imcal(15,baseline=T,order=5);#calibrate all scans in the mapping sequence
+				 #beginning with scan 15;subtract a 5th order
+                                 #polynomial
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{import}{Import GBT data into an AIPS++ MeasurementSet}
+\begin{ahdescription}
+This function writes an AIPS++ MeasurementSet from a GBT FITS directory
+tree, and loads the MS into DISH (via open). (NOTE: This function is
+exclusive to GBT data).
+The MeasurementSet created on disk will default
+to the input project name with an appended '\_' followed by a backend
+specifier. If an 'outms' argument is supplied, it will be this string
+with the appended underscore and backend specified. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{projdir}{project directory}{no default}{string}
+\ahaddarg{outms}{output MeasurementSet}{name derived from projdir}{string}
+\ahaddarg{outmsdir}{directory for output MS}{current directory}{string}
+\ahaddarg{startscan}{starting scan to begin filling}{first scan in projdir}{integer}
+\ahaddarg{stopscan}{ending scan for filling}{last scan in projdir}{integer}
+\ahaddarg{backend}{which backend to fill}{all}{string}
+\ahaddarg{calflag}{toggle to permit automated calibration upon filling}{F}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.import('standards\_apr27',outms='demo',startscan=5,stopscan=45);
+T
+\end{verbatim}
+
+This creates a file 'demo\_SP' on disk for spectral processor data, or 
+'oh\_SPECTROMETER\_A' for the spectrometer (the additional \_A designates
+which bank of the spectrometer was used - if only one bank, it is 'A').
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{keep}{Saves the current globalscan1 SDRecord to the
+designated fileout.}
+\begin{ahdescription}
+Stores the current {\it globalscan1} record in the output file. This
+is similar to {\it d.save}, however the scan to be saved does not to be 
+specified explicitly.  {\it d.keep} saves whatever is currently in
+{\it globalscan1}).
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{boolean (T, if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.files();
+Current filein is  :  jaytestSP
+Current fileout is :  testfileout
+- d.plotc(303)
+- d.keep()
+globalscan saved to  testfileout
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{listscans}{List the scan numbers from the active scan group.}
+\begin{ahdescription}
+Lists scan numbers.  Equivalent to d.lscans().
+\end{ahdescription}
+\ahreturns{a vector of scan numbers}
+\begin{ahexample}
+\begin{verbatim}
+- d.listscans();
+[398 399 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417
+ 418 419 420 421 422 423 426 429 432 435 437 440 443 446 449 452 455 458 463]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{logcommand}{Writes command to scripter.}
+\begin{ahdescription}
+Writes a command to the scripter. logcommand uses the same syntax as history
+but the information is logged to the scripted rather than to the record's
+history.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{lsoutfile}{Lists scans in the fileout scangroup}
+\begin{ahdescription}
+This simply lists the scans contained in the fileout data set.
+\end{ahdescription}
+\ahreturns{vector of scan numers}
+\begin{ahexample}
+\begin{verbatim} 
+- d.files();
+Current filein is  :  jaytestSP
+Current fileout is :  testfileout
+T
+- d.plotc(303)
+- d.keep()
+- d.lsoutfile()
+303 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{makeim}{Make an image from scans in a MeasurementSet.}
+\begin{ahdescription}
+This command will construct a data cube (position-position-frequency) from
+a mapping procedure. It uses the {\bf imager} tool to achieve this. The
+user selects the starting scan of a mapping procedure and the channel range
+over which to produce the cube (start, stop). An optional averaging is
+offered through the step argument. The cell size can also be
+optionally specified with the number and units; both cellx and celly
+must be specified to over-ride the default calculated value (e.g.,
+cellx='4arcmin',celly='4arcmin'). The default gridding function is the boxcar (BOX);
+PB (primary beam) and SF (polate spheroidal) may also be specified.For
+the BOX and SF gridding functions, the size of function can be specified
+through the convsupport argument.  The units of convsupport are pixels in
+the resulting image and this specifies a radial size of the convolving
+function. For BOX, a convsupport of 0 (the default)
+corresponds to nearest cell gridding.  A convsupport of 1 is boxcar of width 3 
+(-1, 0, and +1).  For SF gridding, the default size is 1 a radius of 1 pixel.
+Larger values may produce images with better noise characteristics at 
+the expense of a loss of spatial resolution.  There is no gridding along
+the frequency axis (data are mearly averaged into the nearest frequency channel
+as they are gridded on to the image).  The default value is chosen when
+convsupport has a boolean or non-numeric value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number}{no default}{integer}
+\ahaddarg{start}{starting channel}{no default}{integer}
+\ahaddarg{stop}{stopping channel}{no default}{integer}
+\ahaddarg{step}{number of channels to average over for final cube}{1}{integer}
+\ahaddarg{imname}{name of output image}{scanimage}{string}
+\ahaddarg{spwid}{spectral window id number}{F}{integer}
+\ahaddarg{nx}{number of cells in x}{F}{integer}
+\ahaddarg{ny}{number of cells in y}{F}{integer}
+\ahaddarg{cellx}{cell size in x}{F}{string}
+\ahaddarg{celly}{cell size in y}{F}{string}
+\ahaddarg{gridfn}{gridding function}{BOX}{'BOX', 'PB', or 'SF'}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.makeim(15,250,750);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{message}{Writes text to the DISH GUI message line.}
+\begin{ahdescription}
+This function allows the user to write messages to the DISH message line,
+found on the main DISH GUI just below the Results Manager. This
+is mostly useful for custom user applications, to prompt or proffer information.
+\begin{ahexample}
+\begin{verbatim}
+- d.message('This is a test message');
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{message}{The message to send to DISH message line}{no default}{string}
+\end{ahargs}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{minus}{Subtract offscan1 from globalscan1.}
+\begin{ahdescription}
+This function will subtract the contents of offscan1 from globalscan1.
+The contents are stored in globalscan1.
+\begin{ahexample}
+- d.minus();
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{mscal}{Calibrate a MeasurementSet.}
+\begin{ahdescription}
+This function will use the {\bf calib} function to calibrate each individual
+{\it known} procedure within a MeasurementSet. It will use the MS currently
+pointed to/opened in DISH (use d.files() to see what this is).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{baseline}{toggle to permit baselines to be subtracted}{F}{boolean}
+\ahaddarg{range}{the range for the baseline}{F(full range)}{string}
+\ahaddarg{order}{the polynomial order for the baseline}{1}{integer}
+\ahaddarg{units}{the units of the calibrated output}{1(TA*)}{integer}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.mscal();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{mult}{Scales (multiplies) a scan by a value.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{factor}{The factor to multiply by}{no default}{float}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- newrec := d.mult(2.5);
+\end{verbatim}
+\end{ahexample}
+\ahreturns{SDRecord}
+\end{ahfunction}
+
+\begin{ahfunction}{multiply}{Multiply globalscan1 by offscan1.}
+\begin{ahdescription}
+This function will multiply the contents of offscan1 from globalscan1
+and store the result in globalscan1.
+\end{ahdescription}
+\begin{ahexample}
+- d.multiply();
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+
+\begin{ahfunction}{nfit}{Set the order of the polynomial for baseline
+subtraction.}
+\begin{ahdescription}
+This function sets the order of the polynomial for baseline subtraction.
+It is used by the {\it bshape} and {\it baseline} functions.
+Use d.nfit() with no arguments to query the current value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{value}{The order of the polynomial}{none}{integer}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- d.nfit(3);
+- d.upr('nfit')
+nfit  =  3
+- d.nfit()
+3
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{nogui}{Dismisses the DISH main GUI.}
+\begin{ahdescription}
+This function dismisses the main DISH GUI.  It can be turned on again with
+d.gui().
+\end{ahdescription}
+\begin{ahexample}
+- d.nogui()
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{nregion}{Set the channel ranges for baseline subtraction.}
+\begin{ahdescription}
+This function sets the channel ranges for fitting polynomials in 
+baseline subtraction. It is used by the {\it bshape} and {\it baseline} 
+functions.  It offers a direct (non-interactive) means of setting these ranges.
+{\it setregion} provides an alternative, interactive way of setting these 
+ranges using the mouse cursor.  {\it nregion} accepts a variable number of 
+arguments.  The arguments list the first and last channel of each segment of
+the range to be used in the polynomial fit.  The total number of arguments 
+should thus be a multiple of 2.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{...}{channel numbers to demark a range}{}{integers}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- d.nfit(3);
+- d.nregion(10,100,400,512)          # use channels 10-100 and 400-512 for the fit
+- d.bshape()
+- d.nregion(10,100,120,130,400,512)  # use channels 10-100, 120-130 and 400-512 for the fit
+- d.bshape()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{open}{Load a scan group from disk into DISH and perform a filein on it.}
+\begin{ahdescription}
+This command loads pre-existing datasets on disk into the results manager for
+viewing/manipulation. It can also be used to create a new, blank dataset
+for storing results (d.open('filename',new=T)).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{file}{File on disk to be opened. This file becomes a glish variable in
+ the Results Manager}{no default}{string}
+\ahaddarg{access}{permissions for file ('r' readonly or 'w' for writable}{'r'}{string}
+\ahaddarg{new}{Should it create an empty file on disk (for saving to)}{F}{boolean}
+\ahaddarg{corrdata}{look at CORRECTED\_DATA column?}{T}{boolean}
+\ahaddarg{filein}{should this dataset be the default filein}{T}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.open('dishdemo2');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{page}{Clears the DISH plotter display.}
+\begin{ahdescription}
+This function is a shortcut to clear the plotter display.
+\begin{ahexample}
+\begin{verbatim}
+- d.page();
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{peak}{Obtain the peak amplitude, half-width and
+center in the displayed spectrum}
+\begin{ahdescription}
+This function measures the peak amplitude and associated half-width and
+line center for the globalscan1 spectrum.  If quiet=T that results are
+stored in internal variables appropriate for use with the gaussian fitter.
+If quiet=F (default) the values are displayed to the screen.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{quiet}{Display the output to command window}{F}{boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- d.peak()
+Center= 26 Hwidth= 2 Height= 41.6090736
+Center= 26 Hwidth= 2 Height= 46.4903967
+T 
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plotc}{Plot calibrated data (from the CORRECTED\_DATA column)}
+\begin{ahdescription}
+This provides quick plotting of the CORRECTED\_DATA column. If the scan
+is specified and integrations are not, the data is averaged with a TSYS 
+weighting
+scheme (weighting is equal to the integration time divided by the square of
+the system temperature).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{the scan number}{no default}{integer}
+\ahaddarg{int}{the integration number}{All integrations}{integer}
+\ahaddarg{pol}{the polarization number}{All polarizations}{boolean}
+\ahaddarg{nif}{the IF number}{1}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.plotc(9)   #will average all calibrated data from scan 9 and display it
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotr}{Plot raw data (from the FLOAT\_DATA column)}
+\begin{ahdescription}
+This provides quick plotting of the FLOAT\_DATA column. If the scan
+is specified and integrations are not, the data is averaged with a TSYS weighting
+scheme (weighting is equal to the integration time divided by the square of
+the system temperature).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{the scan number}{no default}{integer}
+\ahaddarg{phase}{the phase number}{no default}{integer}
+\ahaddarg{int}{the integration number}{All integrations}{integer}
+\ahaddarg{pol}{the polarization number}{All polarizations}{boolean}
+\ahaddarg{nif}{the IF number}{1}{integer}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.plotr(9,1)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotscan}{Plot an SDRecord.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{An SDRecord to be plotted}{no default}{SDRecord}
+\ahaddarg{overlay}{overlay (T) or don't overlay(F)}{F}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- myspec := d.getc(2)
+- d.plotscan(myspec);
+- d.plotscan(d.getscan(3));
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plotxy}{Plot two vectors in the DISH plotter.}
+\begin{ahdescription}
+A simple tool for making plots in the dish plotter.  More versatile access
+to the plotter, with full pgplot functions, is available using the
+d.plotter functionality, e.g. d.plotter.plotxy(1:100,sin(1:100)).  Run
+d.fields(d.plotter) for a complete listing of functions.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{xarray}{vector of values for the x axis}{no default}{vector of floats}
+\ahaddarg{yarray}{vector of values for the y axis}{no default}{vector of floats}
+\ahaddarg{newplot}{Create a new plot(T) or overlay this(F)}{T}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- x:=1:100
+- y:=sin(x)
+- d.plotxy(x,y);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{plus}{Add offscan1 to globalscan1.}
+\begin{ahdescription}
+This function will add the contents of offscan1 from globalscan1 and store the
+result in globalscan1.
+\end{ahdescription}
+\begin{ahexample}
+- d.plus()
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{qscan}{Query characteristics of scan.}
+\begin{ahdescription}
+Capability to obtain more detailed information on a particular scan. The
+function returns a record with the following fields:
+\begin{verbatim}
+rows	- number of rows in the MeasurementSet
+phases	- number of distinct phases in the scan
+ifs     - number of ifs in the scan
+fields	- number of fields in the scan
+ints	- number of integrations in the scan (sequences of all phases,ifs, etc).
+rns	- the row numbers in the MAIN table of the MeasurementSet
+\end{verbatim}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan number}{no default}{integer}
+\end{ahargs}
+\ahreturns{a Glish record}
+\begin{ahexample}
+\begin{verbatim}
+- d.qscan(9);
+[rows=24, phases=4, if=2, field=0, ints=6, rownumbers=[29 30 31 32 33 34 35 
+36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52] ] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{reference}{Designate the reference spectrum}
+\begin{ahdescription}
+This function can be used to designate a reference spectrum explicitly.
+For standard observing and calibration, d.TPcal or d.calib can be used
+instead.  However, this function allows the option of calibrating a ref
+and sig scan that were not observed as part of the same observing procedure.
+\end{ahdescription}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.reference(10)
+- d.signal(11)
+- d.temp()
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{restore}{Retrieve the contents of the uni Record from disk.}
+\begin{ahdescription}
+This function will retrieve all of the contents of the uni record from disk
+file ~/.uni2params.  This record includes vairables used by dish, such as the
+globalscan1 array, nregion settings, and so on.  A complete list of the
+variables can be seen from dish by d.upr('all').  The record can be saved
+using the d.store() function.
+\end{ahdescription}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.nregion(1,100,400,512)
+- d.nregion()
+nregion currently set to:  [1,100][400,512]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+- d.store()
+- d.nregion(1,2,3,4)
+- d.nregion()        
+nregion currently set to:  [1,2][3,4]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+- d.restore()        
+- d.nregion() 
+nregion currently set to:  [1,100][400,512]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{restorestate}{Restore the state of DISH's GUIs.}
+\begin{ahdescription}
+This function restored GUI paramters.  Also see d.restore() for other state
+saving options.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.restorestate()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{rmadd}{Add an SDRecord to the results manager.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{an SDRecord}{globalscan1}{boolean}
+\ahaddarg{name}{the name of the SDRecord in the Results Manager}{auto-generated name}{string}
+\ahaddarg{desc}{the description of the SDRecord}{none}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- ok := d.rmadd(myspec)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{rms}{Display statistics on baseline regions.}
+\begin{ahdescription}
+This function will calculate statistics on the regions set via the {\it
+setregion} command or {\it nregion} command for the spectrum stored in 
+{\it globalscan1}.
+\begin{ahexample}
+\begin{verbatim}
+- d.rms()
+Using 1023 for calculating baseline stats.
+== Feed  1  ===
+RMS   =  3.24550665    Mean =  0.000737983237    Num points =  1023
+max   =  48.9361229   min =  -12.9025164
+nregion =  [1 1023] 
+== Feed  2  ===
+RMS   =  3.29074012    Mean =  0.351124813    Num points =  1023
+max   =  50.4430733   min =  -14.0051394
+nregion =  [1 1023] 
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{saxis}{Set the units of the x axis in the plotter}
+\begin{ahdescription}
+This function allows command line selection of available x-axis units on 
+the plotter display.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{strval}{units to be displayed}{none}{GHz, MHz, kHz, Hz, km/s, m/s, pix,index}
+\end{ahargs}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.saxis('MHz')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{save}{Save an SDRecord to file.}
+\begin{ahdescription}
+This command, along with d.keep(), is the mechanism used to store results
+to disk.  {\it save} allows the user to specify the SDrecord to be written,
+while {\it keep} simply writes the spectrum in {\it globalscan1}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sdrec}{SDRecord to be saved}{currently viewed}{SDRecord}
+\ahaddarg{outfile}{outfile (scan group) to be written to}{fileout, as listed by d.files()}{string}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.open('mydata')
+- d.fileout('newfile')
+- sdrec := d.getc(10)
+- d.save(sdrec);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{savestate}{Save the current state of DISH.}
+\begin{ahdescription}
+Saves the state of the GUIs and plotter to a file. The default file is
+in the home aips++/dishstate directory called default. This may be altered
+with the statefile function.  The state of GUIs can be recovered with the
+d.restorestate() function.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.savestate()
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{scale}{Multiply the globalscan1 spectrum by a value.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{factor}{value to scale (multiply) by}{no default}{float}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.plotc(10)
+- d.scale(2.0)
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scanadd}{Add scan1 and scan2.}
+\begin{ahdescription}
+Add the spectra from two scans.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{first scan}{no default}{SDRecord}
+\ahaddarg{scan2}{second scan}{no default}{SDRecord}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- on := d.getc(2)
+- off := d.getc(3)
+- addscan := d.scanadd(on,off);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scanbias}{Adds a bias level to a scan.}
+\begin{ahdescription}
+Adds a bias offset to a spectrum.  Also see d.bias() to add a value to the
+globalscan1 record directly.
+
+The bias value can be a single value, in which case the entire data array
+in the sdrecord is offset by one value.  It can also be an array
+of values if the user wishes to apply different offsets to each polarization.
+The length of the offset array in this case must equal the number of
+polarizations in the sdrecord.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{scan}{no default}{SDRecord}
+\ahaddarg{offset}{bias level to add}{no default}{float or array of floats}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- scan := d.getc(2)
+- biasedscan := d.scanbias(scan,0.5);
+- d.plotscan(biasedscan)
+- biasedscan_b := d.scanbias(scan,[0.5,-0.5]);
+- d.plotscan(biasedscan_b)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scandiv}{Divide scan 1 by scan 2.}
+\begin{ahdescription}
+Scan division.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{numerator}{no default}{SDRecord}
+\ahaddarg{scan2}{denominator}{no default}{SDRecord}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- on := d.getc(2)
+- off := d.getc(3)
+- divscan := d.scandiv(on,off)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scanmult}{Multiply scan 1 by scan 2.}
+\begin{ahdescription}
+Scan multiplication.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{numerator}{no default}{SDRecord}
+\ahaddarg{scan2}{denominator}{no default}{SDRecord}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- sc1 := d.getc(2)
+- sc2 := d.getc(3)
+- multscan := d.scanmult(sc1,sc2)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scanscale}{Multiply an sdrecord's spectrum by a value or array}
+\begin{ahdescription}
+This function scales an sdrecord and returns the result as an sdrecord.
+Also see the function d.scale() to apply scaling to the globalscan1 record 
+directly.
+
+The factor can be a single value, in which case the entire data array
+in the sdrecord is scaled by one value.  The factor can also be an array
+of values if the user wishes to scale each polarization by a different value.
+The length of the sfactor array in this case must equal the number of
+polarizations in the sdrecord to be scaled.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{SDRecord to be scaled}{no default}{SDRecord}
+\ahaddarg{sfactor}{multiplicative factor}{no default}{float or array of floats}
+\end{ahargs}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+- sc := d.getc(10)
+- scaled := d.scanscale(sc, 2.0)
+- d.plotscan(scaled)
+- scaled_b := d.scanscale(sc, [2.0,4.5])
+- d.plotscan(scaled_b)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scansrr}{Performs a (signal-reference)/reference.}
+\begin{ahdescription}
+This function does (S-R)/R calibration in an explicit way.  Also see the
+d.calib() function for a more automated way to handle calibration.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{signal scan}{no default}{SDRecord}
+\ahaddarg{scan2}{reference scan}{no default}{SDRecord}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- on := d.getc(2)
+- off := d.getc(3)
+- Tant := d.scansrr(on,off)
+- d.plotscan(Tant)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{scansub}{Subtract scan2 from scan1.}
+\begin{ahdescription}
+Substract one spectrum from another.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan1}{scan to be subtracted from}{no default}{SDRecord}
+\ahaddarg{scan2}{scan to subtract}{no default}{SDRecord}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahexample}
+\begin{verbatim}
+- on := d.getc(2)
+- off := d.getc(3)
+- subscan := d.scansub(on,off);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{sclear}{Clear the contents of the accumulator.}
+\begin{ahdescription}
+This function is used in averaging scans.  It clears the contents of the
+accumulator, and should be used prior to using the accumulator for an
+averaging operation.
+\end{ahdescription}
+\ahreturns{Boolean}
+\begin{ahexample}
+\begin{verbatim}
+ d.sclear()    # clear the accumulator
+ d.getc(35)    # retrieve calibrated scan 35
+ d.accum()     # add the scan to the accumulator
+ d.getc(36)    # retrieve calibrated scan 36
+ d.accum()     # add the scan to the accumulator
+ d.ave()       # average scans in the accumulator
+ d.show()      # display the result on the plotter
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{select}{Select a subset of a scangroup.}
+\begin{ahdescription}
+This will produce a new scan group in the Results Manager labeled
+working\_groupx, where x is some integer value.  Source names 
+should be a single name (in single quotes) or a vector of
+source names (in double quotes or as a glish vector using
+brackets (['source A','source B',...]).  A ``*'' is the 
+source name wild card and will match any characters.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scans}{scan numbers}{all}{string - e.g., '[4,7,9]'}
+\ahaddarg{rows}{row numbers in the MS}{all}{string - e.g., '[4:8],10'}
+\ahaddarg{source}{source names}{all}{string}
+\ahaddarg{restfrequency}{the restfrequency}{all}{vector of doubles}
+\ahaddarg{date}{date of the observation}{all}{string}
+\ahaddarg{ut}{seconds of UT time since the observations started}{all}{vector of floats}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- ok := d.select(rows='[1:100]',scans='[4:6]');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setregion}{Set the channel range for use in baseline
+subtraction}
+\begin{ahdescription}
+This function provides an interactive means of obtaining channel ranges
+for baseline subtraction. The function changes the displayed units to
+channels (pixels) and then sets the regions through use of the mouse
+buttons. The regions are then displayed for viewing. These regions will
+be used by the {\it bshape}, {\it rms} and {\it baseline} routines.
+\end{ahdescription}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.setregion()
+Use the left button to set location, right button to exit
+
+region =  [21 156 309 644 803 1011] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setYUnit}{Set the y-axis unit for a spectrum}
+\begin{ahdescription}
+This function will set or override the y-axis unit for the globalscan1
+spectrum.  It does not affect the data values in the spectrum or calibrate
+in any way, it only changes the label on subsequent displays and the header
+entry for Y-units.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{unit}{The units}{no default}{string}
+\end{ahargs}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.setYUnit('Ta*');
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{show}{Display the globalscan1 SDRecord}
+\begin{ahdescription}
+This function will plot the spectrum currently contained in the
+{\it globalscan1} SDRecord.
+\end{ahdescription}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{show1}{Display one polarization of the globalscan1 SDRecord}
+\begin{ahdescription}
+This function will plot the spectrum currently contained in the 
+{\it globalscan1} SDRecord for the specified polarization/receptor. The other
+receptors will be zeroed out in the display (but the actual data are not 
+affected).  The principal display functions plotr and plotc also have 
+selections on the polarization and can be used to display individual 
+polarizations.  In addition, {\it  getpol} will return a single
+polarization from data to an SDRecord.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ifeed}{numeric designation for polarization}{integer}{no default}
+\end{ahargs}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.show1(1)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{showref}{Display the vref SDRecord}
+\begin{ahdescription}
+This function will plot the spectrum currently contained in the
+{\it vref} SDRecord.
+\end{ahdescription}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.showref()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{signal}{Designate the signal spectrum}
+\begin{ahdescription}
+This function can be used to designate a signal spectrum explicitly.
+For standard observing and calibration, d.TPcal or d.calib can be used
+instead.  However, this function allows the option of calibrating a ref
+and sig scan that were not observed as part of the same observing procedure.
+\end{ahdescription}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.reference(10)
+- d.signal(11)
+- d.temp()
+- d.show()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{smooth}{Smooth (hanning, boxcar or gaussian) an SDRecord.}
+\begin{ahdescription}
+This function allows access to several smoothing functions. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{an SDRecord}{currently displayed}{boolean}
+\ahaddarg{type}{type of smoothing function to be applied}{HANNING}{'HANNING', 'BOXCAR', or 'GAUSSIAN'}
+\ahaddarg{width}{width of the boxcar or gaussian}{3}{float}
+\ahaddarg{units}{units for the width}{'channels' or 'native'--only relevant for GAUSSIAN}{string}
+\ahaddarg{decimate}{decimate when smoothing (for HANNING)}{F}{boolean}
+\end{ahargs}
+\ahreturns{An SDRecord}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- mysmooth:=d.smooth(type='BOXCAR',width=5);
+\end{verbatim}
+\end{ahexample}
+This does a 5 channel wide boxcar smooth.
+\end{ahfunction}
+
+\begin{ahfunction}{stat}{Generate statistics over a line region.}
+\begin{ahdescription}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scanrec}{an SDRecord}{currently displayed}{boolean}
+\ahaddarg{range}{the range over which the statistics will be generated}{no default}{string}
+\ahaddarg{units}{the units used for the range}{'channels'}{string}
+\end{ahargs}
+\ahreturns{A record of the results (peak,area,min,rms,scan,centroid,vpeak)}
+\begin{ahexample}
+\begin{verbatim}
+- mystat := d.stat{range='[50:100]');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{statefile}{Changes file for state saving.}
+\begin{ahdescription}
+Changes the location that the state of Dish's GUIs and plotter will be
+saved to. The full pathname is required.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+d.statefile('mydefaultstate');
+d.savestate();                     # saves to mydefaultstate in the
+                                        # current directory
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{stats}{Generate statistics over a region.}
+\begin{ahdescription}
+This function provides basic statistics over a region. It is used mainly
+for obtaining information on line-free regions. The default behavior
+will write information on all polarizations to the command window.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{quiet}{Suppress write of information to screen}{F}{boolean}
+\ahaddarg{feed}{Limit information to a single polarization}{all}{integer}
+\ahaddarg{bchan}{Beginning channel to calculate statistics}{1}{integer}
+\ahaddarg{echan}{End channel for statistics}{last}{integer}
+\end{ahargs}
+\ahreturns{boolean (T if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.stats()
+Feed : 1       bchan: 1        rms  : 3.382537       min  : -12.625508  
+Npts : 1023    echan: 1023     mean : 0.381799       max  : 51.412025   
+
+Feed : 2       bchan: 1        rms  : 3.264693       min  : -14.260262  
+Npts : 1023    echan: 1023     mean : -0.004182      max  : 49.291866   
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{store}{Store the contents of the uni Record to disk.}
+\begin{ahdescription}
+This function will store the uni record to disk
+file ~/.uni2params.  This record includes vairables used by dish, such as the
+globalscan1 array, nregion settings, and so on.  A complete list of the
+variables can be seen from dish by d.upr('all').  The record can be restored
+using the d.restore() function.
+\end{ahdescription}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.nregion(1,100,400,512)
+- d.nregion()
+nregion currently set to:  [1,100][400,512]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+- d.store()
+- d.nregion(1,2,3,4)
+- d.nregion()        
+nregion currently set to:  [1,2][3,4]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+- d.restore()        
+- d.nregion() 
+nregion currently set to:  [1,100][400,512]
+To modify these values, use this function as follows:
+nregion(1,256,850,1023)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{summary}{List a summary for a Measurement Set}
+\begin{ahdescription}
+Summarizes a measurement set to the logger.
+\end{ahdescription}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+- d.summary()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tellstack}{Return contents of the stack.}
+\begin{ahdescription}
+This function is used to return the contents of the ``stack''.  The stack is
+a construct (simply a vector of integers) which is used to organize a list
+of scans which will be operated on in some common way.  Generally, it is used
+to assemble a list of scans which can then be averaged.
+\end{ahdescription}
+\ahreturns{array of ints}
+\begin{ahexample}
+\begin{verbatim}
+- d.addstack(10,50,2) 
+- d.delete(22)
+- d.tellstack()
+20  entries in the stack.
+[10 12 14 16 18 20 24 26 28 30 32 34 36 38 40 42 44 46 48 50] 
+- avscan := d.aver(d.tellstack())
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{upr}{Print the current value of variables
+in the uni-record.}
+\begin{ahdescription}
+This function will print the current value of the specified variable in
+the uni-record.  To display all variables, pass no arguments.
+\end{ahdescription} 
+\begin{ahargs}
+\ahaddarg{...}{list of variables}{all}{strings}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahexample}
+\begin{verbatim}
+- d.upr('nfit','nregion')    
+nfit  =  0
+nregion  =  [1,100000]
+
+- d.upr()                 
+tau  =  F
+factor  =  1
+astack  =  F
+acount  =  0
+edrop  =  0
+bdrop  =  0
+echan  =  0
+bchan  =  0
+emoment  =  0
+bmoment  =  0
+nfit  =  0
+numaccum  =  0
+vref  =  F
+vsig  =  F
+globalscan1  =  F
+nregion  =  [1,100000]
+nregionArr  =  [1 100000] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{utable}{Print channel and data columns to command
+window}
+\begin{ahdescription}
+This function provides a shortcut to display the channel number and data
+from the current {\it globalscan1} SDRecord (typically the currently viewed
+data).  It uses the bdrop and edrop variables to limit the range printed.
+\begin{ahexample}
+\begin{verbatim}
+d.utable()
+- d.utable()
+1 [0.042550344 -0.135733142]
+2 [-0.0302197617 -0.149972931]
+3 [0.0953259096 -0.0912254006]
+4 [-0.0387661941 -0.0562298447]
+5 [-0.0511925854 -0.0671290383]
+6 [0.134882167 -0.204534769]
+7 [-0.0294003487 -0.168623194]
+...
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{writetofile}{Write X,Y axes to an ascii file on disk.}
+\begin{ahdescription}
+This will produce a file on disk with the user specified name containing
+the X and Y data for the specified spectrum (default=currently displayed)
+in 2+ columns (the first column is the currently displayed x-axis, the
+subsequent columns will be the data in each polarization of the data).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{outfile}{the name of the file on disk where the data will be written}{
+no default}{string}
+\ahaddarg{scanrec}{an SDRecord}{currently displayed}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+ok := d.writetofile('junk.dat');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{zline}{Draw a horizontal line at zero intensity on the plotter.}
+\begin{ahdescription}
+This function allows the option of plotting a line at the zero intensity
+as a reference. After using this function, subsequent plots will display
+it.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{torF}{T indicates draw the line}{no default}{boolean}
+\end{ahargs}
+\ahreturns{T (if successful)}
+\begin{ahexample}
+\begin{verbatim}
+d.zline(T);
+d.plotc(35); #see the zero line
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahobject}{dishd}{dish tool (developer functions)}
+\ahcategory{dish}
+\ahkeyword{dish}{}
+\ahfuncs{}
+
+\begin{ahfunction}{addop}{Add new operation to DISH tool}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+d.addop(include_file, operation_name);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{dologging}{Switch to determine whether commands from
+the GUI are logged to the scripter}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+d.dologging(T or F);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{doselect}{Toggle selection between last plotted and RM 
+selection}
+\begin{ahdescription}
+A toggle switch which determines whether commands operations will operate
+on the last viewed (the default behavior) or upon the selected item in
+the results manager. This gives the ability of performing bulk processing
+on SDIterators. Selecting will also change the GUI state of the Option
+'select from rm (for SDITs)'.
+\begin{ahexample}
+\begin{verbatim}
+d.doselect(T or F);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{history}{Writes message to history of SDRecord.}
+\begin{ahdescription}
+Writes a message to the history line of the current SDRecord. It takes two
+arguments: 1) a string of the command executed , 2) a record of the inputs
+to that command.
+\begin{ahexample}
+\begin{verbatim}
+- d.history('dish.ops().smooth.settype',[type='HANNING']);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{logcommand}{Writes command to scripter.}
+\begin{ahdescription}
+Writes a command to the scripter. logcommand uses the same syntax as history
+but the information is logged to the scripted rather than to the record's
+history.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{message}{Writes a command to the DISH GUI message entry.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Returns the type of the DISH tool.}
+\begin{ahdescription}
+A mandatory function required by the toolmanager. The type of any dish tool
+is 'dish'.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahobject}{msr}{dish spectral line measure tool}
+\ahcategory{dish}
+\ahkeyword{dish}{}
+\ahfuncs{}
+\begin{ahdescription}
+The \textbf{dish} msr tool duplicates the functionality of the GMEASURE
+methods in Unipops (modes 1-5). Each method derives three characteristic
+values for the flux over the range of channels:
+\begin{itemize}
+\item{} flux integral (i.e. flux*dv)
+\item{} characteristic velocity (i.e. estimate of systemic velocity)
+\item{} velocity width
+\end{itemize}
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=mean.ps,width=4.35in}
+\caption{View of plotter after msr mean fit}
+\label{fig:mean}
+\end{center}
+\end{figure}
+\end{ahdescription}
+
+\begin{ahfunction}{areape}{Derives profile characteristic values.}
+\begin{ahdescription}
+This function calculates the width and average velocity of a galaxy spectrum. 
+The two halves of the double horned profile are treated separately. For each 
+half, the peak is determined (it is assumed that the two peaks are on either
+side of the center of the user specified limits first and LAST). Then on each 
+side of the profile a polynomial (by default 1st order) is fit to a user 
+specified portion of the profile.  If the fit is poor, (i.e. (chisqr - 
+deg.of.freedom) > 3 times sqrt(2*deg.of.freedom)), the user is given the 
+option of fitting a 2nd degree polynomial and/or changing the levels between
+which to fit. The FR points (where FR is a user specified fraction of the peak 
+flux) on either side of the profile are located by interpolation between the 
+two data points that bracket the FR point. The interpolaton is done by channel 
+number and then the velocity corresponding to the interpolated channel number
+is computed. The average velocity is taken to be the mean of these two 
+velocities 
+and the width is taken to be the difference between these two velocities. The 
+uncertainity in the velocity measurment is then calculated from the rms in the 
+baseline and the coefficients of the fitted polynomial. Finally the area 
+between the channels first and last is computed as in the other methods.
+\begin{ahexample}
+\begin{verbatim}
+- d.msr().areape(rms=0.005,levs=[0.8,0.2,0.4],usecurs=T) 
+Upper and lower profile points of left peak coincide!
+Poor fit to profile: the normalized chisqr are nan14.2039694
+Number of points used to fit left and right halves are 23
+[type=areape, lchans=[329 328 329] , rchans=[351 353 351] , badfit=T, 
+vwidth=116.518171, vel=1111.61462, vrms=0.109011172, badpeak=F, 
+limits=[320.401001 358.420601] , fluxint=98.4090931] 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{lv}{an SDRecord}{F}{SDRecord - Not enabled}
+\ahaddarg{first}{first channel number in range to integrate}{F}{integer}
+\ahaddarg{last}{last channel number in range to integrate}{F}{integer}
+\ahaddarg{levs}{define levels relative to each peak flux}{[0.8,0.2,0.4]}{vector}
+\ahaddarg{rms}{rms of the spectrum (non-line)}{0.0}{float}
+\ahaddarg{usecurs}{optionally set ranges with cursor}{F}{boolean}
+\ahaddarg{norder}{order of the fit}{1}{integer}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Record (fluxint, vel, vwidth, level, limits, type, mean)}
+\end{ahfunction}
+
+\begin{ahfunction}{areapf}{Derives profile characteristic values.}
+\begin{ahdescription}
+This subroutine calculates the width and average velocity of a galaxy spectrum. 
+The two halves of the double horned profile are treated separately. For each 
+half, the peak is determined (it is assumed that the two peaks are on either
+side of the center of the user specified limits first and LAST). Then each on 
+each side of the profile  a polynomial (by default 1st order) is fit to a user 
+specified portion of the profile. If the fit is poor, (i.e. (chisqr - 
+deg.of.freedom) > 3 times sqrt(2*deg.of.freedom)), the user is given the option 
+of fitting a 2nd degree polynomial and/or changing the levels between which to 
+fit. Finaly using the fitted polynomial, the fr points (where fr is a user 
+specified fraction of the peak flux) on either side of the profile is located. 
+The interpolaton is done by channel number and then the velocity corresponding
+to the interpolated channel number is computed. The average velocity is taken 
+to be the mean of these two velocities and the width is taken to be the 
+difference 
+bewteen these two velocities. The uncertainity in the velocity measurment is 
+then calculated from the covariance matrix of the coefficients of the fitted
+polynomial. Finally the area of the profile between the limits first and last 
+is computed as summation (x(i)*dv(i)), where dv(i) is the velocity difference 
+between channels i and i-1.
+\begin{ahexample}
+\begin{verbatim}
+- d.msr().areapf(rms=0.005,levs=[0.8,0.2,0.4],usecurs=T)
+Upper and lower profile points of left peak coincide!
+Poor fit to profile: the normalized chisqr are nan 14.2039694
+Number of points used to fit left and right halves are 23
+[type=areapf, lchans=[323.402033 322.402033 322] , rchans=[351 353 351] , 
+badfit=T, vwidth=150.814539, vel=1094.01721, vrms=0.184532409, badpeak=F, 
+limits=[322.402033 356.419569] , fluxint=99.7206675] 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{lv}{an SDRecord}{F}{SDRecord - Not enabled}
+\ahaddarg{first}{first channel number in range to integrate}{F}{integer}
+\ahaddarg{last}{last channel number in range to integrate}{F}{integer}
+\ahaddarg{levs}{define levels relative to each peak flux}{[0.8,0.2,0.4]}{vector}
+\ahaddarg{rms}{rms of the spectrum (non-line)}{0.0}{float}
+\ahaddarg{usecurs}{optionally set ranges with cursor}{F}{boolean}
+\ahaddarg{norder}{order of the fit}{1}{integer}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Record (fluxint, vel, vwidth, level, limits, type, mean)}
+\end{ahfunction}
+
+\begin{ahfunction}{mean}{Derives characteristic values based on the mean.}
+\begin{ahdescription}
+The flevel (flux level) is multiplied by the mean over the channel range.
+Starting at the edges of the range, channels are found where the flux first
+rises above the derived level. The integrated flux is taken between these
+channels. A linear interpolation is done to find the velocity corresponding
+to where the flux equals that level. These two velocities (one at each end)
+are used to determine the characteristic velocity (the average of the two).
+The velocity width is the absolute value of their difference.
+\begin{ahexample}
+\begin{verbatim}
+- d.msr().mean(first=324,last=360,flevel=0.2)
+[fluxint=99.0127912, vel=1109.67758, vwidth=130.143466, level=0.103916899, 
+limits=[328 352] , type=mean, mean=0.519584496] 
+- d.msr().mean(flevel=0.3,usecurs=T)
+[fluxint=0.204479891, vel=1111.32345, vwidth=129.747723, level=0.000357433806, 
+limits=[329.167913 353.229436] , type=mean, mean=0.00119144602] 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{lv}{an SDRecord}{F}{SDRecord - Not enabled}
+\ahaddarg{first}{first channel number in range to integrate}{F}{integer}
+\ahaddarg{last}{last channel number in range to integrate}{F}{integer}
+\ahaddarg{flevel}{fractional flux level}{0.3}{float}
+\ahaddarg{usecurs}{optionally set ranges with cursor}{F}{boolean}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Record (fluxint, vel, vwidth, level, limits, type, mean)}
+\end{ahfunction}
+
+\begin{ahfunction}{peak}{Derives characteristic values based on the peak.}
+\begin{ahdescription}
+Identical to mean except that the cutoff level is the peak value times flevel.  
+Also, you can optionally supply a noise estimation (the rms argument).  This is 
+subtracted from the peak value before it is multiplied by flevel. The returned 
+fields here are nearly identical to those in mean.  The only difference is
+that there is a peak field here instead of mean.  That is the actual peak, not 
+the value reduced by rms.
+
+\begin{ahexample}
+\begin{verbatim}
+- d.msr().peak(flevel=0.5,usecurs=T)
+[fluxint=91.9571165, vel=1108.78946, vwidth=105.650325, level=0.610705972, 
+limits=[330.404096 350.418538] , type=peak, peak=1.22141194] 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{lv}{an SDRecord}{F}{SDRecord - Not enabled}
+\ahaddarg{first}{first channel number in range to integrate}{F}{integer}
+\ahaddarg{last}{last channel number in range to integrate}{F}{integer}
+\ahaddarg{flevel}{fractional flux level}{0.3}{float}
+\ahaddarg{rms}{rms of spectrum}{0.}{float}
+\ahaddarg{usecurs}{optionally set ranges with cursor}{F}{boolean}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Record (fluxint, vel, vwidth, level, limits, type, peak)}
+\end{ahfunction}
+
+\begin{ahfunction}{twopeak}{Derives characteristic values based on the peaks.}
+\begin{ahdescription}
+Similar to peak except that there are two cutoff levels determined for the data.  
+Peaks are found within 10 channels from each guessed peak location (peak1 and 
+peak2), the cuttoff levels are then set to be flevel times each peak. The value 
+from the peak near first is used to set the lower channel limit and the value 
+from the peak near last is used to set the upper channel limit in the same
+way that peak and mean set those channel limits.  As with peak, you optionally 
+supply a noise estimate (the rms argument) which is subtracted from the peak 
+values before they are multiplied by flevel. The return value fields are nearly 
+the same as in peak. Here, the level and peak fields have 2 elements. There is 
+also a peakchan field which contains the refined locations of the two peaks.
+\begin{ahexample}
+\begin{verbatim}
+- d.msr().twopeak(flevel=0.5,usecurs=T)
+[fluxint=94.6122732, vel=1110.71511, vwidth=109.501611, level=[0.610705972 
+0.489752263] , limits=[330 351] , type=twopeak, peak=[1.22141194 0.979504526] , 
+peakchan=[334 336] ] 
+\end{verbatim}
+\end{ahexample}
+\begin{ahargs}
+\ahaddarg{lv}{an SDRecord}{F}{SDRecord - Not enabled}
+\ahaddarg{first}{first channel number in range to integrate}{F}{integer}
+\ahaddarg{last}{last channel number in range to integrate}{F}{integer}
+\ahaddarg{peak1}{guess of first peak channel number}{F}{integer}
+\ahaddarg{peak2}{guess of second peak channel number}{F}{integer}
+\ahaddarg{flevel}{fractional flux level}{0.3}{float}
+\ahaddarg{rms}{rms of spectrum}{0.}{float}
+\ahaddarg{usecurs}{optionally set ranges with cursor}{F}{boolean}
+\end{ahargs}
+\end{ahdescription}
+\ahreturns{Record (fluxint, vel, vwidth, level, limits, type, peak, peakchan)}
+\end{ahfunction}
+\end{ahobject}
+
+\begin{ahobject}{plotter}{dish plotter tool}
+\ahcategory{dish}
+\ahkeyword{dish}{}
+\ahfuncs{}
+\begin{ahdescription}
+The \textbf{dish} plotter is a superposition of numerous plotting capabilities
+with additional functionality added. In particular, the plotter has all of
+the functions of the \textbf{pgplotter} tool (as described in the GLISH
+Manual section on Glish/PGPLOT) and the AIPS++ \textbf{pgplotwidget} tool.
+We dont' describe this functionality as it is detailed in the above sections.
+
+\begin{verbatim}
+
+displaylist		pgplotwidget
+setcallback		pgplotwidget
+deactivatecallback	pgplotwidget
+activatecallback	pgplotwidget
+record			pgplotwidget
+canplay			pgplotwidget
+play			pgplotwidget
+postscript		pgplotwidget
+plotfile		pgplotwidget
+refresh			pgplotwidget
+restore			pgplotwidget
+done			pgplotwidget
+plotxy			pgplotwidget
+maskline		pgplotwidget
+clear			pgplotwidget
+message			pgplotwidget
+settings		pgplotwidget
+cursor			pgplotwidget
+lastchange		pgplotwidget
+curs			pgplotwidget
+size			pgplotwidget
+addredrawfunction	pgplotwidget
+
+arro - wnad		pgplotter
+
+plotxy1			pgplotter
+ploty			pgplotter
+ploty2			pgplotter
+plotxy2			pgplotter
+timey			pgplotter
+timey2			pgplotter
+setxscale		pgplotter
+setx2scale		pgplotter
+setyscale		pgplotter
+sety2scale		pgplotter
+setxaxisgrid		pgplotter
+setyaxisgrid		pgplotter
+sety2axisgrid		pgplotter
+setcolor		pgplotter
+setplottitle		pgplotter
+setxaxislabel		pgplotter
+setyaxislabel		pgplotter
+psprint			pgplotter
+psprinttofile		pgplotter
+unzoom			pgplotter
+addtool			pgplotter
+tool			pgplotter
+typ			pgplotter
+editgui			pgplotter
+userframe		pgplotter
+demo			pgplotter
+gui                     pgplotter
+screen                  pgplotter
+busy                    pgplotter
+shortnametofullname     pgplotter
+resetplotnumber         pgplotter
+
+is_active		dishd		dishd indicates developer only function
+pf			dishd	
+index			dishd
+header			dishd
+overlay			dishd
+reverse			dishd
+chalkboard		dishd
+gfit			dishd
+lineid			dishd
+setranges		dishd
+compute_statistics	dishd
+active			dishd
+register_range		dishd
+assert_range_cursor	dishd
+deassert_range_cursor	dishd
+create			dishd
+lineid			dishd
+debug			dishd
+
+ips			dish
+plotrec			dish
+putranges		dish
+ranges			dish
+uzoom			dish
+\end{verbatim}
+
+In the following, we describe the additional functionality available within
+the \textbf{dish} plotter.
+
+\end{ahdescription}
+
+\begin{ahfunction}{ips}{Image profile support.}
+\begin{ahdescription}
+\textbf{ips} or Image Profile Support is actually a tool within the 
+\textbf{images} Module. All data in \textbf{dish} are plotted as an image
+(1-d, 2-d, or 3-d). Numerous function exist within the \textbf{ips} tool
+for getting data and plotting data (e.g. getordinate, getabcissaunit, etc.).
+\begin{ahexample}
+The following will change the displayed units on the plotter to 'Hz'.
+\begin{verbatim}
+- d.plotter.ips.setabcissaunit('Hz')
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{plotrec}{Plot an SDRecord.}
+\begin{ahdescription}
+This is the basic function within the plotter, allowing an SDRecord to be
+plotted from the command line. A shortcut to this command is available as
+d.plotscan. The plotrec command has an optional 'overlay' argument which
+when 'T', will overlay the record on the existing plot.
+\begin{ahexample}
+\begin{verbatim}
+- d.plotter.plotrec(myrec);
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putranges}{This allows setting of range regions for use
+by future operations.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{ranges}{Retrieves any active ranges.}
+\begin{ahdescription}
+Any ranges that have been set by the baseline or statistics operations can
+be obtained at the command line through this command.
+\begin{ahexample}
+\begin{verbatim}
+- d.plotter.ranges()
+[1.40517056e+09:1.41934387e+09] 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Vector}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahobject}{rm}{dish results manager}
+\ahkeyword{dish}{}
+\begin{ahdescription}
+The ``Results Manager'' is where all of the variables created by
+\textbf{dish} are shown.  These are all global symbols which you can
+manipulate directly at the glish prompt.
+
+In the following examples, we assume that there is an existing \textbf{dish}
+tool called 'd'.
+\end{ahdescription}
+
+\ahfuncs{}
+\begin{ahfunction}{add}{Add an SDRecord to the Results Manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().add(name,description,value,type,decorate)
+For example, using myrec:
+- d.rm().add('myrec','something I did', myrec, type='SDRECORD');
+\end{verbatim}
+\end{ahexample}
+
+A shortcut to this function is provided through:
+\begin{verbatim}
+- d.rmadd(myrec,'myrec','something else I did');
+\end{verbatim}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{copy}{Copies currently viewed to the clipboard.}
+\begin{ahdescription}
+The clipboard is a virtual workspace for storing any information. This command
+writes the currently viewed SDRecord to the clipboard. It can later be
+{\it paste}d into the results manager.
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().copy()
+T 
+- d.rm().paste()	# the SDRecord should appear in the Results Manager
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{delete}{Deletes the Results Manager Variable with the specified index.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().delete(2)
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Deletes and closes down the results manager tool (not recommended!).}
+\begin{ahdescription}
+This is a developer function. This should not be used by astronomers. The
+keys to closing elements of \textbf{dish} are contained
+at a higher level, in the user functions.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getdescriptions}{Gets descriptions from an index value in the results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().getdescriptions(1)
+SD dataset from file 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{getlastviewed}{Returns the SDRecord of the last viewed item in the plotter.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- lastviewed := d.rm().getlastviewed();
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{SDRecord}
+\end{ahfunction}
+
+\begin{ahfunction}{getnames}{Gets name from an index value in the results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().getnames(1)
+dishdemo2
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{getselectiondescriptions}{Gets the descriptions of all selected items in the Results Manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- mydesc:=d.rm().getselectiondescriptions()
+- mydesc[1]
+SD dataset from file 
+- mydesc[2]
+something I did
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{getselectionnames}{Gets the names of all selected items in the Results Manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().getselectionnames()
+naic_ms1 mydum1
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{getselectionvalues}{Gets the values of all selected items in the Results Manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Vector of SDRecords}
+\end{ahfunction}
+
+\begin{ahfunction}{getvalues}{Returns values of selected in results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- myaverscan := d.rm().getvalues(2)
+- field_names(myaverscan)
+data header hist other 
+- #the variable myaverscan is an SDRecord!
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{SDRecord}
+\end{ahfunction}
+
+\begin{ahfunction}{gui}{Opens the GUI for the results manager if it isn't already viewed.}
+\begin{ahdescription}
+This is a developer function. This should not be used by astronomers. The
+keys to mapping and unmapping GUI elements of \textbf{dish} are contained
+at a higher level, in the user functions.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{nogui}{Specifies whether the GUI for the Results Manager should be viewed.}
+\begin{ahdescription}
+This is a developer function. This should not be used by astronomers. The
+keys to mapping and unmapping GUI elements of \textbf{dish} are contained
+at a higher level, in the user functions.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{paste}{Pastes from the clipboard into the results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{rename}{Renames a selected Results Manager variable.}
+\begin{ahdescription}
+This provides a command line function to rename a selected results manager
+variable.
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().rename('orion_scan1')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{select}{Selects an item in the results manager.}
+\begin{ahdescription}
+For a specified index value, it will select (and consequently display)
+the item in the Results Manager.
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().select(2)
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{selectbyname}{Selects an item in the results manager by name rather than by index number.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().selectbyname('naicspec1');
+F
+- # the spectrum called 'naicspec1' in the Results Manager is displayed.
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{selectionsize}{Gives the number of items selected in the results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().selectionsize()
+1
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Integer}
+\end{ahfunction}
+
+\begin{ahfunction}{setdescription}{Sets description to a specified string.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().setdescription(1,'my description is now different');
+F 
+- d.rm().getdescriptions(1)
+my description is now different 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{setlastviewed}{For a specified index value in the results manager, it will set this as the last viewed item.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{size}{Gives the number of items in the results manager.}
+\begin{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- d.rm().size();
+32
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Integer}
+\end{ahfunction}
+
+\begin{ahfunction}{wsname}{Retrieves name of MS that will be used for any selections.}
+\begin{ahdescription}
+This is a developer function. This should not be generally used.
+\begin{ahexample}
+\begin{verbatim}
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\end{ahobject}

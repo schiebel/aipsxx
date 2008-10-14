@@ -1,0 +1,470 @@
+\chapter{Wide field imaging}
+\label{GRwidefield}
+
+{\em Kumar Golap and Tim Cornwell}
+
+
+\section{Background}
+
+The relationship between the visibility domain to the image plane is
+given by the Van Cittert-Zernicke theorem.  This can be reduced to a
+Fourier relationship for planar arrays and also for small field of views
+for non-planar arrays (Thompson, Moran and Swenson).  When this happens
+the Fourier inversion of observed visibilities gives the true image
+convolved with the point spread function (PSF).  Both the true image and
+the PSF are functions of 2 variables only (l,m).  Deconvolving is
+conceptually simple. 
+
+When visibilities are sampled by a non-planar array (u, v and w
+components), the relationship between them and the image plane can no
+longer be represented by a 2-D Fourier transform.  The relationship is
+now a 3-D Fourier transform.  Of course our image of the sky is truly
+2-D and when deconvolving it, one should ideally use a different PSF for
+each point in the image.  This can be very difficult to achieve if the
+image has a few million pixels. 
+
+It becomes worse when one has to consider that the field of view for
+deconvolution is much more than the field of view of interest (at most
+the primary beam of the antennas).  Deconvolution may need to consider
+the sidelobes and at low frequencies the whole visible sky may have to
+be considered, especially if strong sources like Cygnus-A or Cas-A are
+above the horizon.  The PSF in the sidelobes suffers both distortion
+from the 'w' term and the amplitude and gain difference difference of
+the sidelobes of each antenna. 
+ 
+Wide-field imaging is different from mosaicing as the whole observation
+can be made with a single pointing.  Wide-field imaging is needed when
+the term $w\sqrt{1-l^2-n^2}$ varies significantly over the field of
+view.  Mosaicing is the technique used to combine visibilities (or
+images) obtained from different pointings; in effect it increases the
+field of view beyond the primary beam pattern. 
+
+An important question is how do you know that you need wide-field
+imaging techniques? If your array is planar (e.g.  an E-W array) you do
+not need them.  Otherwise, one simple way is to make an image via basic
+2-D Fourier techniqes.  If point-source responses on the edge of the
+image have the same shape as those in the center then it is not needed. 
+
+A simple criterion (due to Barry Clark) is that:
+
+\begin{quote}
+ (Field of view in radians) * (Field of view in beams) >~ 1
+\end{quote}
+
+
+
+\subsection{Possible solution to the wide-field imaging problem}
+
+There are in fact a number of different possible approaches to
+solving the wide-field imaging problem. These are reviewed by
+Cornwell and Perley. Here we give a
+brief account:
+
+\begin{itemize} \item 3D transform - after a 3D transform of the
+visibilities from a non-planar array is performed, the image can be
+recovered only after a 3-D deconvolution is performed.  This technique
+suffers from the fact that it is very expensive computationally
+(Cornwell and Perley). 
+
+\item Faceting the image plane - the image plane can be considered as
+small tangential facets to the Celestial sphere.  The size of the facets
+are chosen such that the PSF is invariant over the each facet.  Each
+facet has one PSF associated with it.  In an iterative fashion, CLEAN is
+used on each facet down to some limit (the {\em minor} cycle), and then
+the components found are subtracted from the visibilities (via Fourier
+transform), and a re-computation of the residual images is made (the
+{\em major} cycle). 
+
+Calculation of the facet planes can be handled in two ways:
+
+\begin{enumerate}
+
+\item  By phasing the visibility data appropriately, the dirty image 
+and PSF are made for each facet and the above process is applied to
+the facets. At the end of processing, the final CLEANed images have to
+be transformed to a single common plane.
+
+\item  By phasing the visibility data and reprojecting the uv
+coordinates appropriately, the dirty image and PSF are made for each
+facet onto a common tangent plane, and the above process is applied to
+the facets. No final reprojection is required.
+
+\end{enumerate} 
+\end{itemize}
+ 
+
+\section{Available Tools}
+
+The basic \tools\ for calibration and imaging are
+\htmlref{Calibrater}{calibrater:calibrater} and
+\htmlref{Imager}{imager:imager}.  Combining these is a \tool\ called
+Dragon.  This \tool\ allows the user to loop through many cycles of
+wide-field imaging and self-calibration successively with little or no
+inputs from the user in the process. 
+
+\subsection{Basic capabilities}
+
+Imager handles wide-field imaging via the faceting described above.  For
+various reasons, one may like to change the number of facets being used
+when processing an image.  For example, one may wish to have few facets
+when deconvolving bright sources and have many more facets to have deep
+CLEANing. 
+
+During the self-calibration part of the imaging process (also sometimes
+called difference mapping), the flux levels where phase self-cal and
+amplitude self are needed can be specified. 
+
+The imaging process can be helped by specifying the bright sources via
+a \htmlref{Componentlist}{componentmodels:componentlist} \tool.
+
+If there are bright sources outside the field of interest, their
+sidelobes can be deconvolved from the image of interest by specifying
+an outlier region around that source.  Inherently there are no limits
+on the number of facets or number of outlier fields to be specified.
+
+Imager and Dragon have a function which advises on the optimal number of 
+facets, tangent point of image,  to be used for given desired signal-to-noise
+ratio and size of image to be made. 
+
+\subsection{Faceting size}
+
+%        - Accurate positions, accurate strengths have different
+%        requirements
+
+The number of facets needed to image a given field of view depends on
+several factors.  Among them are the uv distance, the amount of
+amplitude loss allowable, and the positional error allowable.  The number of
+facets used ultimately depends on what the user wants.  If flux
+information only is needed the number of facets can be much less than
+if, say, very accurate positions are needed. 
+
+The {\stff advise} function gives both the number of facets needed to get the
+accurate positions or just accurate flux measurements. 
+
+% I can hardly understand this paragrah [nebk]
+
+For accurate flux, a gradient in the w term phase is not important.  The {\stff
+advise} function's least squares fit to uvw gives the best fitting plane, dispersion in
+w' gives the beam size in w.  Max amplitude loss plus simple geometry
+gives the facet size.  But for accurate positioning the facet size
+should be such that even a gradient in the w term is not important for a
+given amplitude loss. 
+
+\subsubsection{Further Advice}
+
+The advice for accurate flux may sometimes be too small to the extent of
+causing artifacts.  The positional error might be large enough that
+sources close to the edge of the facets may end up appearing on 2
+facets.  In general if one requires accurate flux values, then it
+would be advisable to use a few more facets than the minimum suggested
+by {\stff advise}.  Make sure that there is not any source splitting over
+the image. 
+
+If very accurate positions are needed then either one has to image
+with the large number of facets suggested or try an alternative
+solution.  That alternative solution is to image with a number of facets which is 
+practical then get the best fit the position of each of the component
+from the UV-data. The fitting of components in the UV data is yet to 
+be implemented in \aipspp.
+
+
+\subsection{Deconvolution}
+
+Deconvolution in the wide-field context is presently available only
+via CLEAN and implemented only for the  Hogbom and Clark CLEAN variants (see
+\htmlref{Imager.clean}{imager:imager.clean.function} and
+\htmlref{Dragon.image}{imager:dragon.image.function}).
+
+
+\subsection{Self-calibration}
+
+If no self-calibration is needed, either Imager can be used directly or
+else Dragon can be used but with the arguments {\gcf levels} and {\gcf
+amplitudelevel} in {\gcf Dragon.image} left at {\gcf '0Jy'}.  
+
+If you do need self-calibration, then it is set to start at an amplitude
+level where it is expected that the phase or amplitude errors start to
+become significant. 
+Usually the user will do phase self-calibration only initially, followed later
+by phase and amplitude self-calibration at a much lower level of
+residuals. 
+
+\begin{verbatim}
+drgn := dragon('data.ms')
+drgn.setimage(...)                 # Setup image parameters
+#
+drgn.image(levels='1Jy 0.3Jy 0.1Jy',amplitudelevel='0.2Jy',
+           timescales='200s 200s 100s', niter=50000, gain=0.05, 
+           threshold='0.05Jy', plot=F, display=F, algorithm='wfclark')
+\end{verbatim}
+
+In this example, CLEANing will be done and self-calibration will be
+executed at residual levels of 1Jy, 0.3Jy and 0.1Jy.  As {\gcf
+amplitudelevel} is set to 0.2~Jy, the calibration steps at 1Jy and 0.3Jy
+will be phase calibration and correction only.  However, the step at
+0.1Jy will be a phase and amplitude phase calibration and correction. 
+The {\gcf timescales} argument defines the averaging time period for the
+calibration solutions. 
+
+
+\subsection{Masking}
+
+Deconvolution converges faster when the algorithm is told where to
+expect flux.  This is especially the case for CLEAN in the presence of
+bright sources.  A description of how to handle this within Imager
+can be found in the basic \htmlref{Imaging}{GRimaging} chapter of {\tt Getting Results}.
+
+In Dragon, the argument {\gcf maskmodification} in
+\htmlref{Dragon.image}{imager:dragon.image.function} can be used to
+define masks at each self-calibration step.  The argument can take the
+following: 'none' for no masking, 'auto' for automatic masking and
+'interactive' for user defined ones. 
+
+When {\gcf maskmodification='auto'},
+the restored image at the level CLEAN reached is used to
+make a threshold mask. All regions which are above the flux limit
+defined in {\gcf levels} is set to be used for searching for CLEAN
+components.  
+
+When {\gcf maskmodification='interactive'}, a Viewer display panel
+is launched when CLEAN reaches the flux level defined and
+the user can define CLEAN regions interactively.
+
+
+\subsection{Outlier fields}
+
+Outlier fields are regions outside the main image where there
+are sources that whose sidelobes fall into the field of view. Such
+regions would be around bright radio sources such as Cyg-A, Vir-A, the Sun
+etc.  Such sources have to be included in the CLEAN and self-calibration loops
+so as to achieve good dynamic range.  A special outlier field is the
+pole regions where interference tend to pile up in rotation synthesis
+arrays. This can be treated as an outlier field and the effect of such
+interference can thus be somewhat reduced from field of view.
+
+The position of the center of the outlier fields can be given manually or can be 
+looked up from a catalog by using the \htmlref{Measures}{measures} module.
+
+First let us see the steps that one would undertake to handle outlier fields
+ddirectly in Imager:
+
+
+\begin{verbatim}
+dir1:=dm.direction('J2000', '19h00m00', '50d00m00')                 # Outlier 1
+imgr.setimage(nx=200,ny=200,cellx='10arcsec', celly='10arcsec', 
+              doshift=T, phasecenter=dir1, mode='mfs', 
+              spwid=[1,2], facets=1)
+imgr.make('outlier1');
+#
+dir2:=dm.direction('J2000', '19h05m00', '55d00m00')                 # Outlier 2
+imgr.setimage(nx=200,ny=200,cellx='10arcsec', celly='10arcsec', 
+              doshift=T, phasecenter=dir2, mode='mfs', 
+              spwid=[1,2], facets=1)
+imgr.make('outlier2');
+#                                                                   # Main field
+imgr.setimage(nx=2000,ny=2000,cellx='10arcsec', celly='10arcsec', 
+              doshift=F, mode='mfs', spwid=[1,2]
+              facets=5)
+imgr.make('mainfield')
+#                                                                   Deconvolve all together
+imgr.clean(algorithm='wfclark', niter=1000, gain=0.1, 
+           model="mainfield outlier1 outlier2",
+           image="mainfield.restored outlier1.restored outlier2.restored",
+           residual="mainfield.residual outlier1.residual outlier2.residual")
+\end{verbatim}
+
+In Dragon to image with outlier fields one would proceed as follows:
+
+\begin{verbatim}
+#                                                                # Main image
+drgn.setimage(name='mainfield' nx=2000,ny=2000,cellx='10arcsec', 
+              celly='10arcsec', 
+              doshift=F, mode='mfs', spwid=[1,2], facets=5)
+#                                                                # Outlier 1
+dir1:=dm.direction('J2000', '19h00m00', '50d00m00')
+drgn.setoutlier(name='outlier1',nx=200,ny=200,cellx='10arcsec', 
+                celly='10arcsec', 
+                doshift=T, phasecenter=dir1, mode='mfs', 
+                spwid=[1,2], facets=1)
+#                                                                # Outlier 2
+dir2:=dm.direction('J2000', '19h05m00', '55d00m00')
+drgn.setoutlier(name='outlier2',nx=200,ny=200,cellx='10arcsec', 
+                celly='10arcsec', 
+                doshift=T, phasecenter=dir2, mode='mfs', 
+                spwid=[1,2], facets=1)
+#                                                                # Image and deconvolve
+drgn.image(levels='1Jy 0.3Jy 0.1Jy',amplitudelevel='0.2Jy',
+           timescales='200s 200s 100s', niter=50000, gain=0.05, 
+           threshold='0.05Jy')
+\end{verbatim}
+
+
+
+\subsection{Models}
+
+The process of imaging can be helped and made to converge much faster if
+a model is passed to Dragon/Imager to start with.  The models can either be
+position, flux and shape of sources (via a Componentlist \tool) or a
+model image (or both).  
+
+Model images are usually images made of the region but with poorer
+sensitivity and dynamic range.  The model(s) can be put in the model
+data column of the MeasurementSet by using the {\stff Imager.ft}
+function.  Otherwise these can be passed as the {\gcf model} argument
+for the {\stff Dragon.image} or {\stff Imager.clean} function. 
+
+A \htmlref{Componentlist}{componentmodels:componentlist} \tool, as its
+name suggests, allows one to make a list of source models. 
+Componentlists can be constructed from from standard catalogues (e.g the
+NVSS, VLA FIRST etc.) via the
+\htmlref{asciitocomponentlist}{componentmodels:componentlist.asciitocomponentlist.constructor}
+constructor.  Using the catalogues can be very helpful to Dragon or
+Imager (helps convergence especially in complex regions). 
+
+A Componentlist can also be created from an image using the interactive Imagefitter
+\tool. This \tool\ allows the user to interactively select regions where
+there are components and estimate its parameters. 
+
+
+
+%\section{Strategies for the VLA at 90cm and 4m}
+%For interference handling see the \textit{Getting Results in AIPS++} chapter on the topic
+%        - Parameter recommendations for all VLA configurations
+
+\section{A worked example: VLA 4m imaging of Coma}
+
+Here is an example of a \glish\ script which was used to image the Coma
+cluster at 74MHz with data from the VLA in the B and C configurations.
+
+\begin{verbatim}
+
+include 'dragon.g'
+myms := fitstoms('coma.ms','COMA-4CB-CUT.FITS',T,F)     # Convert from FITS to MS
+myms.done()
+#
+drgn := dragon('coma.ms')                               # Create Dragon tool
+drgn.setimage(name='coma',nx=1800, ny=1800,             # Set imaging parameters
+              cellx='30arcsec', celly='30arcsec', 
+              doshift=F, 
+              phasecenter=dm.direction('J2000','0deg','0deg'), 
+              mode='mfs', facets=25)
+#
+drgn.setoutlier(name='CenA' , nx=400, ny=400,           # CenA outlier field
+                cellx='37arcsec', celly='37arcsec' , 
+                doshift=T,  mode='mfs',
+                phasecenter=dm.direction('J2000','201.3deg','-42.6deg'),
+                nchan=1, start=1, step=1, spwid=1, fieldid=1)
+#
+#setting an outlier field towards Virgo-A; note for direction we have
+# made use  of the inbuilt radio catalog 
+drgn.setoutlier(name='VirA' , nx=400, ny=400,           # VirgoA outlier from builtin catalog
+                cellx='37arcsec', celly='37arcsec' , 
+                doshift=T, mode='mfs',
+                phasecenter=dm.source('VIRGOA'), 
+                nchan=1, start=1, step=1, spwid=1, fieldid=1)
+#
+drgn.uvrange(uvmin=0, uvmax=10000000)                   # uv range
+drgn.weight(type="uniform")                             # uniform weighting
+drgn.setoptions(padding=1.5, cache=0)                   # padding for the Fourier Transform
+#
+drgn.image(levels='1Jy 0.3Jy 0.1Jy',                    # image and selfcalibrate
+           amplitudelevel='0.2Jy',   
+           timescales='200s 200s 100s', 
+           niter=50000, gain=0.05, 
+           threshold='0.05Jy', plot=F, display=F)
+#
+drgn.done()
+\end{verbatim}
+
+
+\section{Special cases}
+
+\begin{itemize}
+
+\item Very bright and compact sources - the 
+NNLS algorithm (Briggs) can be used to deconvolve the bright
+source and then the residual visibility is imaged using wide field
+imaging.
+
+\item Bright source in the sidelobes - 
+this is a nasty problem as the phase and amplitude of sidelobes are
+very different from the main lobe.  No exact cure is yet available but
+it can be considered as an outlier field problem and the actual
+widefield imaging will correct an ``averaged'' quantity. This will
+reduce the effect of the bright interfering source but may still leave
+some artifacts.
+
+\item Mosaicing and wide-field - this is a very special and
+rare case when each pointing is wide enough to warrant the usage of
+widefield imaging and the object under observation is large enough to
+need many such pointings. Mosaicing and widefield imaging can be
+done simultaneously.
+
+\end{itemize}
+
+
+\section{Troubleshooting}
+
+\subsection{Insufficient faceting}
+
+This problem is detected when all the sources away from the center of
+the image are broadened. This should not be  confused with the effect of
+bandwidth smearing (decorrelation).
+ 
+Another effect of too few facets is that sources near the edge of
+facets appear as double. This is beacause the positional error is
+large enough to cause sources near the edge of the facets appear on 
+2 facets. 
+ 
+ 
+\subsection{Non-isoplanatism}
+
+The effect of non-isoplanatism is that the phase/gain of the longer
+baselines gets distorted while the shorter ones are not affected.  In the
+image one would notice broadening of all known point sources and they
+will have similar structures.  This will affect all the sources
+in the field. 
+
+The solution to this is to image with self-calibration corrections
+starting at much higher flux levels.  One should be aware of the time
+scale of the non-isoplanar changes.  If one passes a too low time scale
+to self-cal, the signal-to-noise ratio of the self-calibration estimates
+will be worse.  If it is much larger than necessary then it's equivalent
+to no self-calibration.
+ 
+
+\subsection{Asymmetric primary beams}
+
+The capability to correct for directional dependent part of phase and
+amplitude errors is going to be implemented soon. This should be able
+to take care of assymetric primary beam and effect of the
+atmosphere/ionosphere which are direction dependent.
+
+
+\subsection{Clean diverging on the edges of the facets}
+
+The problem is most probably the effect of ringing on the edge of the
+facets which can be reduced by padding. So in the {\stff Dragon.setoptions} or {\stff Imager.setoptions} function
+the padding factor can be given a value of more than 1 (usually 1.2 to
+1.5) depending on how severe the edge get picked up by clean. The more
+the padding the longer will FFT take.
+
+
+\section{Bibliography}
+
+\begin{itemize}
+
+\item Thompson, A. R., Moran, J. M. and Swenson, G. W.,
+Interferometry and Synthesis in Radio Astronomy, Wiley, 1986.
+
+\item Cornwell, T. J. and Perley, R. A., Radio
+Interferometric imaging of very large fields, 1992,
+Astron. Astrophys., 261, 353-364.
+
+\item Briggs, D., High Fidelity Deconvolution of
+Moderately Resolved Sources, Ph.D Thesis. 
+
+\end{itemize}
+
+
+

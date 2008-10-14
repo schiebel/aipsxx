@@ -1,0 +1,3009 @@
+\section{Introduction}
+
+{\sc aips++} (Astronomical Information Processing System) is a project
+that is being developed by seven radio astronomical observatories to
+provide a new generation software package for the reduction and
+analysis of astronomical data. General information on the goals of the
+project, and reasons for its creation are described
+in~\cite{croes:aips}. 
+
+{\sc aips++} is following in the footstep of its very successful (and
+still active) predecessor, AIPS (Astronomical Image Processing System,
+also known as Classic AIPS). AIPS is described in~\cite{bg:AIPS}.
+
+A persistent, and correct, criticism of the {\sc aips++} project is
+that it has inadequately expressed its design in written form. This
+document, along with companion documents which are also under
+preparation, is intended to address this criticism. To be useful to
+the project in a continuing fashion, these documents need to be
+maintained --- they must not merely be a snapshot. It thus behooves
+both {\sc aips++} management and readers of this document to be
+vigilant in noting when this document, or its evolutionary successors,
+needs updating.
+
+The goal of this document, then, is to summarize the design of the
+major subsystems of {\sc aips++} software. Where more detailed
+companion documents exist, the discussion in this document might be
+brief. In particular, the discussion of interferometric and single
+dish calibration and imaging is very abbreviated here.
+
+The presented designs generally omit the many necessary complications
+of real implementations. Also not included are descriptions of
+important utility classes which are used in the system such as
+strings and associative arrays (also known as ``maps'' or
+``dictionaries''). Also not generally described are mid-level classes
+used to implement the design, such as classes for operations like
+gridding.  Generally, the class reference documentation should be
+consulted for this information.
+
+This document is presently one person's view of the work of many
+people. This document should evolve into a more collaborative document
+with time. Until then, perhaps the uniform view of a single individual
+will help make up for lapses in perspective.
+
+The opinions and ideas of readers of this document are actively
+solicited, and should be sent either directly to the author or to an
+appropriate email reflector.
+
+This document is informally written in English text, rather than using
+a more formal methodology. The diagrams are composed with the notation
+described in \cite{rumbaugh:oo}. While it would be useful to read that
+book, it might suffice to note that classes are in boxes, and that
+inheritance relationships have triangles between the base and derived
+classes with the point of the triangle pointing to the base
+class. Other connections denote ``uses'' or ``has'' relationships.
+Very important member functions or instance variables might be shown
+in the class box, however the figures are mostly intended to convey
+inter-class relationships.
+
+The reader who wants to trace the evolution of ideas in presented in
+this paper should consult \cite{hg:design}.
+
+\section{Guiding Principles\label{Coding:GuidingPrinciples}}
+\subsection{Goals}
+
+The {\sc aips++} project has a mission statement
+(\cite{hunt:mission}).  Somewhat simplified, the portions of it which
+have design ramifications are:
+
+\begin{itemize}
+\item {\sc aips++} shall provide to users a useful software system for calibrating, 
+      editing, image formation, and  image analysis of (primarily) radio
+      astronomical data. It will allow both interactive manipulation and
+      programming as well as batch use.
+
+\item {\sc aips++} will provide support to programmers through useful
+     application class libraries. 
+
+\item {\sc aips++} will be easily programmable, maintainable, and extensible.
+
+\item {\sc aips++} will primarily be written in C++, but will offer
+      programming interfaces to other scientific programming languages
+      ({\em i.e.}, FORTRAN and C).
+
+\item {\sc aips++}  shall provide for multiple user interfaces, including GUI's.
+
+\item {\sc aips++} shall be portable.
+
+\item {\sc aips++} shall be usable in a telescope operations environment.
+\end{itemize}
+
+It is probably worthwhile quoting verbatim the final point of the
+mission statement:
+
+``15. In summary, {\sc aips++} shall be programmed to be flexible and
+versatile to use, to modify, and to enhance.  Researchers other than
+the main support staff shall be invited and encouraged to add
+applications and functionality.''
+
+Some other issues related to the implementation of these goals by the
+{\sc aips++} project are described in \cite{sn:strategic}.
+
+\subsection{Object-oriented (OO) programming}
+
+A fundamental decision was made to use object oriented concepts in
+designing and implementing {\sc aips++}. Largely because of the
+requirement for portability, C++ was chosen as the implementation
+language. While C++ implementations presently tend to be immature and
+painful to use, on balance it has been a suitable choice.
+
+Object oriented design and implementation offers some major benefits.
+Probably the primary advantage is that of {\em encapsulation}.
+Encapsulation imposes the discipline that data can only be modified
+through a well defined and consistent {\em interface}. The unit of
+encapsulation in C++ is the {\em Class}, which is (more or less) the
+same thing as a type. With encapsulation, if only the implementation
+of functionality needs to be changed, but not its interface, then no
+source code changes outside the class need be considered ({\em i.e.},
+changes in implementation are localized).
+
+In a sense, adding classes to an OO language can be considered to be
+tuning the language to the problem domain  (especially in a language
+like C++ which has syntactic sugar such as operator overloading).
+
+Another advantage of OO is {\em inheritance}: the ability to create a
+new {\em derived} class by adding on to an existing class.
+
+Much more important than inheritance is {\em polymorphism}, which allows
+classes with a sufficiently similar interface to substitute for one
+another. This allows, for example, a new kind of clean deconvolution
+to be introduced without having to change any client code that needs
+such deconvolution. That is, not only does a class interface hide its
+own implementation, it can also hide the details of exactly what class
+is being used, allowing the class in question to be substituted
+without causing changes in the clients.
+
+In C++, polymorphism is achieved through inheritance (derived classes
+may substitute for base classes) and templates.\footnote{Although it
+is often not thought of as polymorphism, template polymorphism is in
+many respects more flexible than inheritance polymorphism, one merely
+requires that an interface have certain features. The disadvantages
+are code bloat and some loss of semantics enforcement.}
+
+The above short summary cannot hope to do justice to the subject. For
+more details on OO design and programming in general see
+\cite{booch:oo,meyer:oo,rumbaugh:oo}. For an introduction to C++ by
+the creator of the language, see~\cite{stroustrup:c}. For an excellent
+description of the C++ idioms necessary to build a complex, real-world
+system, see~\cite{bn:scientific}.
+
+\subsubsection{Reusable software libraries}
+
+The gems of any software project are its application-domain algorithms
+and unique support structures. It is vital that these be reusable, not
+constantly reinvented.
+
+The primary consequence of this is that application-domain expertise
+should be available in libraries, not ``locked up'' in an executable.
+Functionality which is only available through an executable is only
+able to serve those needs the application programmer was able to
+foresee.
+
+Applications should thus be fairly simple. In some sense they are
+merely a convenient packaging of some aspects of a library. At the
+very least, functionality should at least be put into application
+specific classes and functions which can later be migrated to a
+library.
+
+\subsection{Multi-level programming}
+
+Users and programmers will want to approach programming in {\sc aips++} in a
+variety of ways:
+\begin{itemize}
+\item Users who want to perform calculations on their data in a fashion
+      that is not supported by a canned application, or by a simple
+      processing sequence of canned applications.
+
+      This type of computing may be performed via a command line interpreter
+      (CLI). For users with unusual ideas or needs, it lets them perform
+      ad-hoc computations or try out new algorithms without having to
+      enlist a ``pro.'' While much can be done merely with a language
+      that allows whole-array computations, to be most useful the
+      application-domain functionality in libraries must also be
+      available to the CLI programmer. In fact, the CLI can be thought
+      of as the most flexible interface to a library.
+
+\item {\sc aips++} application developers.
+
+      If no significant classes or functions need to be written, this
+      programmer should consider programming at the CLI level instead.
+
+      When {\sc aips++} is more mature, this programmer will typically
+      {\em use} {\sc aips++} classes, but will not necessarily write any, 
+      or at least
+      the classes written will be fairly simple. This programmer
+      might well write significant functions (algorithms) however.
+
+\item Class developer.
+
+      At the next level down is the class developer. This programmer
+      might need to do something fairly straightforward, like
+      introduce a new CLEAN variant (straightforward once the
+      algorithm is thought of!), or more involved like implementing a
+      set of classes to encapsulate a calibration scheme.
+
+      Below this level lie the programmers who provide the support
+      classes ({\em e.g.}, arrays and  tables) that the whole system is built
+      upon. These programmers have a difficult job since all other
+      programmers leverage off of their efforts.
+
+\item FORTRAN or C application writer.
+
+      See the next section (\ref{sec:access}).
+
+\item Library users
+
+      In the future there may be people who want to use the services
+      in our libraries, but are otherwise uninterested in {\sc aips++}; for
+      example the FITS classes. While such uses aren't in our core
+      constituency, this reuse will allow them to concentrate on their
+      application domain; this also advances the cause of Science.
+
+\item Foreign packages
+
+	Non-{\sc aips++} packages may wish to use parts of {\sc
+	aips++}, or in turn be used from {\sc aips++}. While many levels of
+	operability might be possible, the most promising would appear
+	to be:
+\begin{enumerate}
+    \item To interoperate at the source code level through common
+	abstract base classes. (The derived classes might be very
+	package specific).
+    \item To interoperate at the executable level by following common
+	conventions for the interchange of IPC messages.
+\end{enumerate}
+	To be meaningful\footnote{Every package is happy to
+	interoperate with packages which adopt {\em its} conventions.}
+	a negotiation between different software packages would be
+	required. While it seems to this author that such discussions
+	might be worthwhile, the arguments are political, not technical.
+\end{itemize}
+
+
+Parallel to the above programming levels (``how much stuff is done by
+each line of code'') are levels that correspond to how much of an
+underlying model ({\em e.g.}, a calibration and imaging model) the programmer
+has to accept.
+
+Since there are certain to be disagreements about such models,
+programmers who are too impatient to learn them, and new instruments
+or disciplines that do not fit them; it is important that such
+programmers be accommodated. 
+
+To accommodate such programmers, the actual computations they might
+need must be available at a mid-level. For example, rather than having
+CLEAN embedded solely in a high-level ``Measurement model,'' the
+actual computational kernel should be available in mid-level classes
+that work  on arrays and/or images. Irrespective of other concerns,
+such layering is good software practice.
+
+The X-Windows system has a similar problem and solution. The core
+functionality is encapsulated in policy-free libraries, and the higher
+level ``models'' are encapsulated in additional libraries (Motif) and
+entities ({\em e.g.}, window managers).
+\subsection{Access to data}
+\label{sec:access}
+
+A decision which has caused some controversy is that all\footnote{Or
+almost all; there are bound to be some things which reside in flat
+text files, {\em e.g.}, CLI initialization files} {\sc aips++} data
+should reside in a common data structure, the {\sc aips++} Table
+(described in section~\ref{sec:TableDataSystem}). This decision allows
+several important capabilities:
+
+\begin{itemize}
+\item It allows FORTRAN and C programmers to work inside of {\sc aips++}.
+
+      Given the ``impedance mismatch'' between C++ and C or
+      (particularly) FORTRAN, it is unrealistic to assume that
+      programmers in those latter languages will have full access to
+      the functionality developed in C++. However, if the FORTRAN
+      programmer at least has access to all the data, he can perform
+      any desired computations.
+
+\item Back door access for users.
+
+      While computations should normally take place through well
+      defined classes, occasionally an arbitrary calculation needs to be
+      performed or arbitrary values need to be inserted. If all data
+      ultimately resides in tables, such operations can always
+      be undertaken. An example of this would be modifying a
+      calibration value through a GUI table editor.
+
+\item Common tools.
+ 
+      Creating class-specific tools to sort, display, plot, print, ..., 
+      can be quite
+      expensive. With all data in tables, general table tools can be
+      used  in the cases where tools tuned to the specific application
+      or classes have not been developed. An analogy can be drawn to
+      Unix which has many tools to manipulate a common data structure
+      (text streams). These tools can often be applied to data which
+      represent higher-level abstractions.
+\end{itemize}
+
+It is certainly true that the user can get into trouble by arbitrarily
+modifying tables (since software might not understand what to do with
+those tables if sufficiently changed). However, the alternative is
+worse; after all the data does {\em belong} to the user, and sometimes
+scientific exploration will require operations that no software system
+can anticipate.
+
+\subsection{Other goals}
+
+While the following run the danger of being non-controversial
+statements of motherhood and apple pie, perhaps they will be of some
+use written down:
+
+\begin{description}
+\item[Flexible]
+    It should be possible to use the classes to build unanticipated
+    applications. Ideally this should be possible both from compiled
+    languages and an interactive command line interpreter. Flexibility
+    implies generality at some level, {\it e.g.}, tools should be
+    N-dimensional when possible.
+
+\item[Efficient]
+    Our production codes must be about as efficient as the ones they are
+    replacing. It is acceptable to recode critical sections with less flexible
+    functions if necessary to achieve this. This most critically
+    constrains the data system.
+
+\item[Portable]
+    There are several types of portability that are important. The
+    software must be portable to various computers and architectures.
+    This implies that the use of host features that can't be emulated on
+    other systems should be avoided for the core system. Until there is
+    a C++ standard, portability between compilers needs to be
+    addressed.\footnote{It would be ideal if the GNU C++ compiler,
+     g++, was sufficiently reliable. Unfortunately that is not yet the case.}
+     Data needs to be portable at run time on different host
+    architectures, which we solve by storing that data in a canonical
+    format.
+    Data also needs to be portable to other software systems,
+    including those in the future, which means storing offline data in
+    an archival format, {\em i.e.}, FITS.
+
+\item[Implementable]
+    We have an ambitious project with relatively modest resources; at
+    times this will imply that we must implement a subset of the
+    functionality we would actually like.
+\end{description}
+
+\section{Astronomical Calibration and Imaging}
+
+This section describes the calibration and imaging ``model'' that the
+{\sc aips++} project has adopted. This section is only intended to be
+a relatively brief introduction to the general approach, describing
+the top level classes. If more detail is required than is available in
+this overview, see \cite{noordam:uvci} for radio interferometry, and
+\cite{garwood:sdci} for single dish.
+
+\subsection{The Green Bank approach}
+
+Radio telescopes are very inhomogeneous in their characteristics, and
+hence in the data that they produce. While the differences between a
+radio interferometer\footnote{More precisely, an earth rotation
+aperture synthesis array.} and a single dish are the most striking
+(the fundamental data from an interferometer is from the Fourier
+(pupil) plane, from a single dish, the image plane), every instrument
+has different characteristics that are reflected in the underlying
+data ``form'' and values.  For example, some instruments observe
+linear polarizations, others circular, some interferometers observe
+all baselines in lock-step, others can observe at baseline-dependent
+rates. More important than the ``form'' of the data, the operations
+which can be performed on it vary widely: calibration of a
+connected-element interferometer at low frequency is very different
+than calibration of a VLBI experiment at high frequency --- the
+connected element interferometer can probably count on phase
+stability, but it may also ``see'' that the sky is not flat and need
+to may use more sophisticated imaging algorithms.
+
+The situation for single dish telescopes is no simpler. Perhaps
+because a detector for single dish is only needed on one antenna, not
+on many, instrumentation innovation on these telescopes has been high;
+for example, multi-beam receivers are becoming common. Moreover,
+single-dish observers usually observe more interactively than
+interferometrists have in the past, interactively reducing their data
+and steering their ongoing observations.
+
+Next generation interferometry instruments such as the Millimeter
+Array (MMA) will combine many of the above characteristics.
+
+The challenge for a software system that wants to be able to deal with
+more than one of the above telescopes, let alone all of them, is
+daunting. It must be capable of exploiting the unique features any
+particular telescope might have, while providing common tools that
+operate as widely as possible.
+
+The approach described here was invented at a workshop in Green Bank,
+West Virginia, in early 1992. It was originally described in
+\cite{shone:gb}.
+
+The approach taken is to (abstractly) model the processes involved in
+calibrating and imaging data. It should be pointed out that this
+approach has been somewhat controversial; for example see
+\cite{flatters:rational}. An objection to the model as outlined in the
+original paper is that it was insufficiently data-centric and overly
+complicated. The present version of the model has evolved to at least
+partially meet these objections.
+
+Data from a telescope is collected into a {\em MeasurementSet}. The
+telescope sampling process is described by a {\em MeasurementModel},
+and the effects (primarily instrumental and atmospheric) which have
+corrupted the data are described by {\em TelescopeComponent} objects
+within a {\em TelescopeModel}. The goal, of course, is
+normally\footnote{However, one can imagine that for, say, geodesy, the
+values in a telescope component that describe the displacement of a
+telescope from a normative position might be the desired result.} to
+produce the best representation of the sky as possible (usually in an
+{\em Image}, or possibly in a {\em SourceModel}) by correcting to the
+extent possible for the corruption and sampling processes.
+
+Cornwell \cite{cornwell:imaging,cornwell:telescope} developed an
+elegant mathematical formulation (informally called the ``A Matrix
+Formalism'') of the Green Bank approach to calibration and
+imaging. While this approach has not yet been developed further by the
+project, the approach is very interesting. In some sense, the (large)
+matrices in Cornwell's formulation have been replaced here by tables,
+and matrix operators have been replaced by operations on tables. (A
+table is of course one way to represent a very large, sparse matrix.)
+
+\subsubsection{MeasurementSet and views of data}
+\label{sec:MS}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfxsize=6.0in
+\epsfbox{MeasurementSet.eps}
+\caption{MeasurementSet and other data view classes.}
+\label{fig:ms}
+\end{figure}
+
+The {\em MeasurementSet} is the lowest level interface to data. The
+data might be either uncalibrated or calibrated (or partially
+calibrated). The MeasurementSet is intimately involved with {\sc
+aips++} Table objects, which are described in
+section~\ref{sec:TableDataSystem}. This close relationship is not
+accidental; Tables were of course designed explicitly to handle the
+processing of astronomical data.
+
+It is intended that the MeasurementSet will hold not only the usual
+astronomical data, but possibly also data that is normally considered
+telescope monitor and control data (of course this isn't required, and
+the user might filter it out). This is to allow the user to make
+judgments about his data using all available information.
+
+A MeasurementSet {\em IsA} table with certain conventions. In
+particular, there are a set of standard columns ({\em e.g.,} effective
+integration time) which might be in a MeasurementSet. While a
+particular MeasurementSet need not have any particular columns, if it
+does have one of the standard columns that column must have its usual
+meaning. There are also a set of conventions that the standard columns
+obey, for example to associate units with the values in the column. In
+addition to the standard columns, the MeasurementSet might have other
+columns to represent some very telescope-dependent data, or even a
+column that a user has attached to hold some additional information.
+
+It is important to note that the MeasurementSet is a {\em single}
+table, not a collection of tables. Other software systems have tended
+to separate things which vary at different rates (per observation, per
+source, per integration {\em etc.}) into different tables to prevent data
+bloat (caused by repeating constant values for several or many
+rows). Besides the navigational difficulties in finding the value that
+corresponds to the current row in another table, a more fundamental
+problem is that values can vary at different rates for different
+instruments (and observing modes), and hence finding a particular
+value might require a moderately complicated runtime lookup.
+
+Instead, we have chosen to use the so-called ``big table'' view of
+data. This approach has all data appearing in a single table. This
+makes the navigation problem trivial --- all rows contain all values
+--- however it places a burden on the table system to provide a
+mechanism for avoiding unacceptable data bloat. See the section on
+table storage management (section~\ref{sec:StorageManagement}) for
+details on how this is accomplished.
+
+One often wants to query a MeasurementSet to discover what, for
+example, all the possible pointing centers are. This operation is less
+convenient with a ``big-table'' view when the underlying values truly
+vary infrequently. This may require optimizations or new functions in
+the Table system, or a caching convention in the MeasurementSet (for
+example, by using per=column keywords).
+
+A MeasurementSet row is an important level of granularity.  In
+general, a row of a table will contain:
+\begin{enumerate}
+\item A vector of data values (spectrum or time series).
+\item Values to uniquely identify the data (time, spectral window,
+polarization, feed, {\em etc}). That is, these values uniquely identify
+a particular row.
+\item Values related to the observation (integration time, object, sky
+position {\em etc.}
+\item Data quality measures (flags, and noise estimates).
+\item Tabs supplied by the user and telescope on line system
+(``calibrator'').
+\item Miscellaneous pieces of telescope-specific information.
+\end{enumerate}
+For a more detailed description of columns in a MeasurementSet, see
+\cite{garwood:sdci}.
+
+The original concept was that each row would contain a truly atomic
+piece of information. This is conceptually attractive --- one does not
+have to worry about some members of, say, a visibility spectrum being
+flagged but not others. However, since this would place extreme
+demands on the table data system, we have decided to make the atomic
+unit the vector of data. Note, however, that we have, for example,
+separated separate polarizations onto separate rows (logically; the
+underlying storage manager might actually store visibility data as a
+brick when the number of channels, baselines, and polarizations are
+the same for all times).
+
+When data from several different observations are to be combined, the
+data would appear in a single MeasurementSet, with a column to make
+unambiguous which instrument a particular row comes from. The columns
+in the joint MeasurementSet would be those which are common to all the
+MeasurementSets.\footnote{While such concatenations will be physical
+in the first instance, a Table class which presents a single table
+interface to multiple underlying tables will be available at some
+point.}
+
+
+The MeasurementSet is a view of data. The data might consist of raw
+values read from disk. However, it might also consist of data which is
+being calibrated ``on-the-fly,'' or indeed the data is being entirely
+simulated.\footnote{Or partially simulated; a pure east-west array
+might have a zero column of W's which are returned from a (trivial)
+virtual column.}  This is accomplished by both deriving MeasurementSet
+from Table for its interface, and by having it reference a table
+(which might itself be a virtual table) for its values.  The
+mechanisms to enable this are further described in
+sections~\ref{sec:TelescopeModel} and \ref{sec:VirtualTables} below.
+
+
+While the MeasurementSet is complete, it can be tedious to use, or at
+least overkill, for some applications. Thus we define abstract classes
+which define the interface we want for our application, and attach
+them to the data source --- normally a MeasurementSet ({\em
+MeasurementSetVisSet}) --- but possibly also a function ({\em
+ModelVisSet} or image ({\em ImageVisSet}). These classes are known as
+data views in that they don't contain any data on their own, they
+refer to data which is elsewhere. While there might be a wide variety
+of such data views, the two which have been identified to date are the
+{\em SpectrumSet} and the {\em VisSet}; the former consisting of
+image-plane spectra, and the latter of visibility spectra.\footnote{It
+seems likely that these classes will at least have a common base
+class, and possibly that VisSet will be derived from SpectrumSet.}
+These data views would be constructed with various selection criteria,
+for example, to only return Stokes~I.
+
+While it is possible of course to construct many different views of
+data, the SpectrumSet and VisSet are chosen to be rich enough to
+implement an imaging algorithm after the data is calibrated. So, for
+example, the VisSet would contain at least UVW, Time, Antenna1,
+Antenna2, Flags and Weights, and Complex Visibilities. Also, the data
+view might have some convenience functions build in, for example, to
+shift the visibilities before returning them to the user.
+
+\subsubsection{Image, Source Model, and PSF}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=5.5in
+\epsfbox{SourceModel.eps}
+\caption{SourceModel classes}
+\label{fig:sm}
+\end{figure}
+
+
+The usual end result of as calibration and imaging process is an
+estimate of a sky brightness distribution in the form of a {\em
+SourceModel} and/or {\em Image} which the user then analyzes to obtain
+his science.
+
+An Image is a regularly sampled set of intensities with coordinate
+information. It is described in more detail in section~\ref{sec:Image}
+below. The SourceModel is a more general description of the sky
+brightness distribution than an Image. Fundamentally, it returns an
+intensity as a function of position, time, polarization, and
+frequency. It is used to represent astronomical sources before
+observation, {\em i.e.}, it is not convolved with a point spread
+function (PSF).
+
+There are several different types of SourceModels. A {\em
+ParameterizedSourceModel} is implemented as a series of parameterized
+components. A Clean component list is a specialized version of
+this. An ImageSourceModel is one in which the components consist of
+the pixels from an Image.  A SourceModelGroup is implemented with
+other SourceModels (in linear combination). So, for example, this
+could be used to combine an ImageSourceModel and a
+ParameterizedSourceModel.
+
+Besides getting the intensity of the source model (in either the image
+or Fourier plane), a SourceModel may be gridded into an image (after
+specifying things like image size and point spread function).
+
+The point spread function of an instrument is its response to a point
+source --- a delta function is the ideal point spread function.  The
+point spread function might in principle be a function of time and
+position. Often, however, the PSF can be simply parameterized, or it
+can be represented with a single image. The same machinery that is
+used to implement the SourceModel can also be used for the PSF. For
+example, a ImageSourceModel could be used to hold a synthesized beam,
+a simple ParameterizedSourceModel could hold a single antenna beam,
+and a more complicated ParameterizedSouceModel (or a new derived
+class) could hold an HST PSF.
+
+The SourceModel and PSF are astronomically distinct ideas. However it
+is not clear that the software difference between them (how the
+``intensity'' is interpreted) Is large enough to warrant a new
+inheritance hierarchy. It is shown in figure~\ref{fig:sm} as a derived
+class. This relationship may be changed.
+
+An Image will normally be associated with a PSF. The produces of the PSF
+needs clarification; it may be the {\em joint} responsibility of a
+MeasurementModel (``dirty beam'') and TelescopeModel (``primary beam'').
+
+\subsubsection{Telescope model and components}
+\label{sec:TelescopeModel}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=4.5in
+\epsfbox{TelescopeModel.eps}
+\caption{TelescopeModel related classes}
+\end{figure}
+
+As previously described, a MeasurementSet might present data which is
+either uncalibrated ({\em i.e.}, raw) or which has had some
+calibration applied to it. The {\em TelescopeModel} and {\em
+TelescopeComponent} classes implement this
+process.\footnote{Incidentally, earlier versions of this scheme had
+calibration being applied in the data view ({\em e.g.}, VisSet). I
+believe that the requirement that we allow for partially calibrated
+data requires that calibration results in a MeasurementSet, not a
+VisSet. In other words, we need to produce calibration chains of
+indeterminate length ---$f(g(h(\ldots(data))))$ --- if we want to be
+able to change and replace functions in the calibration chain, it is
+required that the domain and range of those functions be the same,
+{\em i.e.}, the MeasurementSet.}
+
+The TelescopeModel, as its name implies, is a software model of the
+real observing system; in particular how the observing system it
+corrupts the data. The goal is, of course, to correct the data as much
+as possible (or, occasionally, to simulate the effect of observations
+on perfect (simulated!) data).
+
+Calibration is actually performed by a {\em TelescopeComponent}. The
+TelescopeComponent embodies a particular type of calibration; for
+example, a {\em ReceptorGain} would be used for an antenna-based gain
+solution, and a {\em BandPass} component would be used for squaring
+up the passband of the instrument. The TelescopeModel then consists of
+an ordered set of TelescopeComponent objects which apply their
+calibration in turn. To add a new type of calibration, one merely
+needs to create a new TelescopeComponent and slot it into the
+calibration chain. If the calibrations cannot be calculated
+independently, one merely creates a single TelescopeComponent in the
+place of those that are coupled; for instance, the Australia Telescope
+Compact Array (ATCA) performs the receptor gain, polarization, and
+bandpass calibration in a coupled fashion --- here one would produce
+an instrument specific TelescopeComponent which would replace the more
+generic versions.
+
+So, the fundamental member function is {\em apply} (or its inverse,
+{\em corrupt}). For a TelescopeComponent, apply applies the particular
+calibration it knows about to a MeasurementSet. The TelescopeModel
+pushes a MeasurementSet through its active TelescopeComponents.
+
+It needs to be emphasized that while apply logically creates a new
+MeasurementSet, normally the produced MeasurementSet will not make a
+physical copy of the data with calibration applied: instead, it will
+perform an ``on-the-fly'' (``on-demand'') calibration, referring to
+values in their original tables (although it is possible to physically
+apply the calibration and make a deep copy if desired). The mechanisms
+for doing this are described in the section on Table Data Management
+(\ref{sec:DataManagement}) below. Essentially, the Telescope merely
+needs to produce a new column which hides the old one, which in turn
+might be hiding an older one, {\em etc.}, until we finally arrive at
+the raw data.
+
+TelescopeComponent objects will in general have state associated with
+them; for example, a ReceptorGain gain component has a gain table: a
+table which contains columns of complex multiplicative gains which
+vary with time, a gain per antenna. Additionally, it will have state
+for things like interpolation policies.
+
+This state needs to be initialized and updated. Generally the initial
+(default) values can be obtained from a MeasurementSet, so the
+TelescopeComponent has a method to initialize itself from a
+MeasurementSet, or the TelescopeModel can initialize all its contained
+components in turn. (Of course, the components state might also be set
+by the user in an ad-hoc way.)
+
+There is, unfortunately, no way to set the ``solve'' (update)
+parameters in a generic way --- the operations in the particular
+telescope components are too diverse. Put another way, the user can
+use data without knowing precisely how it has been calibrated, but the
+calibration solution cannot actually be performed without the user
+specifying some calibration-specific information (in general; many
+particular TelescopeComponents, for example a single dish
+PositionSwitched telescope component, might be able to behave quite
+sensibly in a default setting).
+
+When the solution information has been set (``associate this
+calibrator with those sources, use only long baselines'') {\em solve}
+itself may be called repeatedly (for example, in a self-calibration
+loop) to the extent that the parameters to be used during the solution
+do not need to be changed.
+
+The TelescopeModel has two roles. The first, as described above, is to
+organize, and marshal data through, an ordered list of
+TelescopeComponent objects to perform a calibration. This function is
+reasonably well understood. Its other responsibility is to report on
+the state of the telescope in general (``where was I pointing at some
+time, where are my antennas''). In my opinion, the division of
+responsibilities between the TelescopeModel and the MeasurementSet are
+not clear in this respect and are in need of
+clarification.\footnote{However this is not a large point; we merely
+have to decide what values we want the TelescopeModel to have and
+export them --- normally it would fill its internal tables from the
+MeasurementSet.}
+
+\subsubsection{MeasurementModel}
+
+The {\em MeasurementModel} class encapsulates how a perfect telescope
+samples the sky producing a MeasurementSet, and the inverse
+process. The particular MeasurementModel will have assumptions and
+simplifications built into it; for example when imaging a small
+portion of the sky it might be considered to be flat.
+
+The primary methods of a MeasurementModel are:
+\begin{description}
+	\item[invert] Given a MeasurementSet, return an Image and a
+	PSF (dirty beam).
+        The name of the method is perhaps unfortunate for image-plane to 
+	image-plane MeasurementModels (like in single dish).
+	\item[predict] Given a SourceModel and a MeasurementSet
+        paraform of where we want to sample, return a MeasurementSet
+        that would be observed by a perfectly calibrated telescope.
+\end{description}
+
+MeasurementModels might be quite complicated; for examples see
+\cite{bh:exotic,cornwell:imaging}.
+
+The ``predict'' method is used in iterative calibration and imaging
+processes, like self-calibration. It uses the MeasurementSet to
+determine the locations at which to perform the prediction. The values
+in the original MeasurementSet might not be needed at all (the values
+from the SourceModel are used).
+
+As presently formulated, image-plane corrections ({\em e.g.}, primary
+beam) for interferometers would take place in the MeasurementModel,
+not in the TelescopeModel.
+
+
+\subsection{Status}
+
+Fairly complete MeasurementSets have been written for single dish and
+the ATCA; only a very simple one for general-purpose interferometers
+has been produced. A combined general MeasurementSet for both
+interferometers and single dish is expected to become available at
+about the time of this writing (late 1994).
+
+For single dish, a reasonably complete position switched telescope
+component has been implemented, along with an on-the-fly imaging
+application. The latter has not been integrated into a
+MeasurementModel. The next few months should see single dish work
+start to rapidly fill out.
+
+The effort in interferometry has been largely dormant in 1994.  A more
+active effort to implement core interferometric functionality will
+occur in early 1995.
+
+\section{Table Data System}
+\label{sec:TableDataSystem}
+
+The underlying raw data for both radio interferometry and single dish
+is often both quite complex and quite voluminous. Moreover the access
+patterns users and programmers desire is often quite demanding.
+
+{\sc aips++} has chosen tabular interface as the fundamental interface
+to data. Tables in general have been a very successful data type in
+many astronomical data processing systems (AIPS, IRAF/STSDAS,
+Midas). Tables are also widely used in FITS for non-image data. The
+{\sc aips++} Table interface, as described in the next section, is
+similar in spirit, although considerably different in detail, than
+these others.
+
+We have separated out from the Table interface exactly how the bytes
+are staged from disk (or, indeed, from elsewhere). Indeed, a given
+table can have different parts which are handled separately. The
+details about this separation are described in the section on {\em
+Data Management} (section~\ref{sec:DataManagement}). This separation
+of the data interface from the details of its implementations allows
+us to use different (possibly data dependent) I/O strategies, which
+the user of data need not be aware of (the creator of the data needs
+to set up the strategies that seem to be appropriate).
+
+\subsection{Table interface}
+
+An {\sc aips++} table consists of a header, and a main data table. 
+
+The main data table consists of a number of rows and columns. A value
+is stored at the intersection of each row and column. All values in a
+column must be of the same type.
+
+The header consists of a set of keywords. A keyword is a named value
+(``keyword=value'' pair). Keywords can either be associated with an
+entire table ({\em e.g.}, general information about the observation) or
+with a particular column ({\em e.g.}, units for the values in the column).
+
+A value is normally one of the following types (see {\em Virtual
+columns} in section~\ref{sec:VirtualColumns} for a generalization):
+\begin{description}
+\item[A scalar]
+      All the usual types are available: integer (short and long),
+      floating point (single and double precision), complex (single
+      and double), string, binary string, and boolean.
+
+\item[An array]
+      An array of the above scalar types may be a table value. The
+      array may be of any dimensionality and shape.
+
+\item[A table]
+      A table itself may be stored in a column or a keyword. In this
+      way, the table data structure is hierarchical and can directly
+      support groupings ({\em e.g}. many-to-many relationships, or attaching
+      a calibration table to a dataset).
+\end{description}
+
+Note in particular that any value which may be stored in a column, may
+also be stored in a keyword. Thus one can, for example, store a
+rotation matrix in a single keyword rather than having to encode it in
+multiple keywords.
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=5.0in
+\epsfbox{dbmanager5.eps}
+\caption{An illustration of table features, including tables and
+multidimensional arrays as values.}
+\label{fig:dbmanager5}
+\end{figure}
+
+An array or table may either be stored directly or indirectly. A
+direct array or table is embedded directly in its containing table;
+when in a column, a direct array or table must have an identical
+structure on each different row\footnote{For these purposes, all
+indirect arrays and tables are identical; think of them as
+pointers. This rule ensures that all rows have the same size.}  An
+indirect array is stored externally to the enclosing table, and its
+shape (and hence dimensionality) may vary from row to row.\footnote{
+Actually the dimensionality may be fixed in the table description if
+desired.}  Similarly, an indirect table may vary in structure from row
+to row; moreover, an indirect table may be referred (indirectly) from
+multiple tables. Figure~\ref{fig:dbmanager5} illustrates a possible
+decomposition of VLBA data into {\sc aips++} Tables.
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=7.0in
+\epsfbox{DbTable.eps}
+\caption{Overview of the main table classes}
+\label{fig:DbTable}
+\end{figure}
+
+Figure~\ref{fig:DbTable} gives an overview of the main table
+classes. There are classes used to:
+
+\begin{description}
+
+\item[Access the data]	Where the data might be in columns ({\em ScalarColum,
+ArrayColumn, SubTableColumn}) or in Keywords
+({\em TableKeywordSet}). Alternatively, a column might be viewed as a
+vector; this is described in section~\ref{sec:TableVectors}, below.
+
+\item[Describe the table ``layout''] The description of the entire
+Table is described by the {\em TableDesc}ription, the description of a
+particular column by the {\em ColumnDesc}ription.
+
+\item[Iterate through the table] This is described in
+section~\ref{sec:Selection}, below. 
+
+\item[Manage the data] For example, perform I/O to bring the requested
+data into the user's address space. Data management is described in
+section~\ref{sec:DataManagement} below.
+	
+\end{description}
+
+The structure of a table is described by a table descriptor. A table
+description can be used to create new tables ({\em i.e.}, with no rows). Thus
+a table description can be used both as a template for creating new
+tables, and for describing the structure of existing tables. Note that
+in using a table description as a template, it only describes the
+minimum of what a table must have, additional columns and keywords may
+be added.\footnote{
+A description can also be incompletely specified, for example:
+\begin{itemize}
+\item A column named ``Data'' containing complex arrays must exist;
+\item A column named ``Data'' containing 1-D complex arrays must exist;
+\item A column named ``Data'' containing 1-D complex arrays of length
+      512 must exist.
+\end{itemize}
+In practice, the second (or possibly first) alternative would be
+likely be the right level of detail. One wouldn't want to forbid the
+number of channels of the detector from changing, on the other hand
+the user of the table shouldn't have to engage in a lot of run-time
+detection of the table structure.}
+
+
+\subsubsection{``Virtual'' tables}
+\label{sec:VirtualTables}
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=7.0in
+\epsfbox{DbTable1.eps}
+\caption{More detailed Table class diagram}
+\label{fig:DbTable1}
+\end{figure}
+
+It needs to be emphasized that the Table is an {\em interface} to data.
+The actual data may exist on disk in some files. However, it might also
+exist in some other underlying table objects, or it might be computed
+on-demand via some computation when the user requests it.
+
+For example, the data might be stored on disk as 16 bit integers, and
+``decompressed'' into floating point for the user. Or, a column might
+perform an on-the-fly calibration for the user.
+
+Tables where the data are available from files in the normal way are
+referred to as ``filled'' tables. Tables and columns in which some of
+the data are computed (or come from some other source) are known as
+``virtual'' tables or ``virtual'' columns. This usage of ``virtual''
+is probably unfortunate, though descriptive, given the common C++
+meaning of that term. The mechanisms by which virtual columns are
+created are described in section~\ref{sec:DataManagement} below.
+
+\subsubsection{Selection and Iteration}
+\label{sec:Selection}
+
+A particularly important type of virtual table is one in which all the
+data is actually in another table. This is known as a reference table.
+Essentially the reference table has an association with another
+table, as well as an ordered list of row numbers which map the other
+table's rows into row numbers of the reference ({\em i.e.,} virtual) table.
+
+Reference tables are most commonly formed as the result of:
+\begin{itemize}
+\item A selection
+
+    ``All rows where column `Flux' is {\tt >=} 0.'' Both a C++ set of
+    classes and a grammar exist for performing selections. Both
+     logical operations and arithmetic are supported.
+
+\item A sort
+
+    The table can be sorted using multiple columns as primary,
+    secondary1, secondary2, {\em etc} keys (in ascending or descending
+    order).
+
+\item Manual specification via an array of row numbers and/or column names.
+\end{itemize}
+
+A reference table is thus a new view of an existing table. If the
+reference table is modified, the underlying data in the original table
+is changed. While this is normally what is wanted, a reference table
+may be deepened by making a physical copy if desired.
+
+Another important type of virtual table is the iterator table. One
+often wants to iterate through a table with a ``cursor'' which is a
+smaller table than the original (fewer rows and columns). Once the
+iterator is formed, the columns viewed remain constant. However the
+rows which are seen change as the cursor is moved through the
+underlying table. Commonly, a table iterator is used to read through
+data grouping rows in some specified order, for example, all rows with
+a given time or baseline. Note that the rows which are contiguous in
+the iterator need not be contiguous in the underlying
+table.\footnote{Presently iterator tables are actually implemented
+with reference tables.}
+
+\subsubsection{Table vectors}
+\label{sec:TableVectors}
+
+Often one might want to perform calculations using entire columns. One
+approach would be to merely read the column into a one-dimensional
+array and then calculate normally using the available functions which
+calculate on arrays.
+
+However this is somewhat unsatisfying for the following reasons:
+\begin{itemize}
+\item While an entire column can be read into an array in one go, it
+      can still be mildly tedious to get out a bunch of columns, compute with
+      them, and put them back.
+\item Copying the data in and out of the columns might be expensive
+      enough that it would instead be necessary to loop over the rows
+      explicitly, losing the clarity of whole-array arithmetic.
+\item Tables might have very many rows (certainly many millions). Thus
+      the temporary arrays used for the calculation might cause
+      out-of-memory problems.
+\end{itemize}
+
+The solution we have chosen to solve this problem is to introduce the
+TableVector class. It is logically an entire column which can be
+manipulated as an array ({\em e.g.}, arithmetic, logical operations,
+{\em etc}).  However, it is not (necessarily) entirely memory
+resident. The addition of two table vectors would result in a buffer
+sliding through the table.  However, this I/O would be entirely hidden
+from the user.
+
+\subsection{Data Management}
+\label{sec:DataManagement}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=7.0in
+\epsfbox{DbColumn.eps}
+\caption{How columns are attached to Data Managers.}
+\label{fig:DbColumn}
+\end{figure}
+
+Data is mapped to and from a table interface via data managers. A data
+manager fundamentally maps ``get'' and ``put'' requests to the
+implementation data structures (or functions, for virtual columns).
+Multiple columns are bound to a data manager, and a table may have one
+or more data managers attached to it. This is an important part of the
+design: it allows a single table to have multiple types of underlying
+I/O (presumably tuned for data dependencies) or virtual columns
+attached. The classes which are involved in attaching columns to data
+managers are shown in figure~\ref{fig:DbColumn}.
+
+While the Data management layer is below the level at which table
+users are required to be knowledgable, it is a level which developers
+who (particularly) need to add additional types of virtual columns
+need to be aware.
+
+The creator of a table may also need to be aware of the different
+types of storage and data managers so he can choose the ones which
+optimize the access that he foresees.
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=7.0in
+\epsfbox{DbDataMan.eps}
+\caption{Relationships among DataManager classes}
+\label{fig:DbDataMan}
+\end{figure}
+
+\subsubsection{Storage management}
+\label{sec:StorageManagement}
+
+Data managers which physically store and retrieve values from a
+storage device are known as storage managers. Besides staging data to
+and from disk\footnote{In principle storage managers could be written
+for tape drives or other devices.}, they are responsible for
+canonicalizing it (in particular, to IEEE Big Endian) so that
+computers with different word formats can access the data.
+
+There will be several different types of storage managers in {\sc
+aips++}, each with different properties. The ones which are either
+presently implemented or which are being implemented are:
+
+\begin{description}
+\item [AipsIO]
+      AipsIO is a simple I/O system which is used to store object
+      values (describe in the class reference manual). AipsIO has no partial
+      buffering: an object is either in memory or on disk. As used
+      as a storage manager, all active columns are stored entirely in memory.
+      Thus AipsIO is most useful for columns which are small enough to
+      be memory resident. An exception to this is columns of
+      indirect arrays, which are only read on demand. Moreover, if only
+      a section of the indirect array is desired, AipsIO will only
+      read in that section. Thus, AipsIO is
+      appropriate for small columns and columns of indirect
+      arrays.
+
+\item [Karma]
+      Karma\footnote{Karma is a programmers toolkit for scientific
+      computing with communications support, event management, 
+      data structure manipulation, graphics display and user interface
+      support. Information on Karma may be found at 
+      {\tt http://www.atnf.csiro.au/karma}. Karma was developed by R. Gooch.}
+      is a storage manager which is optimized for
+      dealing with data which can be organized as hypercubes, for
+      example interferometric visibilities with a constant number of
+      stokes, channels, and baselines per timestamp. It is optimized
+      for taking slices in any direction (for example, all
+      visibilities for a range of channels for a given baseline). It
+      achieves these optimizations through use of ``tiling,'' which is
+      a technique in which the data is broken into chunks which
+      may be readily assembled in any direction.
+
+\item [Miriad-like]
+      When data in some columns varies slowly, a risk is run that the total
+      size of the table will become bloated as the slowly varying column
+      becomes replicated over many rows. Another risk, is that data which
+      logically belongs together will be split apart for this implementation
+      reason. In {\sc aips++}, we have 
+      defined a storage manager based on the ideas
+      in the Miriad software system (\cite{stw:miriad}) 
+      to alleviate this problem.
+      With the Miriad storage manager, values are only written when
+      they change. That is, the underlying implementation is
+      list-like. (However, indices are layered on top to make random
+      access reasonably efficient). (The need for this is also
+      described in section~\ref{sec:MS}.)
+\end{description}
+
+It should be clear that all of the above have different performance
+and access requirements.\footnote{ For example, it is expensive to
+change a value in the middle of a Miriad-like dataset, however it is
+quite cheap to extend it. On the other hand, a Karma data set cannot
+be extended at all once it is created (short of a copy).}  This lets
+the table creator choose tradeoffs that he feels are appropriate. No
+software to automatically migrate from one storage manager to another
+exists yet (short of a physical copy of the table).
+
+\subsubsection{Virtual columns}
+\label{sec:VirtualColumns}
+
+Within this framework, virtual columns may be readily constructed. The
+only thing that is required is the creation of a so-called
+VirtualColumnEngine, which is merely a protocol for storing and
+returning values given a column and a row number.
+
+The first virtual column engine which has been implemented is one in
+which values of one type are scaled to values of another type via a
+simple $new = old \times scale + offset$ calculation. For relatively
+low signal to noise data, it can make sense to ``compress'' floating
+point data down to short integers (for example). However this
+compression is an optimization that the consumer of the data does not
+need to be aware of; he just computes normally on his floating point
+data.
+
+Virtual columns have one capability that filled columns do not:
+they may contain any type, not just the scalars,arrays of scalars, and
+tables which may be stored directly.
+
+\subsection{Status}
+
+The design of the {\sc aips++} Table Data System was initially
+formulated by A.~Farris of the Space Telescope Science Institute, and
+implemented by G.~van~Diepen of the NFRA (and also kindly supplied the
+figures in this section).
+
+The classes and functionality described in this section are entirely
+implemented with the following exceptions:
+\begin{itemize}
+\item Adding a column to an existing table
+\item Tables in columns (tables in keywords are supported).
+\item Integrating the TableVector class with the Lattice class
+(section~\ref{sec:ArrayLattice}).
+\end{itemize}
+The table system saw a complete overhaul in 1994 in response to
+suggestions from clients of the previous version of the table classes.
+
+Besides finishing the above items, future work will involve such
+things as I/O optimizations, and improving the ability of end users to
+directly manipulate tables.
+
+\section{Array and Image Plane Computations}
+\label{sec:Image}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=6.0in
+\epsfbox{lattice.eps}
+\caption{Lattice classes}
+\label{fig:LatticeClasses}
+\end{figure}
+
+Arrays have traditionally played an important role in scientific
+computation. While it is certainly true that some of the reliance on
+arrays was due to the paucity of other data structures in FORTRAN, it
+is also true that computation on arrays reflects the common occurrence
+of regularly sampled multi-dimensioned data in science. As a pragmatic
+matter, high performance computers often have optimizations (in the
+hardware and compilers) for array operations.
+
+Besides arrays, there are other structures which have array-like
+characteristics. The most important for {\sc aips++} is the Image:
+typically a regularly sampled sky intensity in some polarization along
+axes related to position in the sky, and frequency.
+
+This chapter presents a coherent set of classes and functions for
+computing upon arrays, images, and regular structures in general.
+\subsection{Array and Lattice classes}
+\label{sec:ArrayLattice}
+
+A {\em lattice} is an abstract base class which encapsulates a regular
+multidimensional data structure with a constant number of positions
+along each axis. The length of the axes, expressed as an ordered tuple
+of integers, is known as the {\em shape} of the lattice.  Elements
+contained by the lattice are of homogenous type and may be placed into
+the lattice, or retrieved from it, at positions which correspond to
+intersections of the positions along each axis. A lattice contains a
+total number of elements equal to the product of its shape. Note
+however that it is not required that all the elements be distinct, for
+instance in a symmetric data structure changing one element may also
+change it at its mirrored locations.
+
+The defining characteristic of a lattice is its shape. The fundamental
+operations on a lattice on a lattice involve setting and retrieving
+single elements, or collections of elements. The location of an
+element in a lattice is defined by a tuple of integers, giving the
+position of the element along each axis. This tuple is a class known
+as an {\em IPosition} (Integral Position). (Logically an IPosition is
+a 1D array of integers.)
+
+An {\em Array} is a type of lattice in which all elements are unique and
+fit into memory. Moreover, the position of the elements in memory may
+be calculated solely from their position in the array; thus a sparse
+matrix implemented as run-length encoded lists of elements would not
+be an array in this sense. 
+
+It will often be convenient to have 1-, 2-, and 3-dimensional
+specializations versions of array classes to relieve the tedium of
+indexing arrays of arbitrary dimensionality, and to provide operations
+that only make sense for an array of a given dimension. Generally
+speaking, arrays opertions should be fast --- both for whole-array
+operations and individual element indexing.
+
+Arrays play another special role in the lattice hierarchy. Often
+computations will be required on a regular set of elements from a
+lattice (``the m'th plane''; ``every i'th row, j'th column,
+\ldots''). These operations would be too slow if every element access
+required a function call; instead, the region is accessed through an
+array. That is, arrays give efficient access to elements from a
+regular section of the lattice.
+
+Note in the figure (\ref{fig:LatticeClasses}) that a lattice is often
+associated with an other lattice, for example {\em
+MaskedLattice}. That generally means that the derived class is a {\em
+view} of another lattice. Moreover, since Lattice is a base class,
+implicit in this diagram is that the MaskeLattice might in fact be
+{\em e.g.}, an Array.
+
+Note also that all these classes are templated (also known as
+``parameterized'' or ``generic'' classes in some languages). This
+means that the lattice classes are general containers, they may (in
+principle) hold elements of any type (however, all elements of a
+particular lattice are of the same type).
+
+\subsubsection{Element collections/iteration}
+
+The simplest thing a user or client of a lattice might want to do is
+operate on some collection of elements from a lattice, where there is
+not (necessarily) any intrinsic regularity in the locations of the
+values. That is, there is only a ``next()'' function. An example for
+where this type of interface would suffice is calculating statistics,
+either on a whole lattice, or on some irregular set of points from
+it\footnote{ Actually element iterators like these are of wider
+utility than for only traversing lattice regions; they are of wide
+utility for containers in general. In C++, the best example of this is
+the ``Standard Template Library'' (STL) which is being adopted by the
+ISO/ANSI C++ standardization committee. The {\sc aips++} element
+iterators should be STL compatible to enable their use with third
+party libraries and functions.}  (for example, defined by a user
+selecting points from a GUI display of an image). In general,
+calculations which proceed ``element by element'' can use an element
+collection. In practice, this element collection is more like an
+iterator than a container class.
+
+An element collection has no positions: it's merely a source of values
+(a linearized traversal). In fact, an element collection does not need
+to be attached to a container, it could equally well be attached to an
+input source.
+
+Unlike an ElementCollection, the {\em LatticeElements} class has
+position from the lattice for each element. So, for example, if one is
+iterating through all the pixels of an image that meet some brightness
+threshold, one would know not only their brightness but also their
+location in the underlying lattice.
+
+\subsubsection{Lattice Sections}
+
+A {\em LatticeSection} is a view of a regular portion of a
+lattice. The portion of the underlying lattice which is being viewed
+may be described by a start, a length, and a stride along each
+axis. Note that a LatticeSection {\em isA} Lattice (it has a shape),
+and it also references an underlying lattice (that actually holds the
+values). The underlying lattice can of course be any derived lattice
+type, such as an Image.
+
+A LatticeSection will normally be produced by one of the following:
+\begin{description}
+	\item[Projection] to lower dimensionality. This results
+              in a LatticeSection with a
+             diminished dimensionality ({\em e.g.}, row() and column()
+	     from a 2D structure, plane() from a 3D one).
+	\item[Subsection] which results in a LatticeSection with the
+              same dimensionality.
+\end{description}
+
+\subsubsection{Masked Lattices}
+
+Another useful type of Lattice is a {\em MaskedLattice}, in which
+positions are marked as either ``valid'' or ``invalid'' through the
+use of a mask.\footnote{Actually, the mask is an implementation
+detail. The same result could be had by storing a list of valid (or
+invalid) positions. However, the use of a mask results in a more
+predictable cost. Our implementation of a MaskedLattice contains two
+lattices: one for the data and the other for the mask.}  When elements
+which are marked as invalid are accessed, either directly or through
+an iterator, a default value is returned instead of the actual
+underlying value. In practice the most common default values are apt
+to be zero, or a not-a-number (NaN) value.
+
+Masks can come from a variety of sources:
+\begin{itemize}
+	\item A ``bad data'' marker, either directly ascertained from
+	the telescope data, or deduced by some application.
+	\item From the user, {\em e.g.}, through drawing regions with
+	a GUI image display device.
+	\item Through application of functions which operate on masked
+	arrays, for example:
+		\begin{verbatim}
+			image(image > 5.0) = 5.0;    // Clip
+		\end{verbatim}
+\end{itemize}
+
+Another approach which is similar to this is to use ``magic values''
+to mark the data as good or bad. That is, a special (``magic'') value
+is written into the lattice, and then various support functions look
+for that value. 
+
+We may want to implement magic-value blanking as well as
+masking. While less flexible, it is more efficient in space, and it
+irretrievably marks data as bad. A mask can be lifted off the
+data. While this is often desirable, it does lead to the possibility
+that invalid data might leak into computations. Of course, the data
+behind the mask could be set to a NaN value when this is a serious
+concern.
+
+\subsubsection{Lattice Iteration}
+
+Very commonly, the most convenient method of computing on a lattice is
+to process it ``chunk by chunk.'' Common examples of this are
+processing a spectral line cube plane by plane --- each plane is an
+image at a particular frequency -- or processing it spectrum by
+spectrum.
+
+In {\sc aips++}, we iterate through a lattice in this way by using a
+{\em LatticeIterator}. The lattice iterator has an array {\em cursor}
+(window) attached to it, which is scrolled through the image. The
+locations in the lattice that the cursor is filled from is defined by
+a {\em PositionGenerator}, which has at least two derived classes:
+\begin{description}
+	\item[Stepper] A stepper is used to implement the above
+        ``usual'' traversals. Basically, the cursor is moved by a set
+        amount each time in directions specified by the user ({\em e.g.},
+        transpose orders). Note
+        that the stepper does not need to move by a width related to
+        the width of the cursor. For example, if one wanted to boxcar
+        average an image along the frequency axis, one could move the
+        cursor by one in ``Z'', even though the cursor width in ``Z''
+        is the number of channels one wants to average over.
+	\item[Arbitrary] One might want to, for example, examine small
+        patches around a series of points in an image. An arbitrary
+        position generator has within it a set of points that
+        specifies the locus of positions the cursor will move through.
+\end{description}
+
+So, the cursor {\em shape} defines the chunks that the user is
+interested in, and the {\em PositionGenerator} describes the movement
+of the cursor.
+
+One problem that occurs is an iteration which would extend the cursor
+partially beyond the edge of the lattice. There are (at least) three
+solutions that are appropriate in different circumstance, and hence
+the user must be given the choice of selecting the desired policy:
+\begin{description}
+	\item[Move] the cursor to the next position where it is
+	entirely contained within the lattice.
+	\item[Resize] the cursor so that it only extends exactly to
+        the end of the lattice.
+	\item[Fill] the portion of the cursor that extends beyond the
+	edge of the lattice with some default value (often 0.0).
+\end{description}
+
+The cursor itself is an array. This provides both efficient access to
+the individual pixels, and provides access to all of the operations
+which are defined for arrays.
+
+Note that this iteration abstraction {\em is} the I/O mechanism for
+lattices which do not fit entirely within memory ({\em i.e.}, large
+images). The cursor is the ``I/O'' buffer, and the cursor shape and
+position define the disk head seeks required to fill it.
+
+\subsubsection{ModelLattice}
+
+From time to time one will want to view a (multidimensional) function
+as a Lattice. For example, one might want to use image analysis and
+display tools on a simulation. While it would be possible to sample
+the function and use an array (for example), it might be more
+convenient (or efficient in space) to just use a ModelLattice --- a
+Lattice view of a function.
+
+\subsubsection{Array and Tensor classes}
+
+As described earlier in this section, {\em Array} classes are lattices
+in which all the elements are distinct and stored in memory. In a
+sense, an Array can be considered a multidimensional view of a chunk
+of memory which is inherently linear. In practice it, is convenient to
+have specialized Array1D, Array2D, and Array3D classes to allow, for
+example, more convenient (and efficient!) indexing.\footnote{In C++,
+we should probably also make a distinction between arithmetic arrays
+and general arrays. We might also want array classes that, for
+example, wrap around Karma library arrays.}
+
+Logically the array classes need to be separated from the {\em Tensor}
+classes, which have different storage layouts ({\em e.g.,} symmetries)
+than the Array classes, and different mathematical properties. Of
+course, some of these classes will use the corresponding array class
+for storage of the values.
+
+In general, the Array classes are appropriate for applications like
+image processing, and the Tensor classes for linear algebra and
+related applications.
+
+\subsubsection{PagedArray}
+
+A {\em PagedArray} is a lattice which consists of unique values as
+with an {\em Array}. However, there are too many values for the
+lattice to be kept entirely in (virtual) memory, so a mechanism for
+staging values to and from disk ({\em i.e.,} I/O) is required.
+
+As with all Lattices, the user merely decides how he wants to iterate
+through the data. The actual I/O is performed by the table data system
+(section~ref{sec:TableDataSystem}). In particular, the actual data is
+stored as an indirect array in a column. Of course, that column will
+have an appropriate storage manager attached to it (Karma or AipsIO).
+
+\subsection{Image related classes}
+
+An {\em Image} in {\sc aips++} consists of a Lattice, which holds the
+pixel values, and an {\em ImageCoordinateSystem}. An
+ImageCoordinateSystem is an engine which turns pixel positions into
+real-world coordinates (and the reverse).  While the Lattice Image is
+associated with will normally be a PagedArray, it might be another
+Lattice type. For example, a MaskedLattice which is in turn associated
+with a PagedArray corresponds to a Classic AIPS image with blanks.
+
+In the past it has often been convenient for miscellaneous
+(``arbitrary'') information related to the image to be attached to
+it. This facility is also offered in the Image class, although we need
+to be careful that this isn't used as a substitute for designing and
+implementing appropriate classes. It uses the traditional
+keyword/value protocol.
+
+One feature which has not presently been added to the image class if
+error estimates (or, alternatively, weights). It seems to this author
+that this is still a research topic --- simple independent, normally
+distributed, errors with the usual error propagation rules are apt to
+be very misleading. If, nevertheless, error estimates are required, I
+would suggest merely associating an error value with each pixel
+(behind the interface it might be subsampled to save on storage).
+
+An image will normally have a processing log associated with it.
+
+\subsubsection{Coordinates and Units}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfxsize=6.0in
+\epsfbox{measure.eps}
+\caption{Coordinate related classes}
+\label{fig:coords}
+\end{figure}
+
+An image pixel's origin is at its center, not one of its
+corners. While there is no compelling reason for this convention, as
+discussed in \cite{gc:fits} this convention has the nice feature that
+it is invariant to rotations.
+
+A {\em Measure} is a base class that represents a physical
+measurement, for example {\em Direction} is used to describe a
+position on the sky. Every measure has a {\em MeasureRepresentation}
+which has the units of the physical measurement, and allows operations
+operations rotations. Every Measure also has an associated{\em
+MeasureReferenceFramd}, for example topocentric {\em vs.} barycentric
+sky coordinates.
+
+An {\em ImageCoordinateSystem} is used to tie pixel coordinates to
+their underlying Measure(s). More than one measure may be in an Image
+({\em Direction} and {\em DopplerVelocity} most commonly). More than
+one image axis might be required for a given Measure (a Direction
+requires two, for example). The image axes for a given Measure may not
+be contiguous in the image (it might have been arbitrarily
+transposed). An {\em AxisMapping} is used to map axes to their
+appropriate Measures.
+
+A pixel coordinate is turned into an image coordinate through a chain
+of {\em PixelToPixelTransformation}s, followed by a single {\em
+PixelToImage} coordinate transformation. (Pixel coordinates may be
+non-integral, {\em i.e.}, positions within a pixel may be
+specified). PixelToPixelTransformations will normally involve linear
+transformations (translation, scale, rotate {\em etc.}), however they
+can in general be also be nonlinear functions.
+
+The final PixelToImage coordinate transformation does any final
+mapping (usually a spherical projection for a Direction), as well as
+associating the correct output axes with the correct Measures via the
+AxisMapping.
+
+Note that if one wants (say) coordinates in an image reported in
+galactic coordinates rather than right ascension and declination, one
+merely changes the representation in the Measure. Similarly, if a
+change from a barycentric DopplerVelocity to one against the LSR
+(Local Standard of Rest) results from changing the ReferenceFrame.
+
+The data values in the Image in principle also have a ReferenceFrame
+(so that one ccould apply a red-shift correction to the image through
+a change in ReferenceFrame). Initially the image may only attach units
+to the data values.
+
+The {\em Unit} classes are used to represent physical units. Units may
+be composed ($velocity = length / time$) multiplicatively, and unit
+arithmetic is supported (you can add furlongs to kilometers and get
+the result in parsecs). The Unit is normally part of the
+MeasureRepresentation, although it may also be used on its own.
+
+\subsubsection{ImageStack}
+
+It can be convenient to deal with a collection of similar images as a
+unit. The {\em ImageStack} class was invented for this purpose.
+
+The rule\footnote{First formulated by Mark Calabretta.} which can be
+applied to determine whether or not an axis is a valid for an image,
+is that it must make physical sense to interpolate along an axis of
+that type. So, for example, a frequency axis is a valid axis, but a
+Stokes axis, or any other axis that is essentially an enumeration, is
+not.
+
+An ImageStack is a collection of one or more images of the same size
+and with the same coordinate system. The ImageStack might contain
+Stokes~IQUV images or it might contain the image at different stages
+of processing. Because the sizes and coordinate systems must be the
+same, features will ``line up.''  The fundamental operations on an
+ImageStack involve setting and retrieving images (``give me the `Q'
+image''), and getting the values of the images at some position (``What
+are the IQUV values at some interesting position on the sky'').
+
+Note that ImageStack is inherited from Lattice, so that many
+image-like operations which only require pixel coordinates may, in
+fact, be carried out on ImageStack objects.
+
+
+\subsection{Functions on lattices}
+
+Besides the structures which hold and provide the access to data,
+powerful functions which act upon Lattices are also required for users
+to be able to concisely express the calculations they wish to be
+performed.
+
+Fortunately, there have been a wide variety of successful
+languages\footnote{APL, IDL, Mathematica, Fortran~90, S+ {\em etc.}}
+which implement such functions, so not much invention is required
+here. (As always, implementation can be tricky.)
+
+Besides application-domain specific functions (gridding, FFT'ing, and
+the like), a powerful library of more generic functions is useful. It
+should include at least:
+\begin{itemize}
+	\item Whole-lattice arithmetic.
+	\item Logical expressions.
+	\item General evaluation functions (evaluate a function at all
+	points in a lattice).
+	\item General reduction operators, inner products, outer
+	products, and the like.
+	\item Statistics, special functions, {\em etc.}
+	\item Various plotting and display functions.
+	\item Data fakers/simulators.
+\end{itemize}
+
+\subsubsection{Image analysis functions}
+
+While an Image IsA Lattice, and hence all the Lattice functions may be
+called upon an Image, it will often behoove the user to use functions
+which are more Image-aware. Such functions might need to take into
+account:
+\begin{itemize}
+	\item Coordinate system coincidence. Two images might have
+	have the same shape but very different (non-coincident)
+	coordinate systems. 
+	\item Compatible units. For example, when adding two images, they
+	should have the same type of unit; if you are multiplying them,
+	you need to adjust the output unit type.
+\end{itemize}
+
+
+\subsection{Status}
+
+A set of array classes have been available inside of {\sc aips++} for
+approximately two years. There is an N-dimensional {\em Array} class,
+along with 1-, 2-, and 3-dimensional specializations named Vector,
+Matrix, and Cube. As discussed above, these names should be changed to
+Array1D, Array2D, Array3D.
+
+Lattice and Image classes have been available for a few months. The
+array classes have not been integrated with the Lattice yet, {\em
+i.e.}, the array classes are not yet derived from lattice. However,
+there is a Lattice class which uses an array which allows much the
+same effect.
+
+We anticipate writing a new set of array classes in the first half of
+1995 to complete the merger between the Lattice and Array classes (and
+contains various small fixes that two years of use have turned
+up). The old classes will need to coexist in the system for some long
+time for backwards compatibility.
+
+The LatticeIterator and PositionGenerator (with a stepper subclass)
+have been implemented.
+
+The Array classes presently have whole array arithmetic and logical
+expressions. For example:
+\begin{verbatim}
+     a = b + c*sqrt(d);    // arithmetic
+     a(a > 5.0) = 5.0;     // logicals
+\end{verbatim}
+is supported. The corresponding operations for Lattices in general is
+not yet supported. In other words, a fairly mature set of array
+classes exist, but integration with the ideas outlined in this section
+are required.
+
+A somewhat controversial point has been whether or not lattices and
+derived classes should support variable ({\em i.e.}, non-zero)
+origins. While they have been provided to date, on balance it seems
+that their potential for bugs outweighs their usefulness, and variable
+origins are deprecated and will eventually be removed.
+
+Another controversial point has been whether or not operator* should
+perform element-by-element arithmetic, or perform a linear algebra
+multiplication (although a decision still would need to be made about
+inner versus outer products). This confusion was caused by the lack of
+separation between the linear algebra classes and the array classes.
+Array classes should continue to use element by element arithmetic,
+and the linear algebra classes should choose an appropriate
+multiplication to be performed by operator*.
+
+Only trivial coordinates are available. Units classes have been
+submitted but are not yet in use.
+
+\subsubsection{Efficiency Considerations}
+
+While whole-array operations have been efficient, operations on arrays
+where a lot of array-indexing is done in loops is fairly inefficient.
+Presently the actual indexing of, for example, a Matrix is 
+accomplished by code like the following:
+\begin{verbatim}
+ T &operator()(Int i, Int j) { return data[xyoffset + i*xinc + y*yinc]; }
+\end{verbatim}
+where xyoffset is related to non-zero origins, xinc is related to the
+stride in x, and yinc is related to the stride in y and the length of
+the x axis.
+
+A sufficiently able compiler should be able to optimize ({\em e.g.},
+constant propagation) indexing when it is in tight loops. Many (not
+all) compilers in fact do not efficiently optimize such
+loops. Apparently they are unable to determine that the indexing
+constants are not aliased by the pointer ``data.'' Compilers seem to
+do much better in general when indexing is performed with an operation
+like:
+\begin{verbatim}
+ T &operator()(Int i, Int j) { return dope[i][j]; }
+\end{verbatim}
+
+So, if we want to make indexing more efficient we need to change the
+array classes in the following ways:
+\begin{enumerate}
+	\item Use ``arrays of pointers'' rather than multiplication
+	(at least have this as a compile time option).
+	\item Break out ``view'' classes so that multiplication by an
+	increment is done as infrequently as possible.
+	\item Remove the variable origin.
+\end{enumerate}
+
+While our experience to date is that the effect of inefficient
+indexing is well confined in the code ({\em e.g.,} inserting about 10
+lines of FORTRAN made the Single Dish On-The-Fly imaging application
+run quickly enough) these changes are probably worth making.
+
+A goal of {\sc aips++} is to allow the user to process image cubes
+without having to transpose them. For this to be realistic goal, the
+layout of the image data needs to be carefully defined. If it is done
+naively, processing a $256\times256\times128$ cube ``spectrum by
+spectrum'' would result in 128 head seeks per spectrum, which would
+result in grossly unacceptable I/O behavior. To solve this problem, we
+rely on the Karma storage manager which can tile multidimensional
+lattice data.\footnote{Actually, it is possible to get reasonable
+performance without tiling if you assume that you can hold an entire
+XZ slice of the cube (in this example) in memory at once.}
+
+A problem under some circumstances are the creation of temporary
+objects. A delayed evaluation strategy might be attractive; it would
+also allow expressions to be analyzed so that, for example, $a = b +
+c*d$ would only result in one loop, giving the optimizer more
+opportunities for optimization.
+
+\section{Processing Environment}
+
+The discussion so far in this paper has mostly revolved around classes
+which are used to construct applications. Also important is the method
+by which applications interoperate with one another and communicate
+with the user.
+
+Philosophically, the level of the {\sc aips++} system needs to be
+set. At one extreme, it is a virtual operating system which totally
+hides its users from the underlying OS, so, for example, users can
+process data on a Unix machine or VMS machine and not notice any
+difference. At the other extreme, one has independent executables
+which merely share a data format. {\sc aips++} is in the middle. It
+doesn't pretend to be an operating system (we don't have the expertise
+to write a very good one in any event), yet to allow for convenient
+processing, close communication between applications must be possible.
+
+\subsection{Architecture}
+
+The goal of the {\sc aips++} runtime environment is to create, direct,
+and destroy entities which carry out radio astronomical calculations
+under both user and programmatic control. The runtime environment is
+not directly concerned with the nature of those calculations, however,
+it must be rich enough to support the required interactions.
+
+It is assumed that the environment is typical of those on modern
+workstations (multi-tasking; the process is the normal level of
+granularity of computing; networked, hierarchical filesystems). We do
+not assume that the underlying operating system provides any
+object-oriented facilities.
+
+The approach presented here is, while perhaps more flexible than a
+traditional package, still fairly conservative in the sense that it is
+readily implementable, and doesn't present a pure object-oriented
+approach at the system level. While I believe this is appropriate for
+us if it becomes inadequate other approaches are possible.
+
+The {\sc aips++} runtime environment consists of asynchronously running {\em
+processes} running under the control of a {\em control hub} (which is
+itself a special process). All inter-process communication is
+conceptually through the control hub, although from time to time
+point-to-point communications may be obtained for efficiency.
+
+A process will normally be playing one of several roles:
+\begin{description}
+\item[Task]
+      A task is a ``program'' which is started up with some
+      parameters, some or all of which might be modified as the task
+      executes.
+\item[Server]
+      A server is a long lived process which performs some
+      computation(s) on demand. While the line between a server and a
+      task is somewhat arbitrary, a task normally carries out some
+      computation once for a user, whereas a server carries out
+      similar types of computations repetitively on the request of
+      users or other tasks.
+\item[Proxy object server]
+      A proxy object server is a server process which carries out
+      requested operations ({\em e.g.}, invokes member functions) for objects
+      which it contains.  This is a simple implementation of
+      distributed objects; eventually we expect native operating
+      system support for this functionality.
+\end{description}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfysize=7.0in
+\epsfbox{environment.eps}
+\caption{Example runtime environment.}
+\label{fig:environment}
+\end{figure}
+
+Figure~\ref{fig:environment} shows an example of what the environment
+might look like in practice. 
+
+The distinction between user processes and system processes is not a
+sharp one, however the user is likely to have directly activated the
+processes on his side of the line, whereas the system processes
+probably started at the behest of some other entity.
+
+In the example, the user is directly manipulating an object in an
+object server through CLI manipulations. Those objects might be tables
+or images, or something less generic. Object servers will often need
+access to data ({\em i.e.,} Tables), particularly if they are
+persistent.
+
+The user has previously started some application which is presently
+communicating with some compute server ({\em e.g.}, FFT). C++
+applications would not normally use a compute server, applications
+written as a CLI script often will. Compute servers will often be
+stateless (pure functions), so they may not need a database.
+
+A particularly interesting process is the image display process. It is
+both capable of displaying and manipulating images in a standalone
+fashion (at least FITS and {\sc aips++} native images), as well as
+accepting connections from other processes. For example, it might
+display an image sent to it, or give some other process a subregion of
+the image (for example, to compute statistics upon it).
+
+Also attached to the control hub is a device interface process; these
+will be particularly important for tape drives. Also shown attached is
+a ``Help'' process\footnote{Almost certainly a thin layer on top of a
+WWW browser like Mosaic.} and a process monitor (log messages, percent
+completed displays, and the like).
+
+\subsubsection{Message-passing processes}
+
+It needs to be stressed that the above roles are purely a convention.
+At the lowest levels we merely have inter-communicating processes.
+Layers above the system interpret whether a process is an application
+task, server, or proxy object server.
+
+With this framework, a simple underlying mechanism will suffice; in
+particular a message passing client-server architecture should be
+sufficient. The role a process fills is then established by what
+messages the process responds to and emits at runtime. Note that this
+means a given binary executable file might be capable of producing
+processes which act as both servers and tasks (which role for a given
+process would normally be deduced from command line arguments).
+
+Every process has a name, a typelist, and an address (``ID''). The name
+is an appellation for the process. It will typically be the same for
+all processes from a given executable, although it may in principle be
+picked (or even changed) at run time. The ``typelist'' is a set of
+``types'' that this process considers itself, and it will respond to
+broadcasts that correspond to any type in its list. The address is
+used to direct communications; it is very implementation specific. It
+is unique for every process.
+
+The messages themselves consist of a {\em message type}, and a set of
+{\em keyword=value pairs}. The message-type is used to show whether a
+given message contains task parameters, distributed object
+method-invocation parameters, a log message, {\em etc.} The values
+will consist of at least all the usual scalar types, arrays of scalar
+types, a ``null'' (unset) type, as well as sets of keyword=value
+pairs. The latter makes it a hierarchical structure.
+
+It will take some experimentation to discover when to send data by
+value ({\em i.e.}, stuffing the actual values into messages) or by
+reference (sending a ``file name''). Generally, when the receiver
+might only want an unknown subset of a large dataset or when efficiency
+is paramount, sending by reference is probably appropriate.  In any
+event, point-to-point communications should probably be enabled before
+sending extremely large messages.
+
+This design is at least partially chosen to be readily implementable
+in Glish. It is not, however, a direct correspondence; in particular
+the notion of broadcasts and a typelist will need to be layered on top
+of Glish (described below).
+
+\subsubsection{Control hub}
+
+If the underlying processes merely are asynchronous entities which are
+capable of exchanging messages with one another, conventions need to
+be built which define the responsibilities and message protocols that
+different classes of processes understand.
+
+The architecture is considerably simplified if an overall controlling
+and organizing process (per-user, per-machine) exists. We call this
+special process the {\em control hub}. 
+
+While the existence of a control hub is a ``single point of failure'',
+the simplifications in design and implementation it affords make it a
+worthwhile one. Many computational tasks and other tools
+(particularly GUI display tasks) can operate quite successfully
+without communicating with other processes. These processes should
+have a standalone mode where they can run independently.
+
+Aside from the role of the hub as described above, a philosophical
+point can be made. Experts will write the hub and control its
+evolution.  Applications will often be written by naive
+programmers. If there is a choice of where to put complexity --- in
+the process or in the hub --- it should go in the hub.
+
+It is probable that various kinds of functionality not presently
+envisioned will be required in the future. Having a control hub which
+is itself readily programmable will greatly ease the burden of
+providing additional or different functionality in the future.
+
+The control hub maintains a list of active processes, including their
+name, typelist, and address.  Processes communicate by exchanging
+messages. Messages may be sent at any time, although whether or not it
+``interrupts'' the recipient process depends on whether that program
+wishes that sort of interaction. A message may either be sent to a
+particular ID, or it may be broadcast to a typelist.  Messages which
+aren't received immediately are queued in the hub.\footnote{Perhaps
+``sender blocks until reception would be a better policy?''}
+
+For efficiency, a process may request a direct point-to-point
+connection to a particular address. Messages to other addresses and
+broadcasts are not possible until the point-to-point connection is
+broken. (This might be unnecessarily restrictive.) The sender will
+probably also block in this circumstance.
+
+The hub keeps a list of all active processes and related information
+in an active process list. For each process, the hub records at least:
+
+\begin{description}
+\item[name]
+        The name of the process. If the process decides to change its
+        name while running, it must send a message to the hub to
+        register that fact.
+\item[typelist]
+        The list of types the process considers itself is likewise
+        maintained.
+\item[address]
+        The address the process is cached to enable the physical
+        communications.
+\item[status]
+        A process is either {\em running}, {\em waiting} for a
+        message, {\em stopped}, or {\em connected} directly with
+        another process for communications. Messages for {\em running}
+        processes are queued in the hub until the process is {\em
+        waiting}. A {\em stopped} process must be restarted by the
+        hub.
+\item[priority]
+        The process may be running at some altered priority (for
+        example, as a ``background task'').
+\item[monitoring information]
+        The process may send {\em status} messages to the hub giving
+        information such as ``percent done.''  This status  information might
+        be passed on to monitoring process ({\em e.g.}, showing an
+        hourglass).
+\end{description}
+
+A group of processes may be indicated by either of:
+\begin{enumerate}
+\item An list of processes ({\em i.e.}, explicit list of  addresses).
+\item Regular expressions which may be applied to the name and/or typelists.
+\end{enumerate} 
+
+The active process list can be requested by a process via a message to
+the hub. The requestor may define a group of processes of interest or
+it may request the entire list.
+
+Other messages related to control of processes that the hub will
+respond to include:
+
+\begin{description}
+\item[Activate] 
+        The activation message contains the name of the executable,
+        along with any special arguments that the caller knows the
+        executable requires. (The hub will probably have to supply
+        some additional standard arguments.) The hub will respond with
+        the new record in the active process list if the activation
+        succeeds, otherwise it will respond with an error message.
+\item[Stop]
+        The hub may be told to stop a given process (or group of
+        processes). It responds with a message that indicates success
+        or failure, and the active process list is updated
+        appropriately.
+\item[Continue]
+        A stopped (paused) process(es) may be told to continue. The
+        process list is updated, and the initiator is notified of
+        success or failure.
+\item[Shutdown]
+        A process may request that another process (or group of
+        process) shut down ``gracefully.'' The process list is only
+        updated when the process being shutdown confirms that it is
+        (just about) finished. No return message is sent to the
+        initiator; the shutdown process can take a long time depending
+        on what needs to be tidied up.
+\item[Kill]
+        A process can request that the hub unceremoniously kill (via
+        host operating system commands) a process or group of
+        processes. The active process list is updated, and the
+        initiator is notified of success or failure. (The hub can't
+        normally kill a process owned by another user.)
+\item[Priority]
+        The hub may be told to set a process, or group of processes,
+        to run at a different priority.
+\end{description}
+
+\subsubsection{Packages and configuration}
+To the hub, a package consists of a set of executables (which can be
+command line scripts as well as compiled binaries) and on-line help
+files. When a package is added, the hub interrogates each executable
+(probably by running the executable with special flags) and notes at
+least the name, typelist, and a human-readable string describing the
+executable (and probably keywords, categories, {\em etc.})  If the
+executable corresponds to a task, its inputs are recorded. If the
+executable corresponds to a class repository, its meta-information is
+recorded.
+
+This information is cached by the hub so it doesn't need to regenerate
+it each time (which might consist of running many executables).
+
+The hub will respond to certain messages to display the list of
+packages, available binaries, etc. This can be used by humans to
+browse the online set of available functionality. The hub will also
+respond to messages telling it to update its package cache ({\it
+e.g.}, an executable is added or changed; timestamps can be used to
+determine which executables and directories need to be examined).
+\subsubsection{Proxy objects}
+
+Until such time as we have language support for making objects
+``distributed'', creating a distributed object will require some
+binding process. This binding process must not be so painful that it
+is not carried out for important classes.
+
+There are various reasons why we need distributed objects. Perhaps the
+most compelling reason is to allow users at the command line to take
+advantage of functionality in the library. Without access to this
+functionality, the CLI user would only have limited access to
+functions compiled into the library. Whether a given piece of library
+functionality should be bound as a simple computation server or as a
+distributed object, of course, depends on the complexity of the
+operations. An FFT can likely be a simple compute server; a Table
+object should appear in an object server.
+
+A related reason is to allow for introduction of new derived classes
+at run time without forcing recompilations.  Take the case of tables:
+a lot of effort has been spent to allow users to derive new types of
+tables (so-called {\em virtual} tables).  Suppose a user creates a new
+type of table and then wishes to display that table with the {\em
+table browser}. If this is to occur without the table browser being at
+least relinked (and probably slightly modified), a facility like that
+offered by ``distributed objects'' is necessary.
+
+Another use is to allow computation to be farmed out onto separate
+machine(s). For example, cleaning a spectral line cube in parallel,
+one plane per machine.
+
+To reiterate, there are two main uses for a distributed object:
+\begin{enumerate}
+        \item To allow use of objects which are not compiled into a
+        given executable (very-late binding).
+        \item To run standard objects in a different address-space
+        (possibly on a different machine) for performance or other
+        reasons.
+\end{enumerate}
+
+The fact that an object is distributed is an implementation detail to
+the user of that object, at least after it has been constructed.
+
+To create a distributed object one must:
+\begin{enumerate}
+\item
+    Create a (client-side) stub class through derivation from a base
+    class. Its member functions marshal arguments into message
+    records (and retrieve return codes). Much or most of this
+    communication will be encapsulated into classes.
+\item
+    Create server executable which implement the distributed object.
+    In C++ one would normally use an existing class, or write a
+    new class, but note that it would be possible to implement the
+    server in another compiled language (like C or FORTRAN) or even
+    through the use of CLI scripts. All the server needs to do is respond
+    to the messages from the client stub that correspond to the object
+    member functions.  Typically a server executable might be
+    responsible for several different types, and a server process may
+    contain many different objects. Note that a given object server
+    might have many different objects inside of it.
+\item
+    Register the class and its meta-information ({\em i.e.}, parent classes)
+    with the control hub. At the minimum, we need to be able to map a
+    ``type'' into a server executable. We would also like to be able
+    to list the available member functions, return types, {\em etc.}
+\end{enumerate}
+
+\subsection{Persistent objects}
+
+This section discusses persistence in general, as well as catalogs. It
+has to be realized that the general persistence problem does not have
+to be solved from the beginning. It will suffice for some time to be
+merely able to store high-level astronomical objects (image,
+visibility dataset, {\em etc.}) as well as tables and groupings
+(associations) thereof.
+
+Persistence is the ability to reform an object into a running process
+from data on some storage medium ({\em i.e.}, normally disk).  A
+somewhat subtle distinction can be made between persistent
+values\footnote{ Writing the values contained in an object out in some
+way that its values can be reconstituted into a similar object.  This
+is essentially ``copy'' semantics: some object is overwritten with
+values that came out of some previous object. (AipsIO behaves like
+this.) {\tt persist >> object} is a reasonable way to think of this.},
+where a new object contains the values ({\em i.e.}, state) of some
+previous object, and persistent objects\footnote{A PARTICULAR object
+whose lifetime can exceed that of the process in which it was
+created. {\tt persist >> object} is a bad way to think of this, you
+are not changing some (possibly empty) existing object, you are
+``activating'' an already existing object.}, where the same object is
+considered to survive multiple invocations in different
+processes. Ideally a persistence mechanism is easily extensible to
+handle new classes. It may well be that practicality requires us to
+stage the implementation of persistence in two stages; the first of
+which only handles a few predetermined classes.
+
+A catalog is a structure for organizing collections of persistent
+objects. It also normally contains additional information so that a
+user may browse the catalog to select objects to be used in further
+data processing.
+
+An association is a grouping of related objects. This is somewhat
+different than merely making persistent an object that has
+``pointers'' to other objects. An association will often be made or
+broken by users through the CLI. One particular object of an
+association is normally considered ``primary.'' Hierarchical
+associations should be supported.
+
+\subsubsection{Distributed objects and persistence}
+As mentioned previously, distributed objects might play a useful role
+in the solution of a particularly difficult persistence problem. In
+particular, one wants to use a persistent instance of a class that was
+not available when the program was compiled and linked.
+
+While the general problem is very difficult, it is considerably
+simplified if one only needs to be able to use such an object
+polymorphically through a base class that {\em was} available when the
+executable was linked. A (fairly) simple strategy that would suffice
+is to create an inherited class that talks to some object in a
+server. In this implementation, if a class wasn't available when a
+particular executable was created, you can still access it via IPC to
+some object server (at some loss of efficiency) through the hub.
+
+Another possibility would be to use dynamic linking, but that is less
+portable. 
+\subsubsection{Persistence open issues}
+How do you ``navigate'' between persistent objects which might be on
+different machines or have different permissions?
+
+How do we handle versioning?
+
+Concurrency. One thinks of persistent objects living in one process at
+a time. People are used to, say, having one ``writer'' of a data-set
+({\em i.e.}, object) but possibly many readers. Is this consistent?
+
+Answers to these questions are likely to be strongly influenced by
+implementability considerations, {\em i.e.,} simple.
+
+\subsection{User Interface}
+\subsubsection{CLI}
+
+The command line interpreter has to serve both the modest user who
+only wants to run pre-written tasks, as well as the user who wants to
+do powerful interactive manipulations of his data and write new
+applications in a very high level language.
+
+To be a useful GUI, the language must both have a reasonable syntax,
+and must allow access to high-level operations. For the latter, having
+a language with ``whole-array'' expressions (as in languages like
+FORTRAN~90 or IDL) is a very good start. To have a yet more powerful
+CLI requires that the types of domain operations encapsulated within
+the library be available through the CLI. Thus a mechanism for
+readily binding new functionality from a library to the CLI is
+important to allow CLI programmers to be ``first-class'' programmers,
+{\em i.e.}, to give them the same sorts of tools that are available to
+the programmer of the compiled language. The CLI should in fact be the
+most flexible possible interface to the libraries of the system.
+
+It is important to note that the CLI is distinct from the control
+hub. In principle the CLI is readily replaceable (alternatively, a
+choice of CLI's might be available). Additional CLI's merely have to
+be able to send and receive standard messages to and from the control
+hub.
+
+\subsubsection{GUI tools}
+There are a variety of GUI tools that one can identify as being useful
+to. These include:
+\begin{itemize}
+        \item 1-, 2-, and 3-D graphics. (Integrated; or at least must
+        be able to integrate 1- and 2-D.)
+        \item Table browser.
+        \item Online documentation/help and gripe system.
+        \item Parameter editor.
+        \item Data/catalog browser.
+\end{itemize}
+
+There are several different ways that GUI tools or components from GUI
+tools might be useful:
+\begin{enumerate}
+        \item Standalone, integrate applications.
+        \item To make up new GUI tools from parts of an application,
+                {\em e.g.}, a raster display might be used both by an image
+                viewer and by a visibility data flagger.
+        \item Callable from a CLI, {\em e.g.}, display an array or image that
+              has just been modified by the CLI. (Of course this could
+              be useful from any program, not just the CLI although that
+              might be the most common application.)
+        \item Directly used as a remote object.
+\end{enumerate}
+To allow these sorts of operations, the standalone applications should
+be capable of intercommunicating in the {\sc aips++} system using the
+usual communications mechanisms. Additionally, the important GUI
+classes should be separable from the application in which they are
+embedded to allow the user to build new tools using those components
+(an interactive data editor from an image display component and table
+browser).
+
+\subsection{Standard servers}
+
+There is a variety of additional centralized functionality that the
+control hub provides access to. This list will undoubtedly increase
+with time.
+
+\begin{description}
+\item[Help]
+        Asynchronous help messages are sent to the hub, where they may
+        be handled in a variety of ways; normally a help display
+        program (Mosaic under X) will be directed to the appropriate
+        page. Help messages contain the originator, a priority
+        (informational, important, urgent, {\em etc.}) and a reference
+        into the help database.
+\item[Log messages]
+        Logging messages will similarly be directed at the hub which
+        in turn may do a variety of things with them (display them,
+        put them in a file, filter on priority, {\em etc.}).
+\item[Monitoring]
+	Some tasks may emit various messages that mark their progress
+	(percent done) or can be used diagnostically (current residual
+	image from a Clean deconvolution).
+\item[Devices]
+        The hub will have a repository of device information, and will
+        probably also control servers which interface to various
+        devices, in particular,  tape drives.
+\end{description}
+
+\subsection{Status}
+
+Glish has been adopted for the control hub, and sample computation
+servers and proxy object servers have been implemented. Glish event
+conventions are still informal. Presently Glish can only communicate
+with processes which it has started. Partly because of this, the
+clean separation between the hub and the CLI has not yet been made
+(this problem may be solved by a non-AIPS++ Glish developer, otherwise
+we shall have to do it ourselves). Proxy objects have only been
+written in Glish, not C++, to date.
+
+Glish has been augmented for use as a CLI by adding $N>1$
+dimensional array and complex data types, and by adding command line
+editing.
+
+Persistent values are only implemented for a few important types. There
+is no catalog classes yet, we are using the unix file system.
+
+A GUI table browser is available. It does not yet show table keywords,
+nor does it allow the table values to be modified. Two independent GUI
+graphics tools are being developed; at least one of them is capable of
+being ``programmed'' via Glish events.
+
+Some classes to isolate OS dependencies have been developed. More are
+required.
+
+
+%\section{Computing Trends}
+
+%As always, the state of art in the computing industry is
+%advancing. There are several emerging technologies that the project
+%should track and take advantage of when the technology is sufficiently
+%widespread.
+
+%\begin{description}
+%\item{Distributed objects}
+%\item{Parallel processing}
+%\item{Multithreading}
+%\item{Displacement of UNIX}
+%\end{description}
+
+\section{Glossary}
+
+Many of the following definitions are taken from
+\cite{holdaway:glossary,aips:glossary}. Unfortunately, this glossary
+is not yet complete. Please forward suggestions for new entries to
+this author.
+
+%%%%% The following are from the AIPS Glossary; COOKG.TEX
+\def\bold#1{{\bf#1}}
+%\def\charfn#1{\raise.465ex\hbox{$\chi$}_{#1}}
+%\def\formhat{\hat {\phantom{l}}}
+%\def\formcheck{\check {\phantom{l}}}
+%\def\bold#1{{\bf#1}}
+%%\def\parsep{\par\penalty -50\vskip 3.5pt plus 3pt minus 1pt}
+%\def\parsep{\par\penalty -50\vskip 3pt plus 1.5pt minus 1pt}
+%\def\aa#1{\parsep\mark{{#1}}{\bf{#1}} ---}
+%\def\xspace{\unskip\hskip 7pt plus 3pt minus 4pt}
+%\def\uv{$u$-$v$ }
+\def\qv{({\it q.v.})}
+%\def\s{\tilde}
+\def\text#1{\hbox{\it#1}}
+%\def\arg{\operatorname{arg}}
+%\def\fti{\text{FT}^{-1}}
+%\def\hca{{\it H\"ogbom CLEAN algorithm}}
+%\def\wsp{{\it 1982 Summer Workshop Proceedings}}
+%\def\ssp{{\it 1985 Summer School Proceedings}}
+%\def\sira{{\it Third NRAO Synthesis Imaging Summer School}}
+%\def\sydp{{\it 1983 Sydney Conference Proceedings}}
+%\def\gronp{{\it 1978 Groningen Conference Proceedings}}
+
+
+\begin{description}
+
+\item[``A Matrix'' formalism] Consider the matrix equation $D = A S$,
+where D is a vector of measured data, S is a vector representing the
+sky brightness distribution, and the ``A'' matrix represents a linear
+measurement process such as observing total power with a single dish
+or sampling the Fourier transform of the sky brightness distribution
+with an interferometer.  Such an approach has been taken in
+\cite{cornwell:imaging,cornwell:telescope} in analyzing the
+{\em MeasurementModels} of several different types of observations.
+
+\item[Abstract base class] An abstract base class is a {\em class}
+which has no implementation, only an {\em interface}. Thus it is used
+{\em polymorphically} through a derived class.
+
+\item[AIPS] Astronomical Image Processing System; the (still active)
+predecessor to {\sc aips++}. Also known as Classic AIPS. Described in
+\cite{bg:AIPS}. Written in FORTRAN.
+
+\item[AIPS++] Astronomical Information Processing System: described in
+this paper. Written in C++.
+
+\item[Application] A program directly invoked by end users to perform
+desired operations.
+
+\item[Application developer] A person who writes {application}
+programs. This person typically uses C++ {\em libraries} or writes
+{\em CLI} scripts.
+
+\item[apply()] some {\em Telescope Components} contain calibration
+parameters which must be solved for and then applied to the data.
+apply() creates a new MeasurementSet from an old one. Usually it will
+perform an {\em on-the-fly calibration} to avoid data duplication.
+apply() is also available through the {\em TelescopeModel}. It merely
+calls apply on all its contained TelescopeComponents in turn.
+
+\item[Array]
+An array is a {\em Lattice} for which all the elements are uniquen and
+fit into memory. Also, an {\em aperture synthesis} radio telescope is
+known as an array, but that usage is avoided in this paper.
+
+\item[Association] Often in object oriented systems, one type of
+object will need to be associated with another object.  For example,
+the {\em MeasurementSet} needs to know which particular TelescopeModel
+is describing its state of calibration.  See also {\em Catalog}.
+
+\item[Base classes]
+A {\em class} from which other classes are derived through {\em
+inheritance}.
+
+\item[Baseline] For {\em single dish} the contribution to a spectrum
+from ``uninteresting'' sources: the instrument itself, the atmosphere,
+or even from an unwanted astronomical source.
+
+
+\item[Big table view of data]
+A view of telescope data in which all the data appears in a single
+{\em Table}, rather than being separated into tables which vary at
+different rates. To prevent unacceptable data bloat, the table
+requires a sufficiently sophisticated {\em storage manager}, in
+particular the {\em Miriad storage manager}.
+
+\item[Catalog] the catalog system deals with keeping track of high
+level objects for the user such as {\em MeasurementSets}, {\em
+MeasurementModels}, {\em TelescopeModels}, {\em etc.} that the user
+has created to store results in.  There will be strong interaction
+between the catalog system and the user interface. An {\em ObjectID}
+is the fundamental identifier of a catalogued, or any {\em
+persistent}, object.
+
+\item[Class] In C++, a Class is a user-defined type. 
+
+
+\item[Class developer] A programmer who implements {\em
+Classes}.
+
+
+\item[Class interface] A class may only be accessed through a well
+defined set of functions. This ensures that the class is manipulated
+only in predetermined (safe) ways. This situation is different from
+manipulating a traditional structure or record, which has to rely on
+conventions for ensuring that it remains valid. See also {\em
+encapsulation}.
+
+
+\item[CLEAN]
+a deconvolution algorithm
+devised by Jan H\"ogbom for use in radio interferometry
+[J.~A.~H\"ogbom, Aperture synthesis with a non-regular
+distribution of interferometer baselines, {\it Astron.\ Astrophys.\
+Suppl.\ Ser.,} \bold{15} (1974) 417--426].
+Denote (the discrete representations of) the dirty map by $g$
+and the dirty beam by $b$.
+The algorithm iteratively constructs discrete approximants $f_n$
+to a solution $f$ of the equation $b\ast f=g$,
+starting with an initial approximant $f_0\equiv0$.
+At the $n$th iteration, one searches for the peak in the
+residual map $g-b\ast f_{n-1}$.
+A $\delta$-function component, centered at the location of the largest
+residual, and of amplitude $\mu$ (the {\it loop gain}\/)
+times the largest residual, is added to $f_{n-1}$ to yield $f_n$.
+The search over the residual map is restricted to a region $A$
+termed the {\it clean window.}
+The iteration terminates with an approximate solution $f_N$
+either when $N$ equals some iteration limit $N_{max}$,
+or when the peak residual (in absolute value) or the r.m.s.\
+residual decreases to some given level.
+\par
+To diminish any spurious high spatial frequency features in
+the solution, $f_N$ is convolved with a narrow elliptical Gaussian
+function $h$, termed the {\it clean beam.}
+Generally $h$ is chosen by fitting to the central lobe of the
+dirty beam.
+Also, one generally adds the final residual map $g-b\ast f_N$
+to the approximate solution $f_N\ast h$, in order to produce
+a final result, termed the {\it clean map,} with a
+realistic-appearing level of noise.
+
+[This is a description of the H\"ogbom CLEAN algorithm. In practice, a
+variant of it (Clark, Cotton-Schwab, Steer-Dewdney-Ito) is chosen.]
+
+
+\item[CLEAN component]
+in the H\"ogbom CLEAN algorithm, a $\delta$-function component which
+is added to the $(n-1)$st iterate in order to obtain
+the $n$th iterate.
+Its location is the location of the peak residual after the
+$(n-1)$st iteration, and its amplitude is a fraction
+$\mu$ (the {\it loop gain}\/) of the largest residual.
+
+
+\item[CLI] {\em Command line interpreter.}
+
+
+\item[Command line interpreter] An end user program with which the
+user can perform interactive calculations (for example, whole-array
+arithmetic) and start up other {\em applications}.
+
+
+\item[Control hub] A central process which is a repository for
+centralized configuration information. It is also responsible for
+starting and stopping {\em processes}, and mediating communications
+among them.
+
+\item[DataManagers]
+map values to Tables. It is the {\em base class} for various {\em
+StorageManagers} which perform actual I/O of data values from a storage
+device. A DataManager is also used to implement {\em virtual tables
+and columns}.
+
+
+\item[Deconvolution]
+the numerical inversion of a convolution equation, either continuous
+or discrete, in one or several variables;
+i.e., the numerical solution (for $f$) of an equation of the form
+$f\ast g=h+\text{noise}$, given $g$ and given the right-hand side
+of the equation.
+Except in trivial cases, deconvolution is an ill-posed problem:
+In the absence of constraints or extra side-conditions,
+and in the case of noiseless data---assuming that some solution exists---%
+there usually will exist many solutions.
+In the case of noisy data, there usually will exist no exact solution,
+but a multitude of approximate solutions.
+In the latter case, if one is not careful in the choice of a numerical method,
+the computed approximate solution is likely not to have
+a continuous dependence on the given data.
+The so-called {\it regularization method} \qv\ (of which the {\it maximum
+entropy method} is a special case) is an effective tool for the
+deconvolution problem.
+\par
+Discrete two-dimensional deconvolution is an everyday problem in
+radio interferometry, owing to the fact that---under certain simplifying
+assumptions---the so-called {\it dirty map} is the convolution of
+the {\it dirty beam} with the true celestial radio image.
+In addition to the maximum entropy method,
+the {\it CLEAN algorithm} is commonly applied to this problem.
+
+
+\item[Derived classes]
+A class which is created from a {\em base class}. A derived class may
+have more functionality than its base class, particularly if it is an
+{\em abstract base class}. It can also modify the meaning of a {\em
+member function}, especially useful if the class is to be used {\em
+polymorphically}. 
+
+
+\item[Encapsulation] Programming errors can be minimized if data can
+be changed only in a well regulated way. Encapsulation is the process
+of enforcing these well regulated changes, by only allowing access to
+the data through a class {\em interface}. This is also known as data
+hiding.
+
+
+\item[FFT]
+a fast algorithm for the computation of the {\it discrete Fourier
+transform} (DFT) $y_0,\dots,y_{n-1}$ of a sequence of $n$ complex
+numbers $x_0,\dots,x_{n-1}$, $$y_k=\sum_{j=0}^{n-1}x_j e^{2\pi
+ijk/n}\,,$$ typically requiring only $O(n\log n)$ arithmetic
+operations --- or a multi-dimensional generalization thereof.  By
+contrast, straightforward, or na\"ive evaluation of the DFT requires
+$O(n^2)$ operations.
+
+
+\item[Filled tables] are {\em Table} objects which stage data
+values to and from a secondary storage device. See also {\em Reference
+tables}, {\em Virtual tables}, and {\em Storage managers}.
+
+\item[FITS]
+(Flexible Image Transport System) a magnetic tape data format
+well-tailored for the transport of image data among observatories.
+See [D.~C.~Wells, E.~W.~Greisen, and R.~H.~Harten, FITS: A flexible
+image transport system, {\it Astron.\ Astrophys.\ Suppl.\ Ser.},
+\bold{44} (1981) 363--370].
+
+\item[Glish]
+Glish is a {\em command line interpreter} whish is loosely based on
+the S programming language, a language commonly used for
+statistics.. It offers a convenient syntax for manipulating whole
+arrays (augmented by the {\sc aips++} group to be multidimensional),
+and it also has a very flexible, and hierarchical, record data
+structure. Besides its data manipulation language, it also implements
+a ``software bus'' which allows functionality in {\em processes} to be
+readily integrated. The master version of Glish is available from {\em
+ftp://ee.lbl.gov/glish}, and the current {\sc aips++} version can be
+found at {\em ftp://aips2.nrao.edu/pub/RELEASED/glish}. (At
+any particular time, the AIPS++ version may have features which have
+not yet been merged into the mainline Glish distribution).
+
+\item[Graphical User Interface] is a term used for the graphical
+elements, such as menus and buttons, an {\em application}, or set of
+applications, presents to the user.
+
+\item[``Green Bank'' model]
+are a set of classes, originally described in \cite{shone:gb}, that
+describe a software model for calibrating and imaging astronomical
+data. It features a {\em MeasurementSet} class, which presents the
+telescope data, possibly with {\em on-the-fly calibration} being
+applied. This calibration is supplied by a {\em TelescopeModel} which
+marshals the particular calibrations available in various {\em
+TelescopeComponents}. A {\em MeasurementModel} describes how a
+particular instrument turns a MeasurementSet into a {\em SourceModel}
+or {\em Image}.
+
+
+\item[GUI] See {\em Graphical User Interface}.
+
+
+\item[HasA] is a term used when a {\em class} has another class
+embedded within it (aggregation), or sometimes when it is associated
+with it (a reference or ``pointer'' relationship). Another
+relationship is {\em IsA}.
+
+
+\item[Image] a class derived from {\em Lattice} which contains values
+of homogenous type arranged in a finite-volume, linear, rectangular,
+or hyper-rectangular structure. Besides the data values, the image
+contains an {\em image coordinate system} to associate its pixel
+positions with astronomical {\em Measures}, usually related to
+position on the sky and doppler velocity. ``Arbitrary'' information
+can also be attached through the use of {\em keywords}, and the Image
+will normally have a processing {\em log} attached to it.
+
+
+\item[Image coordinate system] 
+is an engine attached to an {\em Image} for turning positions within
+the lattice to {\em Measure}s, usually related to position on the sky
+and doppler velocity. An image, for example a spectral line cube,
+might have more than one measure associated with its coordinate system.
+
+
+\item[ImageStack]
+A collection of N-dimensional {\em Images} images which share the same
+{\em image coordinate system}, viewed as a Lattice.
+
+
+\item[Inheritance] describes the creation of a new {\em derived class}
+from a {\em base class}.
+
+
+\item[Interface] is the portion of the {\em class} which may be used
+externally, it enforces {\em encapsulation}.
+
+
+\item[Interferometer]
+
+
+\item[invert()] a method of the MeasurementModel is the opposite of predict().
+Consider the {\em A Matrix formalism}: $D = A S$.  Invert is the operation
+which, when applied to D, yields an estimate of S:
+$$ (A^{T} A)^{-1} A^{T} D = S $$
+
+\item[IPosition]
+is an ordered tuple of integers, one per axis, that specifies a
+particular value in a {\em Lattice}.
+
+\item[IsA] is a term used for a class which is a {\em derived class}
+of another. An Array IsA Lattice.
+
+
+\item[IPC] Inter-process communications.
+
+
+\item[Karma]
+Karma is a programmers toolkit for scientific computing with
+communications support, event management, data structure manipulation,
+graphics display and user interface support. Information on Karma may
+be found at {\tt http://www.atnf.csiro.au/karma}. Karma was developed
+by R. Gooch. {\sc aips++} is using Karma for a {\em StorageManager}
+and for graphics.
+
+\item[Keyword]
+A named value (``keyword=value''). In {\sc aips++} the value can
+normally be a scalar type, {\em Array} of scalar, or {\em Table}. The
+particular types that may be attached to a keyword are class specific.
+
+\item[Lattice]
+is an {\em abstract base class} which presents an {\em interface} to a
+finite-volume, linear, rectangular, or hyper-rectangular
+structure. The Lattice is fundamentally described by its {\em shape}.
+
+%\item[Library]
+
+
+\item[Log]
+A sequence of informational messages with a priority and a type (both
+of which may be filtered on). The log is typically attached to both
+the data being modified and to the user interface (for a history of
+all operations). Ideally programs may be rerun directly from
+information contained in the log messagse.
+
+\item[Magic value blanking]
+An invalid value which is marked by placing a special value (typically
+an IEEE NaN) into it. Unlike a {\em Mask}, magic value blanking is
+irreversible.
+
+\item[Mask]
+A collection of Boolean values which are used to mark whether a value
+is valid or invalid.
+
+
+\item[Measure]
+a class identifying the value(s), errors(s), and unit(s) for a
+measurement with transformation properties determined by the
+ReferenceFrame and Representation.  Epoch, duration, direction, and
+position are examples of different types of Measures.
+
+\item[Measurement model]
+an abstraction of the measurement process with a perfect telescope
+(ie, with no calibration errors).  The MeasurementModel has methods
+{\em predict()}, {\em invert()}.  Specific MeasurementModels will
+include the Interferometer MeasurementModel, the SingleDish
+MeasurementModel, the MosaicingMeasurementModel, and the
+NonCoplanarBaselineMeasurementModel.  A {\em MeasurementSet} will have
+an associated MeasurementModel.  When a MS is passed to a MM, the MM
+will convert the MS to the data view which it requires.
+
+
+\item[Measurement set]
+All of the data produced by a Telescope which the user cares to keep,
+including both astronomical data, instrumental data, and monitor data,
+is the body of the MeasurementSet. A measurement set is {\em derived}
+from a {\em Table}, and presents a {\em ``big table'' view} of
+data. The MS has little intelligence, but it has an associated {\em
+Telescope Model} which is able to calibrate data {\em on the fly} in
+the MeasurementSet, and an associated {\em MeasurementModel} which is
+able to convert the data into a {\em Source model} or {\em Image} or
+able to convert a model brightness distribution into a model
+MeasurementSet.
+
+
+\item[Member function] a function that belongs to a {\em class} and is able
+to manipulate class data. Only member functions are allowed to
+directly manipulate class data\footnote{If the class is designed
+properly.}. This is the mechanism by which {\em encapsulation} is
+enforced. The set of public member functions of a class make up its
+{\em interface}.
+
+
+\item[Message]
+The atomic unit of information exchanged between two {\em processes}
+via {\em IPC}.
+
+\item[Method] see {\em member function}.
+
+\item[Miriad]
+Multichannel Image Reconstruction, Image Analysis and Display. A
+software package for the reduction of radio interferometric data. The
+ideas from its data system are being used in the {\em Miriad storage
+manager}.
+
+\item[Miriad storage manager]
+A {\em Storage manager} which only stores values when they
+change. This storage manager is thus appropriate for {\em Table}
+columns which vary slowly, which is important for the {\em ``Big
+Table} view of data. It is based on ideas in the {\em Miriad} software
+system.
+
+\item[ObjectID]
+A globally unique identifier for objects. It is presently a
+concatenation of the host address, process ID, time, and a per-process
+unique sequence number. This heuristic suffices for systems that do
+not ``roll over'' their process ID numbers in a second or less. It is
+important for {\em persistence}.
+
+
+\item[``On-the-fly'' calibration]
+or on-demand calibration occurs when computations are interposed
+between the user and the raw data. This is accomplished through the
+use of {\em virtual Tables}.
+
+
+\item[``On-the-fly'' mapping]
+a form of single dish observing and subsequent imaging in which the
+antenna is slewed continuously across the sky and data are recorded on
+a timescale which is short compared to the time the antenna moves an
+entire beamwidth.  The pointing position, possibly including pointing
+error estimates, is recorded with the data.  Proper imaging requires
+use of the pointing data.
+
+\item[Operator overloading] The C++ term for user-defined functions
+which use the same characters as built-in operators. For example, with
+operator overloading one can type {\tt a = b + c;} where a, b, and c
+are {\em Class} objects, such as an {\em Array}.
+
+
+\item[PagedArray] is a {\em Lattice} for arrays which are both {\em
+persistent} and possibly larger than {\em memory}. The PagedArray uses
+the {\em Table} for its I/O. The PagedArray is used by the {\em Image}.
+
+
+\item[Persistence] Persistence is the ability to reform an object into
+a running process from data on some storage medium ({\em i.e.}, normally disk).
+
+
+\item[Pixel coordinates] are values related to the position of the
+pixel in the Lattice, {\em i.e.}, these are coordinates in the frame
+set by the axes of the Lattice without any astronomical meaning.
+
+
+\item[Polymorphism] allows classes with a sufficiently similar
+interface to substitute for one another. This allows, for example, a
+new kind of clean deconvolution to be introduced without having to
+change any client code that needs such deconvolution.
+
+
+\item[Point spread function]
+the response of a system or an instrument to an impulsive,
+or point source, input.
+
+
+\item[predict()] is used by the {\em MeasurementModel} to create a new
+{\em MeasurementSet} using a {\em SourceModel} and another
+MeasurementSet as a paraform of where to sample the data.
+
+
+\item[Primary beam]
+For a {\em single dish}, the {\em point spread function} of the
+image. For an interferometer, the average of the primary beams of all
+the antennas in the array.
+
+% \item[Process] 
+
+
+\item[Proxy object]
+A proxy object is a stub that is used to manipulate the real object
+which is in somewhere else, probably in an object {\em server}. The
+proxy object forwards its {\em member function} invocations to the
+server, and retrieves the results and presents them to the user of the
+proxy object. This is a particularly valuable technique for allowing
+{\em CLI} users to manipulate objects created in another language,
+{\em i.e.}, C++.
+
+\item[PSF] See {\em Point spread function}.
+
+
+\item[Section] A regular portion of a {\em Lattice} defined by a start
+position, and end position, and a constant increment for each
+axis. Often a {\em view} of another Lattice.
+
+\item[Server] A {\em process} that performs calculations at the behest
+of another process.
+
+
+\item[Shape] An ordered tuple of integers that defines the length of
+each axis in a {\em Lattice}.
+
+
+\item[Single dish] A radio telescope that consists of a single
+antenna. Traditionally a single dish telescope has only had a single
+receiver, but multi-beam receivers are becoming more common.
+
+
+\item[solve()] some Telescope Components contain calibration parameters which
+must be solved for and then applied to the data.  These TCs will have
+a "solve()" method, an "apply()" method, and a Table to store the
+parameters in.
+
+
+\item[Source Model] is an estimated sky intensity as a function of
+position, time, polarization, and frequency. Unlike an {\em Image}, it
+is not necessarily regularly sampled; it will often be parameterized.
+
+
+\item[Spectrum set]
+A {\em view of data} for image plane spectra. Single dish equivalent
+of {\em VisSet}.
+
+
+\item[Stokes parameters]
+the four coordinates relative to a particular basis
+for the representation of the polarization state
+of an electromagnetic wave propagating through space.
+
+
+\item[StorageManager]
+is a {\em DataManager} which physically store and retrieves values from
+a storage device. Storage managers with several different properties
+are available; a {\em Karma} storage manager, a {\em Miriad storage
+manager}, and a storage manager based on the AipsIO class.
+
+\item[Table]
+A table consists of a header, and a main data table. The main data
+table consists of a number of rows and columns. A value is stored at
+the intersection of each row and column. All values in a column must
+be of the same type. The header consists of sets of {\em keywords}:
+one set for the whole table, and (potentially) one set per column.
+
+
+
+\item[Telescope model]
+class which describes the state of the telescope during the collection
+of data in a MeasurementSet.  It consists of a number of
+TelescopeComponents, each containing some telescope state information
+and calibration parameters (Platform, Receptor, Environment, etc).
+Its basically a collection of TelescopeCompoenents.  The
+MeasurementSet will have an associated TelescopeModel.
+
+\item[Telescope component]
+A {\em TelescopeModel} consists of one or more
+TelescopeComponents. Each TelescopeComponent serves to model some
+feature of the function of the telescope.  For example, TelGeometry
+deals with the geometrical aspects of the Telescope in relation to the
+earth and sky and knows where the antennas are located and how to
+calculate (u,v,w), elevation, parallactic angle, etc. ReceptorGains
+deals with antenna based complex gains and knows how to solve for and
+apply them to the data.  PrimaryBeam stores the model of the primary
+beam.
+
+
+\item[User]
+can refer to either end users ({\em i.e.}, astronomers), or to users
+of a {\em class} ({\em i.e.} programmer).
+
+
+\item[View of data]
+occurs when an object has no data of its own, it references data in
+some underlying object. This means that modifying the data through the
+view will also modify it in it's underlying object. A C++ example of
+this is {\tt matrix.diagonal() = 1;}. The result of the diagonal()
+member function is to return a Vector which is a view of a portion of
+the underlying matrix (its diagonal). This view object is set to
+unity, which changes the underlying Matrix.
+
+
+\item[Virtual tables and columns]
+Tables and columns in which some of the data are computed (or come
+from some other source) are known as ``virtual'' tables or ``virtual''
+columns.
+
+
+\item[VisSet] 
+A {\em view of data} for interferometric data that presents a
+sufficient interface for imaging applications. For example, it would
+have time, anntennas, pointing centers, weights and the actual
+visibilities. A VisSet is normally attached to a {\em MeasurementSet}.
+
+
+
+\end{description}
+
+\appendix
+
+\section{Glish Programming Idioms}
+Glish is a procedural language with whole-array\footnote{Glish
+originally only had 1-D arrays; it has recently been augmented to
+handle multidimensional arrays by Darrell Schiebel of the NRAO {\sc
+{\sc aips++}} group.}  manipulations loosely based on the ``S''
+language. Glish also has powerful facilities for asynchronously
+controlling and communicating with other processes (either other Glish
+scripts or compiled programs). This document assumes a reasonable
+familiarity with Glish; an excellent user manual comes with the Glish
+distribution.\footnote{Available via anonymous ftp from {\em
+ee.lbl.gov} in the {\em glish} subdirectory. The principal author of
+Glish is Vern Paxson ({\em vern@ee.lbl.gov}).}
+
+The {\sc aips++} group is attempting to use Glish as an end-user
+command line interpreter (CLI). Since Glish was originally designed
+for a very different purpose (instrument control) some work and
+experimentation will be required for Glish to be truly suitable. Much
+of the work will be ``environmental'': command line
+editing\footnote{Also recently added by the {\sc AIPS++} group.},
+on-line help, and the like. Some of this work can, however, can be
+done by establishing programming {\em conventions} within Glish so the
+end user sees a consistent and convenient way of interacting with
+Glish values and functions.
+\subsection{Object Oriented Glish}
+The desire to have object-oriented programming features in Glish
+originally stemmed from the desire to allow the user to have access to
+overloaded functions. That is, some of the entities that the user
+would be manipulating would logically be more complex than Glish
+values, for example {\sc aips++} Tables, images, {\em etc.} There are
+many generic functions the user might want to call on these
+``objects'' ({\em display, help, history, } and the like).
+
+Neither of the obvious alternatives:
+\begin{enumerate}
+\item Encode the type name in the function: {\em display\_table,
+      display\_column, display\_row, display\_image, etc}.
+\item Since these types will undoubtedly be represented inside Glish
+      as Glish records, we could case on a type field inside the
+      various functions.
+\end{enumerate}
+were very attractive. The first solution requires the user to remember
+a lot of logically identical functions, the second solution is fragile
+since it requires that every function be looked at when a new ``type''
+is added.
+
+Instead, polymorphic methods seemed to solve the problem readily.
+Additionally, the OO convention diminishes the ``impedance mismatch''
+between the C++ libraries and the CLI user, allowing the proxy objects
+to more closely follow the C++ versions.
+
+Obviously an idea solution would be for Glish to provide built-in
+support, {\em}, i.e. evolve towards {\em S+} from {S}. We shall
+investigate the costs and benefits of doing so.
+
+\subsection{Asynchronous Glish}
+Many user data reduction and analysis operations take sufficiently
+long that a user would not necessarily want to wait for them to
+finish. AIPS (Classic) for instance has ``verbs'' which are relatively
+low-cost computations which always run synchronously, and ``tasks''
+which are inherently asynchronous, although the user may specify that
+``tasks'' are to operate synchronously.
+
+Glish has excellent facilities for asynchronous programming. The full
+set of facilities --- {\em whenever} statements, {\em subsequences},
+{\em etc.,} --- is far richer than the typical user will to want to
+deal with.
+
+We can instead establish a convention where the user specifies during
+the function invocation whether or not the execution takes place
+asynchronously. In the latter case, the user also needs to know where
+to find the result, and to know when the computation has finished.
+
+\begin{verbatim}
+    x := fft(y)*z;        # fft defaults to synchronous; just use it as any
+                          # other function.
+
+    fft(y, async=T);      # Run fft asynchronously. Eventually the
+    ... other work ...    # user gets notified that it has finished.
+    x := results.fft*z;   # Get the result and compute with it
+\end{verbatim}
+
+While in the above example ``results.fft'' is an array, it could
+clearly just as easily be a Glish record for computations which
+produce multiple output values.
+
+A flaw in the previous example is that since there is only one place to
+look for the result, only one asynchronous ``fft'' may take place at a
+time, since there's only one place to look for it. This may not only
+be inconvenient, it would disallow the user to take advantage of
+coarse parallelism by spreading computations out over multiple cpu's
+of a single machine, or multiple hosts on a network.
+
+For example suppose the user is on a four processor machine and wants
+to fft a cube a plane at a time, spread over all four processors.
+\begin{verbatim}
+    nplanes := cube::shape[3];
+    for (i in 1:nplanes) {
+        request[i] := fft(cube[,,i], async=T, client_number=i%4+1);
+    }
+    wait_for(requests);
+    for (i in 1:nplanes) {
+        cube[,,i] := result[request[i]];
+    }
+\end{verbatim}
+
+A slightly more complicated example would have the client adaptively
+fill up the fastest CPU's in case some are faster than others
+({\em e.g.}, sharing with another user). Note that this example assumes
+that the underlying client ({\em i.e.}, compiled binary) is single
+threaded; that is, we need one client per CPU. If this wasn't the
+case, we could just leave out the client number.
+
+A similar example would allow the computation to be spread over a
+network of machines by specifying {\em host~=~hostname}.
+
+
+Here we have made the user remember a request number, where before
+they only had to remember ``result.fft.'' The increase in generality
+appears to me to be worth the price.
+
+\subsection{Status}
+Object-oriented Glish works and is useful, although more language
+support would make it more convenient for ``class'' implementers.
+
+The asynchronous idiom presented here has not been implemented,
+although it should be straightforward
+
+\section{References}
+\bibliography{111}
+\bibliographystyle{alpha}

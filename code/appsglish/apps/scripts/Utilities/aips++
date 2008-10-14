@@ -1,0 +1,139 @@
+#!/bin/sh
+#
+#   Copyright (C) 1996,1997,1998,1999,2000,2001
+#   Associated Universities, Inc. Washington DC, USA.
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the Free
+#   Software Foundation; either version 2 of the License, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+#   more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   675 Massachusetts Ave, Cambridge, MA 02139, USA.
+#
+#   Correspondence concerning AIPS++ should be addressed as follows:
+#          Internet email: aips2-request@nrao.edu.
+#          Postal address: AIPS++ Project Office
+#                          National Radio Astronomy Observatory
+#                          520 Edgemont Road
+#                          Charlottesville, VA 22903-2475 USA
+#
+#   $Id: aips++,v 1.1 2005/01/18 19:48:02 wyoung Exp $
+#
+
+# aips++ [-noinc[lude]] [-notk] [-plain]
+# Start up AIPS++. If -noinclude is given as an argument only glish will be
+# started with the correct system.path.include set, otherwise aips++.g will
+# also be included.  If -notk is givan as an argument, then the
+# tk widget client will not be started, and the tk widgets will not be
+# available. -plain implies -noinclude as well as no inclusion of the
+# script which makes system variables constant.
+#
+# If the following files exist, they will be sourced in sequence before
+# starting AIPS++.
+# $AIPSROOT/aips++local.sh   # n.b. no leading . from here on
+# $AIPSHOST/aips++local.sh
+# $AIPSSITE/aips++local.sh
+# $AIPSARCH/aips++local.sh
+# ~/.aips++local.sh
+# The only known use for this is to set the environment variable PGPLOT_DIR
+# if PGPLOT's grfont.dat file is not where it was located when PGPLOT was
+# compiled.
+#
+# NOTE: This script inter-operates with the site-wide .glishrc file
+#       (code/install/glishrc). Any changes where must me made in
+#	conjunction with the site wide .glishrc.
+#
+
+# Fundamentals.
+if [ "$AIPSPATH" = "" ] ; then
+   echo "aips++: AIPSPATH is not defined!" 2>&1
+   echo "You need to source .../aipsinit.sh before you can run AIPS++!" 2>&1
+   echo "Will NOT start anything.  Quitting NOW." 2>&1
+   exit 1
+fi
+
+AIPSROOT=`echo $AIPSPATH | awk '{ print $1 }'`
+ARCH=`echo $AIPSPATH | awk '{ print $2 }'`
+AIPSARCH=$AIPSROOT/$ARCH
+SITE=`echo $AIPSPATH | awk '{ print $3 }'`
+AIPSSITE=$AIPSARCH/$SITE
+HOST=`echo $AIPSPATH | awk '{ print $4 }'`
+AIPSHOST=$AIPSSITE/$HOST
+
+BINDIR=$AIPSROOT/$ARCH/bin
+LIBDIR=$AIPSROOT/$ARCH/libexec
+
+if [ ! -d  "$BINDIR" ] ; then
+  echo "No bin directory: $BINDIR" 2>&1
+  exit 1
+fi
+
+if [ ! -d  "$LIBDIR" ] ; then
+  echo "No library directory: $LIBDIR" 2>&1
+  exit 1
+fi
+
+if [ -z "`type glish 2> /dev/null`" ]; then
+  echo "No executable glish found" 2>&1
+  exit 1
+fi
+
+extraflags=""
+glishflags=""
+while [ "$#" -gt 0 ]
+do
+   case $1 in
+      -noinc* ) noinclude=T ;;
+      -nogui )  extraflags="$extraflags $1";;
+      -plain )  extraflags="$extraflags $1"
+		noinclude=T
+		;;
+      -notk )   extraflags="$extraflags -notk" ;;
+      * )       glishflags="$glishflags $1" ;;
+   esac
+   shift
+done
+
+if [ "$extraflags" != "" ] ; then
+  extraflags=`echo "$extraflags" | sed -e 's/^ //'`
+fi
+if [ "$glishflags" != "" ] ; then
+  glishflags=`echo "$glishflags" | sed -e 's/^ //'`
+fi
+
+if [ -r $AIPSROOT/aips++local.sh ]
+then
+    . $AIPSROOT/aips++local.sh
+fi
+if [ -r $AIPSHOST/aips++local.sh ]
+then
+    . $AIPSHOST/aips++local.sh
+fi
+if [ -r $AIPSSITE/aips++local.sh ]
+then
+    . $AIPSSITE/aips++local.sh
+fi
+if [ -r $AIPSARCH/aips++local.sh ]
+then
+    . $AIPSARCH/aips++local.sh
+fi
+if [ -r $HOME/.aips++local.sh ]
+then
+    echo "Sourcing personal .aips++local.sh file."
+    . $HOME/.aips++local.sh
+fi
+
+if [ "$noinclude" ]
+then
+  exec glish $glishflags $extraflags
+else
+  exec glish -l aips++.g $glishflags $extraflags
+fi
+

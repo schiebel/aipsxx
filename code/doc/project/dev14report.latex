@@ -1,0 +1,1779 @@
+\documentclass[11pt]{article}
+\usepackage{html, epsf, epsfig}
+\input{aips2defs.tex}
+
+\newcommand{\devplanURL}{../../notes/234/234.html}
+
+%
+\begin{document}
+\title{\bf \aipspp\ report: Development cycle 1.4}
+\author{T.J. Cornwell, NRAO}
+\date{2000 December 5}
+
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+In this document, we report on the work accomplished in this
+development cycle. As is our standard practice, the work followed a
+development plan (\htmladdnormallink{\aipspp\ Note 234}{\devplanURL}
+drawn up and circulated at the beginning of the cycle.  The goals for
+this development cycle were: i) to achieve greater scientific
+completeness in the package; ii) to expand the user base for the
+capabilities that currently exist; iii) to meet time-critical local
+consortium priorities where \aipspp\ is in the critical path for
+instrument use, and iv) to explore automated and pipelined imaging
+solutions.
+
+The major work this cycle was the support of the first and second
+public releases (version 1.2, 1.3), and the preparation and issuing of
+the third release ( version 1.4).  There was much new functionality in
+this third release.  The most notable new capabilities were in single
+dish processing, image analysis, and in synthesis processing.  The
+single dish environment, dish, has been reworked to be command line
+oriented instead of GUI oriented.  This allows certain significantly
+more sophisticated processing to be scripted than was possible before.
+The image analysis capabilities have been significantly extended by
+the addition of source finding and fitting functions.  The synthesis
+processing has been extended through calibration and editing.  This
+allows end to end processing of data from the VLA and potentially from
+all consortium telescopes.  In addition, we continue to support other
+activities such as the GBT commissioning.
+
+The most notable achievement of development cycle 1.4 was the
+completion of end to end processing of VLA data as demonstrated in the
+mosaicing of Orion Nebula performed by Debra Shepherd. In Figure 1,
+we show the resulting image:
+
+\medskip
+\begin{latexonly}
+\begin{figure}
+\epsfig{file=orion.ps, width=6in}
+\caption{VLA mosaic image of Orion reduced entirely in AIPS++}
+\end{figure}
+\medskip 
+\end{latexonly}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+<img src="../orion.gif"><BR>
+VLA mosaic image of Orion reduced entirely in AIPS++
+</center>
+\end{rawhtml}
+\end{htmlonly}
+
+This processing can be performed from the GUI or from the Glish
+command line. The GUI has the capability to write a script as the user
+steps through the reduction steps.  The resulting script (simplified
+by hand) and raw data file required to make this image is checked into
+package (trial/apps/vlaendtoend.g) and can be run by anyone. We
+include a mildly edited version here:
+
+\begin{verbatim}
+  dowait := T;
+#
+# Fill from a disk file containing a VLA export file
+#
+  include 'vlafiller.g';
+  ok:=vlafillerfromdisk(filename='/aips++/data/nrao/vlafiller_test/dstst.vla',
+                        msname="orion.ms",
+                        overwrite=F,
+                        project="DSTST" ,
+                        bandname="X",
+                        verbose=F,
+                        async=F);
+#
+# Do the obvious flagging: autocorrelations, quack, known bad antennas
+#
+  include 'flagger.g';
+  myflagger:=flagger(msfile="orion.ms" );
+  ok:=myflagger.auto();
+  ok:=myflagger.quack(scaninterval="5.1s" , delta="10s", trial=F);
+  ok:=myflagger.setantennas(ants=21);
+  ok:=myflagger.timerange(starttime="21-SEP-2000/11:15:48" ,
+                          endtime=  "21-SEP-2000/13:38:18" ,
+                          trial=F);
+  myflagger.done();
+#
+# Set the fluxes for the flux and phase calibraters
+#
+  include 'imager.g';
+  myimager:=imager(filename="orion.ms" );
+  ok:=myimager.setjy(fieldid=1, spwid=-1, fluxdensity=-1.0);
+  ok:=myimager.setjy(fieldid=2, spwid=-1, fluxdensity=-1.0);
+  myimager.done();
+#
+# Solve for the gains and apply
+#
+  include 'calibrater.g';
+  mycalibrater:=calibrater(filename="orion.ms" );
+  ok:=mycalibrater.setdata(msselect='FIELD_ID in [1,2]');
+  ok:=mycalibrater.setsolve(type="G" , t=300, 
+                            table="orion.gcal");
+  ok:=mycalibrater.solve();
+  ok:=mycalibrater.fluxscale(tablein="orion.gcal",
+                             tableout="orion.ref.gcal",
+                             reference='0518+165',
+                             transfer='0539-057');
+  ok:=mycalibrater.setdata(msselect='');
+  ok:=mycalibrater.setapply(type="G" ,
+                            table="orion.ref.gcal" ,
+                            select="FIELD_NAME=='0539-057'" );
+  ok:=mycalibrater.correct();
+  mycalibrater.done();
+#
+# Flag outrageously large points
+#
+  include 'flagger.g';
+  myflagger:=flagger(msfile="orion.ms" );
+  ok:=myflagger.filter(column="CORRECTED_DATA" ,
+                       operation="range" ,
+                       comparison="Amplitude" ,
+                       range='1e-6Jy 1e2Jy',
+                       trial=F);
+  myflagger.done();
+#
+# Make an MEM mosaic image. 
+#
+  include 'imager.g';
+  include 'measures.g';
+  myimager:=imager(filename="orion.ms" );
+  ok:=myimager.setimage(nx=600,
+                        ny=600,
+                        cellx="2arcsec",
+                        celly="2arcsec",
+                        stokes="I" ,
+                        doshift=T,
+                        phasecenter=dm.direction('B1950', '05:32:50', 
+                                                 '-05.25.00.000'),
+                        spwid=[1, 2]);
+  ok:=myimager.setdata(spwid=[1, 2] ,
+                       fieldid=[3, 4, 5, 6, 7, 8, 9, 10, 11] ,
+                       msselect='');
+  ok:=myimager.weight(type="briggs" , robust=-1);
+  ok:=myimager.setvp(dovp=T, dosquint=F);
+  ok:=myimager.regionmask(mask="orion.mask",
+                          region=drm.box([215,215], [385, 385]));
+  ok:=myimager.mem(algorithm="mfentropy" ,
+                   niter=60,
+                   sigma="4mJy",
+                   displayprogress=T,
+                   model="orion.mem" ,
+                   mask="orion.mask" ,
+                   image="orion.mem.restored" ,
+                   residual="orion.mem.residual" );
+  myimager.done();
+# 
+# Display the image
+#
+  include 'image.g';
+  myimage:=image("orion.mem.restored");
+  myimage.statistics();
+  myimage.view();
+\end{verbatim}
+
+The necessary script is therefore simple and compact.
+
+\section{Overview of work in this cycle}
+
+In {\bf Single Dish support}, Jim Braatz, Joe McMullin and Bob Garwood
+continue to focus on support of the GBT and development of the dish
+environment for general single dish analysis in aips++.  There
+continue to be regular visits by Garwood and McMullin to Green Bank
+and Braatz to Charlottesville.  Braatz has primary responsibility for
+GBT support while McMullin has primary responsibility for dish
+development.  There was only minimal contact with the Arecibo group,
+primarily at the end of this development cycle.
+
+Most of the work this cycle was focussed on migrating all of the single
+dish software to work with version 2 of the MeasurementSet.  This includes
+the gbt fillers, the sdfits conversion tools, the sditerator and
+sdaverager tools, dish, and the GBT commissioning tools.  Significant
+changes where made in each of these areas in order to write to
+and read from version 2 of the MeasurementSet.  At the same time, 
+the contents of the sdrecord data container were modified to make better
+use of the \aipspp\ measures.  This change also impacted the commissioning
+tool and dish.
+
+The Green Bank tipper software was reevaluated and rewritten by Braatz.
+Braatz continued to support GBT mockup users.  The mockup was dismantled
+at the end of this development cycle in preparation for GBT acceptance and
+commissioning during the next cycle.  Several improvements were made to
+the commissioning tool.
+
+Dish work, in addition to the changes related to the new sdrecord and
+changes in the sditerator, was focussed on making dish a true aips++
+tool and improving the dish CLI.  Dish is now recognized as a tool by
+the toolmanager.  The CLI was completely rewritten to be more intuitive
+in the setup of parameters for each operation and to be easier to use
+with the scripting tool.  This work was prompted, in part, by feedback
+from users at Arecibo.
+
+In {\bf Synthesis} in keeping with the fundamental objectives of the
+development cycle, a strong overall emphasis was placed on
+higher-level synthesis applications, and in adding scientific features
+in areas where they most aided end-to-end reduction. The focus
+remained on connected-element reduction, although important VLBI
+development was scheduled in this development cycle in keeping with
+the planning priorities in this area. The high-level application
+development was complemented by a significant effort in user testing
+and public outreach. (See below)
+
+At the highest level in synthesis development this cycle, a focused
+effort was made to enhance the access users have to integrated
+synthesis applications, formed by combining low-level synthesis
+toolkit capabilities as more powerful, high-level tools. This process
+of vertical integration was pursued on several fronts, including large
+composite applications (map.g), tools for guided or assisted data
+reduction (imagerwizard.g, mosaicwizard.g), and in expanding the
+scientific functionality in the automated GUI system (toolmanager) and
+in other separate custom GUI's, such as visplot.g.  At the
+intermediate, and lower levels in the synthesis system, signficant
+work was scheduled this development cycle, balanced against the
+higher-level integration effort. The primary infrastructure change
+concerned the full implementation and migration to the second revision
+of the MeasurementSet (MS) data format (Kemball and Wieringa). This
+data format was adopted earlier after discussion within the
+consortium, and provides improved support for combined single-dish and
+synthesis data, advanced synthesis development and VLBI support. It
+also makes several general changes proposed since the adoption of
+MSv1. All fillers have been migrated to MSv2 with the exception of the
+BIMA filler. A MSv1 to MSv2 converter was provided by Wieringa and
+Badia as an aid in the transition.
+
+In the area of general filler development, continuing improvements
+were made in several areas including the VLA (Marson) and ATCA
+(Wieringa and Badia). A prototype MERLIN filler exists (Maguire), and
+will be publicly available in v1.5. Other fillers were updated in the
+course of their migration to MSv2. The UVFITS filler was improved, and
+an initial FITS-IDI filler, required for VLBI, has been written
+(Maguire).
+
+Calibration work has been actively continued in this cycle. The
+primary focus has been on improving optimization for greater speed and
+efficiency, in testing convergence properties using simulated and real
+data, and in adding new capabilities and infrastructure. A thorough
+review of all convergence issues was conducted, and new simulated data
+tests have been added to calibratertester.g and the higher-level test
+tool, assay.g. The speed of the calibration solver has been improved
+significantly. A new pre-averaging mode is also available for all
+calibration solvers, targeted primarily at improving coupled or
+iterative instrumental polarization solutions. Work has continued in
+the area of ionosphere correction (Smirnov), and the integration of
+this code into the calibrater. It makes use of a global empirical
+ionosphere model known as PIM, which will later be supplemented with
+GPS and other local ionosphere data. The global data system
+implemented by Schiebel has proven very useful in supporting larger
+test datasets in all areas for synthesis.
+
+Imaging development has continued in this cycle (Holdaway and
+Cornwell). This has included work on optimal-sized FFT's for
+mosaicing, algorithm refinement in deconvolution in general, and in
+improved integration of deconvolution algorithms and imaging
+contexts. Several key mosaic observations have been imaged in AIPS++,
+to demonstrate the mosaicing capabilities. An example Glish script
+which performs end-to-end reduction of a sample VLA dataset has been
+checked into the \aipspp\ system for general reference. We intend to add
+supplementary scripts of this type for other datasets, which either
+demonstrate end-to-end reduction or specialized imaging
+capabilities. Work has also continued on the \aipspp\ simulator
+(Holdaway), with work aimed at supporting pointing and other more
+advanced errors.
+
+{\bf Image analysis} capabilities were expanded by
+
+\begin{itemize}
+
+\item A new tool, Coordsys, was created to manipulate Coordinate Systems
+(including coordinate conversion)
+
+\item The Image tool display (via function 'view') has a new positions and profiling
+capability.
+
+\item Convolution by parameterized 2D functions was added to 
+the Image tool (function 'convolve2d') and convolution interfaces
+were unified throughout the Image tool
+
+\item Mask handling with the Image tool was improved so that a uniform
+interface is presented regardless of the type of Image tool (real or
+virtual)
+
+\item A new keyword 'mask' was added to the majority of Image tool functions
+enabling on-the-fly masking. 
+
+\item An automatic strong point source finder was added to the Image
+tool (function 'findsources')
+
+\item Other new functionality in the Image tool includes set/get
+of brightness units and the restoring beam, and the deconvolution of
+components from the restoring beam. 
+
+\item Entry widgets in the Regionmanager were standardized and command-line
+interfaces improved for world regions
+
+\end{itemize}
+
+In the {\bf Infrastructure} area, work continued to support underlying
+applications development.
+
+\begin{itemize}
+\item
+A new storage manager StandardStMan has been developed.
+It is meant to be used instead of StManAipsIO. Its main advantage
+is that it does not keep all data in memory, so it uses far less
+memory. Furthermore it is more robust.
+It fully supports addition and removal of rows and columns.
+It is now the default storage manager for \aipspp\ tables.
+
+\item
+The Lattices/Images framework has been improved considerably.
+  \begin{itemize}
+  \item
+    The region handling is now the same in the various derived Image
+    classes. It makes it much easier to deal with regions in higher
+    level code.
+  \item
+    Classes have been added to implement on-the-fly masking.
+    It makes it possible to define a mask based on the image data.
+    The mask changes when the data change.
+  \item
+    Classes AxisSpecifier and AxisMapping have been created to be able
+    to tell which degenerate axes can be removed. SubLattice and
+    SubImage use them to reduce the dimensionality of an image or
+    a subset of an image.
+  \item
+   The ability to temporarily close an image has been added.
+    In this way concatenating many images can be done without
+    hitting the open file limit.
+  \end{itemize}
+
+\item
+The logger has been improved.
+The main improvement is that once can do a selection and/or sort of
+the logged data. It uses the newly developed taqlwidget to let the
+user form a query string in a convenient way.
+Furthermore some other changes have been made to make the logger more
+powerful and customizable.
+
+\item
+The changelog proposal has been implemented.
+It consists of a few scripts (shell and glish) to maintain
+the changelog files. A perl script extracts information from
+the changelog files and transforms it into html. This allows users of \aipspp\ to follow changes in the system from one build to the next.
+
+\item
+Where necessary \aipspp\ code has been changed to make it compile with
+gcc-2.95. It means that \aipspp\ now fully supports newer Linux systems
+like SUSE 6.4 which come with gcc-2.95.
+The main change was a workaround for a well known gcc-2.95 parser
+problem. It cannot always distinguish a constructor call from a
+function declaration; extra parentheses were needed in those cases.
+Furthermore gcc-2.95 is more strict with respect to const declarations
+(it gives errors instead of warnings).
+
+\end{itemize}
+
+In {\bf Glish} the ongoing work to memory leaks which arise from
+reference counting of values in Glish was finished and merged with
+AIPS++ development. Subsequent testing indicated that, while this work
+was successful, some work is still required both in terms of
+performance and memory leaks in specific cases. The changes which were
+integrated and tested, however, brought the amount and rate of leaks
+to a level which is manageable as part normal development.
+
+In addition, other minor bugs fixes and additions were made. Some of which
+are seen by end users of glish, e.g:
+\begin{itemize}
+\item when unary minus is applied to boolean vectors the result is  now
+         integer
+\item exponentiation now has higher precedence than unary minus
+\item colon is no longer a valid regular expression delimiter
+\end{itemize}
+
+Many other defects which resulted in no visible change to the user
+were also fixed.  
+
+In {\bf Parallelization}, the principal effort is aimed at providing
+data reduction capabilities for the most demanding computational
+problems in radio astronomy.  This infrastructure is being developed
+in a partnership with NCSA as part of the Alliance program, and forms
+part of the regular \aipspp\ system.
+
+The current focus is both on expanding the existing parallelization
+and high-performance capabilities, as well as in demonstrating them
+for selected key science projects. Building on the second revision of
+the parallelization infrastructure, developed for v1.3, a key focus of
+the development in v1.4 has been the implementation of a fully
+parallelized wide-field imaging (3-D) application (Golap and
+Kemball). This involves parallelization of several operations per
+imaging facet, including PSF generation, visibility prediction, and
+image formation. Progress in this area has been good, and was
+described in a poster paper at ADASS X in November, 2000 (Golap et
+al). This capability is targeted at several key science datasets. This
+work has involved a significant investigation of multi-process I/O in
+AIPS++.  Several issues in this area were identified as a result of
+careful analysis, and changes have been agreed in the Table system to
+support the I/O methods needed for applications of this nature. A
+deeper investigation of fully parallel I/O is also underway
+(Young). The remaining technology area which has received time during
+this development cycle is that of the NT port of libtrial and libaips,
+completed in the main by Paulo Cortes. This will be carried forward to
+allow a test parallel application to be run on an NT supercluster. To
+build on the existing NT work, a migration proposal has been drafted
+(Young) which proposes how these identified changes might be moved
+into the main \aipspp\ code distribution. This process will be
+considered as we go forward.
+
+Doug Roberts left the \aipspp\ parallelization effort in this
+development cycle. His responsibilities have been assigned to several
+individual developers, but new members (Cortes and Sarma) will help in
+this area in development cycle v1.5. Parallelization will retain its
+priorities and goals as we go forward, but an increased focus on Linux
+clusters is planned, to reflect strong trends in the supercomputing
+community. This includes initiative targeted at the new 64-bit IA64
+Intel processor, which is expected to be publicly available on that
+timescale. Improved progress in needed on the key science projects,
+and this will be a strong focus in v1.5.
+
+In the {\bf User Interface}, we improved the GUI by expanding the use
+of larger data items in the user interface to describe scientifically
+meaningful data. Examples include uv-data selection, antenna
+selection, and deconvolution algorithms and parameters, amongst
+others. These data items simplify the user interface, and allow the
+development of specialized, tuned GUI's for user entry of data of this
+type. The automated GUI system, toolmanager, was revised to allow full
+support for these newer data items. It was also improved in many other
+areas to enhance scientific usability, and in response to user group
+feedback.
+
+The user interface work and vertical integration is not yet complete,
+and will continue as a strong focus in development cycle v1.5
+(November 2000 to April 2001). Although there are some known
+deficiencies in the user interface, we find a high level of variance
+in user feedback and advice in this area, given the somewhat
+subjective nature of user interfaces in general. Given the high cost
+of GUI development, we will actively solicit the widest possible user
+commentary regarding the synthesis user interface before making major
+revisions, but will continue to make improvements which increase
+scientific usability and about which there issignficant user
+agreement.
+
+It should be noted that the vertical integration does not compromise
+the toolkit architecture of AIPS++, which remains a fundamental driver
+for the package. It simply provides a high-level view for cases in
+which this is scientifically appropriate or useful.
+
+In {\bf Documentation}, by choice, no changes were made to the
+mechanics of generating documents. Some chapters were added to
+``Getting Results in AIPS++'', and of course a lot of material
+was added to the User Reference Manual to accompany new features
+in the package.
+
+Mark Holdaway took over the editorship of the \aipspp\ Newsletter
+and considerably improved the layout and content. 
+
+In {\bf Management}:
+
+\begin{itemize}
+\item We formed the new AIPS++ User Group. The first meeting of
+the group will be in Champaign-Urbana on Janaury 22 - 23, 2001.  The
+members of the group are Tom Pauls (NRL/NPOI - chair), Robert Lucas
+(IRAM), Karen O'Neill (NAIC), Tony Willis (DRAO), Steve Myers (NRAO),
+Frazer Owen (NRAO), Dana Balser (NRAO), Lister Staveley-Smith (ATNF),
+Huib van Langevelde (JIVE), and Dave Mehringer (NCSA). This group is
+chosen to be composed of active and knowledgable users of AIPS++.
+\item The \htmladdnormallink{management and software engineering practices}
+{../../notes/237/237.html} adopted by the project are now documented
+in the notes series.
+\item The Quality Assurance Group has been restructured by the
+closing out of the Rules Boss position. Our intention is that this
+group focus more on testing and review than on the activities of the
+Rules Boss.
+\item Monthly meetings between the site managers have continued,
+supplemented by face-to-face meetings where possible.
+\item Tim Cornwell assumed new responsibilities within NRAO, and his
+time available for AIPS++ has dropped to roughly 50\%. 
+Athol Kemball has therefore assumed responsibility for more
+of the day-to-day management of the project. Tim Cornwell remains
+Project Manager.
+\end{itemize}
+
+In {\bf Outreach}, an active scientific user group was formed in
+collaboration with the Scientific Services Division of the NRAO at the
+AOC, who were tasked with using \aipspp\ for the reduction of several
+trial datasets. Regular meetings were held with this group, who were
+encouraged to submit defects in the \aipspp\ bug tracking system when
+using the system. They also contributed suggestions in general areas
+of the package including the user interface and documentation system.
+
+This process increased local scientific expertise in AIPS++, helped to
+identify defects and improve the user interface to the package. This
+effort will be continued in subsequent development cycles, expanded to
+other NRAO and non-NRAO sites, and targeted at a broader audience.
+
+Presentations concerning \aipspp\ were made at a number of meetings,
+including the AAS in Atlanta, the ADASS meeting in Boston, and the
+Synthesis Summer School in Socorro. Copies of \aipspp\ on CD ROM were
+distributed at all of these meetings.  We also gave demonstrations of
+the use of AIPS++.
+
+In the {\bf Quality Assurance Group}, reviewing of a few classes
+was completed.  Regular monitoring of the unit testing and glish assay 
+tests by McMullin continues.  The unit testing e-mail is now sent to
+the archived address aips2-testing.  The overall testing was broadened to
+include all five canonical architectures (Solaris, Linux, SGI, HPUX,
+and Alpha).  McMullin took over the responsibility for logging and
+shipping CDs.  Brouw created a set of scripts to more easily move code
+around in the \aipspp\ code tree.
+
+In {\bf Visualisation}, UV-visualization and editing has been
+considerably expanded in visplot.g (Cornwell), and have expanded the
+thin-path capabilities in this area signficantly. At the same time,
+uv-visualization work in the Display Library (DL) continues, and
+included the development of prototype infrastructure in the area of
+uv-data display (Minter). Final design considerations in this area
+were concluded in direct discussions with Barnes, Marquarding,
+Kemball, King and Minter.
+
+\section{Releases}
+
+With the release of version 1.4, we are now supporting three versions
+of AIPS++.  The total number of users of \aipspp\ is still rather poorly
+known.  Although we ask people to register their copies of AIPS++,
+relatively few do as evidenced by the discrepancy between the number
+of registered sites and those sites submitting defect reports. Our
+current mailing list has roughly 270 names at academic or commercial
+locations and 150 names at private addresses.
+
+As the number of users increases, the rate of defect submission has
+increased correspondingly.  During each week we currently receive
+roughly 30 defect reports.  For comparison, the rate one year ago was
+about ten defects per week.  This means that the amount of time
+dedicated towards defect fixing has to be increased thereby reducing
+correspondingly the amount of time possible for development.  As a
+result we have increased the amount of time dedicated to defect fixing
+to 30\%.
+
+Here we show the defect arrival and repair rates from May 1999 when
+we adopted the ClearDDTS program (replacing the GNATS program).
+
+\begin{description}
+\item[Top line] Problems labeled by state as a function of
+time for all severities (left) and for the top two severities
+(right). The states are New (green), Assigned (blue), Open (yellow), 
+Resolved (orange), and Verified (red):
+\begin{description}
+\item[New] Report submitted but not yet assigned to anyone
+\item[Assigned] Report has been classified and assigned to someone
+\item[Open] The report has been officially opened by the assignee
+and is being worked on.
+\item[Resolved] The problem is believed to be repaired.
+\item[Verified] The submitter agrees that the problem is resolved.
+\end{description}
+\item[Middle line] All (left) and Unresolved (right) Problems labeled 
+by severity as a function of time.
+\item[Bottom line] Problem arrival and repair rates for all
+severities (right), and for the top two severities (right).
+\end{description}
+\begin{latexonly}
+
+\medskip
+\begin{figure}
+\epsfig{file=defects1.4.ps, width=6in}
+\caption{Defect statistics at the release of 1.4}
+\end{figure}
+\medskip 
+\end{latexonly}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+<img src="../defects1.4.gif"><BR>
+Defect statistics at the release of 1.4
+</center>
+\end{rawhtml}
+\end{htmlonly}
+
+In Figure 2, we show the number of defects for various levels of
+severity as a function of time.  The classification of defect severity
+is performed first by the user and then adjusted as necessary on
+receipt of the defect.  Severity one and two defects prevent the user
+from achieving the desired goal.  Lower severity defects generally
+have workarounds but obviously must be fixed. Our policy is that
+defects have severities between one and three must be fixed
+immediately if possible, and in the balance of the 30\% of each week,
+severity four and five defects are to be addressed.  We will track
+carefully the impact of this policy on the backlog of defects.
+
+\section{Planning for release 1.5}
+
+The next development cycle (v1.5), scheduled for release in April
+2001, will retain a strong focus on scientific completeness, the
+provision of further high-level synthesis applications, and user
+testing and public outreach to the scientific community. The effort in
+pipelines and automated imaging will also continue. As indicated in
+the last report, we feel strongly that a coordinated effort in
+pipeline infrastructure would benefit the consortium as a whole. With
+the increasing maturity of the connected-element reduction
+capabilities, increased effort will also be devoted to VLBI. Work
+already done in this area includes the initial version of the FITS-IDI
+VLBA filler (Maguire), as noted above.
+
+There are challenges for synthesis development as we move forward to
+release v1.5 and beyond. At the current stage of development,
+adherence and committment to the existing synthesis design framework
+is imperative, both to ensure code re-use and add capabilities in a
+coherent manner. These integration questions are more pressing now
+that we have moved beyond low-level infrastructure development to add
+high-level capabilities. Also, we have tried to schedule time for the
+development of instrument-specific Glish reduction scripts, both in
+v1.4 and v1.5, for all consortium sites. These scripts, and associated
+chapters in the Getting Results cookbook in AIPS++, are important
+guarrantees that the core synthesis development is meeting all
+consortium needs. This investment of effort at each site is vital in
+this regard.
+
+As noted above, the most notable achievement of development cycle 1.4
+was the completion of end to end processing of VLA data as
+demonstrated in the mosaicing of Orion Nebula performed by Debra
+Shepherd. This shows that a user can process VLA data entirely using
+\aipspp\ tools.  From the point of view of public acceptance of
+\aipspp\ it is unfortunate that similar demonstrations have not been
+possible for other consortium telescopes.  This must be one of the
+highest priorities for the next development cycle.  It is clear from
+our experience that users have the varied reactions to use of the
+package.  Some find the interface an obstacle, some do not.  Some find
+the documentation too poor, some do not.  It is our view that before
+making substantial changes in either one of these two areas, feedback
+from a wider range of users is vital.  Therefore the emphasis for this
+next development cycle must remain on applications rather than a user
+interface or documentation issues.  In particular, it is vital that at
+the end of this next development cycle end-to-end processing be
+possible for all consortium telescopes.
+
+As is our practice, the detailed planning for release 1.5 was
+initiated following the end of this development cycle.  Continuing the
+theme of scientific completeness we have emphasized the need for high
+priority applications development.  Although some infrastructure
+developments are clearly needed in the medium term, these have largely
+been deferred until a subsequent development cycle.  The exception is
+the initiation of a study of how best to replace the tasking system.
+The tasking system is responsible for the execution of applications
+inside AIPS++.  The current second generation version was designed
+prior to the widespread acceptance of CORBA as a mechanism for
+distributed object invocation.  A number of key deficiencies as seen
+by the user of \aipspp\ are related to the current design.  In this next
+development cycle, we will investigate how best to replace the tasking
+system with a framework based upon CORBA. Another reason for making
+this change is that it improves interoperability with other systems.
+This is particularly important in the context of of new telescopes
+such as ALMA.
+
+The aggregate amount of time available for development in this and the
+previous development cycle is between 240 and 250 person weeks.
+Although this seems like a lot, only a limited amount can be achieved
+with this allocation.  For our planning to be effective, it is vital
+that the time allocated actually be used as we planned.  This of
+course is uncertain because of local problems that may take priority.
+This tends to be a strong effect for non NRAO developers since the
+NRAO developers are all 100\% allocated to AIPS++.  In the last
+development cycle (1.4), on average the non NRAO developers were
+roughly half as successful as at the NRAO developers at completing
+targets.
+
+At the end of development cycle 1.5, scheduled for April 2001, we plan
+a meeting of developers inside the project similar to the meeting that
+was held in April 2000.  At this meeting, we will consider how best to
+proceed on the related areas of user interface, documentation, and at
+the tasking system.  We have found that the complicated interrelated
+topics involved are best addressed by face to face meetings.  Such
+meetings also play a vital role in forming a cohesive group from
+geographically distributed individuals.
+
+
+\section{Appendix A: ASTRON contribution {\em  Jan Noordam}}
+\subsection{General}
+
+The Institute Formerly Known As NFRA will henceforward use its
+Dutch name (ASTRON) also internationally. All references to NFRA in
+AIPS++ should gradually be replaced by ASTRON.
+
+The upgraded WSRT (and the JIVE correlator operations) continue to
+rely heavily on AIPS++. The on-line system (TMS) uses \aipspp\ Tables,
+Measures and Glish, and MS2uvfits for data export. Data inspection is
+done with (at least) three different uv-data visualisation tools,
+which have been written locally with Glish and \aipspp\ modules. The
+next step is a quality monitoring pipeline, which might evolve into a
+calibration pipeline. The latter is seen as an important way to
+demonstrate what \aipspp\ modules are capable of, which should help to
+convince local astronomers to start doing their own data reduction
+with \aipspp\ rather than with one of the older packages.
+
+Ger van Diepen and Arthur Coolen have contributed mostly to the AIPS++
+infrastructure, and between them they keep the local site going. Ger
+has also played a major role in preparing the various data converters
+for the transition to MS version 2. Oleg Smirnov has spent most of his
+time implementing synthesis applications, notably for ionospheric
+calibration. The latter has also 'exercised' the \aipspp\ concepts for
+storage and distribution of auxiliary data. He has started work on the
+flagger. Tom Oosterloo uses \aipspp\ (modules) for WSRT off-line
+processing, and Jan Noordam does the same for LOFAR/SKA design and
+simulation. Between them they promote and assist local astronomers in
+the use of AIPS++.
+
+For release 1.4, the ASTRON contribution in FTE's was as follows:
+Ger van Diepen,  75\%, Oleg Smirnov 80\%, Jan Noordam 10\%.
+
+\subsection{Ger van Diepen}
+
+\begin{itemize}
+\item Major enhancements to the Lattices/Images framework:
+\begin{itemize}
+  \item The region handling is now the same in the various derived Image
+    classes. It makes it much easier to deal with regions in higher
+    level code.
+  \item Classes have been added to implement on-the-fly masking.
+    It makes it possible to define a mask based on the image data.
+    The mask changes when the data change.
+  \item Classes AxisSpecifier and AxisMapping have been created to be able
+    to tell which degenerate axes can be removed. SubLattice and
+    SubImage use them to reduce the dimensionality of an image or
+    a subset of an image.
+  \item The ability to temporarily close an image has been added.
+    In this way concatenating many images can be done without
+    hitting the open file limit.]
+\end{itemize}
+
+\item Major enhancements to the logger.
+\begin{itemize}
+  \item The ability to do a selection and/or sort of the logged data.
+  \item The ability to generate a script from the logged glish commands.
+  \item The logger window is more customizable.
+  \item Existing messages are now highlighted correctly.
+\end{itemize}
+
+\item Made the new StandardStMan the default storage manager.
+  The image logtable still uses the old StManAipsIO to make it
+  possible to access a 'new' image with old \aipspp\ software.
+
+\item Implementation of the changelog proposal.
+  It gives a means to automatically generate an overview of the
+  major changes during a development cycle which is visible
+  from the \aipspp\ pages.
+
+\item Major enhancements to taqlwidget.
+  Regular expressions are now fully supported.
+
+\item Removal of emulated \aipspp\ exceptions and related code from all
+  \aipspp\ source files. This was done with Darrell Schiebel.
+
+\item Adaption of various fillers and converters to the new MS2 format.
+
+\item Made all \aipspp\ code compile with gcc-2.95, so newer Linux systems
+  (which come with gcc-2.95) are now supported.
+
+\item Set up sneezes and runtests on various platforms (HP, SUSE 6.4)
+  to have automatic tests of \aipspp\ on more platforms.
+
+\item Made several improvements to the TableMeasures.
+\begin{itemize}
+  \item Added some static functions to test if a column contains measures.
+  \item The TableMeasures info is stored in a more concise form.
+\end{itemize}
+
+\item Resolved several defects, mainly related to catalog, logger,
+  and help or meta info.
+\end{itemize}
+
+\subsection{Oleg Smirnov}
+
+Oleg has continued his work with the ionosphere and PIM (Parametrised
+Ionospheric Model). He has mostly finished integration of PIM into AIPS++.
+Unfortunately, due to the large amount of dependency issues, we were unable to
+complete binding of the ionosphere modules into the synthesis package in time
+for this release, so, e.g., correction for Faraday rotation remains
+unavailable. This is something that we expect to resolve in the nearest 
+future, once Oleg puts in some more "face time" at Socorro. Meanwhile, a lot 
+of ionosphere functionality has quietly made its way into the trial package, 
+so it is already available, for, e.g., modelling -- if one knows what to look 
+for.
+
+Here is a more detailed look at Oleg has accomplished so far:
+
+1. PIM has been integrated into the trial package. This has been a rather
+tricky operation, because PIM is essentially a very large stand-alone FORTRAN
+program, and one of the goals was to encapsulate it in such a way so as to
+minimize future effort when newer PIM versions are available.
+
+\begin{itemize}
+  \item A number of wrapper classes have been written. These make PIM seamlessly 
+  available from C++. 
+  \item Error handling has been a major nuisance, since FORTRAN code likes to call
+  STOP whenever something goes wrong. Since the idea was to minimize changes 
+to outside FORTRAN code, Oleg has implemented some low-level
+workarounds. 
+\end{itemize}
+
+2. The data handling issue has been by far the biggest obstacle. PIM uses a
+number of static databases (essentially model parameters; a black box to
+anything except PIM) in native binary format; it also requires a number of
+geodetic databases, such as IGRF, solar flux, interplanetray magnetic field,
+etc. The geodetic databases must somehow be kept up-to-date. In addition,
+applying GPS-based corrections to PIM estimates requires RINEX files and GPS
+ephemeris data. 
+
+Most of this data is available via the Internet. Wim Brouw has dealt with
+similar issues in his Measures modules. However, PIM-related data comes in 
+such a zoo of formats and protocols (FTP, HTTP, even gopher), that Wim's 
+scripts could not be easily applied. 
+
+\begin{itemize}
+  \item Geodetic data has been added to the Global Data Repository. Oleg has 
+written  a mix of Glish and Perl code to facilitate automatic updating of 
+these  databases via the Internet (from appropriate data centers).
+   
+  \item Originally, PIM included its own IGRF implementation. To avoid redundancy,
+  Oleg has changed it to use the IGRF classes in the Measures module.
+  Incidentally, this has allowed us to verify the \aipspp\ implementation of
+  IGRF, and find and resolve certain problems with it.
+
+  \item Internal PIM databases are too big to be included with the codebase, so it
+  has been decided to distribute them via the CVS repository. Here, we have 
+not  reached a final agreement on some of the finer details, so a final
+  implementation of this had to be put off until the next release.
+  
+  \item Oleg has also made scripts for automatically locating and downloading 
+  RINEX and GPS Ephemeris files from appropriate IGS sites. RINEX and 
+Ephemeris
+  data can now be easily loaded into Glish. While not yet used in the 
+ionosphere
+  module, this might potentially have other interesting applications.
+\end{itemize}
+
+3. Oleg has also implemented two DOs, which have made various 
+ionosphere-related functions easily available from within Glish.
+\begin{itemize}
+
+  \item the ionosphere object allows Glish to call PIM functions for predicting   
+the ionosphere's electron distribution in any direction. We have used this for
+  LOFAR simulations (as well as to produce various pretty plots of ionosphere
+  profiles).
+  
+  \item the rinex object provides ways to find, download and read in RINEX and GPS
+  ephemeris data. 
+\end{itemize}
+
+\section{Appendix B: ATNF contribution {\em  Neil Killeen}}
+
+\subsection{Staffing}
+
+ATNF underwent some significant staffing upheavals this cycle which have
+impacted on our contributions to aips++. 
+
+Firstly, David Barnes left ATNF at the end of the previous cycle. 
+However, David and his new institute (Swinburne) management kindly
+agreed that David would continue in \aipspp\ during this cycle on a 7-week
+contract (funded by ATNF).  To replace David we have hired Malte
+Marquarding who joined us towards the end of the cycle.  My thanks to
+David for this and his other efforts in the last two years which have
+culminated in the Viewer tool providing high-level user display
+services.  Welcome also to Malte. 
+
+Secondly, Mark Wieringa's time was severely reduced owing to staff
+losses elsewhere in the ATNF (the ATOMS OO on-line software project)
+requiring Mark to pick up leadership of that project so that delivery of
+the new Antenna Control Computers (required for the continued operation
+of the Compact Array and the MNRF mm upgrade) would occur.  We offset
+some of this by contributing some of Frederic Badia (Narrabri computing)
+to pick up some of the things Mark was going to do.  Fred has now left
+the ATNF. 
+
+Thirdly, Neil Killeen's time was impacted upon by the Australian Federal
+Government's decision to outsource its IT infrastructure.  Neil is the
+outsourcing coordinator for the ATNF and this role takes significant
+toll, often at very short notice.
+
+
+\subsection{System}
+
+Our systems have been quite stable this cycle except for some continuing
+problems with the help system.  We have installed the latest versions of
+the Purify products which now operate to some degree with the egcs
+compiler again.  These products are not fully operational, but effective
+enough to be useful again. 
+
+
+\subsection{Individuals}
+
+
+\subsubsection{David Barnes}
+
+David's time (7 weeks contract in total) was spent on
+
+\begin{itemize}
+
+\item modifying the viewer and widgetserver to support multiple
+  instances of the glishtk client.  This has enabled users to
+  continue using many \aipspp\ tools (eg. toolmanager, dish)
+  while the viewer is acting on a large image.
+
+\item preparation of a document describing the "big picture"
+  design of the \aipspp\ display library (Note 231)
+
+\item review of the display library in the form of a two-week
+  workshop at NRAO to advise the new display library programmers.
+
+\item remedying a significant number of defects, including: contour
+  plots failing to display under various conditions; PostScript
+  output being incorrect; and various fixes in the display 
+  library infrastructure.
+
+\item design work in the infrstructure to support future DisplayDatas.
+
+\item design and implementation of multi-panel display canvases, 
+  which are now complete and ready for use in the glishtk and
+  viewer interfaces.
+
+\end{itemize}
+
+
+\subsubsection{Wim Brouw}
+
+During the 1.4 cycle Wim spent 3 months in Socorro, in partial exchange
+for Ralph Marson who spent a year in Epping.  Over the period Wim spent
+about 75\% of his time on \aipspp\ related issues. 
+
+
+\begin{description}
+
+\item {\bf Measures}
+
+\begin{itemize}
+
+\item completed the separation of direction related calculations into separate
+  functions. These functions were re-used in the baseline conversion methods
+
+\item improved the baseline conversions to incorporate direction dependent
+  secondary effects
+
+\item at request of WSRT tried to calculate the uvw coordinates from baseline
+  and directions. It turned out that positions as given in the measurement
+  set were either wrong or inconsistent. The problem was not completely
+  solved at the end of the cycle.
+
+\item wrote a programming guide for the use of the Measures classes in C++
+
+\item extended the use of measures and quanta vectors (especially in formatting
+  for browsers) to improve the speed by doing most of the work in C++
+
+\item added methods to the general Measure holder in aid of the handling of
+  measures in the MS.
+
+\item  added some more date/time formatting for the aid of the ionosphere
+  calculations
+
+\item made, at request, some more deep copies of Measures, especially for the
+  use in conversion engines (which generated more work than I expected)
+
+\item did some more unit manipulations for user units to aid in conversions of
+  non-units like 'beam'
+
+\item went through an extensive education and checking cycle with Oleg in
+  Measures, notably the Earth magnetic field calculations.
+
+\end{itemize}
+
+\item {\bf Fitting}
+
+\begin{itemize}
+
+\item went through a code review cycle for the basic fitting classes
+
+\item awaited requirements of user interface and C++ interface from users of
+  the fitting classes before finalizing the interface for constraint handling
+  and before sending the higher level classes for code copping. No reaction
+  has been forthcoming till now.
+
+\item as far as I have been able to ascertain, no additional use of the classes
+  has been made in this cycle
+
+\end{itemize}
+
+\item {\bf Applications}
+
+\begin{itemize}
+
+\item wrote a first version of a strong point source finder (main use for calibration
+  and as initial guess for more refined image or uv-plane source fitting). It
+  has been incorporated by Neil into the Image tool as function 'findsources'
+  and provides a good estimate for the 'fitsky' function.
+
+\item started on a UV-plane source fitter.   However, 
+  support work in the componentmodel (component derivatives) and simulation 
+  modules (derivatives, time smearing, bandwidth smearing) is required to make
+  more progress.  Wim would like to write a requirements document.
+
+\item tried to use the existing calibrater package (at the Glish level) for a coupled
+  Leakage/Gain solver comparable to the one available in Miriad for ATCA
+  data.  This work did not yet produce a useable product because of unresolved problems 
+  with Calibrater.   
+
+\end{itemize}
+
+\item {\bf General}
+
+\begin{itemize}
+
+\item discussed the development (based on XML) of a.o. XDF and FITSML (XFITS)
+ with some Goddard people
+
+\item many discussions about standards; mathematical package etc
+
+\item did some checking of validating XML parsers for C++. Main use within
+  \aipspp\ could be the merging of .g, .help and meta.g
+
+\item some preliminary review work for Sofa (IAU).
+
+\end{itemize}
+
+\item [QAG]
+
+(see separate QAG report)
+
+\end{description}
+
+\subsubsection{Neil Killeen}
+
+Neil's time (60\%) went on:
+
+\begin{description}
+
+\item {\bf Image analysis development}
+
+\begin{itemize}
+
+\item Added position rollup to Image tool function 'view' GUI including
+a profiling capability 
+
+\item Added histogram plotting to statistics rollup  in Image tool function 'view' GUI
+
+\item Add 2D convolution by parameterized functions to Image tool (function
+'convolve2d') and unified all convolution interfaces in Image tool
+
+\item Reworked mask handling of Image tool following Ger's
+infrastructure changes to provide a uniform masking interface to the
+user regardless of the type of image they make (real or virtual)
+
+\item Following infrastructure work by Ger added the new keyword 'mask'
+(takes a LEL expression) to the majority of Image tool functions
+enabling on-the-fly masking. 
+
+\item Reworked LatticeConcat class to enable lattices to be temporarily
+closed so that there are no limits to the number of Lattices that can
+be concatenated. Passed this on to the Image tool.
+
+\item Modified the Image tool function 'moments' to deal with the
+frequency axis in the conventional units of km/s (user selection of
+velocity definition) rather than the not-so-popular Hz. 
+
+\item Bound Wim's strong point source finder to the Image tool
+via function 'findsources' which nicely complements the
+fitsky function.
+
+\item Add miscellaneous functionality to Image tool (brightness units,
+restoring beam, drop degenerate axes, deconvolution of components from 
+restoring beam, better response of displays when image data are
+changed)
+
+\item Better memory management in Image Distributed Object.
+
+\item Made the Coordsys tool and test script to provide high level
+Coordinate manipulation functionality available.  
+
+\item Some work in the Coordinates C++ classes to handle FITS cases that
+arose, add conversion to velocity (from pixel or frequency) handling
+code and propagate to user interface via Coordsys tool and use in Image
+tool. 
+
+\item Converted Regionmanager entry widgets to standard and some
+other formatting changes.  Added 'wrange' and 'mask' GUI interface.
+Improved command-line interface for world regions.
+
+\item Miscellaneous fixes/improvements
+
+\item Updated gettingresults chapter on Image analysis
+
+\end{itemize}
+
+\item {\bf Other}
+
+\begin{itemize}
+\item Solved some PGPlotter.cc/pgplotter.g problems
+\item Did the MS1 to MS2 switch over for multibeam code
+\item Fixed miscellaneous little things
+\end{itemize}
+
+\item {\bf Code Review/Defects}
+
+\begin{itemize}
+
+\item Reviewed Wim's fitting C++ classes
+
+\item Prepare and respond to ObsInfo code review
+
+\item Still trying to get Coordinates reviewed and moved to
+aips package (stalled by unreviewed FITS class dependency)
+
+
+\item Failed to prepare other nominated code for review
+
+\item Submitted 88 defects
+
+\item Resolved 20 of 25 defects assigned this cycle
+
+\end{itemize}
+
+\item {\bf Management}
+
+\begin{itemize}
+\item Hired Malte
+\item Interact with UNSW regarding single-dish analysis at Mopra
+\item Spent time with various individuals to show them some capabilitites of the system
+\item Discussed \aipspp\ issues with ATUC
+\item Various reports (CSIRO board, ATNF annual report, \aipspp\ cycle reports, ATUC, future developments)
+\item Distributed some release 1.4 CDs 
+\end{itemize}
+
+\end{description}
+
+\subsubsection{Malte Marquarding}
+
+Malte joined the ATNF towards the end  of this development cycle
+and had no specific targets in that time.   His time  (75\%) went on
+
+\begin{description}
+
+\item {\bf Viewer}
+
+\begin{itemize}
+\item familiarizing with the Viewer
+\item updating the documentation
+\item fixing 2 defects
+\item working on other defects
+\end{itemize}
+
+\item {\bf Display library}
+
+\begin{itemize}
+\item familiarizing with the C++ part of the DL
+\item working specifically on DrawingDisplayDatas
+\item working specifically on Colormaps
+\item fixing 2 defects
+\item working on other defects
+\end{itemize}
+
+\item {\bf Other}
+
+\begin{itemize}
+\item learning glish(tk)
+\item learning \aipspp\ (compiling, structure, etc.)
+\item adding listboxcontainer to widgetserver
+\item attending the Display Library workshop in Socorro
+\end{itemize}
+
+\end{description}
+
+\subsubsection{Mark Wieringa}
+
+Mark's time  (10\%) was mainly spent on  defects, email
+and system maintenance.
+
+\begin{itemize}
+
+\item worked on final implementation of MSv2 with Athol
+\item  put xyphase correction and IF inversion correction into rpfitsfiller
+   and checked in the MSv2 version as atcafiller.
+
+\item defect bug fixes for MS and atcafiller related items.
+
+\item installed \aipspp\ on new linux server, alpha version no longer used
+   for development.
+
+\end{itemize}
+
+\subsubsection{Frederic Badia}
+
+Fred's time  (30\%) was spent on
+
+\begin{itemize}
+
+\item wrote the ms1toms2 converter (item picked up from Mark Wieringa)
+
+\item updated rpfitsfiller for MSv2 (item picked up from Mark Wieringa)
+
+\item some work on imaging pipeline
+
+\item defect fixes for above
+
+\item some work on ATCA test scripts
+
+\end{itemize}
+
+\section{Appendix C: BIMA/NCSA contribution {\em  Ray Plante}}
+
+\subsection{General}
+
+During this cycle, NCSA and BIMA had three people contributing to
+AIPS++.  Ray Plante (the local manager) contributed at the 50\% level,
+Dave Mehringer at 35\% (the site installation manager, and Harold
+Ravlin at 60\%.  Doug Roberts, the previous local manager, left the
+project at the beginning of this development cycle; as a result, much
+of our time has been spent rebuilding local \aipspp\ expertise.  
+
+\subsection{Systems}
+
+The computer systems at NCSA include Linux, Solaris, and SGI IRIX
+machines.  \aipspp\ is primarily run on Solaris platforms for both
+development and end-user use.  We recently added an SGI 4-processor
+Linux box for use with the BIMA Image Pipeline, now under development.
+The builds on SGI IRIX platforms continue to be stable, including the
+NCSA Origin system.  We also experimented with an \aipspp\ build on a
+preproduction Linux system based on the new Intel 64-bit Itanium
+processor; a full build is expected when the production system is
+delivered to NCSA in Spring 2001.
+
+\subsection{Individuals}
+
+Ray Plante's has been shared between \aipspp\ and managing our local
+pipeline development.  Specific work has included.
+
+\begin{itemize}
+\item Investigated the use of \aipspp\ on large imaging problems using
+      the NCSA Origin System.  With the help of Wes Young, this work
+      uncovered the need to support large files (> 2 GB).  
+
+\item With Mehringer, studied in detail the \aipspp\ calibration and
+      imaging model and its application to BIMA data.  Included in
+      this work was the development of a local convention for
+      organizing BIMA spectral line uv data (consistant with the MS2
+      standard).  
+
+\item With Mehringer, formed a local \aipspp\ Users Committee charged
+      with developing a local \aipspp\ cookbook (to be added as a
+      "Getting Results" chapter.  As part of its work, this committee
+      has discussed and reported on useability issues.
+
+\item Attended ADASS and presented an oral presentation on the BIMA
+      Image Pipeline.
+\end{itemize}
+
+Harold Ravlin has spent all of his effort developing an interactive
+fitting \& regridding tool for calibration tables.  Apart from some
+integration issues, a useful initial version was completed.  
+
+Dave Mehringer serves as the \aipspp\ site installation manager.
+
+\begin{itemize}
+\item maintained builds on local Solaris and SGI IRIX platforms and
+      NCSA Linux and SGI IRIX platforms.  
+
+\item developed the BIMA synthesis test scripts.  This included adding
+      support for the new data repository system in \aipspp\ to retreive
+      test data. 
+
+\item With Plante, studied in detail the \aipspp\ calibration and
+      imaging model and its application to BIMA data.  Included in
+      this work were comparisons with MIRIAD processing which
+      contributed to the debugging of the \aipspp\ calibration classes.  
+
+\item Provided Ravlin with user-oriented consultation for his fitting
+      tool.
+
+\item Provided consultation on the use of \aipspp\ to the local Users'
+      Committee. 
+
+\item With Wes Young, experimented with a test build of \aipspp\ on an
+      experimental Intel 64-bit Itanium Linux system.  
+
+\item Attended the Supercomputing 2000 conference to give a
+      presentation on \aipspp\ and to demo AIPS++-processed data on a
+      new large-pixel display device.
+\end{itemize}
+
+
+\section{Appendix D: JBO/MERLIN contribution {\em  Barry Maguire}}
+
+\subsubsection{Barry Maguire}
+
+At the beginning of the development cycle I visited Socorro where I
+learned the basics of developing within the \aipspp\ environment. Upon
+returning to the UK I began work on a filler for the MERLIN array which
+has now been completed. Shortly afterward I was asked to begin work on a
+filler for the new FITS-IDI format, particularly VLBA data. Work is still
+progressing on this.  Distributed approx 150 v1.3 CD-ROM's at the General
+Meeting of the IAU at Manchester in August.
+
+\section{Appendix E: NRAO contribution {\em  Tim Cornwell}}
+
+The core NRAO group is now Braatz (75\%), Cornwell (50\%), Garwood
+(75\%), Golap (75\%), Holdaway(75\%), Kemball(75\%), King (100\%),
+Marson (75\%), McMullin (75\%), Moellenbrock(75\%), Schiebel (100\%),
+and Young (100\%).  Golap and Young are funded by NCSA-NRAO
+collaboration.  King is funded by the NSF visualization grant and we
+have one open position funded by that grant. Toney Minter left the
+group to take a more permanent position with the GBT project.  Mark
+Holdaway will leave \aipspp\ on February 1, 2001 to join the ALMA
+project where he will work on array design questions. We expect his
+involvement with \aipspp\ to continue at a reasonably high level.
+
+\subsection{Jim Braatz}
+
+Jim Braatz' primary responsibilities are to manage the Green Bank installation 
+of AIPS++, to support GBT operations, develop software for analysis of GBT
+commissioning and continuum observations, and to assist with single-dish 
+spectroscopic applications.  Specifically, Jim worked on the following tasks 
+during this cycle:
+
+\begin{itemize}
+\item Software for the tipper in GB was reevaluated in detail and
+nearly all rewritten.  The atmospheric fitting routine was converted
+from a linear fit to a nonlinear least squares fit, weather data from
+one of the nearby GBT weather stations was used to import ambient
+temperatures, the graphing routines were improved, and the data were
+analyzed to reveal certain hardware peculiarities which were then
+investigated and improved.  A summer intern (RET) was employed to
+review all previous tipper data and to fill in gaps when bad fits or
+computer downtime left holes.  We are thus able to improve the quality
+of statistics used in site evaluation.  A more intelligent algorithm
+was then incorporated to minimize future holes in the data from bad
+fits.
+
+\item This cycle marked the final testing in the GBT mockup, as it was
+disassembled in preparation for GBT acceptance.
+
+\item The GBT commissioning software has evolved to incorporate general
+support for the Digital Continuum Receiver (DCR).  The DCR tool has
+been improved with additions of more versatile plotting functions, GUI
+operations for generating quick plots of data associated parameters
+passed from the GBT M\&C system, and functions for summarizing scans
+and header information.  A significant effort was completed to convert
+the tool for use with the new Measurement Set 2 data, and for use with
+the new version of the sdrecord.  A request for availability of a low
+level CLI-based toolset came in, and so improvements in the CLI began,
+with care to see that the CLI and GUI can be used simultaneously and
+seamlessly.  A new function for telescope pointing calculations was
+written.
+
+\item The \aipspp\ system is widely used in Green Bank, especially in support
+of GBT operations and analysis but also in general science
+applications.  As administrator of the \aipspp\ software in this very
+active environment, Jim has worked to support engineering and science
+efforts.  Specific science support tasks include helping code and
+debug a radiative transfer application in Glish, data mining for a
+single dish imaging project, and supporting image display and
+analysis.  Engineering support work included assistance with
+accelerometer and servo data analysis.  Routines were written to
+retrieve and plot data from the Spectral Processor.  In addition, a
+group of summer employees were trained and supported in Glish
+programming and data analysis.
+
+\item Jim took on primary responsibility for correcting defects and making
+enhancements to the pgplotter routines.  Several defect fixes and 
+improvements were checking in this cycle.
+  
+\item Reviewed and tested DISH, the single dish analysis package.
+
+\item Observatory-related duties this cycle included:
+\begin{itemize}
+\item   Coordinator of the weekly Science Lunch in Green Bank
+\item   Research Mentor for graduate student Michelle Little, RET John N.
+        Ford, and REU Gabriel Prochter
+\item   Presented public science talks on WVMR radio program, to the
+        Chatauqua group in GB, and to the RARE CATS group
+\item   Research advisor for the two-week RARE CATS short course
+\item   Reviewed and contributed to GBT documents, including BAAS Observatory
+        report, NRAO Program Plan, GBT first call for proposals
+\item   Tested and reviewed the GBT proposal submission software.
+\item   Member of the GB Rec Association Board of Directors
+\end{itemize}
+   
+\item Science work included:
+\begin{itemize}
+\item  A new project to search for intraday variability in galactic
+       maser sources.  Observed at Haystack with REU student, and 
+       prepared AAS poster.
+\item  Preparation for VLA+PT observation of extragalactic H20 megamaser source.
+\item  Prepared and gave an invited science seminar at Ohio University, and 
+       gave two talks at the weekly science lunch in GB.
+\end{itemize}
+\end{itemize}
+
+\subsection{Bob Garwood}
+
+Bob Garwood's primary responsibility is to oversee and contribute
+towards the single dish work in AIPS++.  This work remains focussed on
+the DISH environment and the support of the GBT.  His contribution in
+support of the GBT is primarily through the GBT fillers which convert
+the GBT FITS data files to an \aipspp\ MeasurementSet.  His DISH work
+involves the maintenance and enhancement of the data access tool
+(sditerator), the data averaging too (sdaverager) and the data
+conversion tools (sdfitstoms and ms.tosdfits).  In addition to these
+duties, he is responsible for the maintenance and enhancement of the
+FITS classes and, as author and maintainer of the GUI guidelines, he
+spends some amount of time reminding other \aipspp\ workers on the
+importance of following those guidelines.  He is also the chief code
+cop and head of the QAG.
+
+Over the past development cycle (April through September) he has done the
+following:
+
+\begin{itemize}
+\item   The GBT filler was changed to fill to version 2 of the MeasurementSet.
+        A number of helper classes were written which were useful in the
+        revision of the SDFITS conversion tools.
+
+\item   Several changes were made to the sditerator tool.  The sdrecord
+        structure used by this tool to pass data to dish was modified to
+        use Measures where appropriate.  This allows us to take better
+        advantage of other measures-related tools for coordinate and
+        reference frame conversions.  The sditerator tool was enhanced so
+        that it can now read data from a MeasurementSet (version 2).  The
+        original flat table data source is still available.
+
+\item   The two sdfits conversion tools, sdfitstoms and the tosdfits
+        function of the ms tool, were modified to work with version 2
+        of the MeasurementSet.  The sdfits output tool was also modified
+        so to write variable shaped data arrays.
+
+\item   Added a paragraph on user feed to the GUI guidelines and added two
+        functions to the widgetserver to help follow that paragraph's
+        recommendations.
+
+\item   Participated in many discussions regarding the form and contents of
+        FITS files from the GBT spectrometer back end.  The final form was
+        agreed to near the end of this development cycle.
+
+\item   Visited Green Bank several times.
+\end{itemize}
+
+\subsection{Tim Cornwell}
+
+\subsection{Kumar Golap}
+
+The last few months I have been mainly involved in the parallelization
+of the wide field imaging. This has taken approximately 70\% of my
+time. A large chunk of that time was taken by debugging and
+understanding mainly the locking of tables mechanism and the FTMachine
+components.  A summary of the parallelization effort:
+
+\begin{itemize}
+
+\item  Made Records for passing FT Machine objects and Image Objects
+back and forth from the master and children processes 
+
+\item   Parallelized the predict algorithm
+
+\item  Had to understand and modify  the Table Locking mechanism so
+that it could work properly with multi-processors accessing the same
+measurement set.
+
+\item Profiling and getting the parallel predict algorithm to work
+better.
+ 
+
+\end{itemize}
+
+
+The remaining of the time I've been doing some science data reduction
+at P-band of a supernova remnant; in the process I've been testing
+imager and calibrater on such data.  I've been trying to understand
+the problem of assymetric sidelobes at P-band at the VLA. I am
+involved with a project trying to achieve sensitivity of 100
+$\mu$Jy. I'll be experimenting with the data once its observed in
+December to try and implement something in \aipspp\ to reduce the effect
+of assymetric beams at P-band.  I have also been thinking about the
+ionospheric iso-planatic problem at low frequencies. This is a problem
+that I may start tackling once I get the parallelization working
+reasonably well.
+
+\subsection{Mark Holdaway}
+
+I took over the task of editing the \aipspp\ Newsletter, which basically
+consists of setting a schedule for the newsletter releases, figuring
+out what new work in the project is of general interest, bugging
+people until they submit, and throwing it all together for
+distribution on the web.  We had a newsletter in August and also one
+in November, which details some of the new functionality in release
+1.4.
+
+I did some work on a second-order multi-scale deconvolution algorithm,
+implemented at the glish level, in which extended emission is imaged
+and deconvolved at very low resolution with large cell sizes.  The low
+resolution model is regridded onto an image with smaller cells, and
+used for the starting model for higher resolution imaging.  At each
+step, any desired deconvolution method can be used, but multiscale
+clean is the method of choice for the first step.  This works
+especially well for multiconfiguration mosaics.
+
+I wrote the mosaicwizard, which walks the user through setting up a
+mosaic image, by default performing a second-order multi-scale
+deconvolution.  Of course, the user can set the parameters to do other
+sorts of deconvolutions as well, and the user can go straight to a
+full resolution deconvolution.  Much of the mosaicwizard's work is
+written to the scripter, which the user can edit and rerun.
+
+I fixed and improved the progress displays for maximum entropy, clean,
+and multiscale clean algorithms, for both the single field and
+multi-field contexts.
+
+I have spent a fair amount of time working on the reduction of an 81
+pointing VLA L band D array mosaic of the Galactic Center.
+
+
+\subsection{Athol Kemball}
+
+For development cycle v1.4 I have retained the following
+responsibilities: i) deputy project manager; ii) coordination of
+synthesis development; iii) direct calibration development; iv)
+coordination of parallelization; v) technical leader; and, vi)
+assistance in the release process as the patch controller. I have also
+spent time in user support and testing. The synthesis and
+parallelization work is described in the appropriate sections above. I
+have also attempted to allocate time for documenting and communicating
+information regarding coding and design assumptions in the synthesis
+system to a wider audience of developers in the consortium, to smooth
+integration and development of new capabilities. I played an active
+role in implementing MSv2, and in assisting in filler and application
+migration. I have also coordinated the new visualization development
+effort at the NRAO in AIPS++, which is separately funded and targeted
+at the visualization of large datasets. In v1.4, this has primarily
+concerned design questions related to uv-data visualization, and in
+End of document areas of responsibility transferred from David Barnes
+to new developers. I have drafted the development plans for v1.4 and
+v1.5 in collaboration with Tim Cornwell. We have also contributed a
+document describing software engineering practices within the AIPS++
+project, which can be found as Note 237 in the \aipspp\ documentation
+system. I have not undertaken any code review this development cycle,
+but have spent the standard allocation of time on defect correction
+(approximately 20 percent).
+
+\subsection{Joe McMullin}
+
+Jul - Sep 2000: (Absent Jul 1 - 21: USAR duty)
+
+Joseph McMullin's main responsibilities are work on single dish 
+applications within \aipspp\ and help with GBT commissioning duties. 
+
+He is also currently serving as Chief Tester and also handles the 
+aips2-request list, logging and shipping \aipspp\ release CDs.
+\begin{description}
+
+\item[DISH development]
+
+\begin{itemize}
+\item Continued work on the restructuring of DISH. DISH is now recognized as
+a general \aipspp\ tool and may be accessed through the toolmanager.
+\item The command line interface (CLI) has been completely rewritten,
+providing a more intuitive use of variable setups and execution and a 
+more fascile interaction with the scripting tool for improved tutorials
+through the GUI. 
+\item Initial bulk processing of SDIterators has also been enabled 
+for all DISH operations; this occurs on the glish side with plans to move
+to the C++ side later (if necessary).
+\item DISH has been modified to handle the new SDRecord data structures.
+\item DISH now accepts both MeasurementSets and flat
+table data directly. These developments are all in line with the development
+plan drawn up in the last cycle. 
+\item A new User's Guide was written for this software (Note 236).
+\end{itemize}
+The previous version of dish is retained as olddish.
+
+\item[GBT commissioning]
+
+\begin{itemize}
+\item Supported Jim's efforts mainly through the developments in DISH and slight
+modifications necessitated by the change to new SDRecords.
+\end{itemize}
+
+\item[Chief Tester]
+
+\begin{itemize}
+\item Continued to mail out weekly reports on the unit testing
+and (quasi)daily reports on builds and assay. 
+\item An e-mail repository was
+established for easier logging/tracking of unit testing (aips2-testing).
+\item Broadened our overall testing to include all five
+canonical architectures (Solaris, Linux, SGI, HPUX, and Alpha). Redundancy
+across platforms is currently being worked on. 
+\item A trialdisplay suite of tests was added along with several additional tests 
+within aips, trial, and display.
+\end{itemize}
+
+\item[aips2-requests]
+
+\begin{itemize}
+\item Took over responsibility for logging and shipping CDs. Sorted and cross-correlated
+existing lists to identify missed shipments and remedy situation. 
+\item Perform weekly shippings from aips2-requests and maintain customer database 
+(currently at 449).
+\end{itemize}
+
+
+\item[AIPS++ Outreach]
+
+\begin{itemize}
+\item Continuing contact with Arecibo. Teleconferences are scheduled monthly
+throughout the fall.
+\end{itemize}
+\end{description}
+
+\subsection{George Moellenbrock}
+
+\noindent
+For the v1.4 development cycle, George Moellenbrock contributed as follows:
+
+In the area of synthesis (and related) development:
+
+\begin{itemize}
+
+\item{As new member of the \aipspp\ team, studied operation and structure of
+aips++, with some emphasis on the MS definition and access classes.}
+
+\item{Completed overhaul of MSLister class and added its functionality as
+the `lister' function (time-selection only) to the ms tool.  Addition of
+more general selection options is pending the MS access reconcilations
+described in Note 238 (by A.\,Kemball) and this and other enhancements will
+likely be implemented in the next development cycle.}
+
+\item{Added antenna-position plotting feature to visplot.}
+
+\item{Adapted MSFitsInput/MSFitsOutput (and vlafiller) classes to the the
+particular antenna-position conventions used by the vla archive and UVFITS
+formats for VLA and VLBI data, and uvw coordinates used by WSRT.}
+
+\item{Assisted in MS v1 to MS v2 migration, in particular within the
+MSFitsInput, MSFitsOutput, MSRange, MSSelector, MSLister classes.}
+
+\end{itemize}
+
+In the areas of scientific utility and user interaction:
+
+\begin{itemize}
+
+\item{Managed Linux build in Socorro \aipspp\ installation.}
+
+\item{Spent considerable time assiting local \aipspp\ testers with use
+of aips++.  Generally, confusions arise both via pilot error and
+genuine bugs.  Improvements to documentation may help to avoid
+pilot error, but a certain level of patience (driven by a geniune
+need to choose \aipspp\ over other packages) would seem to be
+necessary on the part of users.  Success using the package correlates
+strongly with user willingness and patience, and leads to very
+productive identification of genuine bugs.}
+
+\item{Gave interferometry lecture and \aipspp\ demonstration to
+D.\,Finley's Chautauqua class.}
+
+\item{As part of general familiarization with package functionality,
+addressed use of aips++/glish in determination of the PT position
+within the local VLA coordinate system to improve function of the
+PT-link (with E.\,Fomalont).  Though adequate operation of the PT link
+has been achieved independent of \aipspp\ (those concerned had been
+working on the problem long before I started), it is clear that the
+flexible data access and ease of exploration available within aips++
+is extremely attractive for solving instrumentation problems such as
+this.  Utility in this
+area is a strong motivation for me to use \aipspp\ in my own science,
+and in the next development cycle, I plan to continue examination of
+the PT link baselines and to begin assessment of the VLBI polarization
+capabilities of the Australian Long Baseline Array (collaboration
+with R.\,Ojha of ATNF).}
+
+\item{Fixed 21 user-submitted defects, mainly in MS and related classes,
+12 defects pending.}
+
+\item{Submitted 20 defects.}
+
+\end{itemize}
+
+\subsection{Darrell Schiebel}
+
+Darrell provided system support for AIPS++, aiding installations
+at many different sites, and also was responsible for all the
+Glish work described above.
+
+\subsection{Wes Young}
+\begin{itemize}
+\item Continued maintenance build 64 bit SGI compiler.
+
+\item Provided system support for the AOC's SGI systems.
+
+\item Parallelization
+\begin{itemize}
+
+\item Baseline tests on UNM Linux cluster and SGI production machines
+
+\item Visited UIUC, June 6 to June 27 and July 29 to Aug. 12, to work
+with Ray
+Plante on parallelization issues.  In tracking down a defect for Ray, we
+uncovered
+a 2 GB file size limitation in the Table system.
+
+\item Began investigations into using MPI-IO in the table system.
+
+\item Investigated the various options for porting \aipspp\ to NT. A Note
+on the effort and
+what will be needed to make \aipspp\ run under NT will appear early in the
+next development cycle.
+\end{itemize}
+
+\item Documentation
+\begin{itemize}
+
+\item Using linkscan (on an evaluation basis) found and corrected many
+link errors for the
+1.4 release.
+
+\item General support, i.e. finding and fixing bad links and
+sorting out LaTeX build problems.
+\end{itemize}
+
+\item Defect fixing and investigation.
+
+\item Updated the ClearDDTs defect tracking system.
+
+\end{itemize}
+
+
+\section{Appendix F: Summary of \aipspp\ Personnel}
+
+In this section, we give the names of people in the various \aipspp
+groups and the nominal fraction of time allocated to \aipspp.
+
+\begin{description}
+
+\item[ASTRON] Ger van Diepen,  75\%, Oleg Smirnov 80\%, Jan Noordam 10\%.
+
+\item[ATNF]  Fred Badia (30\%), Neil Killeen (60\%, also local manager), Wim
+Brouw (75\%), Malte Marquarding (75\%), and Mark Wieringa (10\%).
+
+\item[BIMA/NCSA] Dave Mehringer (35\%), Ray Plante (50\%), 
+and Harold Ravlin (60\%).
+
+\item[JBO/MERLIN] Barry Maguire (100\%)
+
+\item[NRAO] Braatz (75\%), Cornwell (50\%), Garwood
+(75\%), Golap (75\%), Holdaway(75\%), Kemball(75\%), King (90\%),
+Marson (75\%), Minter (50\%), 
+McMullin (75\%), Moellenbrock(75\%), Schiebel (100\%), and Young
+(100\%).
+\end{description}
+
+Thus, in aggregate, we have 26 people contributing about 16 FTEs to
+the \aipspp\ Project. 
+
+\end{document}
+

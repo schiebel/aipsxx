@@ -1,0 +1,221 @@
+# RCSid:
+#	$Id: Makefile.in,v 19.0 2003/07/16 05:15:44 aips2adm Exp $
+
+#
+# modify MACHINE and MACHINE_ARCH as appropriate for your target architecture
+#
+srcdir=@srcdir@
+
+CC=@CC@
+CPLUS=@CXX@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+CLIENT_LIBS = @CLIENT_LIBS@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ..
+GLISH_INC = $(SRC)/../../include
+
+H = $(SRC)/include/Glish
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+BINDIR = @bindir@
+
+MKHIER = $(top)/config/mkhier
+
+INCLUDE=-I. -I$(SRC) -I$(GLISH_INC) -I$(INCDIR_P) $(PLUSINC)
+CINCLUDE=-I. -I$(SRC) -I$(INCDIR_P)
+
+MACHINE=`$(SRC)/machine.sh`
+MACHINE_ARCH=`$(SRC)/machine.sh arch`
+MDEFS="-DFORCE_MACHINE=\"${MACHINE}\"" "-DMACHINE_ARCH=\"${MACHINE_ARCH}\""
+
+CFLAGS=-g @DEFS@ @CPPFLAGS@ @CFLAGS@ -DMAKE_BOOTSTRAP ${XDEFS}
+CXXFLAGS=-g @DEFS@ @CPPFLAGS@ @CXXFLAGS@ -DMAKE_BOOTSTRAP ${XDEFS}
+
+OBJS=arch.o buf.o compat.o cond.o dir.o for.o hash.o job.o main.o make.o \
+    parse.o str.o suff.o targ.o var.o util.o getopt.o sigcompat.o @LIBOBJS@
+
+LSTOBJS=lstAppend.o lstDupl.o lstInit.o lstOpen.o lstAtEnd.o lstEnQueue.o \
+    lstInsert.o lstAtFront.o lstIsAtEnd.o lstClose.o lstFind.o lstIsEmpty.o \
+    lstRemove.o lstConcat.o lstFindFrom.o lstLast.o lstReplace.o lstFirst.o \
+    lstDatum.o lstForEach.o lstMember.o lstSucc.o lstDeQueue.o \
+    lstForEachFrom.o lstDestroy.o lstNext.o 
+
+CLIENTS = $(BINDIR_P)/make_client
+
+INSTALLED_CLIENTS = $(BINDIR)/make_client
+
+all: make-bindir_p $(CLIENTS)
+
+make-bindir_p:
+	$(MKHIER) $(BINDIR_P)
+
+make-bindir:
+	$(MKHIER) $(BINDIR)
+
+install:  make-bindir $(INSTALLED_CLIENTS)
+
+#============================================================
+
+make_client.o: $(SRC)/make_client.cc $(GLISH_INC)/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/make_client.cc 
+
+make_client: make_client.o $(OBJS) $(LSTOBJS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o make_client make_client.o $(OBJS) $(LSTOBJS) $(CLIENT_LIBS) @LIBS@ @BIN_LIBS@ @EXTRA_LIBS@
+
+$(BINDIR_P)/make_client: make_client
+	$(INSTALL_PROGRAM) make_client $(BINDIR_P)
+#	strip $(BINDIR_P)/make_client
+
+$(BINDIR)/make_client: make_client
+	$(INSTALL_PROGRAM) make_client $(BINDIR)
+#	strip $(BINDIR)/make_client
+
+#============================================================
+
+arch.o: $(SRC)/arch.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/arch.c
+
+buf.o: $(SRC)/buf.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/buf.c
+
+compat.o: $(SRC)/compat.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/compat.c
+
+cond.o: $(SRC)/cond.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/cond.c
+
+dir.o: $(SRC)/dir.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/dir.c
+
+for.o: $(SRC)/for.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/for.c
+
+hash.o: $(SRC)/hash.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/hash.c
+
+job.o: $(SRC)/job.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/job.c
+
+main.o: $(SRC)/main.c
+	$(CC) $(CINCLUDE) $(CFLAGS) $(MDEFS) -c $(SRC)/main.c
+
+make.o: $(SRC)/make.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/make.c
+
+parse.o: $(SRC)/parse.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/parse.c
+
+str.o: $(SRC)/str.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/str.c
+
+suff.o: $(SRC)/suff.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/suff.c
+
+targ.o: $(SRC)/targ.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/targ.c
+
+var.o: $(SRC)/var.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/var.c
+
+util.o: $(SRC)/util.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/util.c
+
+getopt.o: $(SRC)/getopt.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/getopt.c
+
+sigcompat.o: $(SRC)/sigcompat.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/sigcompat.c
+
+#============================================================
+
+lstAppend.o: $(SRC)/lst.lib/lstAppend.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstAppend.c
+
+lstDupl.o: $(SRC)/lst.lib/lstDupl.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstDupl.c
+
+lstInit.o: $(SRC)/lst.lib/lstInit.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstInit.c
+
+lstOpen.o: $(SRC)/lst.lib/lstOpen.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstOpen.c
+
+lstAtEnd.o: $(SRC)/lst.lib/lstAtEnd.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstAtEnd.c
+
+lstEnQueue.o: $(SRC)/lst.lib/lstEnQueue.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstEnQueue.c
+
+lstInsert.o: $(SRC)/lst.lib/lstInsert.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstInsert.c
+
+lstAtFront.o: $(SRC)/lst.lib/lstAtFront.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstAtFront.c
+
+lstIsAtEnd.o: $(SRC)/lst.lib/lstIsAtEnd.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstIsAtEnd.c
+
+lstClose.o: $(SRC)/lst.lib/lstClose.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstClose.c
+
+lstFind.o: $(SRC)/lst.lib/lstFind.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstFind.c
+
+lstIsEmpty.o: $(SRC)/lst.lib/lstIsEmpty.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstIsEmpty.c
+
+lstRemove.o: $(SRC)/lst.lib/lstRemove.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstRemove.c
+
+lstConcat.o: $(SRC)/lst.lib/lstConcat.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstConcat.c
+
+lstFindFrom.o: $(SRC)/lst.lib/lstFindFrom.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstFindFrom.c
+
+lstLast.o: $(SRC)/lst.lib/lstLast.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstLast.c
+
+lstReplace.o: $(SRC)/lst.lib/lstReplace.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstReplace.c
+
+lstFirst.o: $(SRC)/lst.lib/lstFirst.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstFirst.c
+
+lstDatum.o: $(SRC)/lst.lib/lstDatum.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstDatum.c
+
+lstForEach.o: $(SRC)/lst.lib/lstForEach.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstForEach.c
+
+lstMember.o: $(SRC)/lst.lib/lstMember.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstMember.c
+
+lstSucc.o: $(SRC)/lst.lib/lstSucc.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstSucc.c
+
+lstDeQueue.o: $(SRC)/lst.lib/lstDeQueue.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstDeQueue.c
+
+lstForEachFrom.o: $(SRC)/lst.lib/lstForEachFrom.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstForEachFrom.c
+
+lstDestroy.o: $(SRC)/lst.lib/lstDestroy.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstDestroy.c
+
+lstNext.o : $(SRC)/lst.lib/lstNext.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(SRC)/lst.lib/lstNext.c
+

@@ -1,0 +1,186 @@
+#ifndef _acs_CASADEF_IDL_
+#define _acs_CASADEF_IDL_
+/*
+The purpose of the aipsdef.idl is to mimic some of the glish constructs that we
+use in CASA
+
+So  CasaRecord ---> GlishRecord
+
+As glish records are composed of "fields", an CasaRecord is essentially a sequence
+of CasaFields.
+
+Each field in a glish record can be a "value" or a record.  Similarly we define an
+CasaField to contain a name, a comment, a value.  The value is further obscurred 
+by having additional information, namely it's type, it's shape, almost actual
+data, and a flag as to whether the value is "unset"
+
+The actual data is held in a sequence of CasaDatum's oddly enough called CasaData.
+Typically we will only have one CasaDatum in the CasaData and it will be contained
+in the CasaDatum IDL union.
+
+I figure I need to write a couple generic python functions:
+
+1) toaipsfield(name, value), which returns an CasaField and hides all the
+                            ugliness  I just described.
+
+2) toaipsvalue(value), which will turn a regular value into an CasaValue
+
+3) getvalue(CasaField), which will return an "array" or scalar value
+
+Given these three functions, we should be able to translate those methods that useGlishRecords from glish to python relatively straight forward.
+
+*/
+
+#include <baci.idl>
+#include <acscomponent.idl>
+
+#pragma prefix "alma"
+
+module CASA
+{
+
+struct complex {
+   float re;
+   float im;
+};
+
+struct dcomplex {
+   double re;
+   double im;
+};
+	// Standard Vector definitions
+
+typedef sequence<short>    ShortVec;
+typedef sequence<unsigned short>    UShortVec;
+typedef sequence<long>    IntVec;
+typedef sequence<unsigned long>    UIntVec;
+typedef sequence<long>    LongVec;
+typedef sequence<unsigned long>    ULongVec;
+typedef sequence<string>  StringVec;
+typedef sequence<double>  DoubleVec;
+typedef sequence<float>   FloatVec;
+typedef sequence<complex>   ComplexVec;
+typedef sequence<dcomplex>  DComplexVec;
+typedef sequence<char>    CharVec;
+typedef sequence<boolean> BoolVec;
+
+   enum CasaFieldType {
+       ATYPE_Bool,
+       ATYPE_Char,
+       ATYPE_UChar,
+       ATYPE_Short,
+       ATYPE_UShort,
+       ATYPE_Int,
+       ATYPE_UInt,
+       ATYPE_Long,
+       ATYPE_ULong,
+       ATYPE_Float,
+       ATYPE_Complex,
+       ATYPE_Double,
+       ATYPE_DComplex,
+       ATYPE_String,
+       ATYPE_Table,
+       ATYPE_Record,
+       ATYPE_ARR_Bool,
+       ATYPE_ARR_Char,
+       ATYPE_ARR_UChar,
+       ATYPE_ARR_UShort,
+       ATYPE_ARR_Short,
+       ATYPE_ARR_Int,
+       ATYPE_ARR_UInt,
+       ATYPE_ARR_Long,
+       ATYPE_ARR_ULong,
+       ATYPE_ARR_Float,
+       ATYPE_ARR_Complex,
+       ATYPE_ARR_Double,
+       ATYPE_ARR_DComplex,
+       ATYPE_ARR_String,
+       ATYPE_Other
+   };
+
+   interface CasaRecord;
+
+   union CasaDatum switch(CasaFieldType){
+       case ATYPE_Bool:       boolean boolVal;
+       case ATYPE_Char:      char charVal;
+       case ATYPE_UChar:      char ucharVal;
+       case ATYPE_Short:      short shortVal;
+       case ATYPE_UShort:      short ushortVal;
+       case ATYPE_Int:        long intVal;
+       case ATYPE_UInt:       unsigned long uintVal;
+       case ATYPE_Long:       long longVal;
+       case ATYPE_ULong:      unsigned long ulongVal ;
+       case ATYPE_Float:      float floatVal;
+       case ATYPE_Complex:    complex complexVal;
+       case ATYPE_Double:     double doubleVal;
+       case ATYPE_DComplex:   dcomplex dcomplexVal;
+       case ATYPE_String:     string stringVal;
+       case ATYPE_Table:     string tableVal;
+       case ATYPE_Record:     CasaRecord recordVal;
+       case ATYPE_ARR_Bool:   BoolVec boolArr;
+       case ATYPE_ARR_Char:   CharVec charArr;
+       case ATYPE_ARR_UChar:  CharVec ucharArr;
+       case ATYPE_ARR_Short:  ShortVec shortArr;
+       case ATYPE_ARR_UShort:  UShortVec ushortArr;
+       case ATYPE_ARR_Int:    IntVec intArr;
+       case ATYPE_ARR_UInt:   UIntVec uintArr;
+       case ATYPE_ARR_Long:   LongVec longArr;
+       case ATYPE_ARR_ULong:  ULongVec ulongArr;
+       case ATYPE_ARR_Float:  FloatVec floatArr;
+       case ATYPE_ARR_Complex:  ComplexVec complexArr;
+       case ATYPE_ARR_Double: DoubleVec doubleArr;
+       case ATYPE_ARR_DComplex:  DComplexVec dcomplexArr;
+       case ATYPE_ARR_String: StringVec stringArr;
+   };
+
+   typedef sequence<CasaDatum> CasaData;
+
+   struct CasaValue {
+	CasaFieldType type;
+        IntVec    shape;
+	CasaData  value;
+        boolean   unset;
+   };
+
+/*
+   interface CasaValue {
+       void          puttype(in CasaFieldType type);
+       void          putvalue(in CasaFieldType value);
+       CasaFieldType gettype();
+       CasaDataValue getvalue();
+   };
+*/
+
+   struct  CasaField  {
+      string         fieldname;
+      string         comment;
+      CasaValue      value;
+   };
+
+   typedef sequence<CasaField> CasaFieldVec;
+
+   interface CasaRecord : ACS::ACSComponent {
+        // attribute string    recordname;
+        // attribute string    comment;
+        // attribute CasaFieldVec fields;
+        void      addField(in CasaField theField);
+        void      setFields(in CasaFieldVec theFields);
+        void      setName(in string recordname);
+        void      setComment(in string comment);
+        string    getName();
+        string    getComment();
+        long      nelements();
+        CasaValue getField(in long id);
+        CasaValue getFieldFromName(in string theField);
+        CasaFieldVec getFields();
+   };
+
+
+   struct CasaArray {
+       CasaFieldType type;
+       IntVec        shape;
+       CasaData      value;
+   };
+};
+
+#endif

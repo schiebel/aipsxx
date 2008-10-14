@@ -1,0 +1,230 @@
+% ADASS paper on AIPS++ table system
+% Ger van Diepen, NFRA, Dwingeloo
+
+\documentstyle[11pt,paspconf]{article}
+\input epsf
+
+\begin{document}
+
+\title{AIPS++ Table Data System}
+
+\author{G. van Diepen}
+\affil{Netherlands Foundation for Research in Astronomy,
+    P.O.Box 2, 7990 AA  Dwingeloo, The Netherlands}
+
+\begin{abstract}
+The AIPS++ data system is based on tables, which can be mapped
+to different file formats. It allows for a uniform interface to
+all data files. Each column or row in a table can be handled
+as an ordinary vector.
+An X-based browser allows a user to view and possibly edit all
+data items in the table. Selection and sorting on rows and
+columns is possible using an SQL-like language.
+The system is written in C++. Two coding examples are given to show
+the ease of use of the table classes and the C++ language.
+\end{abstract}
+
+\keywords{AIPS++, C++, X11, files, tables, virtual tables, vectors}
+
+\section{Introduction}
+
+AIPS++ is currently being developed by an international consortium
+of mainly radio astronomical institutes. It will almost entirely
+be written in C++. It was decided in an early
+stage that the data system should be based on tables. They offer
+great flexibility and can be mapped to different file formats (e.g. FITS).
+It also allows that common tools can be used for all data files.
+For example, an X-based table browser has been developed. This tool
+enables a user to view and possibly edit all data in any table.
+
+In November 1993 a beta release of the available AIPS++ code will be
+announced, which contains the first version of the table system.
+This version already has a rich functionality, but the (well
+encapsulated) underlying IO-system is rather simple minded.
+In the next months a more sophisticated IO-system will be developed
+The TexInfo file Database.texi in the beta release contains a manual
+describing how to use the table classes.
+
+\section{Table Model}
+
+The table model is based on the FITS binary tables. It has, however,
+some extensions to increase the flexibility. An AIPS++ table consists of:
+\begin{itemize}
+\item
+A set of keywords (similar to FITS headers).
+\item
+A set of columns.
+\item
+Each table keyword or column can have a set of keywords attached to it.
+These keywords are useful to store, for example, a unit or FITS items
+crval, crpix, etc..
+\item
+Each keyword or cell in a column can hold a scalar, an N-dimensional
+array or a table. The latter allows for a hierarchy of tables.
+\item
+All built-in data types (Bool, int, float, etc.) are supported as well as
+strings and complex numbers (classes String and (D)Complex).
+\item
+A keyword or column containing arrays or tables can be direct or
+indirect. The data of a direct array or table is directly stored in
+the table cell. The shape of direct arrays and tables must be the same
+in all cells of a column, because each row in a table must have the
+same length.
+In case of indirect arrays or tables, the table cells only contain a
+reference to the array or table. Henceforth, their shape (and
+dimensionality) may vary per cell. 
+\end{itemize}
+
+\section{Kinds of Tables}
+
+The ordinary kind of table is the so-called filled table. All data in
+it is mapped to files using a storage manager. Multiple storage
+managers may exist to support multiple file formats.
+Currently only the simple AipsIO file format is used, but
+in the near future other formats like FITS or Karma (developed by
+Richard Gooch at CSIRO) will be used. All data is stored in a canonical
+format to allow easy sharing between different machines.
+
+Virtual tables, on the contrary, will perform some kind of mapping
+between the table data and the possibly underlying files. Examples
+of virtual tables are:
+\begin{itemize}
+\item
+A reference table contains the result of a selection, projection or
+sort. It only contains references to the appropriate rows and columns
+in the actual table.
+\item
+A simulated observation can be calculated on the fly. Only its
+parameters needs to be stored in a file.
+\end{itemize}
+
+The application programmer and end user will in principle see no
+difference between the various kinds of tables. The differences
+are hidden in the lower level classes. The top level classes,
+which form the interface to the application programmer, offer
+the same consistent interface to all kinds of tables.
+
+There can be a wide variety of virtual tables. A new kind of
+virtual table has to be derived from the base tables classes
+and implemented by the programmer.
+
+\section{Table interface}
+The entire table system consists of many classes, but only a few
+of them are of interest to the application programmer. They are
+described in detail in the manual mentioned in the introduction.
+They make use of the many classes in the AIPS++ toolkit and of
+many features of the C++ language (like templates and overloaded
+operators).
+
+The main operations a programmer can perform are:
+\begin{itemize}
+\item
+Accessing values in an arbitrary keyword, column and row.
+\item
+Accessing slices of an array.
+\item
+Getting and putting an entire column.
+\item
+Selecting and sorting rows
+\item
+Handling columns and rows as vectors for mathematical operations on them.
+\item
+Iterating through a table in any order.
+\end{itemize}
+
+Below two examples using the table classes are given to show the
+power of the table classes and the C++ language.
+\begin{verbatim}
+
+// Select and sort the data from an existing table.
+
+#include <aips/Table.h>
+#include <aips/TabExprNode.h>  // for select expression
+
+main()
+{
+// Open an existing table.
+// Select the rows for which U*U + V*V < 1.
+// It uses the overloaded operators *, + and <.
+// Sort the result on time (default is ascending).
+//
+    Table tab("table.name");
+    Table seltab = tab(tab.col("U") * tab.col("U") +
+                       tab.col("V") * tab.col("V") < 1);
+    Table sortab = seltab.sort ("time");
+}
+
+
+// Example of use of table vectors.
+
+#include <aips/Table.h>
+#include <aips/TableVector.h>
+#include <aips/TabVecMath.h>   // for math on TableVector
+main()
+{
+// Open the table; allow for updates.
+// Create a table vector for column time.
+//
+    Table tab("table.name", Table::Update);
+    TableVector<float> timetv(tab,"time");
+//
+// Update the vector.
+// This also updates the values in column time in the table.
+//
+    timetv = 2*timetv + 10;
+}
+
+\end{verbatim}
+
+So far, most attention has been paid to the programmer's interface.
+A few tools have been developed for the end user, but in the near
+future more attention will be paid to this.
+\begin{itemize}
+\item
+An SQL-like prototype language has been developed
+(using the GNU-tools bison and flex), which allows to perform a
+selection or sort on a table.
+\item
+A X-based table browser is written to interactively view the
+contents of a table. If possible, one can also change the contents.
+It uses the above mentioned SQL-like language to 
+make it possible to browse only through a subset of a table.
+\item
+A simple table filler has been written to create a table from an
+ASCII file. This is mainly useful to create some prototype tables.
+\end{itemize}
+
+\section{Conclusions}
+Now that the astronomical classes are being designed and developed, it
+appears that the AIPS++ table system is indeed very useful.
+At the lower class level a lot of work still has to be done, but
+the high level table classes are stable now. However, they are not
+used enough yet to decide if they are sufficiently complete.
+
+C++ is a powerful language, albeit with its syntactical peculiarities.
+Especially the template mechanism is a very powerful feature. However, it
+is at the moment also a weakness of the language, because the
+available compilers
+cannot handle them efficiently yet. A link of a program can be a very
+time-consuming, and therefore sometimes frustrating process when
+many templates have to be instantiated.
+
+
+\acknowledgments
+
+Allen Farris (STScI, Baltimore) made the original design of the table model.
+
+Working with Brian Glendenning and Darrell Schiebel at NRAO
+in Charlottesville meant a giant step forwards on the path to
+mastering C++.
+
+Rick Copeland (a summer student) designed and implemented the table
+browser using the Interviews package.
+
+Bob Duquet (NRAO, Socorro) wrote some very useful functions to create
+a table from an ASCII file.
+
+Several other people gave good advice to make the table classes and
+documentation easier accessible.
+
+\end{document}

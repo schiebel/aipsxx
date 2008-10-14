@@ -1,0 +1,205 @@
+\section{Data editing}
+\label{GRediting}
+
+% TBD: Something should be added to describe Oleg's autoflag.
+
+Command-based, interactive and automated editing capabilities are
+supported in the \flagger\ tool. 
+
+To start the \flagger\ tool, type the following:
+
+\small
+\begin{verbatim}  
+
+fg:= flagger(msfile='mydata.ms')        # start the flagger tool
+
+\end{verbatim}
+\normalsize
+
+\subsubsection{Direct (command-based) editing}
+
+The \flagger\ tool offers several directed editing (flagging)
+operations.  In general, this involves selecting the data to be
+flagged (based in indices, timeranges, etc.), then running a flagging
+operation.  The flagging commands all have the option to run them on a
+trial basis.  To flag data from antenna=5, spw=1, field=2, within a
+timerange:
+
+\small
+\begin{verbatim}
+fg.setantennas(ants=5)                       # Select data including antenna 5
+fg.setids(spectralwindowid=1,fieldid=2)      # Select spectral id and field id
+fg.settimerange(starttime="24-FEB-2000/10:00:05",  # Select timerange
+                  endtime="24-FEB-2000/10:09:37");   
+fg.state();                                  # Review data selection   
+fg.flag(trial=T);                            # Trial run to see how many rows
+                                             #   will be flagged
+fg.flag();                                   # Flag it
+\end{verbatim}
+\normalsize
+
+\noindent
+To reset the data selection, type:
+
+\small
+\begin{verbatim}
+fg.reset();
+\end{verbatim}
+\normalsize
+
+\noindent
+To flag data from baseline 3-4, spw=2, field=1, within $\pm$10s of a
+timestamp:
+
+\small
+\begin{verbatim}
+fg.setbaselines(ants=[3,4])                  # Select data for baseline 3-4
+fg.setids(spectralwindowid=2,fieldid=1)      # Select spectral id and field id
+fg.settime(centertime="24-FEB-2000/10:00:05",  # Select time and range
+           delta="10s");
+fg.state();                                  # Review data selection   
+fg.flag();                                   # Flag it
+\end{verbatim}
+\normalsize
+
+The logic in the data selection options is as follows.  The two
+time-related data selection options (set by \flagsettimerange\ and
+\flagsettime) are logically OR'd together, and the two
+antenna-related data selection options (set by \flagsetantennas\ and
+\flagsetbaselines\ are also logically OR'd.  The net time selections,
+net antenna selections, and all other selections are then AND'd
+together.  Note that the data selection persists after the flagging
+operation \flagflag\ is executed.  To clear the selection, execute
+the \flagreset\ function, or execute individual selection commands
+without arguments to clear only that particular selection.  For
+example, to flag all data to antenna 11 for the same spectral window,
+field, and timestamp as for baseline 3-4 above:
+
+\small
+\begin{verbatim}
+fg.setbaselines();                # Clears baseline selection
+fg.setantennas(ants=11);          # Select antenna 11
+fg.state();                       # Review data selection
+fg.flag();                        # Flag it
+\end{verbatim}
+\normalsize
+
+To unflag data based on a selection, use the \flagunflag\ function.
+For example, to restore data for baseline 11-15 (that was flagged
+above):
+
+\small
+\begin{verbatim}
+fg.setantennas();                 # Clears antenna selection
+fg.setbaselines(ants=[11,15]);    # Select baseline 11-15
+fg.state();                       # Review data selection (note 
+                                  #  other selections still in
+                                  #  effect)
+fg.unflag();                      # undo previous flags
+\end{verbatim}
+\normalsize
+
+Note that use of \flagunflag\ may restore data that had been flagged
+by other means (e.g., by the on-line system, or by other criteria in
+previous use of \flagger\ or \msplot).  In the near future, a
+flexible means of manipulating flagging versions will be made
+available in \aipspp.
+
+Consult the \flagger\ tool documentation for more information on the
+details of data selection.
+
+\subsubsection{Heuristic editing}
+
+Several simple heuristic editing methods are available in the \flagger\
+tool.  These methods act on the data selected as described above, but
+add an additional heuristic constraint.
+
+For example, it is usually desirable to flag the auto-correlation data
+from the VLA (otherwise, the \imager\ tool may attempt to use it
+in image formation as if it were single dish data).  To do this:
+
+\small
+\begin{verbatim}
+fg.reset();                   # Reset the data selection
+fg.flagac();                  # Flag the auto-correlations
+\end{verbatim}
+\normalsize
+
+It is often the case that the VLA data near the beginning of scans
+(e.g.  after field or frequency band changes is bad.  To flag such
+data, use the \flagquack\ function.  For example, to remove 20
+seconds of data at the beginning of scans (defined by gaps larger than
+30 seconds) on field 3:
+
+\small
+\begin{verbatim}
+fg.reset();                   # Reset the data selection
+fg.setids(fieldid=3);         # Limit quack to fieldid=3 only
+
+fg.quack(scaninterval='30s',  # Trial run of quack
+         delta='20s',
+         trial=T);
+
+fg.quack(scaninterval='30s',  # Quack it
+         delta='20s');
+\end{verbatim}
+\normalsize
+
+
+Automated editing methods are available in the \flagger\ and \autoflag\
+tools.  These include clipping, median flagging and related methods.
+
+For example, to clip data outside of a specified amplitude range with
+the \flagger\ tool:
+
+\small
+\begin{verbatim}
+fg.setids(fieldid=2, spwid=[1,2]);    # Select field, spw
+fg.setpol(pol=[1,4]);                 # Select polarizations 1,4
+                                      #  (e.g., RR and LL)
+fg.filter(column='DATA',              # Flag data if, DATA column
+          operation='range',          #   Amplitudes are outside
+          comparison='Amplitude',     #   1.12-1.34
+          range=['1.12Jy','1.34Jy'],
+          fullpol=T,                  # Extend flags to pols and
+          fullchan=T);                #  and chans that weren't 
+                                      #  tested
+\end{verbatim}
+\normalsize
+
+The \autoflag\ tool has more sophisticated algorithms. Examples of
+its use will be included here in the near future.
+
+\subsubsection{Finishing flagger}
+
+To finish the \flagger\ tool:
+
+\small
+\begin{verbatim}
+fg.done();     # Done with flagging
+\end{verbatim}
+\normalsize
+
+
+
+\subsection{Interactive editing}
+
+Interactive editing is possible on almost all graphical views of the
+data which are possible in \msplot.  To enable the editing option, it
+is necessary to set parameter {\tt edit=T} when the \msplot\ tool is
+created.  The current set of flags will be saved (for possible
+restoration later).  Select and plot data as in non-editing mode, then
+draw boxes with the left mouse button to select regions to flag and
+press the {\tt Flag} button to flag it.  As many flag boxes as desired
+may be drawn before executing the flags.  Use the {\tt Locate} button
+to obtain a listing (in the {\tt logger}) of the data points within
+the box(es).  Note that the listing may be very long if the region
+selected covers a large number of visibility points.
+
+At this writing the channel and polarization flagging scope selections
+in {\tt msplot} will only work if you have elected to plot all channels
+and/or polarization.  This constraint will be relaxed in the near future.
+
+Raster displays of visibility data are possible also, and maybe useful
+for spectral line data editing.
+

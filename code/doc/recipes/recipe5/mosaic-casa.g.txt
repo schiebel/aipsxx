@@ -1,0 +1,34 @@
+include 'ms.g'					# Include the ms tool
+include 'imager.g'				# Include the imager tool
+
+dowait:=T					# Tell the tool system to
+						# wait for a function to finish
+
+m:=fitstoms('xcas.ms', 'XCAS-UV.fits');		# Convert to an MS
+m.summary(verbose=T);				# Get a summary of the MS
+m.close();					# Close the MS
+imgr:=imager('xcas.ms');			# Make an imager tool
+imgr.setdata(fieldid=1:7,spwid=1:2);		# Select all fields and
+						# spectral windows
+
+imgr.setimage(cellx='5arcsec', celly='5arcsec', nx=256, ny=256,
+	      spwid=1:2,mode="mfs",stokes='IV',fieldid=1)
+# Set image properties. Define the phase center to be that of field 1}
+imgr.make('xcas.clean');			# Make an empty image
+imgr.make('xcas.clean.mask');			# Make an empty image for the mask
+imgr.boxmask(mask='xcas.clean.mask', blc=[100,100,1,1],
+	     trc=[160,160,2,1])			# Set the mask to be 1 within blc, trc
+include 'catalog.g';
+dc.view('xcas.clean.mask')			# Display the clean image mask
+imgr.setoptions(dopb=T,cutoff=0.2);		# Turn on primary beam application
+imgr.weight('robust')				# Weight the data robustly
+imgr.uvrange(0, 10000)				# Set a uv range
+imgr.setscales('uservector', uservector=[0, 3, 10])
+						# Set the CLEAN scales
+imgr.clean(model='xcas.clean',mask='xcas.clean.mask',niter=300,gain=0.7,
+	   threshold='100mJy',algorithm='mfmultiscale')	# Make the clean image
+imgr.setbeam(bmaj='15arcsec', bmin='15arcsec')  # Set required beam size
+imgr.restore(model='xcas.clean');		# Restore it...
+dc.view('xcas.clean.restored');			# .. and display
+imgr.close()					# Close the imager
+imgr.done()					# Delete the imager tool

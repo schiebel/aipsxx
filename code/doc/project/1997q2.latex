@@ -1,0 +1,827 @@
+\documentclass[11pt]{article}
+\usepackage{html, epsf}
+\begin{document}
+\title{\bf AIPS++ Quarterly Report: 1997 Q2}
+\author{T.J. Cornwell, NRAO}
+\date{1997 July 15}
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+In the second quarter of 1997, we continued working in a wide variety
+of different areas. The main thrust was to prepare for future beta
+releases by, for example, fixing bugs, improving the performance of
+the synthesis code, and working towards a general graphical user
+interface. In addition, we continued development of the single dish
+package. We also gave a number of presentations about AIPS++ in
+various meetings.
+
+\section{Developments in 1997 Q2}
+
+In {\bf Single Dish support}, we continued the development of the
+Single Dish analysis program. This work, directed by Harvey Liszt, is
+aimed at creating a graphical user interface for quick interactive
+processing of single dish spectra and other one-dimensional or
+quasi-one-dimensional data sets. The current version of the program
+allows selection, averaging, baseline fitting, smoothing and application of
+a function to the data. It is tightly integrated with a plotter based upon
+the PGPLOT library. Browsing of records is well-supported, via either
+textual or graphical display. The Measures system is utilized to allow
+the user to choose the units and coordinates in the displays. A
+demonstration Glish script for the Single Dish analysis program has
+been checked in (as sddemo.g).
+
+The Parkes Multibeam project is now observing using software based
+in AIPS++. There has been no further substantial work from the AIPS++
+side to support this work.
+
+In {\bf Synthesis support}, as planned, we have re-written the
+gridding and FFT code to improve the performance for both spectral
+line and large continuum processing. Gridding is now performed using a
+novel sort-less algorithm. In this approach, the gridded plane is
+divided into small patches, a cache of which is maintained in memory
+using a general-purpose LatticeCache class. As the (time-sorted)
+visibility data move around slowly in the Fourier plane, patches are
+swapped in and out as necessary. Thus, optimally, one would keep at
+least one patch per baseline.  The FFT classes were also rewritten to
+perform multi-dimensional disk-based transforms. Since the AIPS++
+Table system has excellent support for efficient tiled access of
+large, multi-dimensional datasets, this FFT code was extremely
+straightforward to write. Optimization of both gridding and FFT
+support required some tuning changes to the basic underlying
+libraries, such as the choice of tile shapes for Images, and
+modifications to the Table locking strategy.
+
+We also changed the synthesis code by adding support for off-line
+Doppler tracking, by improving speed of access to the MeasurementSet
+by avoiding unnecessary re-formatting, and by simplifying the way that
+model and calibrated data are handled in the MeasurementSet.
+
+In April, we held a mini-review of the state of the synthesis code,
+specifically of the capabilities of the current implementation of the
+Measurement Equation. An alternative implementation, the so-called
+``MEGI Number Servers'', had been prototyped by Noordam and van
+Diepen. Although this has some attractions for particular types of
+processing, we decided to stay with the current implementation until a
+deficiency is demonstrated. In a discussion of the applications areas
+that the synthesis code will have to support, no deficiency was
+discovered. We plan to continue this review process over the next few
+months with the help of Bob Sault. In addition, Brian Glendenning
+will conduct a review of the C++ design of the classes.
+
+In {\bf Measures}, we have spent considerable effort considering how
+the data tables needed for the Measures system are to be distributed
+and updated. This initiative has been spear-headed by Wim Brouw.
+The implications for AIPS++ are quite large and a sufficiently-detailed
+proposal has taken much discussion. We expect to implement this
+over the next few months. AIPS++ will then contain mechanisms for
+delivering not only data needed for internal testing, but data needed
+for a multitude of purposes.
+
+In {\bf Glish support}, our main activity was to respond to bug
+reports.  This generated a number of substantial changes. The
+transport layer in Glish was re-written to correct a number of
+deficiencies. Trapping of floating point signals was introduced, with
+considerable difficulty on Dec Alpha machines. A long-standing but
+evidently seldom-triggered event blocking bug was fixed. We also
+completed support for the binding of the PGPLOT widget (kindly
+provided by Martin Shepherd of Caltech) to Glish. In addition, a
+number of minor Glish language issues were addressed ({\em e.g.}
+conversion of strings to booleans).
+ 
+In {\bf AIPS++ Infrastructure}, our work continues to be driven by the
+needs of applications development.  Thus in the Table system, we added
+a moderate number of changes as needed by applications
+development. For example, as we had known would be necessary, we added
+Table locking to allow access to Tables by multiple processes ({\em
+e.g.} one writer and multiple readers). The Distributed Object system
+has been revised to allow support for locking. Another example of a
+change required for applications development is the additional of
+caching to the Incremental Storage Manager, thus considerably speeding
+access to Table columns stored using this manager.
+
+We also continue to develop a graphical user interface for standard
+AIPS++ Distributed Objects, based upon the tk widgets now bound to
+Glish. The prototype allows interaction with the Image Distributed
+Object that provides access to and manipulation of AIPS++ Images from
+Glish.  An additional component of the interface is a general purpose
+plotter, based upon PGPLOT, that can be used from both Glish and C++
+programs.  This plotter has a display list that can be edited
+interactively by the user, thus allowing great flexibility in the
+plots that can be generated. These GUIs are based upon a flexible
+record-based GUI factory that we expect to be useful in other contexts.
+
+We have developed a system for invoking AIPS functionality from
+within AIPS++. This is based upon a quite general client-server
+mechanism that has a number of possible applications, but currently
+we can use it to start AIPS tasks. The record-based GUI described in
+the previous paragraph has been used to provide a GUI interface to
+AIPS tasks. 
+
+In {\bf Visualization and Image Analysis}, we continued development of the
+image display library, a joint undertaking of ATNF (Tom Oosterloo) and
+BIMA/NCSA (John Pixton). We expect the first applications using the library
+to be developed in the next quarter. More information on this work can
+be found in the ATNF contribution below.
+
+We have continued performing bug fixes to aipsview, which we intend to
+remain as the workhorse image display application for some time. We
+have also added a number of new capabilities, such as the ability to
+annotate curvi-linear coordinates. In addition, the User Manual has
+been revised and improved.
+
+In the {\bf System} area, we started (and are closing to finishing) a port
+to the IRIX native compiler, including optimizations for parallelization.
+
+We also started an evaluation of the Kuck and Associates C++ compiler. This
+includes a number of optimizations not present in other C++ compilers and
+may improve the performance of our code. If this is successful, we plan
+to use this compiler for generating binaries for distribution.
+
+In {\bf Documentation}, we continued adding material to the Reference manual
+and conducted a review of the documentation therein. 
+
+In {\bf Management}, this last quarter was an especially busy time for
+meetings at meetings. In early April, we held a number of very useful
+intra-Project discussions in Socorro. These covered a number of topics
+that are hard to discuss other than in person. 
+
+The following presentations to external groups were made:
+
+\begin{description}
+\item[NRAO Visiting Committee] This consisted of a talk and a demonstration by
+Cornwell and Liszt. A standard script for a demonstration has been
+developed and checked into the system as  \htmladdnormallink{Note
+205}{http://aips2.nrao.edu/aips++/docs/notes/205/205.html}. Liszt
+demonstrated the prototype of the Single Dish analysis program.
+\item[AUI Board of Trustees] A talk on the progress in AIPS++ was made by Cornwell.
+\item[NRAO Users Committee] A talk and a demonstration were given by Cornwell,
+Glendenning and Liszt. Cornwell showed the standard demonstration,
+plus a prototype of the AIPS/AIPS++ interface that Kemball and Young
+developed. Glendenning showed a prototype of the graphical user
+interface that he is developing for standard AIPS++ Distributed
+Objects. Liszt showed the Single Dish analysis program that he,
+Garwood and Uphoff have been working on.
+\item[Talk at SAO] Cornwell gave a talk on AIPS++ to the radio-astronomy group, and conducted discussions
+on the possible use of AIPS++ for the SMA.
+\item[Presentation and demonstrations at IAU 164] Cornwell gave an invited talk on AIPS++,
+and Cornwell and Marson gave demonstrations to a large number of people.
+\end{description}
+
+As described in the BIMA/NCSA contribution, Tim Cornwell and Gareth
+Hunt attended a meeting of the newly-reorganized (and re-funded) NCSA
+(shortly to be renamed the National Computational Sciences Alliance),
+NRAO is a strategic partner in the Scientific Instruments Applications
+Team.  This brings extra personnel to the AIPS++ Project (since we
+plan to hire a person to work on parallelization), a high-speed link
+to NCSA from NRAO, and access to the considerable knowledge and
+facilities of the NCSA.
+
+Tim Cornwell and Gustaaf van Moorsel have made progress towards an
+Operations plan for AIPS++: \htmladdnormallink{Note
+205}{http://aips2.nrao.edu/aips++/docs/notes/209/209.html}.
+
+\section{Beta release}
+
+Progress on the next beta release has been less than anticipated.
+This delay is largely due to personnel overloading. Currently only a
+couple of project members are sufficiently knowledgable about the
+synthesis code to be able to make the changes to the gridding
+and FFT routines that were required, and both of
+these people (Tim Cornwell and Mark Wieringa) had conflicting
+priorities. We plan to address this particular bottleneck by
+allocating Wim Brouw and Athol Kemball to work on synthesis
+development. In principle, the new hire in Socorro will also be
+available for synthesis development but we have, as yet, had no
+success in finding someone suitable for this position.
+
+As a result, the next beta release has been delayed from May to July.
+The time-line is now as follows:
+
+\begin{description}
+\item[AIPS++ V0.8 {\em 26 Feb 97}]: First beta release
+\begin{itemize}
+\item Continuum synthesis imaging and self-calibration,
+\item General Glish-based tools.
+\end{itemize}
+\item[AIPS++ V0.9 {\em July 97}]: Second beta release
+\begin{itemize}
+\item Rectify remaining problems in V0.8
+\item Spectral line additions to synthesis processing,
+\end{itemize}
+\item[AIPS++ V0.95 {\em September 97}]: Third beta release
+\begin{itemize}
+\item Rectify remaining problems in V0.9
+\item Improvements to the user interface, specifically via a number of
+GUI-based applications such as the Image GUI and the Single Dish 
+analysis program.
+\end{itemize}
+\item[AIPS++ V1.0 {\em December 97}]: Limited Public Release
+\begin{itemize}
+\item First publicly available release of AIPS++.
+\end{itemize}
+\end{description}
+
+Comments on the release continue to come in. Some more organizations
+have joined as beta test sites: NRL has delivered very useful
+comments, and MPIfR has just started to use the system.
+
+\section{Developments planned for 1997 Q3}
+
+The principal activity for the next quarter will be support of
+beta testing, and preparation of the next release.
+
+In {\bf Single Dish support}, we will continue development of the
+Single Dish analysis program, with the goal of making this part of
+the third beta release.
+
+In {\bf Synthesis support}, we will continue development of the
+synthesis code, starting the design of a fully-fledged calibration
+system using the current Measurement Equation implementation. We will
+finish a visibility data visualizer being developed by Noordam.
+We will add the various capabilities needed for dealing with list
+of discrete components, as needed for WSRT calibration.
+
+In {\bf Measures}, we will implement the data distribution scheme now
+under discussion. We will incorporate JPL planetary data in the
+Measures system. We will add support for Measures in Tables.
+
+In {\bf Glish support}, we will continue to fix bugs as they occur in
+testing. We will issue release 2.6 of Glish.
+
+In {\bf AIPS++ Infrastructure}, we will continue to track the needs of
+applications programmers. We plan a number of revisions to the Lattice,
+Image, and Table classes. We will improve the table browser.
+
+In {\bf Visualization and Image Analysis}, we will continue development
+of the image display library. We expect to have a complete design
+and description, an implementation of the major components, and some
+example applications.
+
+In the {\bf System} area, we will complete the port to the KAI compiler.
+We will simplify and consolidate the disposition of Glish script files
+in the code management system.
+
+In {\bf Documentation}, we expect to make progress on the intermediate level
+documentation requested by our beta testers (cookbooks and migration guides).
+
+In {\bf Management}, we will demonstrate AIPS++ at the ADASS in Germany in September
+and conduct an ADASS Birds-Of-a-Feather session on AIPS and AIPS++. We will give talks
+on AIPS++ at Jodrell Bank and MPIfR, Bonn. We will proceed with the planned name change.
+We will complete the operations plan.
+
+\section{Appendix: ATNF contribution {\em  Neil Killeen}}
+
+\noindent 
+{\bf People}
+
+
+The ATNF currently has 4 people working in AIPS++.  These are Neil
+Killeen (25-75\%, also local manager), Wim Brouw (90\%), Tom Oosterloo
+(75\%) and Mark Wieringa (30\%).  Additionally, there is a collaboration
+between the AIPS++ project and the ATNF headed Parkes 21cm multibeam
+receiver project which is contributing substantial effort to using and
+developing code within the AIPS++ environment. 
+
+As noted in the previous report, Tom Oosterloo will leave the project to
+return to Italy.  He will in fact be in Italy for all of July, and then
+return to the ATNF in the second week of August and remain until the end
+of September, before finally departing.  His position has been
+readvertised, and we are currently in the selection process. 
+
+\bigskip
+\noindent 
+{\bf System}
+
+\begin{itemize}
+
+
+\item In the last report I described trouble we were having trouble
+getting AIPS++ running on our Digital Unix Alpha at Narrabri following
+an operating system upgrade.  Finally, these problems were resolved
+with a mixture of AIPS++ changes and OS patches.   These problems
+extended over several months.
+
+\item We still have not installed AIPS++ on our Silicon Graphics Power
+Challenge.  this is because the GNU compiler failed badly with an
+internal error during the installation that we could not work around. 
+This error was duly reported to the GNU project (a black hole).  Doug
+Roberts at NCSA has finished the first pass at the Native compiler
+installation so we will proceed with that now in the coming weeks. 
+
+\item The weekly inhales have been broken rather too much lately for our
+(everybody's) liking.  This has been mainly human error.  I tend to think this
+reflects at least two facts.  1) People in the project work very hard
+and very long and under some not insubstantial pressure, and are making
+some errors.  2) The complexity of the system sometimes prevents you
+from detecting errors that might occur at another consortium site (or
+even your own) when you test your changes. 
+
+\end{itemize}
+
+
+\noindent {\bf Visits}
+
+In mid April, Neil Killeen, Tom Oosterloo and Mark Wieringa visited the
+AOC in Socorro.  In addition, Jan Noordam and Ger van Diepen (NFRA) and
+John Pixton (NCSA) attended this meeting.  We discussed a variety of
+issues ranging from implementation of the Measurement Equation, the
+display library and image analysis implementations.  We all found this
+meeting very valuable and I can only recommend that we try to do it more
+often.  The ratio of time that it takes to negotiate complex issues or
+solve complex problems when undertaken with email compared with face to
+face is close to infinity.  We particularly enjoyed the Tequila at Tim's
+party... 
+
+John Pixton has been visiting the ATNF for all of June to work on the
+display library design and implementation with Tom Oosterloo.
+
+\bigskip
+\noindent {\bf Display Library}
+
+It is probably useful to summarize the status of the display library
+that Tom Oosterloo and John Pixton are working on at this point since
+they will both depart the project in the next few months. 
+
+The design is now essentially fully fleshed out with no remaining
+``perceived'' hard problems to solve.  Implementation of the library
+from the pixel canvas level and below is essentially complete (with an
+X11 implementation).  Work is now focussing on the higher level classes
+above the pixel canvas notably the world canvas, world canvas holder and
+display data classes (the pixel canvas is usable now if you don't care
+about the handling of coordinates; this is what the world canvas looks
+after).  The world canvas should be essentially finished within the next
+2-3 weeks (as of end June).  Following that, as a test program, a
+colourmap editor using the world canvas will be made by John who will
+then work on coordinate labelling routines.  This will take us the end
+of July and early August.  On Tom's return from Italy in August Tom will
+continue working on the derived display data classes (currently raster
+display done, next is contours and then probably a volume renderer) plus
+the zoom and position handler. 
+
+The major areas that have not yet received substantial attention are the
+widget user interface and the integration with Glish and Glish/Tk (to
+enable users to call display library routines directly from Glish and to
+enable display library canvasses to be embedded in Glish/Tk widgets). 
+The widget user interface is basically straightforward.  The Glish/Tk
+integration is likely to be harder. 
+
+By the time Tom and John depart, we should have a) an essentially
+complete design and description of the design, b) an implementation of
+the major components, c) some example applications.  We will need to
+assess how far along the widgets and Glish integration will be in mid
+August. 
+
+
+\bigskip
+\noindent {\bf Individuals}
+
+\bigskip
+\noindent Wim Brouw's responsibility is mainly to designing and
+implementing the Measure and related classes.  His time has been spent
+as follows. 
+
+\begin{itemize}
+
+\item Half of the quarter was spent in Europe (holidays, conferences, visit NFRA).
+
+\item During the visit to NFRA Wim discussed a proposal to integrate the Table
+system with the Measures system with Ger van Diepen.  He also discussed
+Synthesis reduction techniques with Jan Noordam.
+
+\item Wrote a suite of new classes to separate the Measures as containers from the
+Measures as conversion engines, to be able to have Measure columns in Tables
+(as discussed with Ger above).  The Measures conversion system uses Tables to get 
+information (like leap-seconds; IERS  data etc)
+
+\item Made a change-proposal for the generic storage of data in AIPS++
+
+\item Made scripts to automatically download and generate Tables for leap seconds;
+IERS results and IERS(NEOS) predictions
+
+\item Spent an excessive amount of time (says Wim) on system problems and
+trying to use (for him) new parts of the system
+
+\end{itemize}
+
+
+\bigskip
+\noindent Tom Oosterloo is working on the display library.  Tom's time
+has been spent on
+
+\begin{itemize}
+
+\item Attended the week of AIPS++ workshops in Socorro in April.
+
+\item Continued to work on the design of the display library,
+getting to a much more detailed level than before. The discussions
+with John Pixton during the visit to Socorro were very useful in this
+respect (especially in solving many thorny problems to do with
+colourmaps).    
+
+\item The aim is that by July 1 the design of all the classes that would
+be part of a first release (Pixelcanvas, Colourmap, WorldCanvas,
+WorldCanvasHolder, DisplayData, ImageDisplayData) is basically done. 
+This target should be met, and John Pixton can continue working on
+implementing these classes whilst Tom is in Italy.  Presently, all of
+the above classes have an implementation (albeit rudimentary in some
+cases)
+
+\item The behaviour of some other classes (Zoom and Animator) is also defined. 
+
+\end{itemize}
+
+
+\bigskip
+\noindent Mark Wieringa works with Tim Cornwell implementing the Measurement
+equation.  Mark's time has been spent on
+
+\begin{itemize}
+\item Attended the week of AIPS++ workshops in Socorro in April.
+
+\item  Spent a lot of time on AIPS++/g++ problems on the DEC Alpha under
+Digital Unix 4.0.  After several weeks and lots of work by Darrell
+Schiebel things are now working ok.
+
+\item Worked on updates to the VisibilityIterator to
+allow direct access to the data and to allow velocity selection and
+on-the-fly Doppler correction. The initial implementation of the
+velocity selection was very slow, and Mark spent the remainder of the
+time on various optimizations. It now runs at acceptable speed.
+
+\item Modified the UVFitsFiller to reduce memory use and speeded up the
+VisIter initialization. 
+\end{itemize}
+
+
+\bigskip
+\noindent 
+Neil Killeen spends his AIPS++ time attending to local ATNF AIPS++ management 
+issues as well as generating image applications.     He spent his time on
+
+\begin{itemize}
+
+\item Attended the week of AIPS++ workshops in Socorro in April.
+
+\item A fair amount of work merging the new Coordinates classes with
+my image analysis classes.
+
+\item Reviewed the end-user documentation for the image module.  I ended
+up fixing some implementation problems as well as part of this process. 
+
+\item Converted image analysis classes to use disk-based Lattices
+instead of core-memory Lattices for the intermediate accumulation
+images (statistics, histograms etc).  
+
+\item Worked on an implementation of a scheme hatched in Socorro
+for hiding dirty details that appplication programmers should not have to 
+know when they want to iterate through an image in some optimal way.
+This worked well for the case I implemented so far, but is yet
+to be tested on real applications.
+
+\item Many discussions with Brian, Ralph and Ger about optimizing access speeds
+to images with regards tile shapes, cursor overhang and optimized iterator shapes.
+
+\item Added simple region selection (blc, trc) capability to analysis
+applications since it became available through the underlying Lattice
+classes.  We will get much more sophisticated than this ultimately.
+
+\item Added formatting capability to the Coordinates classes so that things
+like DirectionCoordinates can have nice HH:MM:SS.SS and DD:MM:SS.SS
+type formats for example.
+
+\item Redid most of the guts of ImageSummary (lists information about an
+image including coordinates) to use the Coordinate classes
+semi-polymorphically and use the new Coordinates formatters. 
+
+\item Began (just) code review of Lattice classes.
+
+\item Application to DIST for travel funding for AIPS++.
+
+\item Some arranging for Tim Cornwell's trip in July/August.
+
+\item Spent time on selection process to replace Tom Oosterloo.
+
+\item Produced quarterly report.
+
+
+\end{itemize}
+
+\section{Appendix: BIMA/NCSA contribution {\em  Dick Crutcher}}
+
+
+In May Tim Cornwell and Gareth Hunt of NRAO visited NCSA for an "all
+hands" meeting to plan activities for the National Computational
+Sciences Alliance, which the National Center for Supercomputing
+Applications will become in October as a result of being one of the two
+continuing NSF supercomputer centers.  NRAO is one of the strategic
+partners with NCSA in the Scientific Instruments Applications Team.  As
+a result, we expect NRAO to receive about \$250,000 per year in funding
+from the NCSA NSF grant for cooperative work on advanced scientific
+computing.  This will fund two people at NRAO for AIPS++ supercomputer
+development work and for distributed computing use of AIPS++, as well as
+high-speed network connection between Socorro, NM and Urbana, IL. 
+Additionally, we expect Dan Briggs (an expert in synthesis-imaging
+algorithm development and a former PhD student of Tim Cornwells) to
+join our group in Urbana in August for AIPS++ algorithm development
+work.
+
+We currently have 5 people (3.25 full-time equivalents) working on
+AIPS++:  Dick Crutcher (25\%), John Pixton (100\%), Harold Ravlin (100\%),
+Doug Roberts (75\%), and Peter Teuben (25\%).  Yanti Miao finished her 
+M.S. degree in computer science in May and has accepted a postion in 
+private industry.  Taisheng Ye has shifted to working on the BIMA 
+real-time data transfer and archive system.  AIPS++ accomplishments 
+during the past quarter are described below under each person.
+
+Dick Crutcher served as local AIPS++ project manager and as BIMA
+director in charge of our participation in AIPS++.  In addition to usual
+duties, he attended a workshop in May at the Owens Valley Radio
+Observatory where NRAO, Caltech, and BIMA representatives discussed
+joint development work on the MMA, including AIPS++ software work.
+
+Yanti Miao finished her work on getting all pgplot functions to be
+callable from tkglish, documenting this, and translating pgplot demo
+programs into glish scripts to make examples of using TkPGPLOT and to
+test TkPGPLOT.
+
+John Pixton has focused primarily on the Display Library.  The
+PixelCanvas colormap system has been designed and implemented.  This
+provides all client applications with the ability to change the size of
+the colortable at runtime.  An OpenGL-style caching mechanism was
+designed and implemented to give the client application control over
+what is cached while hiding details of the caching system. 
+Event-handling system was modified to use classes to allow a client to
+introduce extra data or functions required to handle the
+passed event.  The first PixelCanvas client, the WorldCanvas, has been
+designed and is roughly a quarter of the way completed.  He also spent
+some time with gplot1d, aipsview, and AIPS++ management.  He will
+complete a 5 week visit to the ATNF in early July, during which he
+worked with Tom Osterloo and Neil Killeen on the visualization toolkit.
+
+Harold Ravlin administers our AIPS++ workstations, which takes about 1/3
+of his time. Primarily, he has worked on Aipsview.  Much work was on
+fixing bugs reported by beta testers.  He also added curvilinear axis
+drawing, relative indexing for animation, printing of simple statistics
+and made changes so Aipsview will automatically convert from m/s to km/s
+in image and profile windows. In preparation for the next stand alone
+release, he updated the Aipsview web page and ftp site.
+
+Doug Roberts has focused on porting the AIPS++ code to the SGI
+Origin2000.  The first port was with the GNU compiler system which is
+the standard for the AIPS++ package.  In order to optimize performance,
+he has moved to using the SGI native CC compiler, which has
+parallelization optimizations. He first completed the port with the
+AIPS++ beta release of March, and has just completed the port of the
+current state of AIPS++, in anticipation of the spectral-line beta
+release of AIPS++ at the beginning of July.  He is now investigating
+changes that might be made for optimization and parallelization on SGI
+parallel-processor supercomputers.  He visited Australia in May 5-19 for
+observing with the Australia Telescope Compact Array and meeting with
+AIPS++ programmers.  While there, he met with Tom Osterloo and Neil
+Killeen discussing the status of the AIPS++ visualization toolkit and
+the future of AIPS++  visualization software, especially end user
+applications.  He has also updated the users manual for Aipsview, the
+AIPS++ visualization software system.
+
+\section{Appendix: NFRA contribution {\em  Jan Noordam}}
+
+
+Local project members: Ger van Diepen (GVD), Michael Haller (MH), Jan
+Noordam (JEN, local manager), Friso Olnon (FMO), Henk Vosmeijer (HJV).
+
+\subsection{General }
+
+Jan Noordam and Ger van Diepen have visited Socorro in April, to take
+part in discussions about image analysis and synthesis processing.
+
+The NFRA AIPS++ group has hired an extra AIPS++ application
+programmer: Michael Haller (who is an Australian living in NL) will
+join the group on July 1st, for a period of 2-3 years. He is an
+experienced programmer, but is new to aperture synthesis.
+
+\subsection{Interaction with TMS/DZB}
+
+The commissioning of the first module of the new DZB correlator will
+now certainly happen in July/August.  Thus, the timing of the beta-2
+release at the end of June is excellent. Robert Braun will again lead
+the NFRA beta-testing effort.
+
+Friso Olnon continued his work on the dzbfiller, a program which
+creates AIPS++ MeasurementSets from "header" data gotten from the TMS
+(Telescope Management System) database and "actual" data from the new
+digital backend, DZB. The first realistic MeasurementSets have been
+made with dummy data (but obtained throught the proper interface
+layer). Although the dzbfiller is a separate program, it still shares
+a number of classes with the wsrtfiller (meant for handling WSRT
+archive data). Some of these are changed as a result of the DZB work;
+hence the small amount of work for the wsrtfiller. A significant
+fraction of the filler-development time goes into keeping the various
+local test and development programs working. These programs depend on
+two systems-in-development and are therefore even more sensitive to
+problems, not in the last place the awfully time consuming building
+process.
+
+
+\subsection{AIPS++ Site in Dwingeloo}
+
+``Regular'' maintenance of the local AIPS++ system still costs Friso
+Olnon more than one day a week. In addition, Ger van Diepen and Henk
+Vosmeijer spend some time on it. We suspect that this load will not
+decrease to the targeted 1 day-a-week or less.
+
+The inhale and sneeze operations in the weekends are unsuccessfull
+half the time. Although the causes of failure are usually minor
+glitches that are easily diagnosed and repaired, it takes about all of
+Monday to rebuild the system. The system obviously is very sensitive
+to such small problems. A nasty side effect of the failures is that
+the HP machine, which we share with the TMS group, is heavily loaded
+with a task that we promised to run outside normal working hours.
+
+The decision to add local support for the linux version of AIPS++ (our
+third system branch) may be a good one in view of the load on our
+current AIPS++ host machines, but it also means more maintenance.  Jan
+Noordam also uses Linux and Glish on his portable.
+
+
+\subsection{Infrastructure software}
+
+In the beginning of April 2 weeks have been spent in Socorro.  It was
+a fruitful visit with lots of useful discussions about tables, images,
+and related topics like tiling.
+
+The locking/synchronization mechanism in the Table system has been
+finalized and checked into the system. Recently it appeared that the
+default AutoLocking mode can generate quite some overhead.  A few
+solutions are being considered.  The limitations on changing the
+shapes of indirect arrays have been removed. When the data manager can
+handle it, one can now change the shape. Almost all storage managers
+can handle it.
+
+Some work has been done on the Lattice classes.  Subsectioning has
+been added to the TiledStepper class.  The TiledStMan algorithm to
+calculate a suitable tile shape has been improved to try to find
+exactly fitting tile shapes.
+
+A proposal has been made for support of measures in tables.  It will
+soon be implemented by Michael Haller (a new NFRA hire).
+
+Some work has been done on demonstrating a very basic Megi Number
+Server. The tests were encouraging.
+
+\section{Appendix: NRAO contribution {\em  Tim Cornwell}}
+
+\subsection{People}
+
+The core NRAO AIPS++ group is now Cornwell (100\%), Garwood (90\%,
+10\% going to Unipops support), Glendenning (100\%), Kemball(100\%),
+Marson (100\%), McMullin (100\%), Schiebel (100\%) and Uphoff (100\%).
+We are very pleased that after some time working with us, Athol
+Kemball has joined the AIPS++ group.  In addition, Young of the AOC
+Computer Group works with us, and as described above, Murphy of the CV
+computer group also contributes.  We continue to have one unfilled
+position, in Socorro, for a VLBI software specialist. Attempting to
+hire into this position has been an extremely frustrating exercise.
+In addition to these full-time AIPS++ staff, a number of scientists
+participate at various levels: Rick Fisher, Bob Hjellming, Harvey
+Liszt, Michael Rupen. In a recent development, Michael will be
+devoting about 50\% of his time to helping AIPS++ in the areas of
+testing, documentation, and advising on scientific priorities.
+
+Tim Cornwell works on documentation, the synthesis code, and general
+project management. Bob Garwood directs the single dish effort in
+Charlottesville and Green Bank. Brian Glendenning is the prime
+architect of many different parts of the system, acts as pinch-hitter
+in helping out in various areas, oversees development of the library
+code, and work on general project management. Athol Kemball is in
+charge of the synthesis calibration development. Ralph Marson works on
+the synthesis code, and is the AIPS++ Code Cop. Joe McMullin provides
+AIPS++ single dish support for the GBT. Darrell Schiebel is our Glish
+guru and is responsible for maintaining, adding new features to, and
+removing bugs from Glish. Jeff Uphoff works on the GUI side of the
+single dish package. Pat Murphy, Darrell Schiebel and Jeff Uphoff all
+work on system support. Wes Young works on documentation, GUI
+development, and VLA support via AIPS++.
+
+\subsection{Hardware}
+
+We have a variety of platforms available to run AIPS++ on:
+
+\begin{itemize}
+\item Various Sparc machines running Solaris 2.5. These have 1, 2 or 4 processors.
+NRAO has just purchased 48 Sparc Ultra 170 machines, on which
+AIPS++ will be used. These are ideal machines for AIPS++ work.
+Athol Kemball and Ralph Marson will be using these class of
+machine.
+\item Three Pentium Pro 200 MHz machines with 64 Mbytes memory running Linux.
+Bob Garwood, Brian Glendenning, Pat Murphy and Tim Cornwell currently use these machines.
+\item A two processor Pentium Pro 200 MHz machine with 128 MBytes memory. Jeff Uphoff uses
+this machine.
+\item An HP machine running HP/UX (made available to us by the VLBA).
+\item A Dec Alpha.
+\item An SGI Power Challenge (made available to us for testing by the
+HALCA support).
+\end{itemize}
+
+Thus NRAO has examples of all architectures for which AIPS++ is
+currently targeted, although the HP and SGI installations have
+yet to be made.
+
+\subsection{NRAO specific work}
+
+Most of the NRAO staff work on general AIPS++ capabilities. The
+exceptions are Joe McMullin, who although he is an AIPS++ Project
+member, concentrates on Green Bank and GBT support concerns, and Wes
+Young, who is a member of the AOC Computer Division, and thus spends a
+substantial (and increasing) amount of his time on VLA-specific
+developments.
+
+Joe joined us in March and so his first quarter has been spent learning
+his way around AIPS++ and GB activities. He has worked on providing
+documentation of AIPS++ capabilities for GB staff, and on bringing
+some of the Glish scripts that have been written at Green Bank into
+the AIPS++ system.
+
+Wes has worked on a number of VLA specific capabilities in AIPS++, the
+most recent of which is a filler from VLA archive tapes into AIPS++
+Tables. When completed, this will give VLA engineers the capability to
+examine VLA monitor data using AIPS++ in much the same way that GBT
+engineers can examine GBT monitor data. From there, it is a relatively
+short step to fill into a fully-fledged MeasurementSet, and thus give a
+path for visibility data directly from the Modcomps into AIPS++.
+
+\section{Appendix: Review of developments planned for last quarter}
+
+
+The principal activity for the this last quarter were planned to be
+support of beta testing, and preparation of the next release.
+
+In {\bf Single Dish support}, we did continue the development of
+SDCalc.
+
+In {\bf Synthesis support}, we did continue with improving memory
+usage and speed for both continuum and spectral line processing. We
+did not substantially improve the plotting and editing
+capabilities. We did not add a GUI (but instead choose to do GUI
+development work first on the Image Distributed Object).  We started
+to add fitting of Component Models to represent the sky brightness.
+
+In {\bf Measures}, we did start to develop methods for distributing
+time-dependent data inside AIPS++.
+
+In {\bf Glish support}, we did not release version 2.6. We did add
+more tk widgets as required.
+
+In {\bf AIPS++ Infrastructure}, we did deploy table locking. We did
+review the capabilities of the current Lattice/PagedArray/PagedImage
+classes. We started but did not finish development a tool for image-based
+mathematics. We did continue to augment the services ({\em e.g.}
+plotting, display) available to applications writers via the
+Distributed Object mechanism.
+
+In {\bf Visualization and Image Analysis}, we did continue development of
+the visualization tool-kit. We did finish the binding of PGPLOT to Glish, and
+we did complete addition labelling of curvilinear coordinates to Aipsview.
+
+In the {\bf System} area, we had no substantial plans beyond consolidating
+various ports.
+
+In {\bf Documentation}, we did not yet improve the introductory material as
+suggested by beta testers. This is an area where we would particularly
+benefit from the close involvement of astronomers.
+
+In {\bf Management}, we did enlist the help of someone with experience
+in operational support of a existing large package to help define how
+operations of AIPS++ will occur: Gustaaf van Moorsel.  
+
+\section{Appendix: Summary of AIPS++ Personnel}
+
+In this section, we give the names of people in the various AIPS++
+groups and the nominal fraction of time allocated to AIPS++.
+
+The ATNF group is: Neil Killeen (25-75\%), Wim Brouw (90\%), Tom
+Oosterloo (75\%) and Mark Wieringa (30\%).
+
+The BIMA/NCSA group is: Dick Crutcher (25\%), John Pixton (100\%), 
+Harold Ravlin (100\%), Doug Roberts (75\%), and Peter Teuben (25\%). 
+
+The NFRA group is: Ger van Diepen (100\%), Michael Haller (100\%), 
+Jan Noordam (25\%), Friso Olnon (50\%), and Henk Vosmeijer (50\%).
+
+The NRAO group is: Tim Cornwell (100\%), Bob Garwood (90\%), Brian
+Glendenning (100\%), Athol Kemball (100\%), Ralph Marson (100\%), Joe
+McMullin (100\%), Pat Murphy (30\%), Darrell Schiebel (100\%), Jeff
+Uphoff (100\%) and Wes Young (90\%). We have an open position in
+Socorro for a VLBI software specialist, and an open position funded by
+the NCSA-NRAO collaboration for someone to work on parallelization of
+AIPS++ code.
+
+Thus, in aggregate, we have 25 people contributing just over 18 FTEs
+to the AIPS++ Project. Of these, 11 are employed by NRAO, and contribute
+9.1 FTEs. The numbers for the other partners are: ATNF 4 and 2.45,
+BIMA/NCSA 5 and 3.25, NFRA 5 and 3.25.
+
+\end{document}
+

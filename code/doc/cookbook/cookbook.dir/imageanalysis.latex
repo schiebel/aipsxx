@@ -1,0 +1,1678 @@
+\chapter{Image Analysis}
+\label{GRimageanalysis}
+
+
+{\em Neil Killeen}
+
+
+\section{Summary}
+
+This Chapter provides an overview of image analysis functionality.  The
+term `image analysis' has a rather broad meaning.  It basically refers
+to functionality for processing images, but excludes creating them from
+visibility data (both imaging and deconvolution).  These are parts of
+the \htmlref{imager}{imager:imager} \tool\ described in a separate
+chapter of this document. 
+
+All the \tools\ discussed in this chapter are available from both the
+\glish\ command-line interface (CLI) and from the
+\htmlref{Toolmanager}{tasking:toolmanager} graphical user interface
+(GUI). 
+
+The \tools\ that are currently available for image analysis can be found
+in the \htmlref{Images}{images} module.  Refer to this module's
+documentation to find out about basic concepts common to the \tools\ in
+this module.  Refer to the specific \tool\ documentation to learn
+details about individual \tools.  Access to all the \tools\ in the
+Images module can be gained from \glish\ via the command
+
+\begin{verbatim}
+include 'images.g'
+\end{verbatim}
+
+Alternatively, you can include the appropriate \glish\ script for the
+desired \tool\ as specified below. Also, you should specifically know
+about one other \tool\ which is not a part of the Images module.  This
+is the \htmlref{Viewer}{viewer} \tool.  This \tool\ is used to display
+data, including images.  Some of the services in the Images module use
+the Viewer. 
+
+The \tools\ available for image analysis are:
+
+
+\begin{description}
+
+\item[\htmlref{Image}{images:image}] is the basic \tool\ type used to
+manipulate \aipspp\ images.   Access with:
+
+\begin{verbatim}
+include 'image.g'
+\end{verbatim}
+
+An Image \tool\ is a straightforward \tool\ that provides a range of
+uncoupled services.  What this means is that unlike a \tool\ such as
+\htmlref{Imager}{imager:imager}, which has a lot of state and required
+functions, an Image \tool\ just has a lot of functions that do a certain
+thing to the image.   Current functionality ranges from data conversion
+(e.g.  to and from \fits), inquiry, pixel access, coordinate
+manipulation, convolution, statistical analysis, source finding and
+fitting, regridding, mask handling, and some useful utility
+services.  
+
+\item[\htmlref{Regionmanager}{images:regionmanager}] This \tool\ enables
+you to create and manipulate regions-of-interest (or more simply,
+regions) in images.    Access with
+
+\begin{verbatim}
+include 'regionmanager.g'
+\end{verbatim}
+
+
+Generally, one only needs to use the pre-made, default Regionmanager
+\tool\ called {\stf drm}, to create and manipulate regions (this is
+often referred to as `The Regionmanager').  These regions are used to
+specify portions of an image that you are interested in for some
+astrophysical reason (e.g.  what is the integrated flux density around
+this source).  Refer to the
+\htmlref{Regionmanager}{images:regionmanager} documentation for all the
+details on regions. 
+
+Regions are in fact themselves \tools; they are created and managed by
+the Regionmanager.  But regions are rather simple \tools;  they are just
+used as containers to pass the region information around. You don't need
+to use any of their functions. Region \tools\ are often arguments to
+Image \toolfunctions.
+
+The Regionmanager has a custom GUI interface which is preferred over the
+command-line interface (which is somewhat cumbersome for world regions).
+
+\item[\htmlref{Coordsys}{images:coordsys}] This \tool\ enables
+you to create and manipulate Coordinate Systems.  Access with
+
+\begin{verbatim}
+include 'coordsys.g'
+\end{verbatim}
+
+
+Generally, a Coordinate System is associated with an actual data set,
+such as an image.  However, they can exist in their own right and can be
+used to do coordinate conversions.   The
+\htmlref{Coordsys}{images:coordsys} \tool\ can be used to create and
+manipulate Coordinate Systems.     A Coordinate System that is
+associated with an image can also be recovered into a Coordsys \tool\
+via the Image \tool\ function \htmlref{Coordsys.function}{images:image.coordsys.function}.
+
+\item[\htmlref{Imagefitter}{images:imagefitter}] This high-level \tool\
+bundles together many services (e.g.  the Viewer and Image \tools) to
+offer an interactive application enabling you to fit models to sources
+in images. Access with
+
+\begin{verbatim}
+include 'imagefitter.g'
+\end{verbatim}
+
+
+\item[\htmlref{Imageprofilefitter}{images:imageprofilefitter}] This high-level \tool\
+bundles together many services (e.g.  the Viewer and Image \tools)
+to offer an interactive application enabling you to fit models to
+1-D profiles extracted from images. Access with
+
+\begin{verbatim}
+include 'imageprofilefitter.g'
+\end{verbatim}
+
+
+\item[\htmlref{Imagepol}{images:imagepol}] This \tool\ provides 
+polarimetric analysis of images and offers easy access to the different
+Stokes parameters in an image, computation of the standard secondary
+(e.g. polarized intensity) and tertiary images (e.g. fractional
+polarization) and their errors.  There are also methods for deriving the
+Rotation Measure.
+
+\begin{verbatim}
+include 'imagepol.g'
+\end{verbatim}
+
+\end{description}
+
+
+
+ 
+\section{Creating an Image tool}
+
+You can make an \htmlref{Image}{images:image} \tool\ in a variety of
+ways.  This \tool\ is used to gain access to the data stored in the
+image; these might be the pixel values, the pixel mask(s), or perhaps
+the coordinate information.   You will typically make a lot of Image
+\tools, whereas you might make only one or two Imager \tools\ (create
+images from visibilities).
+
+\subsection {From a built-in test image}
+
+Built into the system is a test \fits\ image.  You
+can convert it to an \aipspp\ image with:
+
+\begin{verbatim}
+im := imagemaketestimage('myimage')       # Convert to disk file called 'myimage'
+                                          # and associate with tool 'im'
+im.view()                                 # Display it via tool function view
+\end{verbatim}
+
+
+\subsection {From existing \aipspp\ image files}
+
+\begin{verbatim}
+im1 := image('x.app');                                                 # Access disk file 'x.app'
+r := drm.quarter()
+im2 := imagefromimage(outfile='x.app.copy', infile='x.app', region=r)  # Makes a disk file copy of x.app
+im3 := imageconcat('x.concat', infiles="x*.app", axis=3, relax=T)      # Concatenate files
+\end{verbatim}
+
+The first example is the most common way to make an Image \tool.  It
+just associates the \tool\ with a pre-existing \aipspp\ disk image file.
+The second example makes a copy of a subset (via a region) of the input
+image; the Image \tool\ {\stf im2} then gives you access to it.  
+The third example concatenates images along a specified axis (in this case axis 3). 
+
+
+\subsection {From foreign formats (e.g. \fits)}
+
+Presently, there is capability to 
+
+\begin{itemize}
+
+\item Convert \fits\ image files to \aipspp\ format
+
+\begin{verbatim}
+im := imagefromfits('x.app', 'X.FITS') # Convert from FITS
+im.view()                              # Display
+#
+im2 := imagefromfits(infile='X.FITS')  # Output Image tool is virtual
+im2.view()
+\end{verbatim}
+
+In the second example, we didn't write the \aipspp\ image out - it's
+stored in memory.  This is called a virtual image (see below).
+
+
+\item Access \fits\ image files directly
+
+\begin{verbatim}
+im := image('X.FITS')                  # Native FITS access
+im.view()                              # Display
+\end{verbatim}
+
+This example shows how the {\gcf image} constructor can also be used
+to gain {\em native} access to the \fits\ file. No format conversions
+occur and the data are sourced directly from the \fits\ file.
+Performance will be good unless you start to try to access
+the data in non-native order. For example, if with the Viewer,
+you reordered the display axes from their native order, performance
+would be poorer.  Always convert to an \aipspp\ image if you
+need to do this.
+
+\item Access Miriad image files directly
+
+\begin{verbatim}
+im := image('hcn.mir')                 # Native Miriad access
+im.view()                              # Display
+\end{verbatim}
+
+The same comments above about native \fits\ file performance 
+apply here as well.  
+
+\item Convert Miriad or GIPSY image files
+to \aipspp\ format via \fits\ and an installation
+of that package
+
+\begin{verbatim}
+im := imagefromforeign('hcn.app', 'hcn', package='gipsy')
+im.view()                              # Display
+\end{verbatim}
+
+This constructor relies on the nominated package 
+being installed. It is used to write out a temporary
+\fits\ file which is then converted to \aipspp\ format.
+
+\end{itemize}
+
+
+\subsection {From simple shapes or Glish arrays}
+
+\begin{verbatim}
+im1 := imagefromshape('test1.data', [64,128])   # Image has value 0
+pixels := array(10.5, 32, 64)                   # Glish array (value 10.5)
+im2 := imagefromarray('test2.data', pixels)     # Image has value 10.5
+\end{verbatim}
+
+
+\subsection {From image expressions}
+
+The Image \tool\ offers a sophisticated Image calculator.  You can give
+it complex expressions of images to manipulate.  See \S~\ref{sec:lel}
+for more information on the image calculator.  You can both create images
+and change images with the calculator.  Here are a couple of simple
+examples. 
+
+\begin{verbatim}
+im1 := imagecalc(outfile='image.out', pixels='image1 + min(image2)')   # Writes a disk file
+im2 := imagecalc(pixels='image1 + min(image2)')                        # A read-only image
+im2.calc (pixels='2.0*$im2')                                           # Double values
+\end{verbatim}
+
+In these examples, the \aipspp\ image disk files {\sff image1} and {\sff
+image2} pre-exist.  In the first example, an expression is evaluated and
+the new file {\sff image.out} created.  In the second example, an output
+disk file is never created.  The expression is re-evaluated every time
+the pixels of the {\stf im2} Image \tool\ are accessed.  This is a
+read-only image.   In the third example, we replace the pixel values
+with the result of the expression.  Note the use of the \$im2 syntax
+which means use the pixel values of the image associated with the {\stf
+im2} Image tool (it does not have a disk file).
+
+
+\section {Virtual Images}
+
+We also have Image \tools\ that are not associated one-to-one with disk
+files; these are called ``virtual'' images (see the article in the
+\htmladdnormallink{AugustNewsLetter}{../../newsletters/aug00/aug00.html}).
+For example, you saw above how with the image calculator,
+\htmlref{imagecalc}{images:image.imagecalc.constructor}, one can create an
+expression which may contain many images.  You can write the result of
+the expression out to a disk \imagefile, but if you wish, you can also
+just maintain the expression, evaluating it each time it is needed -
+nothing is ever written out to disk in this case.  There are other Image
+constructors and functions like this (the documentation for each one
+explains what it does).  The rules are:
+
+\begin{itemize}
+
+\item  If you specify the {\gcf outfile} argument, then
+the image is always written to the specified disk \imagefile.
+
+\item If you leave the {\gcf outfile} argument unset, then if
+possible, a virtual image will be created.  Sometimes this virtual image
+will be an expression as in the example above (i.e.  it references other
+images) or a temporary image in memory, or a temporary image on disk.
+(the \htmlref{Image.summary}{images:image.summary.function} function will show
+the type of image you have). When you destroy that Image tool, the
+virtual image will be destroyed as well.
+
+\item If you leave {\gcf outfile} unset, and the function or
+constructor cannot make a virtual image, it will create a disk file for
+you with a name of its choice (usually input plus function name).   
+
+\item You can always write a virtual image to disk with the
+\htmlref{Image.subimage}{images:image.subimage.function} \toolfunction.
+
+\end{itemize}
+
+
+Here are some more examples:
+
+\begin{verbatim}
+im1 := imagemaketestimage()                     # A temporary image
+im2 := imagefromshape(shape=[128,128])          # A temporary image
+im3 := im2.subimage(region=drm.quarter())       # A reference to a temporary image
+im4 := imagecalc(pixels='2*$im1')               # An expression image referencing a temporary image
+im5 := imageconcat(infiles="z2 z3 z4", axis=1)  # References given disk files
+\end{verbatim}
+
+
+
+
+
+
+\section {Summarizing the Image}
+
+Having created an Image \tool, a very common thing is to want to know
+something about its basic attributes.  You can use the
+\htmlref{Image.summary}{images:image.summary.function} function of your Image
+\tool\ for this. 
+
+\begin{verbatim}
+im := image('x1.app')
+im.summary()
+\end{verbatim}
+
+which lists, to the logger, the output
+
+\begin{verbatim}
+Image name       : test
+Image type       : PagedImage
+Pixels mask(s)   : mask0 [mask1, mask2]
+Region(s)        : None
+Image units      : JY/BEAM
+
+Direction reference : J2000
+Spectral  reference : LSRK
+Velocity  type      : RADIO
+Rest frequency      : 1.42041e+09 Hz
+
+Telescope        : ATCA
+Observer         : NEBK
+Date observation : 1997/02/121/03:03:26
+
+
+Axis Coord Type      Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+------------------------------------------------------------------------------------------------
+1    1     Direction Right Ascension   SIN  512   10  00:00:00.000     6.00 -6.000000e+01 arcsec
+2    1     Direction Declination       SIN  512   20 +00.00.00.000    11.00  6.000000e+01 arcsec
+3    2     Spectral  Frequency             1024   30  1.415000e+09    16.00  1.000000e+03 Hz
+                     Velocity                         1.140944e+03    16.00 -2.110611e-01 km/s
+\end{verbatim}
+
+
+You can see that the image is of a type called a ``PagedImage''.  This is the
+basic disk-based \aipspp\ image.   It has three masks, of which ``mask0'' is
+active (it's not in square brackets).  The image has three pixel axes
+associated with two coordinates.  The first coordinate, a Direction Coordinate
+is associated with the first two axes of the image.  The third axis of the
+image is associated with a Spectral Coordinate; the listed rest frequency is used
+to convert the coordinate attributes to velocity in the listed velocity
+definition (RADIO).
+
+There are many other functions which allow you to find out basic things
+about your image.  See the Overview section of the
+\htmlref{Image}{images:image} \tool.
+
+A simple statistical summary of your image can be obtained with
+
+\begin{verbatim}
+im := imagemaketestimage()
+im.statistics()
+\end{verbatim}
+
+which lists to the logger the output
+
+\begin{verbatim}
+Selected bounding box [1, 1] to [113, 76]
+Creating new statistics storage lattice of shape [9]
+
+Number points =   8.588000e+03       Sum      =   1.813081e+03
+Flux density  =   8.395378e+01 Jy
+Mean          =   2.111179e-01
+Variance      =   3.891285e+00       Std dev   =   1.972634e+00
+Rms           =   1.983785e+00
+
+Minimum value  -1.865986e+00 at [79, 63] (23:59:47.733, +00.05.00.000)
+Maximum value   1.943354e+01 at [55, 32] (00:00:00.533, -00.01.12.000)
+\end{verbatim}
+
+
+
+
+\section {Display}
+
+There are a few ways to display an image.
+
+\subsection {Function view}
+
+This is the most straightforward; just invoke the
+\htmlref{Image.view}{images:image.view.function} function of the Image tool.  This uses
+the \htmlref{Viewer}{viewer:viewer} tool. 
+
+\begin{verbatim}
+im := imagemaketestimage('zz')
+im.view(axislabels=T)
+\end{verbatim}
+
+By default, the image is displayed as a raster.  You can also see it as
+a contour image (or both).  See the documentation for more details
+and other arguments.
+
+\subsection {From the catalog}
+
+The \htmlref{Catalog}{catalog} \tool\ can also be used to view
+your image.  To get the catalog GUI running  do
+
+\begin{verbatim}
+include 'catalog.g'
+dc.gui()                        # Default catalog tool
+\end{verbatim}
+
+Then click on an image name (the disk file name) to select it and then
+press the {\gif View} button to display it.  Note that you don't get
+access to the Image \tool\ that Catalog makes in order to do this.  When
+you you press the done button of the image display, the temporary Image \tool\
+that it makes is destroyed. 
+
+\subsection {From the spanner (wrench) menu}
+
+When using the \htmlref{Toolmanager}{tasking:toolmanager} GUI, you will
+find that virtually all of the many entry widgets have a spanner ('wrench'
+for yo'all Americans) menu associated with them.  If you are dealing
+with an image entry widget, you can find an item in the spanner menu
+called `view'.  If you select that, in a way similar to the Catalog
+\tool\ view, your image will be displayed.  Again, when you you press
+the done button of the display, the temporary Image \tool\ that was made
+is destroyed. 
+
+\subsection {With the plain Viewer}
+
+You can of course also use the \htmlref{Viewer}{viewer} in its
+plain form, rather than using it packaged up for you in the {\stf view}
+function.  See the \tool\ documentation for details (see also the
+Display chapter in this document).  But all you really need do is
+
+\begin{verbatim}
+im := image('x1.app')
+dv.gui() 
+\end{verbatim}
+
+and then, in the Data Manager GUI, select the \imagefile\ or Image
+\tool\ you wish to display.  Then select how you would like to see it
+(from the {\gif DisplayData Type} list, and your image will
+appear on the Display Panel.
+
+
+\section {Coordinates}
+
+\subsection {General}
+
+The Coordinate System defines the world (physical) coordinates
+associated with some observation.   
+
+A Coordsys \tool\ can create Coordinate Systems (independent of any
+image) and manipulate that Coordinate System (change values, reference
+frames etc).  The Coordinate System can also be retrieved from an image
+via the \htmlref{Image.coordsys}{images:image.coordsys.function} function and put back
+the \htmlref{Image.setcoordsys}{images:image.setcoordsys.function} function.
+
+There is also functionality to inter-convert pixel and world coordinates
+(functions \htmlref{Image.topixel}{images:coordsys.topixel.function} and
+\htmlref{Image.toworld}{images:coordsys.toworld.function}). The same functionality is 
+available in the Image \tool\  (functions
+\htmlref{Image.topixel}{images:image.topixel.function},
+\htmlref{Image.toworld}{images:image.toworld.function}, and
+\htmlref{Image.coordmeasures}{images:image.coordmeasures.function}) but really, behind
+the scenes, the Coordsys \tool\ is doing the work.
+
+We saw in the previous section how the
+\htmlref{Image.summary}{images:image.summary.function}) function
+lists the Coordinate System.   The function also operates on
+Coordsys \tools:
+
+
+\begin{verbatim}
+im := image('x1.app')      # Image tool
+cs := im.coordsys();       # Fish out Coordsys tool from image
+cs.summary()               # List Coordinate System
+\end{verbatim}
+
+In this case (listing not shown), the listing would have looked similar,
+but the non-Coordinate System things (image name, masks, units, image
+shape and  image tile shape) would be missing.
+
+
+
+\subsection {Retrieving and changing the Coordinate System}
+
+This is done with a \htmlref{Coordsys}{images:coordsys} \tool.
+Here is a simple example.
+
+\begin{verbatim}
+im := imagemaketestimage()                 # Create Image tool
+cs := im.coordsys()                        # Get Coordsys tool
+cs.referencepixel()                        # Print reference pixel
+#<< [56 38]
+cs.setreferencepixel(value=[40,60])        # Set new reference pixel
+cs.referencepixel()                    
+#<< [40 60]
+im.setcoordsys(cs)                         # Set modified Coordinate System into image
+cs.done()                                  # Destroy tools
+im.done()
+\end{verbatim}
+
+Because the Coordinate System can be retrieved from an image, and stored
+in its own Coordsys \tool, it can be passed around to other
+\tools\ and functions.  For example, when making world regions with the
+\htmlref{Regionmanager}{images:regionmanager}, the Coordinate System is
+required. 
+
+
+
+\subsection {Coordinate conversion}
+
+You may inter-convert between pixel and world coordinates with the Image
+\tool\ functions 
+\htmlref{Image.topixel}{images:image.topixel.function} and 
+\htmlref{Image.toworld}{images:image.toworld.function}.  These just
+invoke Coordsys \toolfunctions\ of the same name.
+
+Allowed formats are numeric vectors, quantity vectors, measures
+and strings (see function documentation).
+
+\begin{verbatim}
+im := imagemaketestimage();
+print w := im.toworld([10,10], 's')        # Formatted as strings
+#<< 00:00:24.533 -00.05.36.000
+#
+im.topixel(w)
+#<< [10.0007122 10.0000115]          # Precision lost during string formatting
+w := im.toworld([10,10], 'm')        # Record of measures
+im.topixel(w)
+#<< [10 10]                          # No precision lost
+\end{verbatim}
+
+
+
+
+
+\section {Mask handling}
+\label{sec:masks}
+
+\aipspp\ images may contain zero or more pixel masks (see the
+\htmlref{images}{images} module documentation and the
+\htmlref{image}{images:image} \tool\ documentation).  Pixel masks
+indicate which pixels are good (mask T) or bad (mask F).  The good ones
+should be used for calculations (e.g.  find statistics of image). 
+
+You can see the names of any pixel masks with the Image \tool\
+\htmlref{Image.summary}{images:image.summary.function} function.   Here is the
+beginning of such a listing
+
+\begin{verbatim}
+Image name       : hcn
+Image type       : PagedImage
+Image mask       : mask2 [mask0, mask1]
+Image units      : JY/BEAM
+\end{verbatim}
+
+This image has three masks.  The mask named `mask2' is currently the
+default mask (applied by applications).  Any mask in square brackets
+(and it could be all of them) is not presently active. 
+
+You can change the values of the image pixel mask(s) via three Image
+\tool\ functions. 
+
+The function \htmlref{Image.set}{images:image.set.function} is the simplest;
+you can set the mask to T or F in a specified region.
+
+\begin{verbatim}
+r := drm.quarter()                   # Quarter by area
+im.set (pixelmask=F, region=r);      # Set mask to F in region
+\end{verbatim}
+
+The function \htmlref{Image.putregion}{images:image.putregion.function}
+lets you replace the mask with a boolean array,
+
+\begin{verbatim}
+im := imagemaketestimage('zz') 
+local p,m
+im.getregion(p,m)                   # Get pixels and mask
+m[p<0] := F;                        # Set mask to F when pixels negative
+im.putregion(pixelmask=m)           # Replace mask
+\end{verbatim}
+
+In this example, to start with there is no mask in the image,
+so when you recover it, it will be all good (T).  We then set
+some if it to bad (F) and replace it.
+
+
+Finally the function \htmlref{Image.calcmask}{images:image.calcmask.function}
+offers you the chance to change the mask via LEL expressions.
+
+\begin{verbatim}
+im := imagemaketestimage('zz') 
+im.calcmask('zz>0')
+\end{verbatim}
+
+This example is the equivalent of the one above.  The mask is set to the
+result of evaluating the boolean expression.  Therefore, it is set to
+T when the image is positive.
+
+In addition to this, the Image \tool\ function
+\htmlref{Image.maskhandler}{images:image.maskhandler.function} enables you to
+select which (if any) pixel mask you wish to apply.  You can also copy
+masks within an image and between images, delete and rename masks.
+
+This function also has a custom GUI interface available via the
+\htmlref{Toolmanager}{tasking:toolmanager} and also via the Image \tool\
+function \htmlref{Image.maskhandlergui}{images:image.maskhandlergui.function} from
+\glish. 
+
+\begin{verbatim}
+im := imagemaketestimage('zz')
+mg := im.maskhandlergui()
+\end{verbatim}
+
+See the \htmlref{Image.maskhandlergui}{images:image.maskhandlergui.function} 
+documentation in the Reference Manual for a description and picture.
+
+
+
+
+\section {Utility}
+
+The Image \tool\ has a collection of useful utility functions. See the
+\htmlref{Image}{images:image} \tool\ function for details.
+Here are a few things that are handy.
+
+
+\subsection {Deletion and renaming}
+
+Since \aipspp\ uses the host operating system for its file systems, you
+may use the appropriate operating system command to delete an \aipspp\ 
+image disk file (if it has an Image \tool\ associated with it at the
+time you get into trouble of course).
+
+You may also delete an \aipspp\ disk image file from \glish\ with the
+Image \tool\ function \htmlref{Image.delete}{images:image.delete.function}.
+
+\begin{verbatim}
+im := image('g1.app')
+im.delete(done=T)       # Destroy image tool as well
+\end{verbatim}
+
+Renaming is suported with  the Image \tool\ function
+\htmlref{Image.rename}{images:image.rename.function}.
+
+\begin{verbatim}
+im := image('g1.app')
+im.rename('g2.app')
+im.name()
+#<< /DATA/ELARA_1/aips++/adata/g2.app 
+\end{verbatim}
+
+
+
+\subsection {History}
+
+Currently, \aipspp\ does not fully support history tracking (i.e. 
+recording everything you do to a file in a history).  With \aipspp\
+images, partial support is available.  If a \fits\ file contains a
+history, and you convert it to an \aipspp\ image, then the history is
+stored with the \aipspp\ image.  You can browse the history
+(via the Table browser in reality), direct the history to the
+logger, or save it in a \glish\ variable with the Image \toolfunction\
+\htmlref{Image.history}{images:image.history.function}.  
+
+You can also add your own history to the image if you wish with
+the function  \htmlref{Image.sethistory}{images:image.sethistory.function}.  
+If you write the image out to \fits\ again, the history will be safely
+stored. 
+
+
+
+\subsection {Locking}
+
+There is an automatic file locking system in \aipspp\ so that processes
+are able to lock and unlock files as appropriate.  You may need some
+control over file locking if you happen to write a \glish\ application
+which has multiple processes trying to access the same image (the
+\htmlref{imagefitter}{images:imagefitter} \tool\ is an example of this
+type of script).   
+
+There are functions \htmlref{Image.lock}{images:image.lock.function} and
+\htmlref{Image.unlock}{images:image.unlock.function} with which you may lock
+and unlock the image for the current process.
+
+
+
+\section {Regions of interest}
+
+The \htmlref{Regionmanager}{images:regionmanager} is used to create and
+manipulate image regions-of-interest.  These are used to specify which
+section of an image you would like acess to (e.g.  find the statistics
+in this region).  Although regions are themselves (simple container)
+\tools, all you need do usually is pass them around.
+
+The Regionmanager has a custom GUI; you can access this (using the
+default Regionmanager \tool\ {\stf drm}):
+
+\begin{verbatim}
+include 'regionmanager.g'
+drm.gui()
+\end{verbatim}
+
+The GUI interface is much better than the command-line interface for
+creating world regions, as it effectively hides the Coordinate System.
+It also makes operations like storing and recovering regions from Images
+simple (you can store regions in Images).
+
+With the \htmlref{Regionmanager}{images:regionmanager} you can create
+simple pixel and world regions, as well as compound regions from simple
+world regions (e.g.  unions, intersections, complements etc.).  
+
+The Regionmanager GUI can also be used to interactively create regions
+from an image display.  From the Regionmanager's list of available
+images you select the image of interest, and then you select
+`interactive' from the list of available region types to create.  The
+Image \tool\ function \htmlref{Image.view}{images:image.view.function} is then
+automatically used to display the image.  With this display you can
+interactively create a region (a box or a polygon, double clicking
+within the region to signify its ready - actually this emits and event)
+and it is then captured by the Regionmanager for further distribution. 
+Some discussion on this can also be found below in the section on
+communications, \S~\ref{sct:communications}. 
+
+
+
+
+\section {Pixel Access}
+
+\subsection {Getting and putting pixels}
+
+There is functionality to get and put pixel values from an image. The
+exchange medium between the image and \glish\ is a \glish\ array.  Since
+a \glish\ array is an in-memory object, make sure you don't put the
+entire image (if it is large) into it !   If this is a problem, iterate
+through your image in tile-shaped chunks (see the
+\htmlref{Image.summary}{images:image.summary.function} listing to get the tile
+shape of an image).
+
+There are pairs of functions
+\htmlref{Image.getchunk}{images:image.getchunk.function} \&
+\htmlref{Image.putchunk}{images:image.putchunk.function} and
+\htmlref{Image.getregion}{images:image.getregion.function} \&
+\htmlref{Image.putregion}{images:image.putregion.function}.  The first pair
+only gives you access to the pixel values in regularly shaped regions
+(i.e.  hyper cubes).  The second pair gives you access to the pixel
+values, the mask values (see \htmlref{Images}{images} module
+documentation and \htmlref{Image}{images:image} \tool\ documentation)
+and enables you to access the values from more complex
+regions-of-interest.  The first pair of functions is substantially
+faster, so use it for simple regions if you are only interested in the
+pixel values. 
+
+
+
+\subsection {Set a scalar value}
+
+There is an Image \tool\ function called \htmlref{Image.set}{images:image.set.function}
+with which you can set the values of the image pixels and/or mask within
+a specified region to one scalar value.  It's efectively a simplified
+interface to the image calculator.  Note that the scalar can be the
+result of an expression involving images.   Some examples are:
+
+\begin{verbatim}
+im := imagefromshape('xx', [10,20]);
+r1 := drm.box([2,2],[6,8]);                # Make a pixel box region
+im.set(pixels=1.0, region=r1);             # Set all pixels to 1 in the region
+im.set(pixels='min($im)', region=r1);      # Set pixels in region to minimum of image xx
+im.set(pixelmask=T);                       # Set default mask to all T
+im.set(pixels=0, pixelmask=F, region=r1);  # Set pixels and mask in region
+\end{verbatim}
+
+
+\subsection {Replace masked pixels}
+
+There is a handy function called
+\htmlref{Image.replacemaskedpixels}{images:image.replacemaskedpixels.function}
+which replaces the values of all pixels in the specified region whose
+mask is bad (F) with the specified value.  The mask is left unchanged. 
+
+\begin{verbatim}
+im := imagemaketestimage();          # Test image
+r := drm.quarter();                  # Quarter of image
+im.set (pixelmask=F, region=r);      # Set mask to F in region
+im.replacemaskedpixels(pixels=0.0)   # Replace pixels masked bad with 0
+\end{verbatim}
+
+See 
+\htmlref{Image.replacemaskedpixels}{images:image.replacemaskedpixels.function}
+for more details.
+
+
+\section {Image Calculator}
+\label{sec:lel}
+
+\subsection {Introduction}
+
+There is a sophisticated system in \aipspp\ called the Lattice
+Expression Language (LEL).  It allows one to compute expressions
+involving Lattices (images are just lattices with Coordinate Systems). 
+When the expressions are computed, the images are accessed in tile-sized
+chunks and iterated through.  In addition, sub-expressions whose result
+is a scalar are pre-computed.  This ensures good efficiency and no large
+use of in-core memory. 
+
+There are two notes in the \aipspp\ documentation system containing
+information about LEL.  First, \htmladdnormallink{note
+223}{../../notes/223/223.html} gives a full description of LEL's
+capabilities for both the \glish\ and C$++$ user.  This is required
+reading for the user of the image calculator.  It is the ultimate
+repository of information about the capabilities of LEL (including 
+tables of all its functions and operators).
+
+If you are having trouble sleeping, then you could admire
+\htmladdnormallink{note 216}{../../notes/216/216.html} which describes
+the C$++$ design and implementation (this note is a little out of date
+now, but the basic concepts are still valid).
+
+\subsection {Basic Access}
+
+The LEL system is used to provide an image calculator to the end \glish\
+user.  There are a few ways you can access this system. 
+
+\begin{itemize}
+
+\item {Image \tool\ constructor \htmlref{imagecalc}{images:image.imagecalc.constructor}}
+
+With this you can construct an image from expressions involving other
+images. For example,
+
+\begin{verbatim}
+im1 := imagecalc(outfile='x3', pixels='sin(x1) + min(x2) ')
+\end{verbatim}
+
+where the image disk files {\sff x1} and {\sff x2} must pre-exist and
+the result is the image disk file called {\sff x3}.
+
+You can also construct a read-only image from expressions involving other images.
+The output image is never created, it is just evaluated each time
+you use it.
+
+\begin{verbatim}
+im2 := imagecalc(pixels='pi() - min(x2) + sqrt(x1)')
+\end{verbatim}
+
+where the image disk files {\sff x1} and {\sff x2} must pre-exist.  
+Note that by simply excluding the output file name (argment {\gcf
+outfile}) you have created the read-only image.
+
+\item {Image \tool\ function \htmlref{Image.calc}{images:image.calc.function}}
+With this you can change the pixel values of an image by
+replacing them with the result of the expression.
+
+\begin{verbatim}
+im1 := image('x2')
+im2 := im1.calc('abs(x2) / min(x2)') 
+\end{verbatim}
+
+where the image disk file {\sff x2} must pre-exist. Because the scalar
+expression is evaluated first,  the images in the expression can be the
+same as the image which is being overwritten.
+
+\end{itemize}
+
+
+
+\subsection {Special characters in file names}
+
+Note that for image file names  with special characters in them (like \-
+for example), you should (double) escape those characters or put the file name in
+ouble quotes. E.g.
+  
+\begin{verbatim}
+- im1 := imagecalc(pixels='test\\-im')            # Note double escape
+- im2 := imagecalc(pixels='"test-im"')
+\end{verbatim}
+  
+
+
+\subsection {Conformance of expressions}
+
+The basic rule of LEL is that the images in your expression should 
+conform; they should have the same shape and Coordinate System.
+
+However, there are some exceptions to this.  
+
+First, if you reduce an image to a scalar (e.g.  via the {\gcf min}
+function) then conformance of that image is not required. 
+
+Second, LEL will try, if it can, to extend one image to make it
+conformant with the other.  It can do that if one image is a true subset
+of the other (thus if one image has all the coordinate axes of the other
+image and if those axes have the same length or have length 1).  If so,
+LEL will add missing axes and/or stretch axes with length 1.   For example,
+in this way you could subtract a 2D image from a 3D image (see continuum
+subtraction example below).
+
+If your images are not conformant, then you need to regrid them
+to the same Coordinate System and shape via the Image \tool\ function
+\htmlref{Image.regrid}{images:image.regrid.function}.
+
+
+\subsection {Tool substitution in expressions}
+
+When using LEL, you can use either image disk file names, or an
+associated Image \tool\ name in the LEL expression.  For example,
+
+\begin{verbatim}
+im1 := image('im1')  
+im2a := imagecalc('im2a', '2*im1')     # Use disk file names
+im2b := imagecalc('im2b', '2*$im1')    # Use tool name
+\end{verbatim}
+
+To include virtual images (which are not stored in disk) 
+in LEL expressions you must use this feature.
+
+
+\subsection {Image Pixel Masks}
+
+See the \htmlref{Image}{images:image} \tool\ and \S~\ref{sec:masks} for
+basic information on pixel masks.  See
+\htmladdnormallink{note223}{../../notes/223/223.html} for all the
+details of how image pixel masks are handled in LEL.
+
+Here we just provide some basic knowledge.  LEL, like other \aipspp\
+image handling software, applies the default mask if there is one.  You
+can over-ride this in LEL expressions if you wish. 
+
+\begin{verbatim}
+im := imagecalc('x1:nomask')     # Use no mask
+im := imagecalc('x1:mask3')      # Use mask3 stored in image x1
+\end{verbatim}
+
+You can also make what is called a transient conditional mask.
+Take the sub-expression {\gcf sum(x1[x1$<$5])}.
+
+Let us say that image {\sff x1} has no pixel mask to start with.  The
+square brackets indicate an expression mask.  When the result of that
+condition is True (effectively creating a transient mask) then the rest
+of the expression is evaluated.  Thus, whenever a pixel in {\sff x1} is
+less than 5, the value of that pixel is added to the sum. 
+
+Extending this slightly,
+
+\begin{verbatim}
+im := imagecalc('x2',  'x1[x1 < 5]');
+\end{verbatim}
+
+In this case, the output image {\sff x2} must be created with a pixel
+mask.  It will be T for all pixels in {\sff x1} whose value is less than
+5.  Otherwise it will be F.  The mask given to {\sff x2} is a physical
+mask stored with the image, whereas the expression mask is transient. 
+
+
+\subsection {Regions}
+
+Like masks, image regions can be stored permanently in images (the
+\htmlref{Regionmanager}{images:regionmanager} does this).  These regions
+can be accessed from within LEL expressions.  The basic syntax is
+`[tablename::regionname]' (there are some shortcuts, see note 223). 
+Thus
+
+\begin{verbatim}
+im := imagecalc('x1 + sum(x1[x2::region0])')
+im := imagecalc('x1[region0]')
+\end{verbatim}
+
+In the first example, a region stored in image {\sff x2} called
+`region0' is applied to image {\sff x1} and the sum is found in that region
+and added to the values in image {\sff x1}.  In the second example, the
+region is looked up in image {\sff x1} (a short cut).
+
+It is also possible to use a mechanism similar to the \tool\ substitution
+method to access regions made in \glish\ (i.e. ones not yet stored
+in an image).  This is very convenient.  For example,
+
+\begin{verbatim}
+im := image('z1')
+im.shape()
+#<< [64 64 128]
+ndim := length(im.shape())
+blc := array(1, ndim)
+trc := im.shape()
+trc[ndim] := 1;
+r1 := drm.box(blc, trc)
+im2 := imagecalc('z2',  '$im[$r1]')
+\end{verbatim}
+
+will create an output image which is just the first  plane of the input
+image.  Note we have used the \$ substitution  syntax for both the image
+and the region.
+
+
+\subsection {Example - continuum subtraction}
+
+As an example of some of the Image \tool\ functionality, let's write
+some \glish\ to mask some bad channels and then subtract the average of
+some continuum channels from all the channels in an image using
+the Image \tool\ calculator.
+
+
+\begin{verbatim}
+include 'image.g'
+include 'regionmanager.g'
+include 'os.g'
+#
+infile := 'hcn'
+subtfile := spaste(infile, '.subtracted')
+contfile := spaste(infile, '.continuum')
+dos.copy(infile, subtfile, overwrite=T)      # Copy as we will modify image insitu
+#
+im := image(subtfile)                        # Construct Image tool
+cs := im.coordsys()                          # Get coordinate system
+drm.setcoordinates(cs, verbose=F)            # Tell defaultregionmanager to use them
+cs.done()
+#
+shp := im.shape()                            # Image shape
+axis := 3                                    # Define spectral pixel axis
+n := length(shp)
+#
+r1 := drm.wrange(pixelaxis=axis,             # Define region for first 5 spectral pixels
+                 range="1pix 5pix")
+if (is_fail(r1)) fail
+x := ""
+x[1] := spaste(n-4, 'pix')
+x[2] := spaste(n, 'pix')
+r2 := drm.wrange(pixelaxis=axis, range=x)    # Define region for last 5 spectral pixels
+if (is_fail(r2)) fail
+#
+ok := im.set(pixelmask=F, region=r1)         # Mask first 5 spectral pixels
+if is_fail(ok)) fail
+ok := im.set(pixelmask=F, region=r2)         # Mask last 5 spectral pixels
+if is_fail(ok)) fail
+r1.done()                                    # Destroy region tools
+r2.done()
+#                                           
+cont := [=]                                  # Define continuum range
+cont[1] := "1pix 20pix"
+cont[2] := "55pix 64pix"
+r := [=];                                    # Make a region for each range
+for (i in 1:length(cont)) {
+   r[i] := drm.wrange(pixelaxis=axis, range=cont[i])
+   if (is_fail(r[i])) fail
+}
+union := drm.union(r)                        # Union of ranges
+if (is_fail(union)) fail;
+#
+dos.remove(contfile)
+ok := im.moments(outfile=contfile, moments=-1,   # Generate average of image
+                 axis=axis, region=union)        # in specified contimuum ranges
+if (is_fail(ok)) fail
+#      
+expr := spaste('$im - ', contfile)           # line - continuum
+ok := im.calc(expr)                          # apply expression in situ
+if (is_fail(ok)) fail
+#
+im.view()                                    # display
+\end{verbatim}
+
+
+
+\section {Analysis}
+
+There are a number of dedicated mathematical analysis
+functions in the Image \tool\ at this point.   These are
+
+\subsection {Statistics}
+
+The Image \tool\ function
+\htmlref{Image.statistics}{images:image.statistics.function} computes a range
+of statistics from the pixel values in the image.  You can then plot
+them, list them and retrieve them (into a Glish record) for further
+analysis. 
+
+To evaluate the statistics over the whole image:
+
+\begin{verbatim}
+im := image('z2')                   # A 2-D image
+im.stats()
+\end{verbatim}
+
+giving the output
+
+\begin{verbatim}
+Number points =   6.422000e+03       Sum      =  -1.695736e+03
+Flux density  =  -7.852021e+01 Jy
+Mean          =  -2.640511e-01
+Variance      =   2.712798e-01       Std dev  =   5.208453e-01
+Rms           =   5.839183e-01
+ 
+Minimum value  -1.865986e+00 at [79, 63] (23:59:47.733, +00.05.00.000)
+Maximum value   1.478747e+00 at [29, 59] (00:00:14.400, +00.04.12.000)
+\end{verbatim}
+
+
+This function also lets you evaluate the statistics over some repeating chunk
+of the image.  For example, you can ask for your statistic(s) to be
+computed for each XY plane of a cube as a function of Z, 
+or for each X-axis profile, and so on.
+
+
+\begin{verbatim}
+im := image('z3')                    # A 3-D image
+im.stats(axes=[1,2])                 # Evaluate over XY planes as a function of Z
+im2.stats(axes=[1,2], plotter='1/glish', plotstats="mean stddev")
+\end{verbatim}
+
+gives the output:
+
+\begin{verbatim}
+Selected bounding box [1, 1, 1] to [155, 178, 64]
+
+Plane Freq         Npts          Sum           Mean          Rms           Std dev       Minimum       Maximum       
+1     1.413350e+09 2.759000e+04  2.168769e+02  7.860706e-03  9.708145e-02  9.676444e-02  -5.872678e-01 5.634090e-01  
+2     1.413370e+09 2.759000e+04  3.294856e+02  1.194221e-02  1.010458e-01  1.003395e-01  -4.426085e-01 7.099073e-01  
+3     1.413389e+09 2.759000e+04  1.082081e+02  3.922004e-03  1.055577e-01  1.054867e-01  -4.100212e-01 6.766760e-01  
+4     1.413409e+09 2.759000e+04  6.575802e+01  2.383400e-03  1.756554e-01  1.756424e-01  -9.973667e-01 8.662508e-01  
+5     1.413429e+09 2.759000e+04  4.585344e+02  1.661959e-02  1.878055e-01  1.870721e-01  -1.035953e+00 1.018446e+00  
+6     1.413448e+09 2.759000e+04  1.473713e+02  5.341474e-03  1.351079e-01  1.350048e-01  -5.234021e-01 1.195704e+00  
+7     1.413468e+09 2.759000e+04  2.559742e+02  9.277789e-03  1.433194e-01  1.430214e-01  -6.152341e-01 1.135976e+00  
+8     1.413488e+09 2.759000e+04  4.356140e+02  1.578883e-02  1.542441e-01  1.534367e-01  -6.993687e-01 1.215297e+00  
+9     1.413508e+09 2.759000e+04  3.723920e+02  1.349736e-02  1.642182e-01  1.636655e-01  -6.909095e-01 1.388082e+00  
+10    1.413527e+09 2.759000e+04  5.345861e+02  1.937608e-02  1.724699e-01  1.713811e-01  -6.358010e-01 1.335077e+00  
+11    1.413547e+09 2.759000e+04  7.577886e+02  2.746606e-02  1.788728e-01  1.767547e-01  -6.653469e-01 1.341522e+00  
+12    1.413567e+09 2.759000e+04  1.106117e+03  4.009122e-02  1.880124e-01  1.836915e-01  -7.188058e-01 1.282076e+00  
+13    1.413586e+09 2.759000e+04  1.329324e+03  4.818138e-02  1.962451e-01  1.902420e-01  -6.393265e-01 1.191303e+00  
+14    1.413606e+09 2.759000e+04  1.411702e+03  5.116716e-02  2.052504e-01  1.987740e-01  -5.953373e-01 1.225875e+00  
+15    1.413626e+09 2.759000e+04  1.354188e+03  4.908257e-02  2.138623e-01  2.081575e-01  -5.535692e-01 1.475392e+00  
+16    1.413645e+09 2.759000e+04  1.264175e+03  4.582004e-02  2.176246e-01  2.127501e-01  -6.773824e-01 1.470784e+00  
+17    1.413665e+09 2.759000e+04  1.298691e+03  4.707106e-02  2.112372e-01  2.059297e-01  -7.119259e-01 1.496961e+00  
+18    1.413685e+09 2.759000e+04  1.341463e+03  4.862133e-02  2.125130e-01  2.068799e-01  -6.245704e-01 1.562188e+00  
+19    1.413704e+09 2.759000e+04  1.442007e+03  5.226557e-02  2.084975e-01  2.018440e-01  -6.114445e-01 1.554983e+00  
+20    1.413724e+09 2.759000e+04  1.582090e+03  5.734287e-02  2.001675e-01  1.917816e-01  -5.846441e-01 1.583541e+00  
+21    1.413744e+09 2.759000e+04  1.501028e+03  5.440480e-02  1.893141e-01  1.813316e-01  -6.073643e-01 1.503856e+00  
+22    1.413763e+09 2.759000e+04  1.269058e+03  4.599702e-02  1.701235e-01  1.637903e-01  -4.517879e-01 1.371341e+00  
+23    1.413783e+09 2.759000e+04  7.299262e+02  2.645619e-02  1.468132e-01  1.444124e-01  -5.721810e-01 1.026282e+00  
+24    1.413803e+09 2.759000e+04  6.232603e+02  2.259008e-02  1.331807e-01  1.312533e-01  -6.960571e-01 7.298118e-01  
+25    1.413823e+09 2.759000e+04  5.981219e+02  2.167894e-02  1.249476e-01  1.230547e-01  -5.943727e-01 7.063599e-01  
+26    1.413842e+09 2.759000e+04  4.736431e+02  1.716720e-02  1.137065e-01  1.124051e-01  -6.665137e-01 6.953478e-01  
+27    1.413862e+09 2.759000e+04  4.054529e+02  1.469565e-02  1.171430e-01  1.162197e-01  -6.885164e-01 5.358027e-01  
+28    1.413882e+09 2.759000e+04  3.413342e+02  1.237166e-02  1.213791e-01  1.207491e-01  -7.589104e-01 6.029773e-01  
+29    1.413901e+09 2.759000e+04  2.388184e+02  8.655977e-03  1.278192e-01  1.275281e-01  -8.899862e-01 6.607218e-01  
+30    1.413921e+09 2.759000e+04  2.580464e+02  9.352897e-03  1.297307e-01  1.293954e-01  -9.948431e-01 8.899596e-01  
+31    1.413941e+09 2.759000e+04  2.157427e+02  7.819597e-03  1.258456e-01  1.256047e-01  -9.192608e-01 7.220768e-01  
+32    1.413960e+09 2.759000e+04  2.848281e+02  1.032360e-02  1.173345e-01  1.168816e-01  -8.530115e-01 8.228853e-01  
+\end{verbatim}
+
+
+
+\subsection {Histograms}
+
+The Image \tool\ function
+\htmlref{Image.histograms}{images:image.histograms.function} computes
+histograms from the pixel values in the image.  You can then plot them,
+and retrieve them (into a Glish record) for further analysis. 
+
+This function lets you evaluate the histograms over some repeating chunk
+of the image.  For example, you can ask for your histogram(s) to be
+computed for each XZ plane of a cube as a function of Y, or over the
+whole image, or for each X-axis profile and so on.
+
+This example makes a histogram from the entire image.
+
+\begin{verbatim}
+im := image('z2')     
+im.histograms(plotter='1/glish')
+\end{verbatim}
+
+
+
+\subsection {Moments}
+
+The Image \tool\ function
+\htmlref{Image.moments}{images:image.moments.function} offers traditional
+image moment analysis (weighted sums of profiles) of images.  It offers
+a wide range of moments, and a range of methods with which to calculate
+them. 
+
+Some of the methods are interactive; be aware that they are very user
+intensive, and really only practical for smallish numbers of spectra. 
+
+The command-line interface for this function is rather cumbersome. 
+Therefore, a custom GUI interface has been created as well.  This GUI
+can be accessed via the \htmlref{Toolmanager}{tasking:toolmanager} (if
+you ask \htmlref{Toolmanager}{tasking:toolmanager} to show you the
+function arguments for this function, by default it builds the custom
+GUI) and also from Glish:
+
+\begin{verbatim}
+im := image('mycube')
+mg := im.momentsgui()
+\end{verbatim}
+
+See the \htmlref{Image.momentsgui}{images:image.momentsgui.function} documentation
+for details.   The idea of this GUI is that it is context sensitive;
+it disables parts of itself depending upon what you choose to do
+so that you are (hopefully) constrained to do something useful.
+
+
+
+\subsection {Convolution}
+
+There is a range of convolution \tools.
+
+\subsubsection{2D convolution}
+
+You can convolve specified axes by a 2-D kernel via the 
+function \htmlref{Image.convolve2d}{images:image.convolve2d.function}.  
+
+\begin{verbatim}
+im := image('xfy')                                                # RA/Freq/DEC
+im2 := im.convolve2d(outfile='xfy.con', axes=[1,3], type='gauss',
+                     major='20arcsec', minor='10arcsec', pa=45);
+#
+im := image('xyf')                                                # RA/DEC/Freq
+im2 := im.convolve2d(axes=[1,3], type='gauss',                    # Output is virtual
+                     major='20pix', minor='10pix', pa=45);
+\end{verbatim}
+
+In the first example, we convolve the RA/DEC plane of the image (which
+happens to be in order RA/Freq/DEC) by a gaussian.  In the second
+example, we convolve the RA/Freq plane of the image by a gaussian. 
+Because we are convolving unlike axes, we must specify the width of the
+kernel in pixels. 
+
+
+
+\subsubsection{Separable convolution}
+
+This is available via the function
+\htmlref{Image.sepconvolve}{images:image.sepconvolve.function}.  You specify
+the axes to convolve, and the convolution model (from Gaussian, Hanning,
+Boxcar presently) and parameters.  There is also a custom GUI interface
+provided via
+\htmlref{Image.sepconvolvegui}{images:image.sepconvolvegui.function}.  This
+convolution is Fourier based. 
+
+\begin{verbatim}
+im := image('mycube')
+im2 := im.sepconvolve (outfile='mycube.sepcon', axes=[1,3],
+                       types="gauss boxcar", widths="10arcsec 20pix")
+\end{verbatim}
+
+In this example we convolve axes 1 and 3 with a gaussian and boxcar
+respectively, and express the x and y kernel widths in world and pixel
+units, respectively.
+
+If you only want Hanning convolution of one axis, then a separate
+function \htmlref{Image.hanning}{images:image.hanning.function} is also
+available.  This convolution is direct (not Fourier based) and
+is faster (and more accurate) than single axis Hanning
+convolution via the function \htmlref{Image.sepconvolve}{images:image.sepconvolve.function}.
+
+\begin{verbatim}
+im := image('mycube')
+im2 := im.hanning (outfile='mycube.hann', axis=3)
+\end{verbatim}
+
+
+
+\subsubsection{Convolution by an array or image}
+
+You may convolve your image by any kernel by providing
+the convolution kernel in a \glish\ array to the function
+\htmlref{Image.convolve}{images:image.convolve.function}.
+
+\begin{verbatim}
+im := image('myimage')
+kernel := mykernel(...)         # Your code to generate the kernel
+im2 := im.convolve(outfile='myim.con', kernel=kernel) 
+\end{verbatim}
+
+You can also use this function to convolve your image by another.
+
+\begin{verbatim}
+im := image('myimage')
+im2 := im.convolve(outfile='myim.con', kernel='psf.im')
+\end{verbatim}
+
+
+
+\subsection {Fourier Transform}
+
+With the Image \tool\ function 
+\htmlref{Image.fft}{images:image.fft.function} you can Fourier Transform
+the image.  It will automatically do just the sky-plane(s)
+by default, or you can specify which axes to transform.
+
+\begin{verbatim}
+myim := image('gc')
+myim.fft(amp='amp.gc', phase='phase.im')     # Save amp and phase
+amp := image('amp.gc')                       # Make Image tool 
+amp.view()                                   # Display
+\end{verbatim}
+
+
+
+\subsection {Regridding}
+
+With the Image \tool\ function \htmlref{Image.regrid}{images:image.regrid.function} you
+can regrid the image to a specified Coordinate System.  This supports
+reference frame changes (e.g.  LSR to TOPO, J2000 to B1950 etc) as well
+as projection changes for the sky. 
+
+\begin{verbatim}
+im1 := image('radio.image')
+im2 := image('optical.image')
+cs2 := im2.coordsys();
+im3 := im1.regrid(outfile='radio.regridded', csys=cs2, shape=im2.shape());
+\end{verbatim}
+
+In this example, we regrid a radio image onto the grid of an optical
+image - this probably (if the optical FITS image was correctly labelled
+!!) will involve a projection change (optical images are usually TAN
+projection, radio usually SIN). 
+
+
+\begin{verbatim}
+im1 := image('radio.image')
+cs1 := im1.coordsys();
+cs1.referencecode('dir')
+#<< J2000
+cs2.setreferencecode(type='dir', value='B1950', adjust=T)
+cs1.referencecode('dir')
+#<< B1950
+im3 := im1.regrid(outfile='radio.regridded', csys=cs1)
+\end{verbatim}
+
+In this example, we regrid a radio image from J2000 to B1950. The
+Coordinate System is recovered from the image into a Coordsys \tool.  It
+is then used to change the Direction Coordinate reference to B1950
+(adjusting the reference value as well). This Coordsys \tool\ is then
+given to the regridding function as the template.  Note that changing
+the Coordsys \tool\ has no effect on the Coordinate System still in
+place in the original image.
+
+
+
+
+\section {Source/profile Fitting, Finding and Modifying}
+
+Current support is for the fitting of 2D models (currently only
+Gaussians are supported) to the sky.  This is provided at two levels.
+
+The \htmlref{Imagefitter}{images:imagefitter} \tool\ is an interactive
+application with which you fit models to sources.  Your image is
+displayed, and you interactively fit the specified region with the
+desired model.  Multiple simultaneous models are supported.  The source
+fits are stored in a
+\htmlref{Componentlist}{componentmodels:componentlist} \tool\ for
+further use. 
+
+This \tool\ is based around the Image \tool\ function
+\htmlref{Image.fitsky}{images:image.fitsky.function} which fits the specified model to the
+specified region of the image and returns the fit in a
+\htmlref{Componentlist}{componentmodels:componentlist} \tool\ for further
+use. 
+
+\begin{verbatim}
+fitter := imagefitter('myimage')    # Starts fitter GUI
+cl := fitter.componentlist()        # Recover fits when done
+\end{verbatim}
+
+
+Together with fitting there is a function which automatically
+finds sources called \htmlref{Image.findsources}{images:image.findsources.function}.
+This function is tuned to find strong point sources.  Its job
+is not to find extended sources or weak sources.  The result
+is also a \htmlref{Componentlist}{componentmodels:componentlist} \tool\ 
+which can be used as an initial estimate for the fitting
+function \htmlref{Image.fitsky}{images:image.fitsky.function}.
+
+\begin{verbatim}
+im := imagemaketestimage('zz')
+est := im.findsources(nmax=3)
+local pixels, mask, converged
+fit := im.fitsky(pixels, mask, converged, estimate=est, models="gauss gauss gauss")
+im.modify(model=fit, subtract=T)
+\end{verbatim}
+
+In this example, we create the test image.  Then we find an estimate 
+of the strongest three (point) sources.  We use this estimate to fit
+three simultaneous gaussians.  Finally we subtract the fit from
+the image.
+
+As well as fitting 2-D models of the sky, you can also fit 1-D models to
+profiles exctracted from an image. The
+\htmlref{Imageprofilefitter}{images:imageprofilefitter} \tool\ is an
+interactive application with which you fit models to 1-D profiles.  Your
+image is displayed, and you interactively specify where the profile
+should be extracted from and then interactively fit it.
+You can also automatically fit many profiles in a region and save
+the fits in an image.
+
+\begin{verbatim}
+fitter := imageprofilefitter('myimage')    # Starts fitter GUI
+r := fitter.getfit()                       # Recover fit into a record when done
+\end{verbatim}
+
+
+
+
+
+\section {Polarimetry}
+\subsection{General}
+
+Polarimetric analysis of images is handled via an
+\htmlref{Imagepol}{images:imagepol} \tool.  This tool is created from an
+\aipspp\ image (like the Image \tool\ is) and is specialized for
+polarimetric analysis of images.  The input image must contain a Stokes
+coordinate with some combination of Stokes I, Q, U, and V. 
+
+The \tool\ offers easy access to the different Stokes parameters in an
+image, computation of the standard secondary (e.g.  polarized intensity)
+and tertiary images (e.g.  fractional polarization) and their errors. 
+There are also methods for deriving the Rotation Measure. 
+
+
+\begin{verbatim}
+ip := imagepol('myim')                # Construct Imagepol tool from image
+si := ip.stokesi()                    # Get Stokes I Image tool
+si.view()                             # Display it
+flp := ip.fraclinpol()                # Fractional linear polarization Image tool
+tpi := ip.totpolint()                 # Total polarized intensity Image tool
+tpi.statistics()                      # Get statistics
+tpi.view ()                           # View
+imagedones()                          # Destroy all image tools
+\end{verbatim}
+
+In this example, we construct and Imagepol \tool. We then recover the
+Stokes I image, and compute the fractional linear polarization image and
+the total polarized intensity image.  You get access to these 
+via Image \tools\ which are returned to you by the Imagepol
+\tool.  Therefore you can use all the Image \tool\ functions like {\stf
+statistics} and {\stf view} on them. 
+
+
+
+\begin{verbatim}
+lpa := ip.linpolposang()              # Linearly polarized position angle Image tool
+lpaerr := ip.sigmalinpolposang()      # Error in linearly polarized position angle Image tool
+lpa.view(mask='$lpaerr<5]')           # Display and mask bad when position angle error > 5 degrees
+\end{verbatim}
+
+Here we compute the linearly polarized position angle and error images
+and return them as Image \tools.  Rather than mask the position angle
+image based on its error when the position angle image is created, we
+prefer to defer that to when the error image is actually used.  This
+gives you greater flexibility.  In this case, we use the {\gcf mask}
+argument (an 'on-the-fly' mask) with the {\stf view} function so that
+pixels whose position angle error is greater than 5 degrees are masked
+bad and not displayed. 
+
+
+\subsection{RotationMeasure}
+
+There are two methods for dealing with the generating the Rotation Measure.
+A traditional approach and a new Fourier approach.
+
+\begin{verbatim}
+ip := imagepoltestimage('iquv.im', rm=350)              # Makes test image and Imagepol tool from it
+ip.rotationmeasure(rm='rm', rmerr='rmerr', rmmax=400)   # RM (traditional)
+rm := image('rm')                                       # Image tool associated with RM
+rmerr := image('rmerr')                                 # Image tool associated with RM error 
+#
+rm.statistics(stats, list=F)
+print stats.mean, ', ', stats.sigma
+#<< 349.9826, 0.7228746
+
+#
+rm.view(mask='$rmerr<0.725')                           # Display and mask bad when error > 0.725rad/m/m
+ip.done()                                              # Destroy this Imagepol tool
+#
+ip := imagepoltestimage('iquv.im', nx=8, ny=8, bw=8e6, nf=512, rm=1e6)   # Makes test image
+ip.fourierrotationmeasure(amp='amp');          # RM (Fourier)
+amp := image('amp')
+amp.view(order=[3,1,2])                                # Display with RM along x axis
+\end{verbatim}
+
+In this example, we first use the alternative Imagepol \tool\
+constructor {\stf imagepoltestimage} which generates an IQUV cube for the
+specified Rotation Measure.  Then we use the traditional method and a
+new Fourier-based method to recover the RM.   
+
+The test image has constant Stokes I and V (plus noise) and a
+sinusoidally (because of the RM) frequency dependent Q and U (plus
+noise).   The traditional method recovers the RM and error images and we
+display the RM when the error is less than the specified (contrived)
+value.   You can see from the statistics that the correct value
+is recovered.
+
+The Fourier method recovers the linearly polarized intensity (we
+save the amplitude) as a function of Rotation Measure which we also
+display. We display the image (cube) with
+the RM along the X axis of the display to see the recovered signal.
+
+
+\subsection{Vector overlay}
+
+A traditional method of viewing linear polarization is to overlay
+vectors whose length is proportional to the fractional linear
+polarization, or total linearly polarized intensity and whose position
+angle is the linearly polarization position angle.  This display is done
+with the Viewer \tool\ as follows:
+
+\begin{verbatim}
+include 'imagepol.g'
+include 'viewer.g'
+#
+p := imagepol('iquv.im')  # Make Imagepol tool
+p.complexlinpol('clp')    # Make complex image of linear polarization disk file 
+dv.gui()                  # Start data manager to give access to Complex image
+\end{verbatim}
+
+Now select the image {\sff clp} with the Viewer's data manager GUI,
+click {\gif Vector Map} in the {\gif DisplayData Type} selection area
+and the vector display will appear on the display.  You can choose to
+also display raster or contour maps of whatever you like to complete the
+display.  The Viewer's Vector map display capability also offers you
+amplitude noise debiasing and the On-The-Fly mask through the {\gif
+Adjust} GUI. 
+
+
+
+
+
+\section {Communications}
+\label{sct:communications}
+
+The communications of \aipspp\ are handled by \glish, which has the
+capability to send and receive events.  These events contain information
+which  is then used by the process capturing the event.  This is the way
+in which we allow \tools\ to communicate with each other.  One can get
+terribly clever and make very complex connections, rapidly causing
+confusion.
+
+In the context of image analysis, there are some communications between
+\tools\ which you should understand.  We have kept them reasonably
+simple so that they are clear, although sometimes too cumbersome. 
+Presently, these communications are mainly to do with transmitting
+regions. 
+
+\subsection {The Regionmanager and region widgets}
+
+When you use the \htmlref{Toolmanager}{tasking:toolmanager}, the \tool\
+function arguments requiring an image region-of-interest are managed by
+a specialized \htmlref{region-entry}{widgets:guientry.region.function} widget. 
+Like all of our entry widgets, this one has a spanner (wrench) menu. 
+One of the menu items activates the default Regionmanager ({\stf drm})
+GUI.  With this you can create a region and then send it to the region
+entry widget (this process is described in more detail in the
+Regionmanager \htmlref{Regionmanager.gui}{images:regionmanager.gui.function} \tool\ function
+documentation.  When you send the region to the widget, you can specify
+whether the connection between the the region widget and the
+Regionmanager remains open or not (also see above documentation). 
+
+You can make a simple test with
+
+\begin{verbatim}
+include 'guientry.g'
+ge := guientry();
+r := ge.region(allowunset=T)
+\end{verbatim}
+
+\noindent and then use the spanner (wrench) menu to start the
+regionmanager GUI. 
+
+Note that the communications are designed so that only one region entry
+widget at a time can be connected to the Regionmanager GUI (otherwise
+there would be confusion about which regions are going where). 
+
+
+\subsection {The Regionmanager and images}
+
+It is possible to request `interactive' region creation from the Regionmanager
+GUI (select desired Image \tool\ from Regionmanager list and click
+`interactive' from list of possible region types).
+
+This action will start the \htmlref{Image.view}{images:image.view.function} function of
+the specified image (the `break' button on the display panel will be
+active - normally it is inactive) and the Regionmanager will collect the
+interactive regions that you make (by double clicking inside the
+delineated region - see also \htmlref{Image.view}{images:image.view.function}
+documentation for instructions on how to make them).  You could then
+send this region along to a region-entry widget for example. 
+
+Although we could connect a region-entry widget directly to the image
+display (cutting out the Regionmanager), it is currently felt that until
+we have a real communications manager in \aipspp, that such clever
+connections will be too unclear (the user must have some way of knowing
+what is connected to what).   Thus we persist with the slightly less
+sophisticated model of the Regionmanager always being the hub for region
+communications.
+
+\section {Error Messages}
+
+The Images module is consistent in its approach to error handling.  All
+\tool\ functions return a fail condition if an exception (unrecoverable
+error) is generated.  Thus, if you are writing \glish\ scripts, you can
+do robust error checking.  The documentation for each \tool\ function
+tells you if a fail is a possible return.   The error messages for these
+exceptions are posted to the logger.  If the logger GUI is running, you
+will see a Red Box of Death with the error message in it.
+
+\begin{verbatim}
+const mystats := function (name) 
+{
+  im := image(name)
+  if (is_fail(im)) fail;
+  return im.statistics()
+}
+\end{verbatim}
+
+In this example, we make a function which takes a string and tries to
+create an Image \tool\ from it.  If it fails, the error condition is
+propagated out so that the caller of the function can check for the fail
+as well. 
+
+
+\section {References}
+
+Here are some useful documentation links:
+
+\begin{description}
+
+\item \htmlref{Imager}{imager} is the synthesis imaging module.
+
+\item \htmlref{Images}{images} is the Images module.
+
+\item \htmlref{Image}{images:image} is the Image \tool.
+
+\item \htmlref{Regionmanager}{images:regionmanager} is the Regionmanager \tool.
+
+\item \htmlref{Imagefitter}{images:imagefitter} is the Imagefitter \tool.
+
+\item \htmlref{Imageprofilefitter}{images:imageprofilefitter} is the Imageprofilefitter \tool.
+
+\item \htmlref{Imagepol}{images:imagepol} is the Imagepol \tool.
+
+\item \htmlref{Viewer}{viewer} is the Viewer display \tool.
+
+\item \htmladdnormallink{User Reference Manual}{../../user/Refman/Refman.html}
+is the User's Reference Manual
+
+\item \htmladdnormallink{Glossary}{../../glossary/glossary.html}
+is the Glossary
+
+
+\end{description}
+
+
+
+

@@ -1,0 +1,120 @@
+
+Title:                  Proposal for a new memory use policy
+Person responsible:     Athol Kemball (akemball@nrao.edu)
+Originator of proposal: Athol Kemball (akemball@nrao.edu)
+Exploders targeted:     aips2-lib
+Time table:
+        Date of issue:          2002 September 20       Done
+        Comments due:           2002 September 27       Done
+        Revised proposal:       2002 October 03         Done
+        Final comments due:     2002 October 05         Done
+        Decision date:          2002 October 07         Done
+
+Statement of goals:
+
+To define a new memory use policy in AIPS++.
+
+Proposed changes:
+
+At present, AIPS++ has a memory use policy based on the available
+memory in a pre-defined canonical system configuration (currently
+128-256 MB). However, several recent factors motivate for a change in
+memory use policy:
+
+ a) Memory costs have fallen sharply in recent years, and individual
+    workstations may frequently have a 1 GB or more of memory at
+    modest cost. This trend in decreasing cost per MB will likely 
+    continue in the future. Our users have systems which range
+    from the canonical memory value up to much larger values.
+
+ b) Memory use policy is a key determinant in the performance of
+    key algorithms in the package, as is common for I/O intensive
+    applications in general.
+
+However, any new memory use policy has to meet several constraints:
+
+ c) AIPS++ should perform efficiently on the canonical system
+    configuration, as this remains a key requirement on the
+    package.
+
+ d) When there is more memory available, however, it should be
+    available to those algorithms where memory use policy can have 
+    a significant impact on performance.
+
+ e) Use of memory above the canonical limit should be subject to
+    user control, but the control should be straight-forward and 
+    default appropriately if the user is unaware of this feature. 
+
+The points above suggest an adaptive performance strategy for AIPS++,
+utilizing available memory as possible. In general this is a
+difficult problem, but a simple strategy is proposed for now:
+
+ f) Supplement the aipsrc variable system.resources.memory by a
+    new aipsrc variables: system.resources.memoryfactor and
+    system.resources.memoryreserved. The memory factor, which
+    falls in the range of [0,1], will determine the degree of
+    aggressiveness used by all algorithms in utilizing available 
+    physical memory. As such, it constitutes a simple single control
+    which users can adjust in .aipsrc or at the Glish command line.
+    A default value of 0.5 may be appropriate but this will need
+    to be guided by experience. The reserved memory aipsrc variable
+    indicates the base memory offset not available for dynamic
+    allocation. This would default to the canonical memory size
+    for AIPS++ (128 MB), and would help to prevent overallocation
+    for systems close to the canonical memory size.
+
+ g) For algorithms which can utilize memory to improve performance
+    significantly, the available physical memory should be obtained
+    dynamically from the new HostInfo::totalMemory() function. If 
+    the physical memory cannot be obtained dynamically, then the 
+    aipsrc value from system.resources.memory should be used. This
+    is currently accessible via AppInfo::memoryInMB(). These checks on
+    available memory will be encapsulated in a central AppInfo static
+    function, called AppInfo::usableMemory[InBytes|InKB|InMB]().
+
+    To unify the current memory function names, it is proposed to
+    use the following naming scheme and conventions for the memory
+    access functions: i) all memory functions to use suffixes
+    "InBytes", "InKB", or "InMB" to denote units; ii) rename
+    HostInfo::{memoryFree, memoryTotal, memoryUsed} to
+    HostInfo::{freePhysicalMemoryInKB, totalPhysicalMemoryInKB,
+    usedPhysicalMemoryInMB}; iii) Similarly, for HostInfo::swap*,
+    used HostInfo::freeSwapInKB etc; iv) rename AppInfo::memoryInMB()
+    to AppInfo::systemResourcesMemory[InBytes|InKB|InMB()].
+
+ h) Each algorithm making adaptive use of memory will need to
+    calculate the optimal memory values for the algorithm from 
+    the total physical memory, reserved memory and the memory factor 
+    [0,1], in conjunction with any prudent internal scale factor 
+    which is appropriate. All fine controls on memory use for a given 
+    algorithm should be made visible (usually in a setoptions() 
+    function), and should override memoryfactor if they are set
+    explicitly. 
+
+ i) Algorithms should not require more than the canonical value
+    to run efficiently. This new memory use policy does not
+    void that constraint; extra memory should only be used to
+    optimize performance.
+
+Expected Impact:
+
+Improved performance of key algorithms, while preserving the canonical
+memory configuration constraint.
+
+This change however, will require some fine-tuning of adaptive
+memory use algorithms over time to optimize their performance.
+Overly aggressive memory use can cause serious performance problems
+if physical memory is accidentally exhausted. This will take some
+refinement over time.
+
+Proposed documentation changes:
+
+Updating aipsrcdata, and other related user documentation.
+
+Revision log:
+ - Strengthened text about encapsulating memory access functions.
+ - Add additional proposed aipsrc variable: system.resources.memoryreserved
+   indicating a base reserved memory.
+ - Unify naming convention for memory access functions.
+ - Refine language on disk- and memory-based performance.
+--------------------------------------------------------------------------

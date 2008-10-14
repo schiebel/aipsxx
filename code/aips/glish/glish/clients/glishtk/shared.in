@@ -1,0 +1,228 @@
+## $Id: shared.in,v 19.2 2005/10/19 14:44:07 dschieb Exp $
+## Copyright (c) 1998 Associated Universities Inc.
+##
+## Makefile for glishtk
+##
+
+MK_LIB = @MAKE_SLIB@
+LD_LIBS = @SLIB_LD_LIBS@ @SLIB_LD_LIBS_glishtk@
+CXXFLAGS = @TK_FLAGS@ @CXXFLAGS@ @SLIB_CXXFLAGS@
+GSUFFIX = @GLISH_SLIB_SUFFIX@
+SUFFIX = @SLIB_SUFFIX@
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+#IF LABEL_SLIB
+LABEL = @SLIB_LABEL@libglishtk$(GSUFFIX)
+#FI
+
+TK_LIB = @TK_LIB@
+LIBS = @TK_LD_RPATH@ @TKLIB_LIBS@ $(TK_LIB) @LIBS@
+LDOBJ_LIBS = @LDOBJ_LIBS@
+
+CPLUS = @CXX@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ../..
+H = $(SRC)/include/Glish
+GLISH_SRC = $(SRC)/../..
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+SCRIPTDIR_P = $(top)/share/glish
+SCRIPTDIRTCL_P = $(SCRIPTDIR_P)/tcl
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+LOADDIR = @loaddir@
+BINDIR = @bindir@
+SCRIPTDIR = @SCRIPTDIR@
+SCRIPTDIRTCL = @SCRIPTDIRTCL@
+
+#IF AIX
+AIXSYM = $(LIBDIR)/libglishtk.exp
+AIXSYM_P = $(LIBDIR_P)/libglishtk.exp
+#FI
+
+MKHIER = $(top)/config/mkhier
+
+RCDIR = @RCDIR@
+TK_LIB = @TK_LIB@ 
+DL_LIBS = @DL_LIBS@
+XLIB = @XLIBSW@
+XINC = @XINCLUDES@
+
+INCLUDE = -I.. -I$(SRC)/include -I$(SRC) -I$(GLISH_SRC) -I$(GLISH_SRC)/include -I$(INCDIR_P) @TK_INCL@ $(XINC) $(PLUSINC)
+
+OBJS = tkProxy.o tkUtil.o
+LOBJS = GlishTk.o tkCore.o tkCanvas.o mkWidgets.o
+
+all: make-libdir_p $(AIXSYM_P) $(LIBDIR_P)/libglishtk$(SUFFIX) $(LIBDIR_P)/GlishTk$(SUFFIX) $(SCRIPTDIRTCL_P)/mkWidgets/pkgIndex.tcl
+
+make-libdir_p:
+	$(MKHIER) $(LIBDIR_P)
+
+make-libdir:
+	$(MKHIER) $(LIBDIR)
+
+install:  make-libdir $(AIXSYM) $(LIBDIR)/libglishtk$(SUFFIX) $(LOADDIR)/GlishTk$(SUFFIX) $(SCRIPTDIRTCL)/mkWidgets/pkgIndex.tcl
+
+libglishtk$(GSUFFIX): $(OBJS)
+	rm -f libglishtk$(GSUFFIX)
+	$(MK_LIB) libglishtk$(GSUFFIX) $(LABEL) @SLIB_LD_FLAGS_glishtk@ $(OBJS) $(LD_LIBS)
+
+$(LIBDIR_P)/libglishtk$(GSUFFIX): libglishtk$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) libglishtk$(GSUFFIX) $(LIBDIR_P)
+
+$(LIBDIR)/libglishtk$(GSUFFIX): libglishtk$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_LIBRARY) libglishtk$(GSUFFIX) $(LIBDIR)
+
+#IF AIX
+$(LIBDIR_P)/libglishtk.exp: libglishtk$(GSUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_DATA) libglishtk.exp $(LIBDIR_P)
+
+$(LIBDIR)/libglishtk.exp: libglishtk$(GSUFFIX)
+	$(MKHIER) $(LIBDIR)
+	$(INSTALL_DATA) libglishtk.exp $(LIBDIR)
+#FI
+
+GlishTk$(SUFFIX): $(LOBJS)
+	$(MK_LIB) GlishTk$(SUFFIX) $(LOBJS) $(LDOBJ_LIBS) $(DL_LIBS) 2>&1 | head -100
+
+$(LIBDIR_P)/GlishTk$(SUFFIX): GlishTk$(SUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) GlishTk$(SUFFIX) $(LIBDIR_P)
+
+$(LOADDIR)/GlishTk$(SUFFIX): GlishTk$(SUFFIX)
+	$(MKHIER) $(LOADDIR)
+	$(INSTALL_LIBRARY) GlishTk$(SUFFIX) $(LOADDIR)
+
+tkUtil.o: $(SRC)/tkUtil.cc $(SRC)/tkUtil.h $(H)/glishtk.h $(SRC)/comdefs.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkUtil.cc
+
+tkProxy.o: $(SRC)/tkProxy.cc $(H)/glishtk.h $(SRC)/comdefs.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkProxy.cc
+
+GlishTk.o: $(SRC)/GlishTk.cc $(SRC)/tkCore.h $(SRC)/tkCanvas.h $(H)/glishtk.h $(SRC)/comdefs.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/GlishTk.cc
+
+tkCore.o: $(SRC)/tkCore.cc $(SRC)/tkCore.h $(H)/glishtk.h $(SRC)/comdefs.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkCore.cc
+
+tkCanvas.o: $(SRC)/tkCanvas.cc $(SRC)/tkCanvas.h $(H)/glishtk.h $(SRC)/comdefs.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkCanvas.cc 
+
+mkWidgets.o: $(SRC)/mkWidgets.cc $(SRC)/mkWidgets.h $(H)/glishtk.h $(SRC)/comdefs.h
+	$(MKHIER) $(SCRIPTDIRTCL_P)
+	SCRIPTDIRTCL_P_FULL=`cd $(SCRIPTDIRTCL_P); pwd`; \
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -DTCLSCRIPTDIRP="\"$$SCRIPTDIRTCL_P_FULL\"" \
+				        -DTCLSCRIPTDIR="\"$(SCRIPTDIRTCL)\"" -c $(SRC)/mkWidgets.cc 
+
+$(SCRIPTDIRTCL_P)/mkWidgets/pkgIndex.tcl:
+	$(MKHIER) $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/pkgIndex.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Aclock.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Calendar.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Combobox.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Document.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Gridcontrol.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Ibutton.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Iconbox.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Listcontrol.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Pane.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Progressbar.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Scrollbox.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Spinentry.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Statusbar.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Tabcontrol.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Textframe.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Toolbar.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Tooltip.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Treecontrol.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Window.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/metawidget.tcl $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/mkWidCol.htm $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/mkWidMan.htm $(SCRIPTDIRTCL_P)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/ReadMe.txt $(SCRIPTDIRTCL_P)/mkWidgets
+
+$(SCRIPTDIRTCL)/mkWidgets/pkgIndex.tcl:
+	$(MKHIER) $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/pkgIndex.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Aclock.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Calendar.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Combobox.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Document.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Gridcontrol.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Ibutton.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Iconbox.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Listcontrol.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Pane.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Progressbar.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Scrollbox.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Spinentry.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Statusbar.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Tabcontrol.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Textframe.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Toolbar.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Tooltip.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Treecontrol.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/Window.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/metawidget.tcl $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/mkWidCol.htm $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/mkWidMan.htm $(SCRIPTDIRTCL)/mkWidgets
+	$(INSTALL_DATA) $(SRC)/mkWidgets/ReadMe.txt $(SCRIPTDIRTCL)/mkWidgets
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm tar-files
+
+tar-list:
+	@echo glish >&2
+	@ls Makefile.in config.h.in \
+		COPYING glish.init mkinit.sh *.c *.cc *.h *.l *.y \
+		*.sed doc/*.ps demos/*.g demos/*.cc demos/*.c \
+		demos/README* include/Glish/*.h | grep -v '^config.h$$'
+	@cd clients; $(MAKE) $(MFLAGS) tar-list | sed 's,^,clients/,'
+
+rcsinfo:
+	@echo glish
+	@rlog -L -S RCS/*,v
+	@echo glish/include/Glish
+	@cd include/Glish; rlog -L -S RCS/*,v
+	@cd clients; $(MAKE) $(MFLAGS) rcsinfo
+
+clean:
+	@rm -f $(CLIENT_OBJS) $(CLIENT_OBJS_PROXY) $(INTERP_OBJS) $(INTERP_OBJS_PROXY) \
+			libglishp$(GSUFFIX) libglish$(GSUFFIX) main.o glish errs \
+			parse.cc y.tab.h glish_init.cc scan.cc ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h config_p.h Makefile
+
+#IF SLIB_SYM_LINKS
+$(LIBDIR_P)/libglishtk$(SUFFIX): $(LIBDIR_P)/libglishtk$(GSUFFIX)
+	cd $(LIBDIR_P);			\
+	rm -f libglishtk$(SUFFIX);	\
+	ln -s libglishtk$(GSUFFIX) libglishtk$(SUFFIX)
+
+$(LIBDIR)/libglishtk$(SUFFIX): $(LIBDIR)/libglishtk$(GSUFFIX)
+	cd $(LIBDIR);			\
+	rm -f libglishtk$(SUFFIX);	\
+	ln -s libglishtk$(GSUFFIX) libglishtk$(SUFFIX)
+#FI
+
+INSTALL_:
+

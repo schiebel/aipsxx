@@ -1,0 +1,414 @@
+\chapter{ATCA reduction}
+\label{GRatca}
+
+
+{\em Mark Wieringa}
+
+
+\section{Introduction}
+
+This chapter describes how to reduce data from the ATNF's Compact Array
+(ATCA) in \aipspp. It should be read in conjunction with several other
+chapters in \textit{Getting Results}, including the chapters which cover
+ i) \htmlref{synthesis calibration}{GRcalibration}, ii)
+synthesis imaging (including \htmlref{general imaging}{GRimaging} and
+\htmlref{mosaicing}{GRmosaicing}), iii) \htmlref{display of
+data}{GRdisplay}, and iv) \htmlref{image analysis}{GRimageanalysis}.
+
+The data reduction categories covered in this chapter include those
+for continuum data, continuum polarimetry, spectral line data, and
+spectral line polarimetry. Individual steps in each data reduction
+sequence are illustrated using Glish script excerpts.  These data
+reduction steps can equivalently be executed from the
+\htmlref{Toolmanager}{tasking:toolmanager} GUI interface.
+
+
+The reduction sequences described in this chapter require some
+familiarity with the \tools\ listed here:
+
+\begin{description}
+
+\item[\htmlref{atcafiller}{atca:atcafiller}] is used to load ATCA RPFITS file
+data into an \aipspp\ MeasurementSet (MS).
+
+\item[\htmlref{ms}{ms:ms}] is used to access the MS (e.g. list
+and summarize visibility data).
+
+\item[\htmlref{msplot}{ms:msplot}] is used for plotting and
+editing of visibility data, and is useful for investigation and
+editing during calibration cycles.
+
+\item[\htmlref{Calibrater}{calibrater:calibrater}] is used to apply or solve for
+a range of antenna-based calibration effects (like gain, bandpass and
+leakage), and to plot calibration solutions.
+
+\item[\htmlref{Imager}{imager:imager}] is used to image (Fourier Transform,
+deconvolve etc.) the data held in the MeasurementSet (MS).
+
+\item[\htmlref{Viewer}{viewer:viewer}] is used to examine and display data
+and perform related operations.
+
+\item[\htmlref{Image}{images:image}] is used to access and analyse images.
+
+\end{description}
+
+The \htmladdnormallink{User Reference
+Manual}{../../user/Refman/Refman.html} contains the primary
+documentation for all these tools and their functions.  The aim of this
+document is to provide pointers to the relevant chapters and examples,
+and to describe their use in ATCA reduction. 
+
+Users are also referred to the \htmladdnormallink{Miriad-aips++
+dictionary}{../swdictmiriad/swdictmiriad.html} which is a separate chapter in \textit{Getting
+Results}, which provides a mapping of some common Miriad tasks to their
+counterparts in \aipspp. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input measurementsets.latex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Basic initialization}
+
+To load the basic \tools\ likely to be used in ATCA reduction, when
+working from the command line, the following initialization is
+recommended at the start of each \aipspp\ or Glish command-line
+session:
+
+\begin{verbatim}
+include 'synthesis.g'
+include 'atcafiller.g'
+include 'ms.g'
+include 'flagger.g'
+include 'image.g'
+\end{verbatim}
+
+This is not required when working from the Toolmanager GUI, in which case the
+\tools\ are loaded automatically when they are selected.
+
+\section{Filling ATCA data into an \aipspp\ MeasurementSet}
+
+ATCA data in on-line RPFITS format are read into an \aipspp\ MS using the
+\htmlref{atcafiller}{atca:atcafiller} \tool. 
+
+The \htmlref{atcafiller}{atca:atcafiller} tool can be used to read data
+from disk or CDROM. It allows selection on scan number,
+frequency band, frequency range and field name using the 
+select function.
+
+To run the \htmlref{atcafiller}{atca:atcafiller}:
+
+\begin{verbatim}
+include 'atcafiller.g'
+#
+af := atcafiller('c999.ms', filenames="1999-01-01_0101.C999 1999-01-01_0202.C999", 
+                  options='reweight')          # Construct
+af.select(firstscan=3);                        # data selection
+af.fill()                                      # fill the actual data
+af.done()                                      # destroy filler tool
+#
+m := ms('c999.ms')                             # access the MS
+\end{verbatim}
+
+In this example, we construct the filler \tool\ from from two input
+RPFITS files, specifying that we wish to apply lag reweighting to
+suppress ringing and sources. Then the {\stf select} function is used to
+select which data we wish to read from the RPFITS  files.  Then we call
+the {\stf fill} function to actually read and convert the data to the
+MS.
+
+Data which have been exported from AIPS or Miriad as UVFITS files
+can be read into an \aipspp\ MS using the general UVFITS filler 
+\htmlref{ms.fitstoms}{ms:ms.fitstoms.constructor}. For example:
+
+\begin{verbatim}
+include 'ms.g'
+m := fitstoms(msfile='atca.ms', fitsfile='/aips++/data/demo/ATCA.UV')
+m.done()
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\input msinspection.latex
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%
+\input editing.latex
+%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\input syncalbasics.latex
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Setting the calibration source model}
+
+When solving for a visibility-plane calibration component, the
+\htmlref{Calibrater}{calibrater:calibrater} \tool\ requires that the calibrator
+model be set first. This is stored in the MODEL\_DATA column, and used
+by the \htmlref{Calibrater}{calibrater:calibrater} tool to form $\chi^2$ when
+solving for calibration components. In general, this process requires
+transforming a source model from the image-plane to the
+visibility-plane, including any image-plane calibration effects.  For
+this reason, the \aipspp\ functions for converting source models to
+the visibility plane are attached to the \htmlref{Imager}{imager:imager}
+\tool.
+
+For the ATCA, the default source model is usually either 1934\-638 
+or point sources of unit flux density. If you have used 0823\-500 
+as your primary calibrator, or given 1934\-638 another name,
+you'll need to set the flux density for it by hand (see below).
+
+To compute source models of this type:
+
+\begin{verbatim}
+imagr:= imager('atca.ms');         # Create an imager tool
+imagr.setjy(fieldid=1);            # Compute source model for primary calibrator OR
+imagr.setjy(fieldid=1,spwid=1,fluxdensity=5.6);    # Set flux density explicitly for source
+imagr.setjy(fieldid=1,spwid=2,fluxdensity=5.8); 
+imagr.done()                            
+\end{verbatim}
+
+In these examples, the source is specified through its {\stfaf fieldid}
+argument.  Running the \htmlref{Imager.setjy}{imager:imager.setjy.function}
+function without arguments will compute the default point source flux
+density for all recognized standard sources for all spectral windows in
+the data.  The \htmlref{Imager.setjy}{imager:imager.setjy.function} function
+also allows selection by field id.  and spectral window id.  as
+required, as well as the specification of an arbitrary Stokes
+$(I,Q,U,V)$ for individual sources where necessary.  The standard
+sources recognized are [(3C286, 1328+307, 1331+305), (3C48, 0134+329,
+0137+331), (3C147, 0538+498, 0542+498), (3C138, 0518+165, 0521+166),
+(1934-638), and (3C295, 1409+524, 1411+522)].  At the present time, the
+flux density is computed for the frequency mid-point of each spectral
+window using the Perley-Taylor (1995) spectral index coefficients by
+default.  All unrecognized sources, will be set to unit Stokes $I$ flux
+density.  (Note that the MODEL\_DATA for all sources is already set to
+unity when this column if first created, so you don't normally need to
+do this again here.)
+
+Arbitrary source models can be set using the
+\htmlref{Imager.ft}{imager:imager.ft.function} method, which will
+transform images and source model components, as required. 
+
+
+\subsection{Solving for complex gain, bandpass and leakage}
+
+The individual calibration effects in the ME, which are expressed as
+Jones matrices, are described in the \htmlref{Synthesis
+Calibration}{GRcalibration} chapter of {\tt Getting Results}, and the
+reader is referred there for a more detailed discussion.  Each Jones
+matrix has a specific type; the complex electronic gain is the {\tt G
+Jones} component, the bandpass gain is the {\tt B Jones} component and
+the polarization leakage is the {\tt D Jones} component. 
+
+For ATCA data with 4 polarizations you will want to solve for G, D and
+B.  If you have spectral-line data with only 1 or 2 polarizations, then you
+need solve for G and B only.  You can solve for more than one spectral window at a
+time.  Solving for {\tt D Jones} with XX/YY only data will not do
+anything useful, but generally won't harm either. 
+
+First solve for {\tt G, D and B Jones} using the primary calibrator:
+
+\begin{verbatim}
+cal := calibrater('atca.ms')                    # Create a calibrater tool
+cal.setdata(msselect='FIELD_ID==1')             # Select the primary calibrator (in this case id=1)
+cal.setapply(type='P', t=10.0);                 # Correct for parallactic angle with 10 sec sampling.
+cal.setsolve(type='G', t=30.0, table='cal.G')   # Solve for G Jones in 30 sec intervals
+cal.setsolve(type='B', t=1.e6, table='cal.B')   # Solve for B Jones with an interval larger than your observation
+cal.setsolve(type='D', t=1.e6, table='cal.D')   # Solve for D Jones with an interval larger than your observation
+cal.solve();                                    # Do the actual solution
+cal.plotcal(tablename='cal.G');                 # Plot the calibration solution obtained
+cal.done()                                      # Destroy the calibrater tool
+\end{verbatim}
+
+
+Now solve for the {\tt G Jones} term using the secondary calibrator(s), e.g.:
+
+\begin{verbatim}
+cal := calibrater('atca.ms')                           # Create a new calibrater tool
+cal.setdata(msselect='FIELD_ID==2')                    # Select the secondary calibrator (in this case id=2)
+cal.setapply(type='P', t=10.0)                         # Correct for parallactic angle with 10 sec sampling.
+cal.setapply(type='B', table='cal.B')                  # Apply B Jones solved for on primary
+cal.setapply(type='D', table='cal.D')                  # Apply D Jones solved for on primary
+cal.setsolve(type='G', t=60.0, table='cal.G',append=T) # Solve for G Jones in 60 sec intervals; append output
+cal.solve()                                            # Do the actual solution
+cal.plotcal(tablename='cal.G',plottype='PHASE',fields=2);  # Plot the calibration solution obtained 
+\end{verbatim}
+
+Generally you should use the above scheme, but  if you want or need to
+(e.g. if you used 0823-500 as your primary calibrator), you can solve
+for D (and/or B) using the secondary instead of the primary, and just
+use the latter for the absolute fluxscale. If you want to solve for D
+using the secondary the process would look like this:
+
+\begin{verbatim}
+cal := calibrater('atca.ms')                    # Create a calibrater tool
+cal.setdata(msselect='FIELD_ID==1')             # Select the primary calibrator (in this case id=1)
+cal.setapply(type='P', t=10.0);                 # Correct for parallactic angle with 10 sec sampling.
+cal.setsolve(type='G', t=30.0, table='cal.G')   # Solve for G Jones in 30 sec intervals
+cal.setsolve(type='B', t=1.e6, table='cal.B')   # Solve for B Jones with an interval larger than your observation
+cal.solve();                                    # Do the actual solution
+cal.done()                                      # Destroy the calibrater tool
+\end{verbatim}
+
+Now solve for the {\tt G Jones} and {\tt D Jones} terms using the 
+secondary calibrator, e.g.:
+
+\begin{verbatim}
+cal := calibrater('atca.ms')                           # Create a new calibrater tool
+cal.setdata(msselect='FIELD_ID==2')                    # Select the secondary calibrator (in this case id=2)
+cal.setapply(type='P', t=10.0)                         # Correct for parallactic angle with 10 sec sampling.
+cal.setapply(type='B', table='cal.B')                  # Apply B Jones solved for on primary
+cal.setsolve(type='G', t=60.0, table='cal.G',append=T) # Solve for G Jones in 60 sec intervals; append output
+cal.setsolve(type='D', t=1.e6, table='cal.D')          # Solve for D Jones using secondary
+cal.solve()                                            # Do the actual solution
+cal.plotcal(tablename='cal.G',plottype='PHASE',fields=2);  # Plot the calibration solution obtained 
+\end{verbatim}
+
+ 
+Note that the {\tt G Jones} term, although designated as electronic
+gain, will include an atmospheric contribution, as solved for here.  If
+separable, atmospheric corrections (e.g., WVR corrections) can be
+separately set or solved for as {\tt T Jones}.  The inclusion of a
+parallactic angle correction {\tt P Jones} is required for all ATCA
+reduction, see the following section. 
+
+\subsection{Correcting the gains for polarization of the calibrators}
+
+The gain solutions were generated with an unpolarized unit point source
+model for all calibrators unrecognized by
+\htmlref{Imager.setjy}{imager:imager.setjy.function}.  In practice calibrators
+often have noticable linear polarization of up to 10\% or so.  This is
+not a problem for telescopes with circular feeds, but for telescopes
+with linear feeds, like the ATCA, this causes a small time variation in
+the gains proportional to the percentage polarization of the calibrator.
+ The calibrator polarization can be determined from the variation of the
+X and Y gain solutions with changing feed position angle.  After
+determining the polarization we can correct the gains for this effect. 
+Note that this only works correctly if the calibrator has been observed
+over a sufficient range in position angle.  Generally 5 or more scans
+with a span of at least 90 degrees in position angle is sufficient.  The
+quality of the polarization solution can be checked by looking at the
+fit error, it should generally be smaller than 0.5\% in Q and U.  The
+correction is performed using the
+\htmlref{Calibrater.linpolcor}{calibrater:calibrater.linpolcor.function} function. 
+
+\begin{verbatim}
+cal.linpolcor(tablein='cal.G', fields="0405-385 2254-367");
+\end{verbatim}
+
+This corrects the calibration table entries for sources 0405-385 and
+2254-367 and updates the table. If you add a {\stfaf tableout} argument,
+it will write the updated table to a new file. (Note: using double
+quotes like in the example above produces a vector of values, split at
+each space, another way to specify the fields argument would be: 
+{\stfaf  fields=['0405-385','2254-367']}).
+
+
+\subsection{Establishing the flux density scale}
+
+For point sources of unknown flux density, but for which valid solutions
+have been derived against a unit point source model, the absolute flux
+density can be established by scaling the mean gain moduli against those
+of the known amplitude calibrators recognized by
+\htmlref{Imager.setjy}{imager:imager.setjy.function}.  This scaling is achieved by
+adjusting the {\tt G Jones} calibration table, after determining the
+amplitude calibration factors, as:
+
+\begin{verbatim}
+cal.fluxscale(tablein='cal.G', reference='1934-638',     # scale the gains
+              transfer="0405-385 2254-367");
+cal.done();  
+\end{verbatim}
+
+In this case, the amplitude scale is set with 1934\-638 as the reference.
+The calibration table {\tt cal.G} will be updated with the 
+scaled {\tt G Jones} calibration factors, and will be used going
+forward in the reduction.
+
+\section{Imaging}
+
+Imaging is performed using the \htmlref{Imager}{imager:imager} \tool, which
+supports a broad range of imaging modes and deconvolution algorithms,
+as described in the \htmlref{Synthesis Imaging}{GRimaging} chapter in {\tt Getting
+Results}.
+
+\subsection{Correct the data}
+
+Before imaging, the data need to be corrected by applying the Jones
+matrices determined in the calibration:
+
+\begin{verbatim}
+cal:= calibrater('atca.ms')
+cal.setapply(type='P', t=10.0)            # Apply parallactic angle 
+cal.setapply(type='G', table='cal.G')     # Apply the G Jones solutions
+cal.setapply(type='D', table='cal.D')     # Apply the D Jones solutions
+cal.setapply(type='B', table='cal.B')     # Apply the B Jones solutions
+cal.correct()                             # Correct the data
+cal.done()
+\end{verbatim}
+
+This action fills the CORRECTED\_DATA column, which can be used directly
+in further imaging. 
+
+\subsection{Basic imaging}
+
+The \htmlref{Imager}{imager:imager} tool, which can be used to make images
+for each field or source, requires initial selection of the visibility data
+and initialization of the imaging coordinates. Imaging, deconvolution
+and image restoration operations are then possible, as described in the
+\htmlref{Imaging}{GRimaging} chapter of {\tt Getting Results} or
+in more detail in the \htmlref{Imager}{imager:imager} documentation.
+A single-field, continuum ATCA image can be made as follows:
+
+\begin{verbatim}
+imagr := imager('atca.ms')                          # Create an imager tool
+imagr.setdata(fieldid=3, mode='channel', nchan=25,  # Select field id. 3, 25 channels
+              start=5, step=1, spwid=2)             # and spectral window id. 2
+#
+imagr.setimage(nx=256, ny=256, cellx='0.4arcsec',   # Set imaging parameters
+               celly='0.4arcsec', stokes='IQUV',    # use mfs mode to combine all selected channels
+               mode='mfs', nchan=1)
+#
+imagr.clean(algorithm='clark', niter=500, gain=0.1, # Image, and deconvolve using the Clark CLEAN.
+            threshold='0.0Jy', 
+            model='1331-g1.model',                  # Save model
+            image='1331-g1.restored',               # Save restored
+            residual='1331-g1.residual')            # Save residual
+imagr.done();
+#
+im:= image('1331-g1.restored')                      # View restored image
+im.view()                                  
+#
+im2 := image('1331-g1.residual');                   # View residual image
+im2.view()
+\end{verbatim}
+
+Note that the deconvolved image model is written to the image file
+{\sff 1331-g1.model}. If non-zero on entry to the {\stf clean} function,
+it will be subtracted before imaging.  This is how you restart 
+the deconvolution.  In the above example we are not restarting so
+the model image is made for you.
+
+The imaging parameters may be selected automatically using
+\htmlref{Imager.advise}{imager:imager.advise.function} (not recommended for ATCA
+data at this time). For further information on
+any imaging parameters or options, please consult the full
+\htmlref{Imager}{imager:imager} documentation.
+
+
+\section{References}
+ 
+\noindent Hamaker, J.P., Bregman, J.D., and Sault, R.J., 1996a, {\it A\&AS},
+{\bf 117}, 137.
+ 
+\noindent Sault, R.J., Hamaker, J.P., and Bregman, J.D., 1996b, {\it A\&AS},
+{\bf 117}, 149.
+ 
+
+\section{Acknowledgements}
+
+This chapter is based on the VLA chapter, with modifications where appropriate.
+

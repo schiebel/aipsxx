@@ -1,0 +1,150 @@
+include 'os.g'
+###################################################################################
+## regression test for the common interface between the previous atmosphere.h
+## and the new atmosphere.h.
+###################################################################################
+include 'atmosphere.g'
+###########################################################
+# Make an atmosphere tool
+test_atm:=atmosphere(temperature='270.32K', pressure='735.85mbar', height='2550.m'); 
+#
+# Set the atmospheric parameters
+test_atm.setparameters(water='0.405mm', airmass=1.51, frequency='110GHz');
+#
+# Find the atmospheric parameters
+test_atm.transmission(emissiontemperature=et,meantemperature=mt,tauoxygen=tx,tauwater=tw,tautotal=tt);
+#
+# calculate the optical path
+   test_atm.path(path=pt);
+#
+# define the regression test variables
+   test_name_et := 'emissiontemperature test';
+   test_name_mt := 'meantemperature test';
+   test_name_tx := 'tauoxygen test';
+   test_name_tw := 'tauwater test';
+   test_name_tt := 'tautotal test';
+   test_name_pt := 'optical path test';
+
+   thisrun_et := as_float(et.value);
+   thisrun_mt := as_float(mt.value);
+   thisrun_tx := tx;
+   thisrun_tw := tw;
+   thisrun_tt := tt;
+   thisrun_pt := as_float(pt.value);
+#
+# define the colmuns in the table
+   col_et :=tablecreatescalarcoldesc("atm_et",as_float(1));
+   col_mt :=tablecreatescalarcoldesc("atm_mt",as_float(1));
+   col_tx :=tablecreatescalarcoldesc("atm_tx",as_float(1));
+   col_tw :=tablecreatescalarcoldesc("atm_tw",as_float(1));
+   col_tt :=tablecreatescalarcoldesc("atm_tt",as_float(1));
+   col_pt :=tablecreatescalarcoldesc("atm_pt",as_float(1));
+#
+# define the row in the table
+   td:=tablecreatedesc(col_et, col_mt, col_tx, col_tw, col_tt, col_pt);
+#
+# either save or compare the data depending on it is first run or second run.   
+   dirs :=dos.dir();
+   if (!any(dirs=='testAtmosphere')) { # first run, so save the data
+      mytab:=table("testAtmosphere", readonly=F, tabledesc=td, nrow = 1);
+      mytab.addcols(td);
+      mytab.putcol('atm_et', thisrun_et);
+      mytab.putcol('atm_mt', thisrun_mt);
+      mytab.putcol('atm_tx', thisrun_tx);
+      mytab.putcol('atm_tw', thisrun_tw);
+      mytab.putcol('atm_tt', thisrun_tt);
+      mytab.putcol('atm_pt', thisrun_pt);
+   } else { # second run, do the check
+     for ( cname in  table('testAtmosphere').colnames()) {
+       if(cname == 'atm_et' ) {
+         storedval_et := table('testAtmosphere').getcol('atm_et');
+         et_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_et - thisrun_et) < 0.05){
+           print spaste('### ', test_name_et, '... passed');
+           et_passed := T;
+         }else{
+           print spaste('### ', test_name_et, '... Failed ');
+         }
+           print spaste('### First run value is:   ', storedval_et);
+           print spaste('### Second run value is:   ', thisrun_et);
+       }
+       if(cname == 'atm_mt' ) {
+         storedval_mt := table('testAtmosphere').getcol('atm_mt');
+         mt_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_mt - thisrun_mt) < 0.05){
+           print spaste('### ', test_name_mt, '... passed');
+           mt_passed := T;
+         }else{
+           print spaste('### ', test_name_mt, '... Failed ');
+         }
+           print spaste('### First run value is:   ', (storedval_mt));
+           print spaste('### Second run value is:   ', thisrun_mt);
+       }
+       if(cname == 'atm_tx' ) {
+         storedval_tx := table('testAtmosphere').getcol('atm_tx');
+         tx_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_tx - thisrun_tx) < 0.05){
+           print spaste('### ', test_name_tx, '... passed');
+           tx_passed := T;
+         }else{
+           print spaste('### ', test_name_tx, '... Failed ');
+         }
+           print spaste('### First run value is:   ', (storedval_tx));
+           print spaste('### Second run value is:   ', thisrun_tx);
+        }
+        if(cname == 'atm_tw' ) {
+         storedval_tw := table('testAtmosphere').getcol('atm_tw');
+         tw_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_tw - thisrun_tw) < 0.05){
+           print spaste('### ', test_name_tw, '... passed');
+           tw_passed := T;
+         }else{
+           print spaste('### ', test_name_tw, '... Failed ');
+         }
+           print spaste('### First run value is:   ', (storedval_tw));
+           print spaste('### Second run value is:   ', thisrun_tw);
+        }
+        if(cname == 'atm_tt' ) {
+         storedval_tt := table('testAtmosphere').getcol('atm_tt');
+         tt_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_tt - thisrun_tt) < 0.05){
+           print spaste('### ', test_name_tt, '... passed');
+           tt_passed := T;
+         }else{
+           print spaste('### ', test_name_tt, '... Failed ');
+         }
+           print spaste('### First run value is:   ', (storedval_tt));
+           print spaste('### Second run value is:   ', thisrun_tt);
+        }
+        if(cname == 'atm_pt' ) {
+         storedval_pt := table('testAtmosphere').getcol('atm_pt');
+         pt_passed := F;
+	 print "----------------------------------------------------------";
+         if(abs(storedval_pt - thisrun_pt) < 0.05){
+           print spaste('### ', test_name_pt, '... passed');
+           pt_passed := T;
+         }else{
+           print spaste('### ', test_name_pt, '... Failed ');
+         }
+           print spaste('### First run value is:   ', (storedval_pt));
+           print spaste('### Second run value is:   ', thisrun_pt);
+        }
+     }## end of for loop
+         print "----------------------------------------------------------";
+         if( et_passed && mt_passed && tx_passed && tw_passed && tt_passed && pt_passed ){
+             print "Regression test for atmosphere classe.......Passed.";
+         }else{
+             print "Regression test for atmosphere classe.......Failed.";
+         }
+         print "----------------------------------------------------------";
+   }##end of else
+   test_atm.done();
+   print "The pass criterion of this test for ATM is the difference"; 
+   print "of any quantity to test between the previous version";
+   print "and the new version is less than 5%."
+################################################################################################

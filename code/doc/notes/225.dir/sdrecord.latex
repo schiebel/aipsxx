@@ -1,0 +1,229 @@
+\section{The sdrecord}
+\label{app:sdrecord}
+
+The SDRecord is the fundamental data atom of dish.
+
+The current sdrecord structure was arrived at early in the design
+process.  The next version of the sdrecord will more closely resemble
+individual rows of the \texttt{MeasurementSet}. 
+
+Unless otherwise stated, the units of all values in an SDRecord are
+SI units.  Angles are expressed in degrees.  This structure was
+arrived at before Measures and coordinates were fully supported in 
+\glish.  As a result, temporary fields in
+an SDRecord are used to hold sufficient information to indicate
+the coordinate system and reference frame where appropriate.
+All of the fields described below are required unless stated otherwise.
+
+The value of a field is undefined in the following circumstances:
+\begin{itemize}
+\item The \glish\ function \textbf{is\_nan(x)} returns \textbf{T} for a floating point
+value.
+\item The value is $< 0$ for an integer field.
+\item The string is empty.
+\end{itemize}
+For boolean fields, all values are considered valid.  In addition,
+all values in the data array should be considered valid.  The
+data array flag field should be used to indicate invalid values
+in the data array.
+
+An  SDRecord is a \glish\ record having the following structure:
+\begin{description}
+%		SDRecord structure
+\item[data] A \glish\ record which contains the data array and a
+description of the data array (axis type, values, increments, and
+units).
+\begin{description}
+%		data structure
+\item[arr] The data array.  The dimensionality of the data array is
+\texttt{(nchan, nstokes)} where \texttt{nchan} is the number of channels and 
+\texttt{nstokes} is the number of different stokes types found in this data.
+\texttt{nstokes} is either 1, 2 or 4.
+\item[desc] A \glish\ record which describes the data array.
+\begin{description}
+%		data.desc structure
+\item[ctype, crval, crpix, and cdelt] Follow standard FITS usage.
+They describe the first axis of the data array.  An SDRecord can
+therefore only contain data where the first axis is linear in some
+coordinate system.  This limitation will be removed in the next version
+of this structure.
+\item[units] A string describing the units of the data array.
+\item[stokes] A vector of strings describing the Stokes type of each
+element of the second axis of the data array.  The possible Stokes
+types are:
+\begin{quote}
+I, Q, U, V, RR, RL, LR, LL, XX, XY, YX, YY, RX, RY, LX, LY, XR, XL
+YR, YL, PP, PQ, QP, QQ
+\end{quote}
+For a typical single dish telescope, raw data will have 
+\texttt{stokes $=$ ("XX", "YY") or ("RR", "LL")}.
+%		end data.desc structure
+\end{description}
+\item[flag] A boolean matrix with the shape as \textbf{arr}.  When true, the
+corresponding value in \textbf{arr} has been flagged as bad and should not be
+used.  When false, the corresponding value in \textbf{arr} is good.
+\item[weight] A floating point matrix having the same shape as \textbf{arr}.
+%		end data structure
+\end{description}
+\item[header] A \glish\ record with the following fixed structure.
+The bulleted items are mearly separators to make this list easier to read,
+they are not members of \textbf{header}.  
+The type of each
+field is indicated at the end of each description.  Vector fields
+are indicated by giving the length of the vector in parenthesis
+after the field type.
+\begin{itemize}
+%		header structure - grouped by type
+\item Identity
+\begin{description}
+%		header structure - identity
+\item[time] The mid-point of the observation (UT).  Double.
+\item[scan\_number] The scan ID number.  Typically this is an identification
+number given to a chunk of data when the data is taken.  Not all
+telescopes provide a scan ID number.  Integer.
+\item[object] The name of the thing being observed.  String.
+\item[direction] Where the telescope was pointed.  Double(2).
+\item[direction\_rate] Any slew rate during the observation.  Double(2).
+%		end of header header structure - identity
+\end{description}
+\item Times
+\begin{description}
+%		header structure - time
+\item[ut\_date] The UT date corresponding to time.  String.
+\item[ut] The UT on ut\_date corresponding to time.  Double.
+\item[lst] The LST corresponding to time.  Double.
+\item[exposure] The total amount of time actually spent collecting photons
+(e.g excludes blanking time, etc).
+\item[duration] The elapsed (clock) time.  Float.
+%		end of header structure - time
+\end{description}
+\item Observer
+\begin{description}
+%		header structure - observer
+\item[observer] String
+\item[project] String
+%		end of header structure - observer
+\end{description}
+\item Backend
+\begin{description}
+%		header structure - backend
+\item[rest\_frequency] Double.
+\item[resolution] The frequency resolution.  This need not be the same
+as the channel spacing.
+\item[bandwidth] The total bandwidth. Double.
+\item[obs\_frequency] The sky frequency at the reference channel.  Double.
+\item[tcal] The cal temperature.  Float(nstokes).
+\item[trx] The receiver temperature.  Float(nstokes).
+\item[tsys] The system temperature.  Float(nstokes).
+\item[sigma] The theoretical noise per channel.  Float(nstokes).
+%		end of header structure - backend
+\end{description}
+\item References
+\begin{description}
+%		header structure - References
+\item[reference\_position] A reference position on the sky for position
+switched data.  Double(2).
+\item[reference\_frequency] The frequency reference for frequency
+switched data.  Double.
+%		end of header structure - References
+\end{description}
+\item Telescope
+\begin{description}
+%		header structure - Telescope
+\item[telescope] A string identifying the telescope.  String.
+\item[telescope\_position] The (x, y, z) position of the telescope in
+the ITRF (VLBI) coordinate system.  Double(3).
+\item[telescope\_diameter] The diameter of the dish.  More detailed 
+telescope models will no doubt be useful but the parameters to describe
+these models are beyond the scope of the header record.  If
+standard components could be identified, they would eventually be
+placed in the header.  Until then, additional parameters to describe
+the shape of the telescope surface should be placed in ns\_header. Float.
+\item[telescope\_mount] The mount type.  Chosen from the following
+values: ``alt-az'', ``equatorial'', ``X-Y'', ``orbiting'', ``bizarre''.
+\item[azel] The azimuth and elevation at time.  Double(2).
+\item[vcorr] The velocity of the telescope with respect to the
+velocity reference frame at time using the given velocity definition.
+%		end of header structure - Telescope
+\end{description}
+\item Weather
+\begin{description}
+%		header structure - Weather
+\item[pressure] The atmopheric pressure.  Float.
+\item[dewpoint] The dew point.  Float.
+\item[tambient] The ambient temperature.  Float.
+\item[wind\_dir] The wind direction.  Float.
+\item[wind\_speed] The wind speed.  Float.
+%		end of header structure - Weather
+\end{description}
+\item Coordinate system kludges
+\begin{description}
+%		header structure - Kludges
+\item[direction\_coord] A \glish\ Record describing the coordinate system
+for the \textbf{direction} field.  It has the following structure.
+\begin{description}
+\item[name] The coordinate name.  String.
+\item[equinox] The equinox for the coordinate.  Double.
+\end{description}
+\item[reference\_coord] A \glish\ Record describing the coordinate system
+for the \textbf{reference\_position} field.
+It has the following structure.
+\begin{description}
+\item[name] The coordinate name.  String.
+\item[equinox] The equinox for the coordinate.  Double.
+\item[is\_offset] True if this is an offset position, else this is an
+absolute position.  If this is an offset position then it is
+offset from the \textbf{reference\_position}.  Bool.
+\end{description}
+\item[veldef] The velocity definition (e.g. ``radio'', ``optical'').  String.
+\item[velref] The velocity reference frame (e.g. ``LSR'', ``HEL'', ,etc.).
+String.
+%		end of header structure - Kludges
+\end{description}
+%		end of header structure - grouped by type
+\end{itemize}
+\item[hist] This vector of strings contains a history of the operations
+which resulted in this SDRecord.  Each element is a valid \glish\
+command.  Taken as a whole, the hist field should be sufficient to
+regenerate the SDRecord from the original data source.
+%		end of SDRecord structure
+\end{description}
+
+
+In addition to the fixed structure described above.  An SDRecord
+may contain an optional {\tt ns\_header} field.  This is a \glish\
+record which can contain any additional information not found
+in the fixed portion of an SDRecord.  This field will typically be
+used for telescope-dependent information.
+
+The x-axis can be easily constructed from the {\tt data} field
+by the following simple \glish\ function:
+\begin{tt}
+\begin{verbatim}
+	make_xaxis := function(ref data)
+	{
+	   x := data.crval;
+	   x +:= ([1:data::Shape[1]] - data.desc.crpix)*data.desc.cdelt;
+	   return x;
+	}
+\end{verbatim}
+\end{tt}
+
+To summarize, in pseudo-\glish\ an SDRecord looks like this:
+\begin{verbatim}
+	sdrecord := [data=[=], header=[=], hist=[=], ns_header=[=]];
+	sdrecord.data := [arr=[...], flag=[...], desc=[=], weight=[...]];
+	sdrecord.data.desc := [units=,stokes=,ctype=,crpix=,crval=,cdelt=];
+        sdrecord.header := [time=,scan_number=,object=,etc.];
+	sdrecord.hist := ["# useful history","# as a vector","# etc. etc."];
+        sdrecord.ns_header := [non-standard fields]
+
+ns_header is optional
+\end{verbatim}
+
+Additional information can be found in the 
+Reference Manual section on
+the \htmlref{\textbf{get}}{dish:sditerator.get.function} function of the 
+\htmlref{Sditerator \texttt{tool}}{dish:sditerator}.  See also
+the \htmlref{\textbf{is\_sdrecord}}{dish:is_sdrecord} function.
+

@@ -1,0 +1,1546 @@
+%% Copyright (C) 1999,2000,2001,2002,2003,2004
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: imageprofilesupport.help,v 19.7 2004/08/25 00:59:34 cvsmgr Exp $
+
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{imageprofilesupport}{Plot profiles with axis label conversions}
+
+\ahinclude{imageprofilesupport.g}
+
+\ahcategory{image}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{plotting}{}
+\ahkeyword{images}{}
+\ahmethods{}
+
+The imageprofilesupport \tool\ is not meant as a general purpose high-level
+user \tool.  It is meant for use within high-level applications.
+
+This \tool\ allows you to plot a 1-D profile with built-in abcissa label
+coordinate conversions.  For example, you can use it to plot a velocity
+profile and then select the abcissa units to be say km/s or GHz.  You
+can also convert betwreen reference frames (for Spectal coordinates).
+
+You can accumulate many profiles and display them together.
+You may plot all or selected profiles.
+
+It has two construction modes.  By default, {\stfaf multiabcissa=F}
+which means there is one abcissa for one or more ordinates.  
+In this mode, you can only use functions {\stff makeabcissa},
+{\stff makeordinate} and {\stf setordinate} to generate
+the profiles.
+
+When {\stfaf multiabcissa=T}, it is possible to have profiles which have
+distinct abcissas (including possibly different numbers of points). 
+In this mode, you can only use function {\stf setprofile}
+to generate the profiles.
+
+You can optionally choose to have an abcissa offset entry
+box presented.  If you do, it enables you to offset the 
+spectra by some value.  In particular, for Spectral axes,
+you can apply a velocity offset so that the spectrum
+is presented in the rest frame of the line.
+
+
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+-
+- p := imageprofilesupport(csys=csys,      # imageprofilesupport tool
+                           shp=shp, 
+                           widgetset=dws)  
+-
+- axis := 3 	                           # Profile axis
+- p.setprofileaxis(axis)
+- p.makemenus()                            # Unit menus go into pgplotter
+-
+- pos := csys.referencepixel()             # Position in image
+- p.makeabcissa(pos)                       # Generate abcissa along profile axis
+-
+- blc := pos; blc[3] := 1                  # Region to extract profile
+- trc := pos; trc[3] := shp[3]
+- r := drm.box(blc, trc)
+- id1 := p.makeordinate (im, r)            # Generate profile ordinate 
+-
+- p.plot()                                 # Plot all profiles
+-
+- r := drm.box()                           # New region to extract profile from
+- id2 := p.makeordinate (im, r)            # Generate second profile ordinate. 
+					   # Non-profile axes are averaged
+- p.plot()                                 # Plot all profiles
+- p.plot(id2)                              # Plot second profile
+\end{verbatim}
+In this example, we plot a profile from an image along the third axis.
+The axis label menus embedded in the specified frame can be used
+to redraw the plot with different axis labels.      
+
+\end{ahexample}
+\end{ahfunction}
+
+
+\medskip 
+\noindent {\it Events}
+
+This \tool\ emits six events.
+
+\begin{itemize}
+
+\item unitchange: the user has selected a new abcissa unit.
+The value of the event is the new unit (a string).
+
+\item absrelchange: the user has selected a new abs/rel from the abcissa menu.
+The value of the event is T (for absolute) or F (for relative).
+
+\item dopplerchange: the user has selected a new doppler type from the abcissa menu.
+The value of the event is the new doppler type (a string).
+
+\item spectralrefchange: the user has selected a new spectral reference from the menu.
+The value of the event is the new reference (a string).
+
+\item offsetvaluechange: the user has selected a new offset value.
+The value of the event is the new offset (a quantum).
+
+\item offsetdopplerchange: the user has selected a new doppler offset.
+The value of the event is the new offset doppler (a string).
+
+\end{itemize}
+
+
+\begin{ahconstructor}{imageprofilesupport}{Construct an imageprofilesupport tool}
+\begin{ahargs}
+  \ahaddarg[in]{csys}{Coordinate System}{}{Coordsys tool}
+  \ahaddarg[in]{shp}{Shape of associated image}{}{Vector of integer}
+  \ahaddarg[in]{widgetset}{The widgetset to use for the GUI}{dws}{A widgetserver tool}
+  \ahaddarg[in]{multiabcissa}{Allow multiple abcissas}{F}{T or F}
+  \ahaddarg[in]{offset}{Show abcissa offset entry ?}{F}{T or F}
+\end{ahargs}
+\ahreturns{imageprofilesupport tool}
+
+\begin{ahdescription}
+This constructs the {\bf imageprofilesupport} \tool. 
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')
+- csys = im.coordsys()
+- p := imageprofilesupport(csys=csys, shp=im.shape())
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+
+
+
+\begin{ahfunction}{clearplotter}{Clear the plotter}
+\ahreturns{T}
+
+\begin{ahdescription}
+
+This function clears the plotter. It also resets the internal abcissa
+and ordinate ranges (to empty) which is a trigger to ensure the axes are
+redrawn.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(3);
+- p.makemenus()
+- pos := csys.referencepixel()            
+- p.makeabcissa(pos)                      
+- p.plot()                                
+- p.clear()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{disablespectralrefmenu}{Disables spectral reference change menu}
+\ahreturns{T}
+
+\begin{ahdescription}
+
+This function disables the spectral reference conversion menu so that
+the user can no longer make reference conversions.
+
+\end{ahdescription}
+
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{done}{Destroy this imageprofilesupport tool}
+\ahreturns{Bool or fail}
+
+\begin{ahdescription}
+This function destroys the imageprofilesupport \tool.
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.done()
+- p
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{getabcissa}{Recover the profile abcissa(s)}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Abcissa index}{1}{Integer}
+\end{ahargs}
+\ahreturns{Record}
+
+\begin{ahdescription}
+This function recovers a record holding the specified abcissa. There is
+only once abcissa unless you are in multi-abcissa mode (set at
+contruction time).
+
+There are a variety of subfields such as 'pixel', 'nativeworld', and 'currentworld'
+which hold the abcissa in a variety of formats.
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+#
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             # Position in image
+- p.makeabcissa(pos)                       # Generate abcissa along profile axis
+- abc := p.getabcissa()
+- field_names(abc)
+pixel nativeworld currentworld name nativeunit currentunit currentveltype currentabs 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcurrentabcissa}{Recover the plotted profile abcissa(s)}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Abcissa index}{1}{Integer}
+\end{ahargs}
+\ahreturns{Record}
+
+\begin{ahdescription}
+This function recovers the current plotted abcissa.
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+#
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             # Position in image
+- p.makeabcissa(pos)                       # Generate abcissa along profile axis
+- abc := p.getcurrentabcissa()
+- print shape(abc)
+[64]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getabcissaunit}{Recover the profile abcissa unit}
+\ahreturns{String}
+
+\begin{ahdescription}
+This function recovers the current abcissa unit.
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel() 
+- p.makeabcissa(pos)   
+- p.getabcissaunit()
+GHz
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getabcissaunits}{Recovers all the possible abcissa units}
+\ahreturns{Vector of strings}
+
+\begin{ahdescription}
+This function recovers all of the possible abcissa units
+that the user might select from.
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel() 
+- p.makeabcissa(pos)   
+- p.getabcissaunits()
+GHz MHz kHz Hz km/s m/s pix 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getdoppler}{Recover the profile doppler type}
+\ahreturns{String}
+
+\begin{ahdescription}
+This function recovers the current doppler type.  If 
+the profile axis is not spectral,  the velocity type menu
+will be disabled.  Regardless, this function will still return
+the current menu choice.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()
+- p.makeabcissa(pos)
+- p.getdoppler()
+radio
+\end{verbatim}
+\end{ahexample}  
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getoffsetvalue}{Recovers the offset value}
+\ahreturns{Quantum}
+
+\begin{ahdescription}
+This function recovers the current abcissa offset.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getoffsetdoppler}{Recovers the offset doppler}
+\ahreturns{String}
+
+\begin{ahdescription}
+This function recovers the current abcissa offset doppler.
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getisabs}{Is the current abcissa unit absolute ?}
+\ahreturns{T or F}
+
+\begin{ahdescription}
+This function returns T if the abcissa is currently 
+showing an absolute coordinate. Else it returns F.
+\end{ahdescription}
+
+\begin{ahexample}  
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()
+- p.makeabcissa(pos)
+- p.getisabs()
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{getmask}{Recover the profile mask}
+\begin{ahargs}
+  \ahaddarg[in]{which}{ordinate index}{1}{Integer}
+\end{ahargs}
+\ahreturns{Vector of Bool}
+
+\begin{ahdescription}
+
+This function recovers the mask for the specified profile.  The mask (T for good pixels,
+F for bad pixels) is created for you by function
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate}
+and created by you explicitly with function
+\ahlink{setordinate}{images:imageprofilesupport.setordinate}.
+
+Masked pixels are not plotted.
+
+\end{ahdescription}
+
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+-
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- idx := p.makeordinate (im, r)                   
+- p.getmask(idx)
+[T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T 
+T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T T]  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getordinate}{Recover the profile ordinate}
+\begin{ahargs}
+  \ahaddarg[in]{which}{ordinate index}{1}{Integer}
+\end{ahargs}
+
+\ahreturns{Record}
+
+\begin{ahdescription}
+This function recovers a record holding the ordinate for the
+specified profile.
+There are two subfields: 'unit' (string) and 'data' (vector float)
+in the record holding the ordinate.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+-
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- idx := p.makeordinate (im, r)                   
+- o := p.getordinate(idx)
+- print o.unit
+Jy/beam
+- print o.data
+[0.0692182779 0.313889951 0.221464232 -0.339388996 0.196267739 0.00308039412 0.145770207 
+0.083701618 -0.0170051232 -0.0674641132 -0.147130117 -0.0748230442 -0.0087018162 
+0.042476207 0.0843885541 0.0214372594 0.0204261355 -0.0142198177 -0.150894299 -
+0.292182982 -0.287655115 -0.220203012 -0.311543584 -0.696057141 -0.594372749 
+-0.591924787 -0.640231609 -0.751704574 -0.889986157 -0.973421454 -0.9192608 
+-0.853011549 -1.01908207 -1.15568936 -1.04332018 -0.943786085 -0.671383262 
+-0.398980319 -0.274277657 -0.602319181 -0.813411593 -0.665026307 -0.283517033 
+-0.198741049 -0.649372399 -0.961182058 -0.79399693 -0.628294706 -0.550167799 -0.513776541 
+-0.453341246 -0.401189208 -0.362751096 -0.153813794 -0.0688151047 -0.11182557 -0.106346995
+-0.0373723656 -0.0238029882 0.014433424 -0.106619254 -0.173805982 -0.253587902 -0.561424077]  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getordinateunit}{Recover the profile ordinate unit}
+\ahreturns{String}
+
+\begin{ahdescription}
+This function recovers the ordinate unit.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+-
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- p.makeordinate (im, r)                   
+- p.getordinateunit()
+Jy/beam
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getrefframe}{Get current reference frame}
+\ahreturns{String}
+
+\begin{ahdescription}
+
+Get the current reference frame of the profile.  If you are yet
+to set the profile axis, this returns an empty string. Otherwise
+it is the selected refererence frame (for Spectral coordinates),
+or the native reference frame (for Direction coordinates),
+or blank (other coordinates).
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{getx}{Get abcissa coordinate of cursor}
+\begin{ahargs}
+  \ahaddarg[in]{color}{Color of location marker}{7}{PGPlot color (expressed as integer index)}
+\end{ahargs}
+
+\ahreturns{Float}
+
+\begin{ahdescription}
+Get the abcissa coordinate of the cursor and mark the x-location with
+a vertical line.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- p.makeordinate (im, r)                   
+- x := p.getx()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getxy}{Get abcissa and ordinate coordinate of cursor}
+\begin{ahargs}
+  \ahaddarg[in]{symbol}{PGPlot symbol to mark location}{2 (cross)}{Integer}
+  \ahaddarg[in]{color}{PGPlot color of symbol}{1 (foreground)}{Integer}
+\end{ahargs}
+
+\ahreturns{Record}
+
+\begin{ahdescription}
+Get the abcissa and ordinate coordinate of the cursor and mark
+the location.  Returns a record with fields 'x'
+and 'y' (each holding a float).
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)  
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- p.makeordinate (im, r)                   
+- xy := p.getxy()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{hasplotter}{Has the plotter been made yet ?}
+\ahreturns{T or F}
+
+\begin{ahdescription}   
+This function returns T if plotter has been created
+and F if it is yet to be made.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.hasplotter()
+F
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()
+- p.makeabcissa(pos)
+- p.plot()                                
+- p.hasplotter()
+T
+\end{verbatim} 
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{hasprofile}{Has a profile been set yet ?}
+\ahreturns{T or F}
+
+\begin{ahdescription}
+This function returns T if a profile has been created
+and F otherwise.
+
+The profile is considered to have been created after
+\ahlink{makeabcissa}{images:imageprofilesupport.makeabcissa}
+has been called.  The profile is considered to have been
+destroyed when function
+\ahlink{setnoprofile}{images:imageprofilesupport.setnoprofile}
+has been called.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.hasprofile()
+F
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()
+- p.makeabcissa(pos)
+- p.hasprofile()
+T
+- p.setnoprofile()
+- p.hasprofile()
+F
+\end{verbatim} 
+\end{ahexample}   
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{insertoffset}{Set a new offset}
+\begin{ahargs}
+  \ahaddarg[in]{offset}{Offset}{No change}{Quantum or quantum string}
+  \ahaddarg[in]{doppler}{Doppler}{No change}{String}
+\end{ahargs}
+\ahreturns{T, F or fail}
+
+\begin{ahdescription}
+This function sets a new offset.  The plot is redrawn after.
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{makeplotter}{Make the plotter}
+\begin{ahargs}
+  \ahaddarg[in]{parent}{Parent frame for plotter}{Standalone}{Tk agent}
+  \ahaddarg[in]{size}{Size of plotter}{[295,215]}{Vector of int}
+\end{ahargs}
+
+\ahreturns{T or fail}
+
+\begin{ahdescription}
+This function creates the plotter.    If you supply a parent frame,
+a \ahlink{pgplotter}{display:plotter.pgplotwidget} \tool\ will
+be embedded in it.  If you don't supply a parent frame,
+a standalone \ahlink{pgplotter}{display:plotter.pgplotter} \tool\ 
+will be created.
+
+Calling this function is optional.  If you don't call this function,
+then a call to \ahlink{plot}{images:imageprofilesupport.plot} will
+create a stand alone plotter (a
+\ahlink{pgplotter}{display:plotter.pgplotter} \tool.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.makeplotter()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{makemenus}{Make the abcissa menus}
+\begin{ahargs}
+  \ahaddarg[in]{parent}{Parent frame for plotter}{Use PGPlotter}{Tk agent}
+\end{ahargs}
+
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+
+This function creates three menus from which the user controls what form
+the abcissa labelling will take. These menus are to control whether the
+abcissa coordinate is absolute or relative, what the units are, and, if
+applicable (for spectral profile axes) what the doppler type is.
+If you don't give the parent frame, the menus are embedded in the
+Pgplotter \tool\ that is generated for plotting.
+
+If you haven't yet specified the profile axis via function
+\ahlink{setprofileaxis}{images:imageprofilesupport.setprofileaxis}.
+(maybe you don't know it when you have to create these menus), empty
+menus will be made.  
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(3);
+- p.makemenus()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{makeabcissa}{Make the abcissa}
+\begin{ahargs}
+  \ahaddarg[in]{pixel}{Pixel coordinate for abcissa}{}{Vector of integer}
+\end{ahargs}
+
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+This function creates the abcissa.  You specify the absolute pixel
+coordinate for which the abcissa should be generated. It will
+take the full range of the shape (specified at construction)
+for the profile axis.
+
+You must call function
+\ahlink{setprofileaxis}{images:imageprofilesupport.setprofileaxis} before calling
+this function so that it knows which axis is the profile axis.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              # Open image
+- csys := im.coordsys()                    # Coordinate system
+- shp := im.shape()                        # Shape of image
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()
+- p.makeabcissa(pos)
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{makeordinate}{Make an ordinate}
+\begin{ahargs}
+  \ahaddarg[in]{im}{The image}{}{Image tool}
+  \ahaddarg[in]{region}{The region of interest}{}{Region tool or naked record}
+  \ahaddarg[in]{ci}{PGPlot color index of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{ls}{PGPlot line style of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{which}{Which ordinate index to set}{Next slot}{Integer or unset}
+\end{ahargs}
+
+\ahreturns{Integer or fail}
+
+\begin{ahdescription} 
+This function creates an ordinate.  You specify an Image \tool\
+and a Region \tool.  The image data in the region are averaged
+over all axes except the profile axis.    The region may also be
+specified as a naked record with fields 'blc' and 'trc' holding
+vectors of absolute pixel coordinates.
+
+This function returns an index identifying the ordinate number that you
+are displaying. You can display many profiles simultaneously this way.
+To reset the number of profiles to zero use function
+\ahlink{setnoprofile}{images:imageprofilesupport.setnoprofile}.
+
+You must call function
+\ahlink{setprofileaxis}{images:imageprofilesupport.setprofileaxis} before calling
+this function so that it knows which axis is the profile axis.
+
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- pos := csys.referencepixel()            
+- p.makeabcissa(pos)                      
+-
+- blc := pos; blc[3] := 1                 
+- trc := pos; trc[3] := shp[3]
+- r := drm.box(blc, trc)
+- idx := p.makeordinate (im, r)                  
+-
+- p.plot(which=idx)
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{npoints}{Return the number of points in the current profile}
+\ahreturns{Integer}
+
+\begin{ahdescription} 
+This function returns the number of points in the current profile.
+Will be zero if none yet made.  It is function
+\ahlink{makeabcissa}{images:imageprofilesupport.makeabcissa}
+that really determines the number of points (the ordinate
+must conform).
+
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- pos := csys.referencepixel()            
+- p.makeabcissa(pos)                      
+- p.npoints()
+64
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{nprofiles}{Return the number of profiles}
+\ahreturns{Integer}
+
+\begin{ahdescription} 
+This function returns the number of profiles stored.
+\end{ahdescription}
+
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{plot}{Plot the profile}
+\begin{ahargs}
+  \ahaddarg[in]{xautoscale}{Autoscale abcissa ?}{T}{T or F}
+  \ahaddarg[in]{yautoscale}{Autoscale ordinate ?}{T}{T or F}
+  \ahaddarg[in]{which}{Ordinate index}{All}{Integer or unset}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+This function plots all or the specified ordinate profile.
+
+Every time you call functions
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate} or 
+\ahlink{setordinate}{images:imageprofilesupport.setordinate} a new
+ordinate profile is added to the display.  Each of these functions
+returns an index which you can use here to specify via argument {\stfaf
+which} which profile you want to see.  By default, all profiles
+available are displayed.
+
+By default the abcissa and ordinates are autoscaled - the ranges 
+are worked out from all of the current profiles available.
+
+If you  turn off x-autoscaling, then the new plot is drawn with the
+current abcissa range (e.g. from a zoom).
+
+If you turn off y-autoscaling, then the new plot is drawn
+with the y-range provided via the call back function
+\ahlink{setyrangecallback}{images:imageprofilesupport.setyrangecallback}
+is used. If there is no callback, then the current range will be
+used.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+-
+- p := imageprofilesupport(csys=csys, shp=shp, 
+                           widgetset=dws)  
+-
+- f1 := dws.frame()                        
+- axis := 3 	                           
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+-
+- blc := pos; blc[3] := 1                  
+- trc := pos; trc[3] := shp[3]
+- r := drm.box(blc, trc)
+- id1 := p.makeordinate (im, r)                    # Profile 1
+-
+- r := drm.box()                           
+- id2 := p.makeordinate (im, r)                    # Profile 2
+-
+- p.plot(which=id1)                                # Plot profile 1
+- p.plot(which=id2)                                # Plot profile 2
+- p.plot()                                         # Plot all profiles
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{plotter}{Recover the plotter}
+\ahreturns{pgplotter or pgplotwidget tool or fail}
+
+\begin{ahdescription} 
+This function recovers the underlying plotter \tool.
+This will be either a PGPlotter (stand alone) or a PGPlotWidget (embedded)
+\tool.
+\end{ahdescription}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+-
+- p := imageprofilesupport(csys=csys, shp=shp, 
+                           widgetset=dws)  
+-
+- f1 := dws.frame()                        
+- axis := 3 	                           
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- p.makeordinate (im, r)
+- p.plot() 
+- pl := p.plotter()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+\begin{ahfunction}{point}{Mark the specified coordinate with a symbol}
+\begin{ahargs}
+  \ahaddarg[in]{x}{Abcissa coordinate}{}{Float}
+  \ahaddarg[in]{y}{Ordinate coordinate}{}{Float}  \ahaddarg[in]{x}{Abcissa coordinate}{}{Float}
+  \ahaddarg[in]{errx}{Half width of x error bar}{None}{Float}
+  \ahaddarg[in]{erry}{Half width of y error bar}{None}{Float}
+  \ahaddarg[in]{symbol}{PGPlot marker symbol}{2 (cross)}{Integer}
+  \ahaddarg[in]{color}{PGPlot color index of symbol}{1 (foreground)}{Integer}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription} 
+This function marks the specified location with a symbol and optional
+error bars.  The specified point is not retained in any draw lists
+so this is a one off draw.
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{postscript}{Generate a postscript file of the plot}
+\begin{ahargs}
+  \ahaddarg[in]{file}{postscript file name}{}{String}
+  \ahaddarg[in]{color}{Use color ?}{T}{T or F}
+  \ahaddarg[in]{landscape}{Use landscape or portrait}{T}{T or F}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+This function saves the current plot in a postscript file.
+\end{ahdescription}
+
+\end{ahfunction}
+
+
+\begin{ahfunction}{plotfile}{Saves the plot as a Table}
+\begin{ahargs}
+  \ahaddarg[in]{file}{file name}{}{String}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+This function saves the current plot in an \aipspp\ Table.
+The plot can then be reopened and new commands added or old commands
+changed. 
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+- p := imageprofilesupport(csys=csys,      
+                           shp=shp, 
+                           widgetset=dws)  
+- f1 := dws.frame()                        
+- axis := 3 	                           
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()                           
+- p.makeordinate (im, r)
+- p.plot()                                 
+- p.plotfile('save.plot')         # save
+- p2 := pgplotter('save.plot')    # reopen
+\end{ahexample}
+\end{verbatim}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setabcissaunit}{Set abcissa unit}
+\begin{ahargs}
+  \ahaddarg[in]{unit}{Abcissa unit}{}{String}
+  \ahaddarg[in]{doppler}{Abcissa Doppler type}{unset}{String}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahdescription} 
+
+This function sets the plot abcissa unit.   You can only call this
+function after a call to
+\ahlink{makemenus}{images:imageprofilesupport.makemenus}. The specified
+unit must exist in the menu list. Any extant plot will be redrawn after
+this call. In general spectra will be plotted in the default RADIO
+doppler type when the abcissa is a velocity. This behavior can be
+changed by the doppler argument.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setcoordinatesystem}{Set a new coordinate system}
+\begin{ahargs}
+  \ahaddarg[in]{csys}{New coordinate system}{}{Coordsys tool}
+  \ahaddarg[in]{shp}{Shape of associated image}{}{Vector of integer}
+  \ahaddarg[in]{resetref}{Reset Reference Frame to Native of new Coordinate System}{F}{T or F}
+\end{ahargs}
+
+\ahreturns{Integer or fail}
+
+\begin{ahdescription} 
+
+This function sets a new coordinate system and associated image shape.
+This function will update the x-axis menus appropriately.  
+
+After calling this function, you must remake the abcissa and ordinate
+profiles (functions
+\ahlink{makeabcissa}{images:imageprofilesupport.makeabcissa} and
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate} or
+\ahlink{setordinate}{images:imageprofilesupport.setordinate}).
+
+The argument {\stfaf resetref} is used to reset any reference frame selection
+(in the GUI) back to the native one contained in the new coordinate system (or
+any extra frame conversion currently set in the supplied coordinate system).
+Otherwise, the GUI selection is left as it is.  For example, the user
+might have asked to convert a Spectral coordinate to TOPO.  If {\stfaf resetref=F}
+TOPO is left selected and conversions are made to it.  If {\stfaf resetref=T}
+then, if the new coordinate system has LSRK say as the native frame, then
+LSRK is now selected in the GUI and no extra conversions are made.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+- axis := 3;
+- p := imageprofilesupport(csys=csys, shp=shp)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()
+- p.makeordinate(im, r)
+- p.plot()                                 
+-
+- im2 := image('ngc1399.cube')              
+- csys2 := im2.coordsys();
+- shp2 :=  im2.shape();
+- axis2 := 1;
+- p.setprofileaxis(axis2)
+- p.setcoordinatesystem(csys2, shp2)
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos);
+- p.makeordinate(im2, r)
+- p.plot()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setnoprofile}{Reset number of profiles to zero}
+\ahreturns{T}
+\begin{ahdescription}  
+This function resets the number of accumulated profiles to zero.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setordinate}{Set an ordinate}
+\begin{ahargs}
+  \ahaddarg[in]{data}{The ordinate data}{}{Vector of float}
+  \ahaddarg[in]{mask}{The ordinate mask}{All good}{Vector of Bool}
+  \ahaddarg[in]{err}{The ordinate error}{None}{Vector of float}
+  \ahaddarg[in]{ci}{PGPlot color index of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{ls}{PGPlot line style (pos) or graph marker (neg) of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{which}{Which ordinate index to set}{Next slot}{Integer}
+\end{ahargs}
+
+\ahreturns{Integer or fail}
+
+\begin{ahdescription} 
+
+This function sets an ordinate directly, whereas function
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate} 
+generates it for you from an image.
+
+If you don't set the mask it is assumed to be all T (good).
+
+This function returns an index identifying the ordinate index that you
+are setting. You can display many profiles simultaneously this way.
+To reset the number of profiles to zero use function
+\ahlink{setnoprofile}{images:imageprofilesupport.setnoprofile}.
+You can ovewrite an ordinate by specifying {\stfaf which}.
+
+If argument {\stfaf ls} is positive, then the points are drawn as a line with
+PGPLOT linestyle {\stfaf ls}. If it is negative, then the points are drawn
+as graph markers with PGPLOT marker value {\stfaf abs(ls)}.
+
+You must call function
+\ahlink{setprofileaxis}{images:imageprofilesupport.setprofileaxis} before calling
+this function so that it knows which axis is the profile axis.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- pos := csys.referencepixel()            
+- p.makeabcissa(pos)                      
+-
+- blc := pos; blc[3] := 1                 
+- trc := pos; trc[3] := shp[3]
+- r := drm.box(blc, trc)
+- local data, mask
+- im.getregion(data, mask, region=r, dropdeg=T)
+- idx := p.setordinate (data, mask, 1)                  
+- p.plot()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+\begin{ahfunction}{setprofile}{Set a profile}
+\begin{ahargs}
+  \ahaddarg[in]{abcissa}{The abcissa}{}{Vector of float}
+  \ahaddarg[in]{ordinate}{The ordinate}{}{Vector of float}
+  \ahaddarg[in]{orderr}{The error in the ordinate}{None}{Vector of float}
+  \ahaddarg[in]{mask}{The mask}{All good}{Vector of Bool}
+  \ahaddarg[in]{unit}{The abcissa unit}{'pix'}{'pix' or valid unit}
+  \ahaddarg[in]{doppler}{The doppler type}{'radio'}{'radio', 'optical', 'true'}
+  \ahaddarg[in]{ci}{PGPlot color index of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{ls}{PGPlot line style of this ordinate when plotted}{1}{Integer}
+  \ahaddarg[in]{which}{Which profile index to set}{Next slot}{Integer}
+\end{ahargs}
+
+\ahreturns{Integer or fail}
+
+\begin{ahdescription} 
+
+This function sets a profile, both abcissa and ordinate directly.
+It allows spectra with distinct abcissas to be plotted together.
+Such simultaneous profiles can have different numbers of points
+as well.  
+
+This function is only available if you construct 
+with the argument {\stfaf multiabcissa=T}.  Otherwise,
+you are restricted to one abcissa with one or more
+ordinates.
+
+If you don't set the mask it is assumed to be all T (good).
+
+This function returns an index identifying the profile index that you
+are setting. You can display many profiles simultaneously this way.
+To reset the number of profiles to zero use function
+\ahlink{setnoprofile}{images:imageprofilesupport.setnoprofile}.
+You can ovewrite a profile by specifying {\stfaf which}.
+
+You must specify the unit of the abcissa vector which must always
+be in absolute coordinates.     You may use absolute pixels
+(i.e. those of the construction  coordinate system) by
+setting {\stfaf unit='pix'}.  Otherwise {\stfaf unit}
+can be any valid world unit consistent with the coordinate type
+of that axis.   If the profile axis pertains to
+a spectral coordinate, you may use a velocity (e.g. 'm/s') or frequency
+(e.g. 'MHz') unit.  Also for spectrla abcissas, if you specify a velocity
+unit, you shouyld specify the doppler type.
+
+You can mix abcissa specification units with subsequent calls.
+
+You must call function
+\ahlink{setprofileaxis}{images:imageprofilesupport.setprofileaxis} before calling
+this function so that it knows which axis is the profile axis.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, multiabcissa=T)
+- p.setprofileaxis(axis);
+- p.makemenus()
+-
+- id := [];
+- x := 1:100
+- y := (1:100)/100.0;
+- id[1] := p.setprofile (abcissa=x, ordinate=y, unit='pix');
+--
+- x := 120:200
+- n := length(x);
+- y := (1:n) / n;
+- id[2] := p.setprofile (abcissa=x, ordinate=y, unit='pix');
+- p.plot()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+\begin{ahfunction}{setplotter}{Set a new plotter}
+\begin{ahargs}
+  \ahaddarg[in]{plotter}{New plotter}{}{Pgplotter tool}
+\end{ahargs}
+
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+
+This function allows you to set a plotter with one of your own creation.
+It must be a \ahlink{pgplotter}{display:plotter.pgplotter} \tool.
+
+After calling this function, you must remake the abcissa and ordinate
+profiles (functions
+\ahlink{makeabcissa}{images:imageprofilesupport.makeabcissa} and
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate} or
+\ahlink{setordinate}{images:imageprofilesupport.setordinate}).
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')              
+- csys := im.coordsys()                    
+- shp := im.shape()                        
+- axis := 3;
+- p := imageprofilesupport(csys=csys, shp=shp)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- pos := csys.referencepixel()             
+- p.makeabcissa(pos)                       
+- r := drm.box()
+- p.makeordinate(im, r)
+- p.plot()                                 
+-
+- pl := pgplotter()
+- p.setplotter(pl)
+- p.makemenus()
+- p.makeabcissa([1,1])
+- p.setordinate(data2)
+- p.plot()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setprofileaxis}{Set the profile axis}
+\begin{ahargs}
+  \ahaddarg[in]{axis}{The profile axis}{-1}{Integer}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahdescription} 
+
+This function sets the profile axis.    The default, -1, means
+that no axis is effectively set.  The x-unit menus will
+be updated appropriately, if they have already been made.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{setordinateunit}{Set ordinate unit}
+\begin{ahargs}
+  \ahaddarg[in]{unit}{Ordinate unit}{}{String}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahdescription} 
+
+This function sets the ordinate unit.  You need to do this if you are
+using  \ahlink{setordinate}{images:imageprofilesupport.setordinate} 
+rather than
+\ahlink{makeordinate}{images:imageprofilesupport.makeordinate}  to set
+the ordinate.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setspectralref}{Set new Spectral reference}
+\begin{ahargs}
+  \ahaddarg[in]{value}{The new spectral reference label}{}{String}
+\end{ahargs}
+
+\ahreturns{T, F or fail}
+
+\begin{ahdescription} 
+
+This function lets you set the spectral reference directly (rather than
+selecting the menu item interactively).  When you do so, a {\bf spectralrefchange}
+event is emitted.  Returns F if string is invalid.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- p.setprofileaxis(axis);
+- p.makemenus()
+- p.setspectralref ('TOPO')
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setyrangecallback}{Set ordinate data range via a callback function}
+\begin{ahargs}
+  \ahaddarg[in]{callback}{Callback function}{}{Glish function}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahdescription} 
+
+In function \ahlink{plot}{images:imageprofilesupport.plot}
+you may turn off profile ordinate autoscaling.
+If you  do so,  then the new display is drawn with the
+current ordinate range if there is one. If there is no current ordinate range
+available, the ordinate range is provided via
+this call back function.  The callback function must return a vector of
+two floats, the ordinate minimum and maximum.
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{settitle}{Set plot title with fancy colors}
+\begin{ahargs}
+  \ahaddarg[in]{text}{Title text}{}{Vector of strings}
+  \ahaddarg[in]{ci}{PGPLot colour index for each string}{}{Vector of integers}
+\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahdescription} 
+
+This function allows you to write a title with different words in
+different colors.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('ngc1313.cube')             
+- csys := im.coordsys()                   
+- shp := im.shape()                       
+- p := imageprofilesupport(csys=csys, shp=shp, widgetset=dws)
+- t := "A silly title";
+- ci := [1,2,7];       # Reg Green Yellow
+- p.settitle(t, ci)
+\end{verbatim}
+\end{ahexample} 
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{which}{Return indices of current plotted profiles}
+\ahreturns{unset or vector of int}
+
+\begin{ahdescription} 
+
+This function allows returns the profile indices for the profiles
+currently plotted.
+
+\end{ahdescription}
+
+\end{ahfunction}
+\end{ahobject}
+
+
+\begin{ahfunction}{imageprofilesupporttest}{Run test suite}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Which test to run}{All tests}{Integer or vector of integer}
+  \ahaddarg[in]{destroy}{Destroy plotters}{T}{T or F}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+Run the test suite.
+\end{ahdescription} 
+
+\end{ahfunction}
+
+
+\end{document}

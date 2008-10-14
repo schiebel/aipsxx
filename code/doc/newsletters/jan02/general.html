@@ -1,0 +1,1513 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>  
+<head>
+    <title>January 2002 AIPS++ Newsletter
+(A Project of the AIPS++ Consortium)</title>
+  </head>
+    
+
+
+<BODY  BGCOLOR="#FFFFFF" 
+TEXT="#000000" LINK="#C61C24" VLINK="#EEAC33">
+
+
+
+
+
+
+<TABLE CELLPADDING=0 CELLSPACING=10 BORDER=0 WIDTH="100%">
+
+<TR><TD>
+<TABLE WIDTH="100%" CELLPADDING=10 CELLSPACING=0 BORDER=0>
+
+
+<TR><TD COLSPAN=2>
+<FONT FACE=helvetica SIZE="+10">
+<CENTER><FONT FACE=helvetica><B>AIPS++</B></FONT> <B>Newsletter</B></CENTER>
+<CENTER><B>January 2002</B></CENTER>
+</FONT>
+<FONT FACE=helvetica SIZE="+6">
+<CENTER><FONT FACE=helvetica COLOR="#dd4444" ><B>Articles</B></FONT></CENTER>
+</FONT>
+</TD></TR>
+<BR>
+<BR>
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+
+</TD>
+
+
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="msplot">
+<FONT FACE=helvetica SIZE="+2">
+Msplot</FONT></A><BR>                                       
+<I>Tim Cornwell (revised by Ralph Marson)</I> - NRAO/Socorro<BR>
+
+
+<p>
+The msplot tool is currently the main interactive tool for displaying
+and editing data from an AIPS++ MeasurementSet. It is written as an AIPS++
+tool using a number of lower-level tools such as ms, pgplotter, and
+the viewer. An msplot tool can be
+constructed either using the toolmanager or from the command line using:
+<p>
+<pre>
+   mymsplot := msplot('mydata.ms')
+</pre>
+<p>
+However if you wish to flag data in the measurement set you should use:
+<p>
+<pre>
+   mymsplot := msplot('mydata.ms', edit=T)
+</pre>
+<p>
+Either of these commands will start a graphical interface to mymsplot
+allowing the user to display and optionally edit the data in the
+measurement set. Currently, msplot is entirely GUI-based so that none of the
+operations can be invoked from the command line.
+<p>
+
+<img src='mimg1.gif'>
+
+<p>
+The GUI shows a number of buttons controlling the data selection and the
+type of plot or display produced. What data is plotted and how it is
+displayed can be chosen as follows:
+
+
+<ul>
+ * 
+    X, Y plot limits: This panel allows you to manually set the limits on
+    the range of values plotted. By default the limits are chosen
+    automatically to encompass the entire range of values.
+</ul>
+
+<ul>
+ * 
+
+    Data Selection: This panel allows you to select what subset of the
+    data will be plotted. Selections can be made according to a number
+    of different columns in the measurement set including antenna-id,
+    antenna pair (or interferometer), feed-id, field-id, etc.
+</ul>
+
+<ul>
+ * 
+
+    Polarization selection: This panel determines which  polarizations
+    are plotted. Bothe native polarization like XX, XY, RR, LR or derived
+    polarizations like I, Q, U, V may be plotted.
+</ul>
+
+<ul>
+ * 
+
+    Spectral selection: This panel determines which spectral windows
+    and channels are plotted. On the fly channel averaging can also be
+    done.
+</ul>
+
+
+<p>
+The axes may be chosen as follows:
+
+
+<ul>
+ * 
+
+    X, Y: msplot allows choice of the axes from a wide range of variables
+    in the measurement set: antenna, antenna-pair, feed, field, scan
+    number, spectral window, time, u, v, w, uv distance, time, weight, or
+    data. The data may be the amplitude, phase, real, imaginary, or
+    complex part of the observed, corrected, model, residual, or ratio
+    visibility. In addition, the float_data for single dish data may be
+    displayed.
+</ul>
+
+<ul>
+ * 
+
+    Image: Instead of a scatter plot, the data may be gridded to an image
+    and that image displayed.
+</ul>
+
+<p>
+In addition to these axis selections, msplot can iterate over various
+indices such as antenna, feed, field, scan number, spectral window, and
+polarization. As you can see, the possibilities are vast!
+<p>
+To show a simple plot, taking advantage of the iteration capabilities, we
+show msplot applied to a seven pointing mosaic data set from the VLA. We
+plot all corrected visibility amplitudes versus uv distance iterating
+over field:
+<p>
+<img src='mimg2.gif'>
+<p>
+Suppose that we wish to see just the visibilities from the inner antennas
+for field 1. Further selection of the data can be performed using the
+Data selection button. We press the Data selection button to display the
+GUI as shown above. We can either type in the Antenna numbers, or better,
+select them graphically by pressing on the spanner (or wrench) for the
+Antennas argument.
+
+<p>
+<img src='mimg3.gif'>
+<p>
+One can select the antennas to be plotted by dragging a box. The
+corresponding numbers in the Antennas argument are then filled in when
+the Accept button is pressed. Similar graphical elements (gophers in
+AIPS++) can be used to get other types of information. If we narrow down
+the fields to show only the first field, and repeat the plot, we get:
+<p>
+<img src='mimg4.gif'>
+<p>
+Now since we have only one plot, editing is enabled (assuming msplot
+was started with edit=T). To edit points, one uses a click and drag
+action to select the points (shown in hatched green), followed by a
+press of the Flag button (top right), to actually edit the points. The
+plot is then repeated, and the corresponding points are erased.
+
+<p>
+Editing is done in place on the FLAG and FLAG_ROW columns of the
+measurement set. At startup, these current columns are saved to a
+scratch table, from whence they may be restored if the user decides
+not to apply the edits.
+
+<p>
+One of the unexpectedly powerful features of msplot is that editing is
+possible in any scatter plot. For example, for the same selection, we may
+edit in the plot of real versus imaginary part of the visibility:
+<p>
+<img src='mimg5.gif'>
+<p>
+Although we have concentrated on scatter plots, image-like displays are
+also possible. msplot uses the viewer to provide the image display
+capabilities, and so the interface shown below should have some familiar
+aspects:
+<p>
+<img src='mimg6.gif'>
+<p>
+We have shown a simple continuum display, with 4 correlations (RR, RL,
+LR, LL). The ability of AIPS++ to access with equal efficiency along
+any set of image axes can be used to good effect: the data are gridded
+into an image with axes Interferometer, Time, Channel, and
+Polarization. Any two of these may be chosen as the first two axes on
+the display, and a third scrolled through in a movie. In the example
+above, the four correlations are shown as the third axis through which
+the viewer may be scrolled.
+
+<p>
+Editing is possible in the display mode and is preferable to the plotting
+mode when the data volume is large.
+<p>
+Msplot can also display single dish data with the same wide range of
+possibilities. In the next figure, we show an image display of some 20cm
+data from the Arecibo telescope complete with narrow-band interference.
+
+<p>
+<img src='mimg7.gif'>
+<p>
+This is only a brief tour of the capabilities of the msplot tool. It
+seems to be popular for data editing, once people get accustomed to the
+flexibility of the interface. I recommend that you experiment quite a bit
+since some of the more esoteric types of plot can provide excellent
+diagnostic capabilities.
+
+<p>
+msplot was designed and developed as a prototype, and it is expected that
+many of the capabilities now provided by the pgplotter and the viewer
+will instead be offered as native capabilities of the viewer as the
+continuing development of the Display Library allows.
+
+
+<p>
+Finally, we end with another plot on a 327MHz VLA measurement set, showing
+how the various capabilities described here can be combined. We'll let
+the reader figure out how this was done.
+<p>
+<img src='mimg8.gif'>
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+</TD>
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="masks">
+<FONT FACE=helvetica SIZE="+2">
+Image Mask Handling</FONT></A><BR>
+<I>Neil Killeen</I> - ATNF<BR>
+
+<P>
+<H2> General </h2>
+
+<P>
+Each pixel in an  image has a brightness value and a mask 
+value. A good pixel (mask value True) is one that  the image analysis
+software will include in its computations or displays.  A bad pixel
+(mask value False) is one that will be excluded from calculations. We
+store these Boolean mask values in what is termed the 'pixel mask'. 
+
+<P>
+An  image may hold zero, one or more pixel masks.     This
+is rather handy as it allows you to try many things out without having
+to continually overwrite the mask.  
+
+<P>
+These masks are identified by name.  The Image tool function <B>summary</B> 
+lists them for you.  Here is an example.
+
+<P>
+
+<P><P>
+<BR>
+
+<P>
+<PRE>
+Image name       : zz
+Image type       : PagedImage
+Pixel mask(s)    : mask2 [mask0, mask1]
+Region(s)        : None
+Image units      : Jy/beam
+Restoring Beam   : 53.5 arcsec, 34.2 arcsec, 6 deg
+Direction reference : J2000
+
+Axis Type      Name             Proj Shape Tile   Coord value at pixel    Coord 
+incr Units
+--------------------------------------------------------------------------------
+---------- 
+1    Direction Right Ascension   SIN   113  113  00:00:00.000    56.00 -8.000000
+e+00 arcsec
+2    Direction Declination       SIN    76   76 +00.00.00.000    38.00  1.200000
+e+01 arcsec
+</PRE>
+
+<P>
+You can see that this image has three masks.    The first one, 'mask2'
+is currently the active mask.  This means it will be applied by default
+by all the analysis software. The other two, listed in square brackets,
+are not currently active. If none of the masks were active, they would
+all be listed in  square brackets.  This means that effectively
+an 'all good' mask is applied.
+
+<P>
+<h2>Managing the pixel masks in an image</h2>
+<P>
+There is an Image tool function called <B>maskhandler</B>.  Its job is to
+let you manipulate masks (e.g. copy, delete etc.). Its job is not to
+change the pixel mask values (see following subsection).
+
+<P>
+Its interface is
+
+<P>
+<PRE>
+- im := image('myimage')
+- im.maskhandler(op, name)
+</PRE>
+
+<P>
+where <B>op</B> is a string specifying an operation, and <B>name</B>
+is a string argument that may be required depending on the chosen
+operation.
+
+<P>
+The argument <B>op</B> may take the values (minimum match allowed) :
+
+<P>
+<DL COMPACT>
+<DT>default</DT>
+<DD>- this retrieves the name of the default pixel mask. E.g. 
+<B>print im.maskhandler('def')</B>
+
+<P>
+</DD>
+<DT>get</DT>
+<DD>- this retrieves the name(s) of the existing pixel masks. E.g.
+<B>print im.maskhandler('get')</B>
+
+<P>
+</DD>
+<DT>set</DT>
+<DD>- this lets you change the default pixel mask to that given
+by the <B>name</B> argument.  If name is empty,  then the default mask is
+unset (i.e. an all good mask is effectively applied).  E.g. <B>im.maskhandler('s
+et', 'mask0')</B>
+
+<P>
+</DD>
+<DT>delete</DT>
+<DD>- this lets you delete the pixel mask(s) specified by the
+<B>name</B> argument.  E.g. <B>im.maskhandler('del', "mask1 mask2')</B>
+
+<P>
+</DD>
+<DT>rename</DT>
+<DD>- this lets you rename the mask specified by <B>name[1]</B> to <B>name[2]</B
+>. E.g. <B>im.maskhandler('ren', "mask0
+myVeryNiceMask')</B>
+
+<P>
+</DD>
+<DT>copy</DT>
+<DD>- this lets you copy a mask to another in the same image,
+or copy a mask from  another image into this image.   E.g.  <B>im.maskhandler('c
+op', "mask0 copyOfMyMask")</B> or <B>im.maskhandler('cop', "myotherimage:mask0 m
+ask0")</B> 
+</DD>
+</DL>
+
+<P>
+As well as the command-line interface, there is also a custom GUI
+for the <B>maskhandler</B> function.  It is available from the
+Toolmanager as well as as via an Image tool command-line function.
+
+<P>
+<PRE>
+g := im.maskhandlergui()      # g is a tool itself
+</PRE>
+
+<P>
+
+<img src='iimg1.gif'>
+
+<P>
+The left-hand list box shows you the pixel masks currently available in
+the image. Underneath the list box the default pixel mask, if any, is
+listed. You have buttons under the left-hand list box to apply the
+desired operation. The sequence is to select a pixel mask or pixel masks
+from the list box, and then click the desired button. Popuphelp is on
+each button to tell you what they do. 
+
+<P>
+The right-hand list box is used to list the pixel masks from some other
+image. You enter the image file name with the file entry widget and then
+enter carriage-return. You can copy masks from that image file to the
+current image. 
+
+<P>
+<h2>Changing the values of pixel masks</h2>
+<P>
+There are a few ways in which you can change the values of
+a pixel mask.
+
+<P>
+<DL COMPACT>
+<DT>putregion</DT>
+<DD>- The Image tool functions <B>getregion</B> and
+<B>putregion</B> can be used to recover the default mask into a Glish
+array, change it, and then put it back.
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')
+- local p, m
+- im.getregion(pixels=p, pixelmask=m)       # Recover pixels and mask
+- m[1:10,1:10] := F                         # Set some mask values to bad (F)
+- im.putregion (pixelmask=m)                # Replace the default mask
+</PRE>
+<P>
+</DD>
+<DT>set</DT>
+<DD>- The Image tool function <B>set</B> can be used
+to set the default mask to one value in a specified region in 
+the image.
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')
+- im.set(pixelmask=F)                       # Sets entire mask to bad (F)
+- r := drm.quarter()
+- im.set(pixelmask=T, region=r)             # Sets the mask to good (T) in the s
+pecified region
+</PRE>
+
+<P>
+</DD>
+<DT>calcmask</DT>
+<DD>- This Image tool function is used to create a new
+pixel mask or replace an old one via a Boolean Lattice Expression
+Language (LEL - see Note 223) expression. This gives you much more scope than th
+e
+simple set and putregion functions. 
+
+<P>
+The call sequence is  <B>im.calcmask(mask, name, default)</B>
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')
+- im.calcmask(mask, name, default)
+</PRE>
+
+<P>
+where <B>mask</B> is a Boolean LEL string expression.  If the expression
+is not a scalar, the shapes and coordinates of the image and expression
+must conform.  If the expression is a scalar then the entire pixel mask
+will be set to that value. 
+
+<P>
+If <B>name</B> is given, then that is the name of the new pixel mask
+(existing ones will be overwritten). If you leave it unset, a name is
+made up for you.  If the argument <B>default</B> is T, the new
+mask is made the default mask.
+
+<P>
+Note that when the expression is evaluated, any current default
+pixel mask in the expression is ignored.
+
+<P>
+Here are some examples:
+<PRE>
+- im.calcmask(mask=T)
+</PRE>
+
+<P>
+The given expression (a Boolean) is converted to a string automatically. 
+When the expression is evaluated it is a scalar, so the whole mask is
+set to good (T).  This example is the equivalent of <B>im.set(pixelmask=T)</B>. 
+
+<P>
+<PRE>
+- im := image('zz')             # Open image
+- im.calcmask(mask='zz&gt;0')      # Access image via disk file name
+- im.calcmask(mask='$im&gt;0')     # Access image via Tool name with \$ syntax
+</PRE>
+
+<P>
+The mask is good (T) when the expression is True.   Thus, the new mask
+would be bad (False) for all non-positive pixels.
+
+<P>
+Now for some subtlety.  Read carefully !  Any LEL expression can be
+thought of as having a value and a mask.  Usually the value is Float and
+the mask Boolean.  In the case of <B>calcmask</B>, because the expression
+is  Boolean itself, the value is also Boolean.  In the second example
+above, the expression mask would just be the mask of zz.  Now
+what <B>calcmask</B> does is create a mask from the expression value
+(which is Boolean) and discards the expression mask.  Therefore, the
+resulting mask is independent of any mask that zz might have.
+
+<P>
+If you wish the mask of the expression be honoured as well,
+then you can do :
+
+<P>
+<PRE>
+- im.calcmask('mask(zz) &amp;&amp; zz&gt;0') # Mask of zz included
+</PRE>   
+
+<P>
+This says that the output  will be True if the current
+ of zz is True and the expression value is True.
+
+<P>
+Now one last subtlety. Consider the following expression:
+
+<P>
+<PRE>
+- im.calcmask('zz&gt;min(zz)')         # Mask of zz used in min function
+- im.calcmask('zz&gt;min(zz:nomask)')  # Mask of zz not used in min function
+</PRE>   
+
+<P>
+When the scalar function min evaluates a value from the disk file <B>yy</B>,
+the default mask of <B>yy</B> <I>will</I> be used.  All the scalar
+functions look at the mask.   If you didn't want the mask to be used you
+can use the special LEL :nomask syntax shown in the  final example.
+
+<P>
+The expressions can be as busy as you like.  Here is one
+that involves two images.  The calculated mask is True (good)
+when the pixel values of zz are positive or the absolute pixel values
+of yy are less than two times the zz absolute pixel values.
+<P>
+<PRE>
+- im.calcmask('zz&gt;0 || abs(yy)&lt;2*abs(zz)')
+</PRE>
+
+<P>
+</DD>
+</DL>
+
+<P>
+<h2>The <b>mask</b> argument</h2>
+<P>
+There is an argument, <B>mask</B>, which can be supplied to many Image
+tool constructors and functions.  It is supplied with a LEL Boolean
+expression string.  One example of its use is in function <B>calcmask</B>
+described above where the resultant mask is stored with the image. 
+
+<P>
+In all other uses, the <B>mask</B> argument is used to generate an
+On-The-Fly (OTF) mask.  It is generated, used, and discarded once the
+function terminates.  In the case of <B>calcmask</B>, its use is to store
+it, rather than apply it for some other analysis. 
+
+<P>
+The OTF mask is applied in addition to any default mask the image holds. 
+Here are some examples:
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')
+- im.statistics(mask='$im &gt; 0')  # Stats evaluated when default mask of $im a
+nd OTF mask are True
+- im.view (mask='yy&lt;0')          # Displayed when default mask of $im and OTF
+ mask are True
+- im.moments(mask='abs(zz)&gt;3*stddev(zz)')
+</PRE>
+
+<P>
+It is especially handy in the <B>view</B> function.
+
+<P>
+<h2>Replacing masked pixels</h2>
+<P>
+Each pixel has a brightness value and a mask value. Sometimes you may
+want to replace the value of all masked pixels, and then delete the
+mask.
+
+<P>
+This is done with the Image tool function <B>replacemaskedpixels</B>. The
+argument <B>pixels</B> can take a scalar, a scalar LEL expression or a
+non-scalar LEL expression of the correct shape.
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')
+- im.calcmask('zz&gt;0')
+- im.replacemaskedpixels(pixels='-1*$im')    # All masked pixels replaced by the
+ir negative
+- im.replacemaskedpixels(pixels=0)           # All masked pixels replaced by 0
+- im.replacemaskedpixels(pixels='min(yy)')   # All masked pixels replaced by the
+ minimum of image yy
+- im.maskhandler('set','')                   # Unset default mask
+</PRE>
+
+<P>
+You can also use the OTF <B>mask</B> argument if you wish.  Note that in this
+example no actual persistent mask is created.
+
+<P>
+<PRE>
+- im := imagemaketestimage('zz')                  # Has no mask
+- im.replacemaskedpixels(pixels=0, mask='zz&gt;0')   # All non-positive values s
+et to 0
+</PRE>
+
+<P>
+<h2>Pixel masks and regions</h2>
+<P>
+Some comment about the combination of pixel masks and
+regions-of-interest is useful here. See the Regionmanager tool for basic
+information about regions-of-interest first. 
+
+<P>
+Regions are provided to Image tool functions via the standard <B>region</B>
+function argument.
+
+<P>
+Consider a simple polygonal region. This region-of-interest is defined
+by a bounding box, the polygonal vertices, and a mask called a 'region
+mask'. The region mask specifies whether a pixel within the bounding box
+is inside or outside the polygon. For a simple box region-of-interest,
+there is obviously no need for a region mask. 
+
+<P>
+Now imagine that you wish to recover the pixel mask of an image from a
+polygonal region-of-interest. The mask is returned to you in regular
+Boolean array. Thus, the shape of the returned mask array reflects the
+bounding-box of the polygonal region. If the actual pixel mask that you
+apply is all good, then the retrieved mask would be good inside of the
+polygonal region and bad outside of it. If the actual pixel mask had
+some bad values in it as well, the retrieved mask would be bad outside
+of the polygonal region. Inside the polygonal region it would be bad if
+the pixel mask was bad. More simply put, the mask that you recover is
+just a logical ``and'' of the pixel mask and the region mask; if the
+pixel mask is True and the region mask is True then the retrieved mask
+is True (good), else it is False (bad). 
+
+<P>
+Finally, note that if you use the <B>region</B> and <B>mask</B>  (the OTF mask)
+arguments together then they operate as follows. The shape of the
+Boolean expression provided by mask must be the same shape as the image
+to which it is being applied. The region is applied equally to the image
+and the mask expression. For example 
+
+<P>
+<PRE>
+- rm1 := image('rm')
+- rm2 := image('rmerr')
+- rm1.shape(); rm2.shape()
+[128 128]
+[128 128]
+- r := drm.box([10,10], [50,50])
+- rm1.statistics(region=r, mask='rmerr&lt;10')       # region applied to 'rmerr'
+ and 'rm'
+</PRE>
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+</TD>
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="viewer">
+<FONT FACE=helvetica SIZE="+2">
+AIPS++ Viewer Update</FONT></A><BR>
+<I>Malte Marquarding</I> - ATNF<BR>
+
+<h2>What's New</h2>
+
+The <TT><B>aips++</B></TT> viewer tool is expanding it's functionality. Since the
+last release following new features have been added or enhanced:
+
+<UL>
+<LI><P>
+<B>Complex data:</B> The viewer is now able to display complex
+images. These can be displayed as <U><EM>Raster Images</EM></U>,
+<U><EM>Contour Maps</EM></U> or <U><EM>Vector Maps</EM></U>.  
+</LI>
+<LI><B>Vector Maps:</B> <U><EM>Vector Maps</EM></U> have been added to the
+available <U><EM>DisplayData</EM></U> types. These can be useful for example
+to visualize polarimetric data.
+</LI>
+<LI><B>File Browsing:</B> The <U><EM>Viewer Data Manager</EM></U> now supports
+both file and tool selection. The data can also be displayed from FITS
+format and other formats like Miriad or Gipsy. In the latter case
+these are imported via FITS conversion.
+</LI>
+<LI><B>Enhanced Skycatalog:</B> Skycatalogs now draw themselves on any
+coordinate system which conforms with it's own coordinate direction
+types (e.g J2000, Galactic, etc.).
+</LI>
+<LI><B>Position Tracking:</B> The <U><EM>Adjust</EM></U> gui has an
+additional section now. The <U><EM>Position Tracking</EM></U> control has
+moved into it's own rollup. the following features are now available:
+
+<UL>
+<LI>Relative or absolute coordinates
+</LI>
+<LI>Pixel or World coordinates
+</LI>
+<LI>Fractional or integral pixel coordinates
+</LI>
+<LI><B>Spectral coordinate units:</B> If available the user can switch
+between the units of the spectral coordinate and the velocity type.
+</LI>
+</UL>
+</LI>
+<LI><B>Beam plotting:</B> The <U><EM>Adjust</EM></U> gui has another rollup
+<U><EM>Beam</EM></U> if the image contains information about the restoring
+beam. You have various options to control the looks of the beam.
+</LI>
+<LI><B>Axis label properties</B> The direction reference type of the axis
+labels can be changed on-the-fly now.
+</LI>
+</UL>
+
+<P>
+<h2>Worked Examples</h2>
+<ul>
+<p>
+<h3>Skycatalog</h3>
+
+A <U><EM>Skycatalog</EM></U> is an <TT><B>aips++</B></TT> table in a specialized format This
+section describes how to use <U><EM>Skycatalog</EM></U> to plot itself on
+data of different Direction Coordinate types (J2000, B1950, etc.)
+simultaneously. This is useful if for example one wants to see where a
+source is on an HI map and at the same time on the sky in galactic
+coordinates. The Skycatalog input source might come from a catalog
+retrieved from a database and the source coordinates can be of any
+direction type. There is tools to simplify creating these tables, the
+<U><EM>skycatalog tool</EM></U>.
+</ul>
+
+<p>
+<ul>
+<h4>Using Skycatalog to annotate images</h4>
+
+The Skycatalog can be used as well to annotate an image.
+
+<P>
+We start with creating an (empty) skycatalog tool.
+<PRE>
+include 'skycatalog.g';
+sc := skycatalog('mycatalog.tbl');
+</PRE>
+Now we make an image tool, in this case we use the built-in test
+image.
+<PRE>
+include 'image.g'
+im := imagemaketestimage('myimage.im');
+</PRE>
+Now we use <TT>Image.findsources()</TT> to get
+the positions of our sources:
+<PRE>
+cl := im.findsources();
+</PRE>
+Now we can fill our skycatalog table with the detected components:
+<PRE>
+sc.fromcomponentlist(cl);
+</PRE>
+We have set up a <U><EM>Skycatalog</EM></U> table!
+<P>
+It consists of the following columns:
+
+<UL>
+<LI>Annotation (in this case Src1..N)
+</LI>
+<LI>Type (coordinate direction reference type, e.g. J2000)
+</LI>
+<LI>Long (first coordinate component)
+</LI>
+<LI>Lat (second coordinate component)
+</LI>
+<LI>Flux
+</LI>
+</UL>
+Now, let's view it.
+<PRE>
+sc.done(); #done with this tool, the table is on disk mycatlog.tbl
+dp := dv.newdisplaypanel(); # create a Display Panel
+dd := dv.loaddata(im,'raster'); # load our image
+dt := dv.loaddata('mycatalog.tbl','skycatalog'); # load our table
+# register the image and table
+dp.register(dd);
+dp.register(dt);
+# make the Annotation string visible and make the font bigger
+# This can also be done in the Adjust gui
+dt.setoptions([namecolumn=[value="Annotation"],labelcharsize=[value=1.5]]);
+</PRE>
+
+<P>
+The result looks something like 
+
+<P>
+<img src='vimg1.png' ALT="\begin{figure}\begin{center}
+\epsfig{file=skycatann.eps,width=4.3in}\end{center}\end{figure}">
+
+<P>
+Now the overlay can be fine tuned using the <U><EM>Adjust...</EM></U> panel,
+e.g. different colors, offset from the original position etc.
+It's best to play around with the available options.
+If the selected names Src1/2/3 sound too boring use <TT>tbl.browse()</TT> to edit the fields in the annotation column.
+To be able to change the table you have to delete the old Sky catalog overlay
+first:
+<PRE>
+dt.done(); # remove it
+</PRE>
+We now use the <TT>table tool</TT> to modify the skycatalog table.
+<PRE>
+tbl := table('mycatalog.tbl',readonly=F);
+tbl.putcell('Annotation',1,'Source A');
+tbl.putcell('Annotation',2,'Source B');
+tbl.putcell('Annotation',3,'Source C');
+tbl.flush();
+</PRE>
+And after changing the table fields:
+<PRE>
+dt := dv.loaddata(tbl,'skycatalog'); # load again
+#set the old options
+dt.setoptions([namecolumn="Annotation",labelcharsize=1.5]);
+dp.register(dt);
+</PRE>
+</ul>
+
+<p>
+<ul>
+<h4>ESOLV catalog converted to skycatalog</h4>
+<p>
+Here is an example how skycatalog is used to plot source positions
+from the ESO-LV catalog . The skycatalog
+in this case was created using the <TT>Skycatalog.fromascii</TT>
+function. I have created three catalogs for different arbitrary
+redshift ranges - column ``CZ'' (green triangles, yellow boxes and
+blue diamonds)using the <TT>Table.query</TT> function. For the blue
+diamonds the table column ``NGC'' was also enabled showing NGC2442,
+NGC2434 and NGC2397.
+
+<P>
+<img src='vimg2.png'  ALT="\begin{figure}\begin{center}
+\epsfig{file=esolv.eps,width=12cm}\end{center}\end{figure}">
+</ul>
+
+<p>
+<ul>
+<h3>Making RGB multi-frequency overlays</h3>
+
+<p>
+Multi-frequency observations can be easily viewed using the viewer.
+After starting the viewer with <TT>dv.gui()</TT>, <U><EM>Done</EM></U> the
+default Display Panel. Select ``New Display: RGB mode'' from the
+<U><EM>File</EM></U> menu on the <U><EM>Data Manager</EM></U>. Select your data in
+the <U><EM>Data Manager</EM></U> and make <U><EM>Raster Images</EM></U>. Even after
+<U><EM>Registering</EM></U> the <U><EM>DisplayDatas</EM></U> on the
+<U><EM>Display Panel</EM></U> they won't be visible, because the default is
+to display themselves in Colormap mode not in R(ed),G(reen) or
+B(lue). Hit the <U><EM>Adjust</EM></U> button and select one of red, green or
+blue under ``Basic settings - Color Mode'' for each image.  The result
+can look like :
+<P>
+<img src='vimg3.png' ALT="\begin{figure}\begin{center}
+\epsfig{file=rgb.eps,width=14cm}\end{center}\end{figure}">
+<P>
+</ul>
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+</TD>
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="parallel">
+<FONT FACE=helvetica SIZE="+2">
+Parallelization of Imager for the Wide-Field Case</FONT></A><BR>
+<I>K. Golap, A. Kemball, T. Cornwell, W.Young</I> - NRAO/Socorro<BR>
+
+<P>
+Wide-field imaging is among the most computationally demanding
+problems in Radio Astronomy. The wait for Moore's law to help is
+overtaken by the need for better images, that is more sensitivity and
+higher resolution.
+
+<P>
+The wide-field imaging problem is due to a geometric effect.  Image
+synthesis arrays can appear to have different geometrical shape from
+different points in the sky. It is an issue only when this happen
+within the field of view of the array. This happens in non co-planar
+arrays and at relatively low frequencies because the primary beam is
+large.
+
+<P>
+Visibilities as observed by non co-planar is given by
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER">
+<!-- MATH
+ \begin{displaymath}
+V(u,v,w)=\int{I(l,m)\exp{j2\pi(ul+vm+wn)}\frac{dldm}{\sqrt{1-l^2-m^2}}}
+\end{displaymath}
+ -->
+
+<IMG
+ WIDTH="488" HEIGHT="43" BORDER="0"
+ SRC="pimg1.png"
+ ALT="\begin{displaymath}
+V(u,v,w)=\int{I(l,m)\exp{j2\pi(ul+vm+wn)}\frac{dldm}{\sqrt{1-l^2-m^2}}}
+\end{displaymath}">
+</DIV>
+<BR CLEAR="ALL">
+<P></P>
+
+<P>
+where I(l,m) represents the sky brightness (or image) we want to
+recover.
+
+<P>
+There are several algorithms that exists to invert this 3-D integral
+(Cornwell &amp; Perley, 1992). In AIPS++ a multi-faceted transform
+algorithm has been chosen for its efficiency. This covers the region
+to be imaged by a series of facets, in each of which a 2-D inversion
+can be achieved.
+
+<P>
+We can decompose the visibilities into a summation of re-phased
+faceted visibilities:
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER">
+<!-- MATH
+ \begin{displaymath}
+V(u,v,w)=\sum_k{V_k(u,v)\frac{\exp{j2\pi(ul_k+vm_k+w\sqrt{1-l_k^2-m_k^2})}}{\sqrt{1-l_k^2-m_k^2}}}
+\end{displaymath}
+ -->
+
+<IMG
+ WIDTH="498" HEIGHT="53" BORDER="0"
+ SRC="pimg2.png"
+ ALT="\begin{displaymath}
+V(u,v,w)=\sum_k{V_k(u,v)\frac{\exp{j2\pi(ul_k+vm_k+w\sqrt{1-l_k^2-m_k^2})}}{\sqrt{1-l_k^2-m_k^2}}}
+\end{displaymath}">
+</DIV>
+<BR CLEAR="ALL">
+<P></P>
+
+<P>
+where :
+
+<P>
+<BR><P></P>
+<DIV ALIGN="CENTER">
+<!-- MATH
+ \begin{displaymath}
+V_k(u,v)=\int{I_k(l-l_k,m-m_k)\exp{j2\pi(u(l-l_k)+v(m-m_k))} dldm}
+\end{displaymath}
+ -->
+
+<IMG
+ WIDTH="519" HEIGHT="42" BORDER="0"
+ SRC="pimg3.png"
+ ALT="\begin{displaymath}
+V_k(u,v)=\int{I_k(l-l_k,m-m_k)\exp{j2\pi(u(l-l_k)+v(m-m_k))} dldm}
+\end{displaymath}">
+</DIV>
+<BR CLEAR="ALL">
+<P></P>
+
+<P>
+The algorithm implemented in AIPS++ proceeds as follows
+
+<P>
+
+<OL>
+<LI>Estimate point spread functions (PSF) for each facet.
+</LI>
+<LI>Calculate residual images for all facets(using 2-D transforms)
+</LI>
+<LI>Partially deconvolve individual facets using their respective
+PSF and update the image model for each facet
+</LI>
+<LI>Reconcile different facets by subtracting the model visibility for
+all facet models from the visibility data.
+</LI>
+<LI>Recalculate residual images and repeat from step 2. In the process of
+making residual images, a uv-plane coordinate system is chosen so that the
+final image from all facets is projected on a common tangent plane (Sault et
+al. 1996).
+
+<P>
+</LI>
+</OL>
+
+<P>
+What has been parallelized so far in wide-field imaging:
+
+<P>
+We have targeted, as a first level of parallelization, the sections
+which are nearly "embarassingly parallel". These are the PSF
+estimations, the model visibility calculation from the model images
+and the residual image for each facet.
+
+<P>
+We are using a message passing model of a master controller CPU and
+worker processors as implemented in MPI version 1 libraries. This is
+implemented on both clusters of workstations and on shared memory
+multi-processors architectures.  The handling of the parallel imager
+(pimager) is the same as imager and it will run on a single CPU or
+multi-CPU  machines. The only input difference that it needs as one of
+its inputs  the
+number of free CPU's it has available for its functioning.
+
+<P>
+Some results of speed ups on NCSA's SGI 2000. The data set used has
+<!-- MATH
+ $\approx 600000$
+ -->
+<IMG
+ WIDTH="71" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="pimg4.png"
+ ALT="$\approx 600000$"> visibility points and the image was done using 225
+facets. The time taken are as follows:
+
+<P>
+1 CPU    <IMG
+ WIDTH="18" HEIGHT="17" ALIGN="BOTTOM" BORDER="0"
+ SRC="pimg5.png"
+ ALT="$\approx$"> 10 days
+ 16 CPUs  830 mins
+ 32 CPUs  610 mins
+
+<P>
+Future work:
+
+<P>
+
+<UL>
+<LI>Optimize the prototype pimager
+</LI>
+<LI>Extend the parallelization to include mosaicing
+</LI>
+<LI>Explore oportunities in parallel I/O
+</LI>
+<LI>Investigate statement level parallelization using OPEN-MP
+
+<P>
+</LI>
+</UL>
+
+<P>
+This work is done in collaboration with NCSA's Alliance.
+
+<P>
+
+<P>
+<B><FONT SIZE="+2">References: </FONT></B>
+
+<P>
+Cornwell, T. J., and Perley, R. A., Astron. &amp; Astrophys, 261,
+353-364, 1992.
+
+<P>
+Sault, R. Staveley-Smith, L., and Brouw, W. N., Astron. &amp;
+Astrophys. Suppl., 120, 375-384, 1996.
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+</TD>
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="vla">
+<FONT FACE=helvetica SIZE="+2">
+The VLA Filler</FONT></A><BR>
+<I>Ralph Marson</I> - NRAO/Socorro<BR>
+
+<H2> Reading VLA archive format data into AIPS++ </H2>
+
+<p>
+The vlafiller is a tool that is used to convert data in VLA archive
+format into an measurement set. VLA archive format is the native data
+format that is produced by the online computers at the VLA. All VLA
+observations are archived, on tape, in Socorro using this data format
+(hence its name). The measurement set is the data format used by
+aips++ to store, on disk, the data observed by a telescope. An
+overview of this data format is in the previous newsletter (November
+2000).
+<p>
+The vlafiller tool tool performs a similar role to the AIPS task FILLM
+and has been available to users since the first public release of
+aips++ (version 1.2). Since then it has undergone a number of
+significant improvements and is now the preferred method for
+converting VLA data into a form that can be used within aips++. The
+alternative is to use the AIPS to convert the VLA archive data into a
+UV-FITS file that can then be read into AIPS++ using the ms tool.
+<p>
+The vlafiller tool can be used in two ways. The simpler way allows you
+to do the most common tasks ie., reading a tape and creating a
+measurement set, without any of the bother of having to create a
+vlafiller tool and remembering to destroy it when you are done. For
+example if you have a tape with data in VLA archive format you would
+type at the glish prompt.
+<p>
+<pre>
+  - include 'vlafiller.g'                       #1
+  - vlafillerfromtape('vla.ms', '/dev/nst0')    #2
+</pre>
+<p>
+The first of these lines makes all the vlafiller functions available
+and the second copies all the data from the tape device to the
+measurement set.
+<p>
+Sometimes you may have a tape with data from other projects besides
+your own. To only copy the data from your project (AR277) you use the
+optional project argument and replace the second line above with.
+<p>
+<pre>
+  - vlafillerfromtape('ar277.ms', '/dev/nst0', project='AR277')
+</pre>
+<p>
+otherwise you will copy the data from all projects into the
+measurement set. The vlafiller can also 'filter' the data on a number
+of other parameters besides the project name. These include
+time-range, frequency-range, source-name, sub-array, and
+calibrator-code.
+<p>
+The vlafiller can also read VLA archive data from disk, from multiple
+files on a tape and from tapes on a remote machine. If you create the
+vlafiller tool yourself (as distinct from using the vlafillerfromtape
+or vlafillerfromdisk functions) you can do more complex filtering of
+the data. All these features and more are discussed in the AIPS++
+users reference manual in the nrao.vla.vlafiller section.
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+<TR><TD VALIGN=TOP ALIGN="LEFT" BGCOLOR="#3300CC">
+<BR>
+<BR>
+<A HREF="jan02.html"><FONT FACE=helvetica SIZE="2" COLOR="#FFFFFF">
+Main<BR>Newsletter<BR>Index</A></FONT><P>
+<P><BR>
+
+<FONT FACE=helvetica SIZE="2" COLOR="#ffd600">
+<B><BR>Articles:</B>
+<P>
+
+<A HREF="#msplot"><FONT COLOR="#FFFFFF">
+MSPLOT</A></FONT><P>
+<P>
+
+<A HREF="#masks"><FONT COLOR="#FFFFFF">
+Image Mask<BR>Handling</A></FONT><P>
+<P>
+
+<A HREF="#viewer"><FONT COLOR="#FFFFFF">
+The AIPS++<BR>Viewer</A></FONT><P>
+<P>
+
+<A HREF="#vla"><FONT COLOR="#FFFFFF">
+The VLA<BR>Filler</A></FONT><P>
+<P>
+
+<A HREF="#parallel"><FONT COLOR="#FFFFFF">
+Parallelization</A></FONT><P>
+<P>
+
+<A HREF="#amateur"><FONT COLOR="#FFFFFF">
+<FONT FACE=HELVETICA>AIPS++</FONT> for<BR>Amateur Radio<BR>Astronomy</A></FONT><P>
+<P>
+
+
+</TD>
+
+<TD VALIGN=TOP>
+<BR>
+<BR>
+<A NAME="amateur">
+<FONT FACE=helvetica SIZE="+2">
+Using <FONT FACE=HELVETICA>AIPS++</FONT>
+for Amateur Radio Astronomy
+</FONT></A><BR>
+  <I>Patrick Wood</I> - Lobert Observatory, Hinesville, Ga<BR>
+
+<P>
+
+I run an amateur radio observatory from my home.  I named my setup
+LoBERT, Low Budget Experimental Radio Telescope, because so far the
+total price of my system, including the data logging computer, is
+under $300.  I started the system with just one 15 foot (4.5 meter)
+dish, in drift scan mode and an old DSS LNBF.  I can only control the
+elevation of the dish, so I have to set the dish to the elevation that
+I would like to observe that evening and allow the Earth's rotation to
+act as my RA drive.  The telescope is aligned as close to due south as
+I can get it.  I have run multiple scans of the sun and found that the
+dish is approximately 2 minutes West of due south.  I plan on fixing
+this as soon as I can.  I bought an 8 GHz satellite signal meter to
+use as a total power receiver.  I run the meter's DC out for the built
+in buzzer to a Radio Shack DMM, and wrote a couple of programs to do
+the data logging.  I tried for quite a while to develop my own data
+reduction software, but to no avail.  I found the NRAO web site and
+found out that they were giving away copies of the AIPS++ system.  For
+me this was like a dream come true, to be able to run the same
+software as "The Big Boys".
+
+<P>
+
+I will try and explain how I got my little system to interface with
+the AIPS++ system.  The original configuration of my system was as
+described above.  I use an Intel 486DX4-100 running Windows 95 to do
+data logging.  I can adjust the integration time from 1 second and up.
+I currently only go to a maximum of 6 seconds.  With the
+current setup the half beam width of LoBERT is approximately .5
+degrees. Now you have to remember that all of these calculations are
+coming from a Food Operations Sergeant in the US Army.
+
+<P>
+
+I have the data logger and my Linux box on a LAN.  I also have another
+old 486DX-25 running Windows 3.1 running as my sky chart system.  I
+use it to try and figure out exactly what the scope was looking at.
+Since I have three different OS running together to obtain a common
+goal, I had figure out a way to get the systems to talk to each other.
+The way I choose to do this by using the built in Samba networking in
+Linux.  This simplified the connections to the two Windows machines.
+The data logging computer is running a program developed by a guy
+named Ned Lewis.  His original plan for the software was to do HEPS,
+High Energy Pulse Surveys, with as many amateur radio astronomers as
+possible.  I got a copy of the program, which is written in Qbasic, and
+made a few modifications to it.  It allows me to run two dishes at the
+same time and record the data from both dishes at the same sampling
+rate.  The program stores it's data in a MS-DOS ASCII file that looks
+like the following:
+<P>
+<pre>
+12000   1.329   1.067
+12001   1.328   1.069
+12002   1.328   1.069
+</pre>
+<P>
+Column1 is the number of seconds that have pased since midnight LST,
+column2 is the reading in DC volts from the 8' dish, and column3 is
+the reading from the 15 footer in DC volts.  Everyday at midnight LST,
+the data logger transfers the collected data to the Linux box via the
+LAN.  As I am sure you all know, MS-DOS ASCII and Unix
+ASCII are two different animals. To solve this program I got hold of
+the Linux based dos2unix program which converts the ASCII file into
+something the Linux box can understand.  Since I haven't written a
+program for the Linux box yet, to tell LST I added the following to
+the crontab:
+<P>
+<pre>
+0 1 * * * dos2unix /home/pw/*.LBR
+</pre>
+<P>
+This allows the Linux box to automatically translate the DOS file
+to an Unix file at 1 o'clock in the morning every morning.  Everything up to
+this point was the easy part!  Now I just needed to figure out how to get the
+data into the AIPS++ system.
+<P>
+The way I am currently doing this is by using the tablefromascii()
+command in AIPS++.  I will give you an example of what I mean here in
+a few seconds.  This command allows the AIPS++ system to import an
+ASCII file into a table.  Now as promised here is a quick example of
+the way I plot my data in AIPS++:
+<P>
+<pre>
+-include  pgplotter.g ;         Include the pgplotter program
+-t:=tablefromascii( 01230103',  /home/pw/01230103.LBR ,,T);
+    This line tells AIPS++ to import the ASCII file 01230103.LBR
+    into a table named 01230103.
+-x:=t.getcol( Column1');        Let x = the first column in the
+                               file number of seconds since
+                           00:00 LST.
+-y:=t.getcol( Column2');        Let y = the value read from the
+                               dish.
+-pg:=pgplotter();               Let pg = the pgplotter function
+                               and open the plotting window.
+-pg.plotxy(x,y);                Plot time as x axis and readings
+                                as the y axis.
+
+From here you can add additional plots to the same window by
+doing the following command:
+
+-pg.plotxy(x,y1,,newplot=F)     Where y1 is the read value from
+                                the dish for another observation.
+
+</pre>
+<P>
+
+Well as you can see I am still way down on the food chain as
+far as the AIPS++ system goes, but I felt that if I wrote this
+and any other Amateur read it that they would be able to do the
+same thing that I have done.
+
+<P>
+
+Since I first started using the AIPS++ system I have added
+yet another dish to my setup.  As I write this I am attempting to
+learn how I would be able to do synthesis with the two dishes.
+That way they will seem like one dish 28' (8.4 meter) dish.
+I am also in the process of building an audio detector for
+my setup with the hopes of being able to record the audio data to
+a HI-FI VCR for late play back an spectrum analysis.
+
+<P>
+
+
+As I learn more about the AIPS++ system, I will submit
+more articles to the newsletter
+for the other Amateurs out there that are wishing that they could
+do the same things as "The Big Boys".
+
+<P>
+<HR NOSHADE WIDTH="50%">
+<P>
+</TD></TR>
+
+</TABLE>
+</TD></TR>
+</TABLE>
+
+</body>
+</html>

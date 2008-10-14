@@ -1,0 +1,401 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: logger.help,v 19.2 2004/08/25 02:03:12 cvsmgr Exp $
+
+\begin{ahobject}{logger}{Tool for logging}
+\ahcategory{utility}
+\ahinclude{logger.g}
+
+\begin{ahdescription} 
+
+The {\tt logger} is the tool managing messages from scripts, clients, etc..
+In general it writes the messages into a log file and shows them
+on the screen in a text window or a GUI.
+
+Log messages are produced by binary executable programs and Glish
+scripts. You may also create log messages yourself through the
+``note'' member function of logger. You will almost always be
+interacting with {\tt defaultlogger}, which is also known as {\tt dl}
+to save you some typing.
+
+Note: Users should use the global \ahlink{note}{misc:note} function
+to create log messages. This has sufficient flexibility to do
+everything that the ``log'' and ``note'' member function of logger
+can do.  \ahlink{note}{misc:note} checks for the
+existance of the defaultlogger and sends messages to the screen if the
+defaultlogger is not present.
+
+The log messages are sent both to your screen (normally to a GUI, but
+you can have them come out in your terminal window instead if you
+prefer) and to a file (an \aipspp table). This file will continue to
+accumulate messages until you purge them.
+
+By default the log file is {\tt $\sim$/aips++/aips++.log}, however you
+may override this default location by setting some variables in your
+{\tt $\sim$/.aipsrc} file as described below.
+
+The first column is the time that the message was produced. The
+default is to display the GMT times. If you want to see local times
+instead, you can set the time zone offset with another {\tt .aipsrc}
+variable.
+\\The second panel gives the priority of the message. Messages
+may presently be of {\tt DEBUGGING}, {\tt NORMAL}, {\tt WARN}, and {\tt SEVERE}
+priority. When a {\tt SEVERE} level message is shown a pop-up window
+with a dismiss button also comes up to make sure you don't miss
+it. In the log window {\tt WARN} and {\tt SEVERE} level messages are
+highlighted and shown in red instead of green to make them stand out.
+\\The third panel contains the (hopefully!) informative
+messages. Note that messages may be multiple lines, the other column
+values are only shown at the start of the message, not for every line
+in it.
+\\The final panel contains the location where the message came
+from. This may be of little interest to you.
+\\You can control the panels (size, order, and which to see) by
+{\tt .aipsrc} variables and by the {\tt Options} menu. They can also
+be used to control whether a few buttons will be displayed at the bottom.
+It makes it possible to make the log window as big or small as you like.
+
+It is possible to execute a query on the log window; i.e. to select or 
+sort messages. They will be displayed in a separate log window which
+is similar to the main window, but also shows the select and sort
+command used in the query. One can execute another query on that
+new window, etc..
+
+\medskip
+The {\tt File} menu contains various entries to deal with log messages.
+\begin{itemize}
+\item Query makes it possible to query the log messages as described
+      above. It uses \ahlink{taqlwidget}{widgets:taqlwidget}
+      to let you form the select and/or sort command.
+\item Purge removes old messages from the log file. The last {\tt n}
+      messages will be kept which can be set using a slider.
+      Alternatively a TaQL expression can be given to remove the
+      matching messages.
+      You should purge your log file from time to time.
+      \\This entry is only available in the main log window.
+\item Refresh refreshes a window resulting from a query.
+      New messages are only added to the main log window. It is
+      possible to add them to a sub window too by pressing {\tt refresh}.
+      It simply re-executes the query.
+      \\The refresh button at the bottom-left of the window does the same.
+\item Script creates a glish script from logged glish commands.
+      It gets all messages starting with the special prefix and stores them
+      in a file after removing the prefix. That file can be saved
+      and/or be executed.
+      A slider lets you specify the maximum number of commands to be
+      written (counted from the end).
+\item Print writes the messages into a file and optionally prints them.
+      A slider lets you specify the maximum number of messages to be
+      written (counted from the end). It is also possible to tell
+      which columns have to be printed.
+\item Dismiss to dismiss this window and all its children.
+      \\The dismiss button at the bottom-right of the window does the same.
+\end{itemize}
+Note that the commands above are always executed on the log file and
+not on the messages in the window. For example, a print is done
+in a window resulting from a query. This may print more messages than
+there are in the window, because in the mean time new messages
+may have been added to the log file.
+
+A dismiss of a window also dismisses its child windows resulting from queries.
+If you dismiss the main log window, log messages will come out on
+your terminal instead of the GUI. When you get tired of this, you
+can type {\tt dl.gui()} at the Glish command prompt to restart the GUI.
+
+The only logger functions you might perhaps call are
+{\tt loginput()} and {\tt logoutput()} to
+control what is logged from Glish.
+
+\end{ahdescription}
+
+
+\begin{ahaipsrc}
+\ahaddarg{user.aipsdir}{\aipspp info directory}{$\sim$/aips++}{Any writable directory. If it doesn't exist it will be created}
+\ahaddarg{tzoffset}{Timezone offset in hours}{0}{e.g., Socorro is -7}
+\ahaddarg{logger.file}{Log file name (no path!)}{aips++.log}{any (none means temporary log file is used)}
+\ahaddarg{logger.default}{Where to write log messages}{gui}{gui or screen}
+\ahaddarg{logger.showbuttons}{Show buttons at bottom of the GUI?}{T}{Bool}
+\ahaddarg{logger.glish}{What to log from Glish}{input}{input, output, both, or none}
+\ahaddarg{logger.guishow}{Which panels to show in GUI and in which order}{time,priority,message}{any of time,priority,message,origin}
+\ahaddarg{logger.height}{Height of GUI panels}{8}{Integer}
+\ahaddarg{logger.timewidth}{Width of time panel (if shown)}{20}{Integer}
+\ahaddarg{logger.prioritywidth}{Width of priority panel (if shown)}{6}{Integer}
+\ahaddarg{logger.messagewidth}{Width of message panel (if shown)}{75}{Integer}
+\ahaddarg{logger.originwidth}{Width of origin panel (if shown)}{25}{Integer}
+\ahaddarg{logger.autoscroll}{Scroll GUI to the end after appending a message}{T}{Bool}
+\ahaddarg{logger.background}{Normal background color of the GUI}{xing}{String}
+\end{ahaipsrc}
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{logger}{Construct logger tool}
+\begin{ahdescription}
+The GUI will be used, unless you have your aipsrc variable {\tt
+logger.default} set to something besides ``gui'', or X-windows is not
+enabled for your login session (e.g., the DISPLAY environment variable
+is not set).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{use\_gui}{Use GUI for logging messages}{global\_use\_gui}{Bool}
+\end{ahargs}
+\ahreturns{tool}
+\end{ahconstructor}
+%
+\begin{ahfunction}{gui}{Use the GUI}
+\begin{ahdescription}
+An alternate method of specifying the display of logging messages is
+via the aipsrc mechanism: add the following to your .aipsrc file
+\begin{verbatim}
+logger.default:	gui
+\end{verbatim}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{screen}{Use the screen for logging messages}
+\begin{ahdescription}
+An alternate method of specifying the display of logging messages is
+via the aipsrc mechanism: add the following to your .aipsrc file
+\begin{verbatim}
+logger.default:	screen
+\end{verbatim}
+Actually, anything besides ``gui'' will send log messages to the screen.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{attach}{Attach to another log table}
+\begin{ahdescription}
+Attach the logger to another log table.
+If the argument is not a string, the logger is attached to the default
+log table. If the argument is an empty string, it is attached to a
+temporary log table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{logfile}{Name of new log table}{unset}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  dl.attach('my.log');
+# T 
+  dl.attach();
+# T 
+\end{verbatim}
+The defaultlogger is temporarily attached to table my.log.
+Thereafter it is reattached to the default log table.
+\end{ahexample}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{note}{Add a note to the logging messages}
+\begin{ahdescription}
+Add a note to the logging messages with optional origin
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{...}{Strings to be logged}{Empty string}{Any strings}
+\ahaddarg[in]{origin}{Origin of note}{'logger::note()'}{String}
+\ahaddarg[in]{postglobally}{Write into log table?}{T}{Bool}
+\ahaddarg[in]{postlocally}{Write to screen?}{T}{Bool}
+\ahaddarg[in]{postcli}{Show message in CLI window too?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'logger.g';
+dl.note('Gone to lunch', 'back in about 1 hour')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{log}{Add a message to the logging system}
+\begin{ahdescription}
+Add a message to the logging system. This is the preferred
+mechanism for Glish scripts to add messages to the logging message
+file. Note that although priority=SEVERE is allowed, we prefer
+that in general, the Glish fail mechanism is used for irrecoverable
+conditions.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{timeString}{time}{Current time}{String}
+\ahaddarg[in]{priority}{Priority of message}{}{NORMAL|DEBUGGING|WARN|SEVERE}
+\ahaddarg[in]{message}{Message}{}{String}
+\ahaddarg[in]{origin}{source of the message}{[=]}{string}
+\ahaddarg[in]{postglobally}{Write into log table?}{T}{Bool}
+\ahaddarg[in]{postlocally}{Write to screen?}{T}{Bool}
+\ahaddarg[in]{postcli}{Show message in CLI window too?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'logger.g';
+dl.log('', 'SEVERE', 'File does not exist', 'file.open');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+
+\begin{ahfunction}{loginput}{Log input to Glish?}
+\begin{ahdescription}
+This function turns on (or off) input logging from Glish. That is, if
+it is called with {\tt T} things that you type into Glish will appear
+as log messages.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dolog}{Do logging?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool - the current state}
+\end{ahfunction}
+
+\begin{ahfunction}{logoutput}{Log output from Glish?}
+\begin{ahdescription}
+This function turns on (or off) input output from Glish. That is, if
+it is called with {\tt T} things that Glish prints on the screen will
+also be entered as log messages (with comment signs in front so that
+they can be rerun).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{dolog}{Do logging?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool - the current state}
+\end{ahfunction}
+
+
+\begin{ahfunction}{nmessages}{How many log messages are in the file}
+\begin{ahdescription}
+This function (no arguments) returns the number of messages stored in
+the log file. If you are using the GUI you probably don't need to know
+this, however if you are calling any of {\tt purge()}, {\tt
+printtofile()}, or {\tt getformatted()} by hand for some reason you
+might want to call this function
+\end{ahdescription}
+\ahreturns{Integer}
+\end{ahfunction}
+
+\begin{ahfunction}{purge}{Delete some or all messages from the log file.}
+\begin{ahdescription}
+While you will normally want to delete log messages using the GUI, you
+can do it ``by hand'' from this function, or you might want to use
+this function to manage messages in your own scripts.
+\\If an expression is given all matching messages will be removed.
+Otherwise the last N messages will be kept.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{keeplast}{How many messages to keep (from end)}{500}{Int}
+\ahaddarg[in]{expr}{Delete messages matching this TaQL expression}{''}{String}
+\end{ahargs}
+\ahreturns{Bool - function ok}
+\end{ahfunction}
+
+
+\begin{ahfunction}{printtofile}{Write some or all of the log file to a text file}
+\begin{ahdescription}
+Again, while you will normally invoke printing from the GUI, you can
+make a text representation of the log file using this function. It is
+your responsiblity to actually print the file and delete it when
+done. The printer tool can do this for you.
+
+The {\tt filename}argument can be given to specify the name of the
+file to be created. A blank name means that a file {\tt /tmp/aips\_NNN}
+will be created, where NNN is a number to make the name unique.
+
+The {\tt colwidth} argument lets you define if and how wide each column
+has to be printed. 0 means do not print. -1 means use default width.
+The order of the columns in this 4-element vector is
+{\tt time, priority, message, origin}.
+
+It is possible to filter and/or sort the log messages by giving the
+{\tt WHERE} and {\tt ORDERBY} parts of a TaQL expression in the
+{\tt expr} argument. This has to be a vector of 0, 1, or 2 strings.
+If the first string is present, it has to be the {\tt WHERE} expression.
+If the second string is present, it has to be the {\tt ORDERBY} sort list.
+
+The {\tt ascommand} argument can be used to tell that only logged
+glish commands should be written (after removing the special prefix).
+This is, for example, useful to create a glish script from
+interactively given commands.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{num}{How many messages to write (from end)}{-1 (all)}{Int}
+\ahaddarg[in]{filename}{Name of the output file}{''}{String}
+\ahaddarg[in]{colwidth}{Width of each column (0 = do not print; -1 = use
+default)}{[-1,-1,-1,-1]}{Int vector}
+\ahaddarg[in]{expr}{select and/or sort command}{''}{String vector}
+\ahaddarg[in]{ascommand}{Only write logged glish commands}{F)}{Int}
+\end{ahargs}
+\ahreturns{String - file name}
+\end{ahfunction}
+
+\begin{ahfunction}{getformatted}{Get a formatted representation of the log file}
+\begin{ahdescription}
+This is principally intended to be used by the GUI to refresh itself
+from the log file (e.g. at startup).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[out]{time}{}{}{String vector}
+\ahaddarg[out]{priority}{}{}{String vector}
+\ahaddarg[out]{messages}{}{}{String vector}
+\ahaddarg[out]{origin}{}{}{String vector}
+\ahaddarg[in]{howmany}{How many to get (from end)}{-1 (all)}{Int}
+\ahaddarg[in]{expr}{select and/or sort command (see printtofile)}{''}{String vector}
+\ahaddarg[in]{concat}{Concatenate consecutive messages with the same priority into one String?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool - success}
+\end{ahfunction}
+
+
+\begin{ahfunction}{verbose}{Write more fields in log messages}
+\begin{ahdescription}
+Verbose by default prints all fields in log messages (time, priority,
+message, origin).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{show\_time}{}{T}{boolean}
+\ahaddarg[in]{show\_priority}{}{T}{boolean}
+\ahaddarg[in]{show\_origin}{}{T}{boolean}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{brief}{Write fewer fields in log messages}
+\begin{ahdescription}
+Brief by default prints only the message, and suppresses time,
+priority, and origin.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{show\_time}{}{F}{boolean}
+\ahaddarg[in]{show\_priority}{}{F}{boolean}
+\ahaddarg[in]{show\_origin}{}{F}{boolean}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+
+%
+\end{ahobject}
+
+\end{document}

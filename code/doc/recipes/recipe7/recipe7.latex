@@ -1,0 +1,174 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\begin{document}
+\begin{ahrecipe}{Infer the beam squint from visibility data}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals:</font>
+\end{rawhtml}
+{Infer the beam squint from visibility data
+and display the beam squint as a function of time}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{The \emph{ms} system, the \emph{Table} system,
+and glish.}
+
+
+%\arresults
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Results:</font>
+\end{rawhtml}
+{Data in \emph{Glish} vectors}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume:</font>
+\end{rawhtml}
+{You have a UVFITS file containing data from a calibrator
+source observed at the half-power point in the beam, 
+over a range of parallactic angles.  While this is a
+fairly essoteric example, the method of extracting
+visibility data and averaging a function of the data 
+should serve other people's purposes as well.}
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script:</font>
+<a href="../recipe1.g.txt">recipe1.g</a>
+\end{rawhtml}
+
+\begin{arexample}
+
+\arline{mymsfile~:=~'TOP1.CBAND.ms';
+   myfitsfile~:=~'TOP1.CBAND.UVFITS';}
+{Define the names of some files.}
+
+\arline{myms~:=~fitstoms(msfile=mymsfile, fitsfile=myfitsfile);}
+{Create an \textsf{AIPS++} measurementset from a UVFITS file.}
+
+\arline{myms.done();}
+{Remove the measurementset object from glish.  The measurementset Table is still
+on disk.  We will be accessing the data in the measurementset through
+the table interface.}
+
+\arline{tab~:=~table(mymsfile);}{Create a Table to access the data through.}
+
+\arline{
+   data~:=~tab.getcol('DATA');
+   flags~:=~tab.getcol('FLAG');
+   thetime~:=~tab.getcol('TIME');
+}
+{Extract the visibility data, the flags, and the time stamps of the visibilities
+from the Table into glish arrays.}
+
+\arline{dt~:=~60;
+   n~:=~1;
+}
+{dt is basically a solution interval, and n is the number of
+ solutions that will be found.  We will be averaging the data
+ over the dt interval to solve for the beam squint.}
+
+\arline{
+   newtimes~:=~[];
+}{Define newtimes as a vector.  It will contain the times
+  of each beam squint solution.}
+
+% Expanded the \arline command since verbatim's not allowed in
+% redefined newcommands.
+
+\begin{tabular}{>{\ttfamily}p{2in}}
+\begin{verbatim}
+newtimes[1] := thetime[1];
+for (i in  [2:len(thetime)]) {
+   if (thetime[i] > 
+     (newtimes[n] + dt)) {
+     n +:= 1;
+     newtimes[n] := thetime[i];        
+   }
+}
+\end{verbatim}
+\end{tabular} &  \begin{tabular}{>{\normalfont}p{2.5in}}
+Fill up the solution time vector newtimes with values every dt seconds.
+newtimes is the starting time of each solution interval.
+\end{tabular}\\
+\\
+
+\arline{showtimes~:=~newtimes~-~newtimes[1]}{Define a showtimes vector, times relative
+to the first solution interval, for easy printing.}
+\arline{asum~:=~0*newtimes;
+        nsum~:=~0*newtimes;
+        isum~:=~1;
+}{Define asum and nsum as vectors.  We will accumulate the solution in asum and
+normalize by nsum.}
+
+% Expanded the \arline command since verbatim's not allowed in
+% redefined newcommands.
+
+\begin{tabular}{>{\ttfamily}p{2in}}
+\begin{verbatim}
+for (i in [1:len(thetime)]) {
+  if (thetime[i] >
+     newtimes[isum] + dt) {
+     isum +:= 1;
+     print "Working on solution",
+         isum ;
+  }
+  if (!flags[4,,i]&&!flags[4,,i]) {
+     asum[isum] +:= (data[1,,i]) 
+       - data[4,,i]))/ 
+       ( data[1,,i] + data[4,,i])
+     nsum[isum] +:= 1;
+  }
+}
+\end{verbatim}
+\end{tabular} &  \begin{tabular}{>{\normalfont}p{2.5in}}
+Loop through all data; for each solution interval, form a measure of the beam 
+squint by differencing data[1,,i] and data[4,,i] (ie, RR-LL) and normalizing
+by data[1,,i] + data[4,,i] (ie, RR+LL).
+\end{tabular}\\
+\\
+\arline{squint~:=~asum~/~nsum;}{Define the squint as the normalized accumulation.}
+\arline{print~"time~[s]~~~~squint";}{Print heading.}
+
+% Expanded the \arline command since verbatim's not allowed in
+% redefined newcommands.
+
+\begin{tabular}{>{\ttfamily}p{2in}}
+\begin{verbatim}
+for (i in [1:len(asum)]) {
+      print showtimes[i], 
+      "   ", squint[i];
+   } 
+\end{verbatim}
+\end{tabular} &  \begin{tabular}{>{\normalfont}p{2.5in}}
+This will produce a tabular listing of the times and squint
+vectors which is easier to read than simply "print squint".
+\end{tabular}\\
+\\
+\arline{tab.done()}{Glish can forget about the Table now.}
+\\
+\end{arexample}
+
+
+Contributions of recipes and other material for AIPS++ documentation
+are welcome.  Please send them to tcornwel@nrao.edu.
+\end{ahrecipe}
+\end{document}
+
+

@@ -1,0 +1,92 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\input{extlab.lis}
+
+\begin{document}
+
+\begin{ahrecipe}{Fourier transforms, convolution, etc. in Glish}
+
+{
+\begin{htmlonly}
+\htmladdnormallink{A postscript version of this page is available.}{../fftrec.ps.gz}
+\end{htmlonly}
+}
+
+\arcategory{General}
+
+\argoals{Perform Fourier transforms, convolution on arbitrary data}
+
+\arusing{\htmlref{fftserver}{mathematics:fftserver} tool, \htmlref{pgplotter}{plotter:pgplotter} tool, \htmlref{mathematics}{mathematics} module}
+
+\arresults{transformed, convolved data plotted in pgplotter}
+
+\arassume{}
+
+\arsynopsis{
+The generic tools in aips++ include an fftserver tool which allows
+transforms of data of any dimension and size.  Convolution is also
+provided.
+}
+
+\arscript{\htmladdnormallink{fftrec.g}{../../../../code/contrib/recipes/fftrec.g}}
+
+\begin{verbatim}
+
+include 'fftserver.g';                   # initialize fft tool
+include 'pgplotter.g';                   # initialize pgplotter tool
+include 'mathematics.g';                 # initialize mathematics tools
+
+ang:=2*pi*[1:100]/15.0;                  # create vector of angles
+
+y:=complex(cos(ang),sin(ang));           # create phasor vector from angles
+
+mypg1:=pgplotter();                      # create pgplotter tool
+
+mypg1.plotxy(x=ang,                      # plot data
+             y=real(y),
+             xtitle='Angle',
+             ytitle='Real(y)');
+
+myfft:=fftserver();                      # create fft tool
+
+myfft.complexfft(y,-1);                  # perform complexfft in place
+
+bins:=seq(shape(y));                     # vector of bins
+amps:=abs(y);                            # amplitude of transform
+
+mypg2:=pgplotter();                      # create pgplotter tool
+
+mypg2.plotxy(x=bins,                     # plot transform
+             y=amps,
+             xtitle='bin',
+             ytitle='abs[FT(y)]',
+             title='fftserver example');
+
+smth:=gaussian1d(x=[-25:25],             # generate 1d Gaussian
+                 height=1.0,
+                 center=0.0,
+                 fwhm=10.0);
+
+ysmth:=myfft.convolve(amps,smth);        # convolve transform amplitudes
+                                         #  with the Gaussian
+
+ysmth:=ysmth/max(ysmth);                 # normalize to peak
+
+mypg2.plotxy(x=bins,                     # plot convolved amplitudes on
+             y=ysmth,                    #  same plot, in green
+             newplot=F,
+             linecolor=3);
+
+
+#OUTPUT:
+# (only plots)
+
+\end{verbatim}
+
+\arsubm{George Moellenbrock}
+\arsubmaffl{NRAO-Socorro}
+\arsubmdate{2002-Jan-25}
+
+\end{ahrecipe}
+\end{document}

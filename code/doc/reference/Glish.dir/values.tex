@@ -1,0 +1,2308 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/values.tex,v 19.0 2003/07/16 04:18:43 aips2adm Exp $
+
+\chapter{Values, Types, and Constants}
+\label{values-types-constants}
+
+\section{Overview}
+
+This chapter begins with an overview 
+and a brief description of the types of values supported by
+{\em Glish}\index{values!overview}.  You will be introduced
+ to each type, the notions of dynamic typing, type conversion,
+and vector and array values.  Each type is discussed in detail in
+\S~\ref{first-type}--\S~\ref{last-type} below.
+
+\subsection{{\em Glish} Types}
+
+There are sixteen types of values in the {\em Glish} type
+system:\index{types!overview}
+\begin{itemize}
+\index{types!{\tt boolean}}
+\index{types!{\tt byte}}
+\index{types!{\tt short}}
+\index{types!{\tt integer}}
+\index{types!{\tt float}}
+\index{types!{\tt double}}
+\index{types!{\tt complex}}
+\index{types!{\tt dcomplex}}
+\item {\tt boolean}, {\tt byte}, {\tt short},
+{\tt integer}, {\tt float}, {\tt double}, {\tt complex}
+(single-precision complex) and {\tt dcomplex} (double-precision complex) types, collectively 
+called {\em numeric\/}, \index{types!{\em numeric}} that can be used for arithmetic, 
+logical operations, and comparisons;
+\index{types!{\tt string}}
+\item {\tt string}, character strings, that can be used
+for comparisons and converted to {\em numeric} types;
+\index{types!{\tt record}}
+\item {\tt record}, a collection of values (of possibly different types),
+each of which has a name;
+\index{types!{\tt function}}
+\item {\tt function}, a function that when called with a list of
+values (arguments) returns a value;
+\index{types!{\tt agent}}
+\item {\tt agent}, an entity that generates and responds to {\em events}
+(an event is a name/value pair, discussed below in \xref{events});
+\index{types!{\tt reference}}
+\item {\tt reference}, a value that is an alias for another value, or, for some
+types, a portion of another value;
+\index{types!{\tt fail}}
+\item {\tt fail}, a value that indicates that some operation failed, this
+type of value is created with a {\tt fail} statement (see
+\S~\ref{fail-stmt-1} and \S~\ref{fail-stmt-2});
+\index{types!{\tt file}}
+\item {\tt file}, a value that is the {\em handle} used to access operating
+system files (see \S~\ref{io});
+\index{types!{\tt regex}}
+\item {\tt regex}, a {\em regular expression} which is used to perform matching
+and substitution on strings (see \S~\ref{regular-exprs});
+\end{itemize}
+
+Every value in a {\em Glish} script has one of these types.
+The function {\tt type\_name} returns as a string the name of its
+argument.\indfunc{type\_name}
+For example,
+\begin{verbatim}
+    type_name(2.71828)
+\end{verbatim}
+returns ``{\tt double}".  {\tt type\_name} is more fully described in
+\xref{predefineds-identification}.
+
+For most types there are ways of specifying {\em constants} representing
+values of the type.  In the example above, {\tt 2.71828} is a constant
+of type {\tt double}.  The discussion of types in
+\S~\ref{first-type}--\S~\ref{last-type} below includes a description
+of how to specify constants for the types.
+
+\subsection{Dynamic Typing}
+
+{\em Glish} variables are {\em dynamically typed\/}\index{dynamic typing|(},
+\index{assignment!changing a variable's type}
+meaning that their type
+can change with each assignment.  Before any assignment has been made
+to a variable its value is {\tt F}, the ``false" constant, and its
+type is thus {\tt boolean}.  So in the following example:
+\begin{verbatim}
+    a := 5
+    a := 2.71828
+    a := "hello there"
+\end{verbatim}
+{\tt a}'s type is {\tt boolean} before the first statement is executed,
+{\tt integer} after the first statement,
+{\tt double} after the second, and after the third, {\tt string}.
+
+To see if a value has a particular type {\tt X}, call the function
+{\tt is\_X}.\index{types!identifying functions}
+This returns true if the value has that type or false otherwise.  For
+example, the function name
+\begin{verbatim}
+    is_integer(5)
+\end{verbatim}
+returns a {\tt boolean} value of true, while
+\begin{verbatim}
+    is_double(5)
+\end{verbatim}
+returns a value of false.  The one exception is there is no
+{\tt is\_reference()} function
+for determining  whether a value is a {\tt reference} type; instead
+you must use the {\tt type\_name()} function (\xref{type_name-func}).
+For example,
+\begin{verbatim}
+    is_integer(ref 5)
+\end{verbatim}
+returns true (see below, \xref{references}).
+\index{dynamic typing|)}
+
+\subsection{Type Conversions}
+\label{type-conversion}
+
+\index{types!conversion|(}
+Some types are automatically converted to other types as
+needed.\index{types!conversion!automatic}
+For example, an {\tt integer} value can always be used where a {\tt double}
+value is expected.  In the following:
+\begin{verbatim}
+    a := 5
+    b := a * .2
+\end{verbatim}
+{\tt b} is assigned the {\tt double} value {\tt 1.0} and {\tt a}'s type
+remains {\tt integer}. Similarly, a {\tt double} value can be converted
+to a {\tt dcomplex} value.
+Automatic conversions are limited to converting between {\em numeric} types,
+and converting a {\tt reference} type to the type it refers to.
+
+Other types require explicit conversion.\index{types!conversion!explicit}
+For example, the following expression is illegal:
+\begin{verbatim}
+    5 * "1234foo"
+\end{verbatim}
+but the string can be explicitly
+converted to an integer using the function {\tt as\_integer}.  The
+following yields an {\tt integer} value of {\tt 6170}:
+\begin{verbatim}
+    5 * as_integer("1234foo")
+\end{verbatim}
+The following functions are available for explicit type conversion:
+\begin{verbatim}
+    as_boolean
+    as_byte
+    as_short
+    as_integer
+    as_float
+    as_double
+    as_complex
+    as_dcomplex
+    as_string
+\end{verbatim}
+Details on how they do their conversions can be found in
+\xref{predefineds-conversion}.
+
+There are types that cannot be converted at all.\index{types!conversion!forbidden}
+For example, a {\tt function} type cannot be converted to any other type.
+
+Type mismatches result in run-time errors.\index{errors!type mismatches}
+\index{types!conversion|)}
+
+\subsection{Vectors}
+\label{vectors}
+
+\index{vectors|(}
+Most\index{types!as vectors} {\em Glish} types correspond to a {\em vector}
+of values rather than a single value.  For example,
+\begin{verbatim}
+    a := [1, 2, 6]
+\end{verbatim}
+assigns to {\tt a} a vector of three {\em elements}, each an integer.
+A vector with only one element is called a {\em scalar\/}.\index{scalars}
+For example,
+\begin{verbatim}
+    [5]
+\end{verbatim}
+is an {\tt integer} scalar and is identical in all ways to the constant:
+\begin{verbatim}
+    5
+\end{verbatim}
+
+\subsubsection{Creating Vectors}
+\label{creating-vectors}
+
+In general,\index{vectors!creating|(}
+\indoptwo{[]}{vector creation operator}
+you create vectors by enclosing a comma-separated list of
+values within
+square brackets ({\tt []}).  The values must all be automatically
+convertible to a single type (see \xref{type-conversion}).  This
+means that they must either all be {\em numeric} or they must all be the
+same type.  If they are {\em numeric} then they are converted to the ``highest"
+type among them, as discussed in \xref{mixing-numerics}.
+
+The individual values inside the {\tt []}'s are not restricted to
+scalars; vectors can be included, too, and will be expanded ``in-line".
+For example,
+\begin{verbatim}
+    [1, 7, [3, 2, [[[5]]]], 4]
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    [1, 7, 3, 2, 5, 4]
+\end{verbatim}
+
+{\tt integer} vectors\indopone{:}{sequence operator}
+can also be created using the built-in {\tt :}
+operator, which returns a vector of the integers between its operands.
+For example,
+\begin{verbatim}
+    3:7
+\end{verbatim}
+yields
+\begin{verbatim}
+    [3, 4, 5, 6, 7]
+\end{verbatim}
+and
+\begin{verbatim}
+    3:-2.7
+\end{verbatim}
+yields
+\begin{verbatim}
+    [3, 2, 1, 0, -1, -2]
+\end{verbatim}
+
+You don't have to list a value inside the brackets:\index{vectors!empty}
+\label{empty-vector}
+\begin{verbatim}
+    a := []
+\end{verbatim}
+assigns to {\tt a} an empty vector of type {\tt boolean}.  Note that
+such empty vectors have the special property that they can be intermixed
+with vectors of types that would otherwise be incompatible.  For example,
+\begin{verbatim}
+    ["foo", "bar", []]
+\end{verbatim}
+yields a two-element {\tt string} vector, while
+\begin{verbatim}
+    ["foo", "bar", [T]]
+\end{verbatim}
+results in an error because the elements of the constructed
+vector do not have compatible types.
+
+You can\indfunc{seq}
+also create vectors using the {\tt seq} function.  (See
+\S~\ref{indexing} and \S~\ref{predefined-vectors} for a
+description.)
+\index{vectors!creating|)}
+
+\subsubsection{Length of a Vector}
+\label{vector-length}
+
+The {\tt length}\indfunc{length}
+function returns the length of one or more vectors.
+It\index{length function!abbreviated as {\tt len()}}
+can be abbreviated as {\tt len}.  For example,
+\begin{verbatim}
+    len( [3, 1, 4, 1, 5, 9] )
+\end{verbatim}
+returns the integer value {\tt 6}, and
+\begin{verbatim}
+    1:len(a)
+\end{verbatim}
+is a vector of the integers from {\tt 1} to the length of {\tt a}.
+
+If\index{length function!multiple parameters}
+more than one vector is supplied as arguments to {\tt length}, a 
+vector is returned where each element of the resultant vector is 
+the length of the corresponding parameter, so
+\begin{verbatim}
+    len( 1:3, 1:9, 4:15 )
+\end{verbatim}
+returns the vector
+\begin{verbatim}
+    [3, 9, 12]
+\end{verbatim}
+because the length of the first parameter was {\tt 3},
+the length of the second parameter was {\tt 9}, and the
+length of the final parameter was {\tt 12}.
+
+\subsubsection{Element-by-Element Vector Operations}
+\label{element-by-element}
+
+The various\index{vectors!operations!element-by-element}
+arithmetic, logical, and comparison operators all work
+element-by-element when given two equal-sized vectors as operands.
+For example,
+\begin{verbatim}
+    [1, 2, 6] * [5, 0, 3]
+\end{verbatim}
+yields the vector
+\begin{verbatim}
+    [5, 0, 18]
+\end{verbatim}
+(See \xref{arith-operators}
+for more information on the behavior of arithmetic operators.)
+
+Single-element vectors are referred to as {\em scalars\/}.
+If one operand\index{vectors!operations!with scalars}
+is a multi-element vector and the other a scalar then
+the scalar is paired with each vector element in turn.  For example,
+\begin{verbatim}
+    [1, 2, 6] * 3
+\end{verbatim}
+yields
+\begin{verbatim}
+    [3, 6, 18]
+\end{verbatim}
+If neither operand\index{errors!vectors with different sizes}
+is a scalar but the two vectors have different sizes
+then a run-time error occurs.
+
+\subsubsection{Accessing Vector Elements}
+\label{vector-access}
+
+Vector elements\indoptwo{[]}{indexing operator}
+\index{vectors!indexing}
+are accessed using the {\tt []} operator.  For example,
+\begin{verbatim}
+    a[5]
+\end{verbatim}
+returns the 5th element of {\tt a}.  Here {\tt 5} is a vector {\em index\/}.
+The first element\index{vectors!first element is [1]}
+is retrieved using an index of {\tt 1} ({\tt a[1]}; not
+{\tt a[0]} as would be the case in~C).  Indices less than~{\tt 1}
+\index{errors!array index out of range}
+or greater than the size of the vector result in run-time errors.
+
+For example,
+\begin{verbatim}
+    (5:10)[3]
+\end{verbatim}
+yields {\tt 7}.  The {\tt []} operator has higher precedence than the
+{\tt :} operator, so
+\begin{verbatim}
+    5:10[3]
+\end{verbatim}
+results in an error because the vector being indexed (the scalar {\tt [10]})
+has only one element and not three.
+
+\subsubsection{Modifying Vector Elements}
+\label{vector-mod}
+
+You can also\index{vectors!modifying}
+\indoptwo{[]}{indexing operator}
+set a vector element using the {\tt []} operator:
+\begin{verbatim}
+    a[1] := 3
+\end{verbatim}
+assigns {\tt 3} to the first element of {\tt a}.  The new element value
+\index{vectors!type conversion when assigning elements}
+must either be of the same type as the vector, or both the vector and the new
+element must be of {\em numeric} type, in
+which case the vector's type becomes the
+``highest" of the two types, as discussed in \xref{mixing-numerics}.
+For example, if in the above assignment {\tt a}'s type was {\tt double} then 
+the value of {\tt 3} would be converted to {\tt 3.0}; if {\tt a}'s type
+was {\tt boolean} then {\tt a} would first be converted to {\tt integer}
+and then its first element set to the integer {\tt 3}.
+
+It is possible\index{vectors!extending}\index{vectors!assigning beyond end}
+to {\em extend} a {\em numeric} vector
+by setting an element beyond
+its end.  Any ``holes"\index{vectors!holes}
+between the previous end of the vector and its new
+end are filled with zeroes (``false" for {\tt boolean} values).  So
+for example,
+\begin{verbatim}
+    a := 1:5
+    a[8] := 32
+\end{verbatim}
+results in {\tt a} having the value {\tt [1, 2, 3, 4, 5, 0, 0, 32]}.
+Furthermore, a previously undefined variable can be set to a vector
+value by setting an element to a {\em numeric} value:
+\begin{verbatim}
+    b[4] := 19
+\end{verbatim}
+sets {\tt b} to the value {\tt [0, 0, 0, 19]}.
+
+You also can access or modify more than one vector
+element at a time. (See \xref{indexing}, for a description.
+\index{vectors|)}.)
+
+\section{Numeric Types}
+\label{first-type}
+
+The types \index{types!{\em numeric}|(}
+{\tt boolean}, {\tt byte}, {\tt short}, {\tt integer},
+{\tt float}, and {\tt double} 
+should be familiar to most programmers as Boolean, unsigned char (integer
+in the range 0 to 255), short integer, integer,
+single-precision floating-point, and double-precision floating-point types.
+
+The types \index{types!{\tt complex}|(}
+\index{types!{\tt dcomplex}|(}
+\label{complex-types}
+{\tt complex} and {\tt dcomplex}  correspond to single-precision
+floating-point complex and double-precision floating-point complex numbers.
+In {\em Glish} these types are represented  as a pair of floating-point numbers.
+One number is designated as the {\em real} portion and the other is
+designated as the {\em imaginary} portion of the complex number. In the
+case of {\tt complex}, each of the numbers are single-precision,
+and in the case of {\tt dcomplex}, each of the numbers are double-precision.
+The two functions for accessing the components of these numbers are
+\indfunc{real}
+\index{types!{\tt complex}!{\tt real()} function}
+\index{types!{\tt dcomplex}!{\tt real()} function}
+{\tt real} which returns the real portion of a complex value, and
+\indfunc{imag}
+\index{types!{\tt complex}!{\tt imag()} function}
+\index{types!{\tt dcomplex}!{\tt imag()} function}
+{\tt imag} which returns the imaginary portion of a complex value. These functions
+work on vectors of {\tt complex} or {\tt dcomplex} numbers. The length of the
+resultant vector is equal to the length of the vector argument.
+\index{types!{\tt dcomplex}|)}
+\index{types!{\tt complex}|)}
+
+These types are referred to collectively as {\em numeric}.  {\em Numeric}
+types can be used in arithmetic and logical
+operations (see \S~\ref{arith-operators}--\S~\ref{log-operators}
+below) as well as in comparisons (\xref{rel-operators}). The maximum and
+minimum values for numeric types can be found by looking at
+\verb+system.limits.max+ and \verb+system.limits.min+.
+
+\subsection{Numeric Constants}
+\label{numeric-constants}
+
+\index{constants!{\em numeric}}\index{constants!boolean}
+The two {\tt boolean} constants
+\index{constants!boolean}
+\index{{\tt T}}
+\index{{\tt F}}
+{\tt T} and {\tt F}
+represent the values of ``true" and ``false", respectively.
+
+\index{constants!integer}
+The {\tt integer} constants are just strings of digits, optionally preceded
+by a {\tt +} or {\tt -} sign: {\tt 1234}, {\tt -42}, and {\tt +5} for example.
+
+\index{constants!floating-point}
+You write floating-point constants in the usual ways, as a string of digits
+with perhaps a decimal point and perhaps a scale-factor written in scientific
+notation.  Optional {\tt +} or {\tt -} signs may be given before the digits
+or before the scientific notation exponent.
+Examples are {\tt -1234.}, {\tt 3.14159}, and {\tt .003e-23}.
+All floating-point constants are of type {\tt double}.
+
+\index{constants!complex}
+The {\tt dcomplex} constants are written as a floating-point
+number followed by a {\tt +} or {\tt -} sign (this part is optional), followed by a second floating-point
+number which must be {\em immediately}, i.e. no whitespace, followed by an {\tt i}.
+All complex constants are of type {\tt dcomplex}.
+All of the following are valid:
+\begin{verbatim}
+    23.12-7.2i
+    2.31+.003e-23i
+    2.3i
+    34 + 2i
+\end{verbatim}
+When no extra white space exists within the complex constant, the number
+is translated directly to a complex constant, otherwise an addition (of
+two complex numbers) is performed. So in {\tt 34\ +\ 2i}, {\tt 34} is 
+converted to a {\tt dcomplex} value, and this value is added to {\tt
+2i}.  Omitting the imaginary floating
+point number results in a reference to the variable {\tt i}, if it happens to exist.
+If the {\tt i} does not {\em immediately} follow the imaginary
+portion, as in {\tt 4\ -\ 3\ i}, a runtime error results.
+
+\subsection{Mixing Numeric Types}
+\label{mixing-numerics}
+
+\index{types!numeric!intermixing}
+You can freely intermix {\em numeric} types in expressions.  When intermixed,
+values are promoted to the ``highest" type in the expression.
+
+In general, this promotion follows a simple hierarchy:
+\begin{verbatim}
+    (highest)
+
+    dcomplex
+    complex (*)
+    double  (*)
+    float
+    integer
+    short
+    byte
+    boolean
+
+    (lowest)
+\end{verbatim}
+where types are promoted upward (e.g., mixing a {\tt byte} value and
+a {\tt float} value will promote to {\tt float}, since {\tt float} appears
+higher in the list).  The sole exception to this linear hierarchy is when
+mixing {\tt double} values with {\tt complex} values; these are always
+promoted to {\tt dcomplex}, to preserve the precision of the {\tt double}
+value.  For example,
+\begin{verbatim}
+    a := [T, F, T]
+    a[2] := 3.0
+    a[3] := as_complex(-2+1i)
+    b := [1, 2, 3]
+    b[2] := 4-3i
+\end{verbatim}
+{\tt a}'s type is initially {\tt boolean}, becomes {\tt double} with the
+first assignment, and finally becomes {\tt dcomplex} after the last
+assignment to {\tt a}. Thus {\tt a} ends up as a {\tt dcomplex} despite the fact
+that a {\tt complex} is assigned to it because {\tt a}'s type was {\tt double}
+at the time of the assignment.  In this same example {\tt b} starts out as {\tt integer},
+but after the assignment, ends up {\tt dcomplex} because complex
+constants are of type {\tt dcomplex}.
+
+When converting {\tt boolean}
+\index{types!{\tt boolean}!promotion}
+values to other numeric values,
+``true" is promoted to~1 and false to~0.  Thus
+the expression \verb-5 + T- yields the {\tt integer} value {\tt 6} and
+\verb+3.2 * 4+ yields the {\tt double} value {\tt 12.8}.  The type
+conversion functions can be used to prevent type promotion.  For example,
+\begin{verbatim}
+    as_integer(3.2) * 4
+\end{verbatim}
+yields the {\tt integer} value {\tt 12}.  (See
+\xref{predefineds-conversion}, for specifics on how each {\tt as\_X}
+function works.) You can also use {\tt floor} and {\tt ceiling} to convert
+floating point values to integers (see \xref{integer-conversion}).
+
+\subsection{Arithmetic Operators}
+\label{arith-operators}
+
+\index{operators!arithmetic|(}
+{\em Glish} supports
+{\tt +}\indoponekey{+}{addition operator}{+1addition},
+{\tt -}\indoponekey{-}{subtraction operator}{+2subtraction},
+{\tt *}\indoponekey{*}{multiplication operator}{+3multiplication},
+{\tt /}\indoponekey{/}{division operator}{+4division},
+{\tt \%}\index{+5modulus@\percent{\tt \ \ } modulus operator},
+and \verb+^+\index{+6exponentiation@\verb+^+{\tt \ \ } exponentiation
+operator}
+for doing arithmetic.
+The first four have their usual meaning.
+They evaluate their operands after converting them
+\index{operators!arithmetic!operand conversion}
+to the higher type of the two and return a result of that type.  Division
+converts the operands to {\tt double} and yields a {\tt double} value, unless
+a {\tt complex} or {\tt dcomplex} value is involved. If a complex value is one
+of the division operands, the result is a {\tt dcomplex} value.
+{\tt +}\indoponekey{+}{unary operator}{+1unary}
+and {\tt -}\indoponekey{-}{unary operator}{+2unary}
+can also be used as unary operators.  For example,
+\begin{verbatim}
+    -[3, 5]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [-3, -5]
+\end{verbatim}
+
+To compute a {\em modulus} use {\tt \%} the same way as in
+the~C language.  It evaluates its operands as {\tt integer} and returns
+an {\tt integer} result.
+
+To perform {\em exponentiation} use \verb+^+.  It evaluates its
+operands as {\tt double} values or {\tt dcomplex} values if a complex
+number is involved and returns a {\tt double} or {\tt dcomplex} value
+of the same type as the evaluated operands. Thus
+\begin{verbatim}
+    3^5
+\end{verbatim}
+returns the {\tt double} value {\tt 243.0}, but
+\begin{verbatim}
+    2+3i ^ 2
+\end{verbatim}
+returns the {\tt dcomplex} value {\tt -5+12i}.
+
+As discussed above in \xref{element-by-element},
+\index{vectors!operations!element-by-element}
+the arithmetic operators all
+operate element-by-element when given two equal-sized vectors.  For example,
+\begin{verbatim}
+    a := [1, 3, 5]
+    b := a * 2:4
+\end{verbatim}
+assigns to {\tt b}
+\begin{verbatim}
+    [2, 9, 20]
+\end{verbatim}
+If one of the vectors is a scalar then the scalar is paired with each element
+in turn:
+\begin{verbatim}
+    1:5 ^ 2
+\end{verbatim}
+yields the {\tt double} vector
+\begin{verbatim}
+    [1.0, 4.0, 9.0, 16.0, 25.0]
+\end{verbatim}
+Operations on vectors of different sizes, such as
+\begin{verbatim}
+    1:5 ^ [2, 3]
+\end{verbatim}
+result in run-time errors.
+
+\index{operators!arithmetic!precedence}
+Binary {\tt +} and {\tt -}
+have the lowest precedence, {\tt *}, {\tt /}, and {\tt \%} have equal
+and next highest precedence, and \verb+^+ has highest precedence of
+the binary operators.  The precedence of \verb+^+ is just below that
+of the {\tt :} operator discussed in \xref{creating-vectors}.  The unary
+{\tt +} and {\tt -} operators have precedence just above {\tt :}.
+(See \xref{precedence}, for a table of the precedence of all {\em Glish}
+operators.)
+
+\index{operators!arithmetic!associativity}
+All arithmetic operators associate from left-to-right except for \verb+^+,
+which associates from right-to-left.
+
+Finally, a number of arithmetic functions are also available, most of which
+operate element-by-element on their operands.  (See
+\xref{predefined-vectors}, for descriptions.)
+\index{operators!arithmetic|)}
+
+\subsection{Logical Operators}
+\label{log-operators}
+
+\index{operators!logical|(}
+{\em Glish} supports three logical operators:
+{\tt \&}\index{& and operator@{\tt \&\ \ } ``and'' operator},
+\verb+|+\index{& or operator@\verb+"|+{\tt \ \ } ``or'' operator},
+and {\tt !}\index{log z operator@{\tt "!\ \ } ``not'' operator},
+are Boolean ``and", ``or", and ``not", respectively.
+
+\index{operators!logical!operands}
+The {\tt \&}, \verb+|+ operators require
+{\tt boolean} operands, and other {\em numeric} types are {\em not}
+automatically converted to boolean in this case.  As with the arithmetic
+\index{vectors!operations!element-by-element}
+operators, these operate on multi-element vectors element by element.
+For example,
+\begin{verbatim}
+    [T, F, F, T] & [F, F, T, T]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [F, F, F, T]
+\end{verbatim}
+while
+\begin{verbatim}
+    [T, F, F, T] | T
+\end{verbatim}
+yields
+\begin{verbatim}
+    [T, T, T, T]
+\end{verbatim}
+(See \xref{short-circuit}, for a discussion of the related {\tt \&\&}
+and \verb+||+ operators.)
+
+The unary {\tt !} operator negates its operand.  It first  converts any
+\index{log z operator!operand conversion}
+{\em numeric} operand to {\tt boolean} by treating a value of 0 (zero) as
+false and any other value as true.
+For example,
+\begin{verbatim}
+    ! [T, F, F, T]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [F, T, T, F]
+\end{verbatim}
+and
+\begin{verbatim}
+    ! 5e-238
+\end{verbatim}
+yields {\em false}.
+
+\index{operators!logical!associativity}
+The logical operators are left-associative.
+The \index{operators!logical!precedence}
+\verb+|+ operator has
+precedence just below {\tt \&}, which in turn is just below that of
+the comparison operators (see \xref{rel-operators}).  The {\tt !}
+operator has very high precedence, the same as unary {\tt +} and {\tt -}.
+(See \S~\ref{arith-operators}~and~\S~\ref{precedence}.)
+
+\xref{predefined-vectors}, discusses the predefined functions
+for operating on logical values.
+\index{operators!logical|)}
+
+\subsection{Comparison Operators}
+\label{rel-operators}
+
+\index{operators!comparison|(}
+{\em Glish} provides the usual comparison operators:
+\verb+==+\index{== equality operator@\verb+==+{\tt \ } equality operator},
+\verb+!=+\index{== inequality operator@\verb+"!=+{\tt \ } inequality operator},
+\verb+<+\index{== less-than operator@\verb+<+{\tt \ \ } less-than operator},
+\verb+<=+\index{== less-than-or-equal operator@\verb+<=+{\tt \ } less-or-equal operator},
+\verb+>+\index{== z operator@\verb+>+{\tt \ \ } greater-than operator},
+and
+\verb+>=+\index{== zz operator@\verb+>=+{\tt \ } greater-or-equal operator}.
+Each takes two operands and
+\index{operators!comparison!operand conversion}
+converts them to the higher of the two types (see \xref{mixing-numerics}).
+They return a {\tt boolean} vector corresponding to the element-by-element
+comparison of the operands.
+For example,
+\begin{verbatim}
+    3 < 3.000001
+\end{verbatim}
+yields true,
+and
+\begin{verbatim}
+    1:4 == [3,2,3,2]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [F, T, T, F]
+\end{verbatim}
+\index{operators!comparison!boolean ordering}
+The {\tt boolean} value {\em true} is considered greater than {\em false}.
+For example,
+\begin{verbatim}
+    F < T
+\end{verbatim}
+yields {\em true}.
+
+Comparisons are also defined for {\tt complex} and {\tt dcomplex} numbers. The
+result of a comparison operator applied to complex numbers is the result of the 
+comparison applied to the real portion of those numbers.
+If, however, the real components of the complex numbers are {\em equal}, the 
+result of the comparison is the comparison operator applied to the imaginary
+portion of the numbers. So the result of,
+\begin{verbatim}
+    3-2i < 4+7i
+\end{verbatim}
+is {\em true} because, comparing the real components, {\tt 3} is less than {\tt 4}.
+However,
+\begin{verbatim}
+    3+2i < 3-1i
+\end{verbatim}
+is {\em false} because now you're comparing the imaginary components due to
+the fact  the real 
+components are equal, {\tt 2} is not less than {\tt -1}.
+
+You can also use the \verb+==+ and \verb+!=+ operators to compare non-numeric
+values.  (See \xref{rel-exprs} for details.)
+
+\index{operators!comparison!associativity}
+\index{operators!comparison!precedence}
+The comparison operators are all non-associative and have equal precedence,
+just below that of binary {\tt +} and {\tt -} (see
+\xref{arith-operators}) and just above that of the logical {\tt \&}
+operator (see \xref{log-operators}).  For a general discussion of
+precedence see \xref{precedence}.
+
+\index{operators!comparison|)}
+
+\subsection{Indexing With Numeric Types}
+
+You can use {\em numeric} values to index vectors in two different ways.
+The {\tt boolean} values serve as {\em masks} for picking out vector
+elements when  some condition is true, and non-{\tt boolean} values
+(converted to {\tt integer}) serve as {\em indices} for
+specifying a particular set of elements in a vector.
+For a discussion of different ways
+of indexing see \xref{indexing}.
+\index{types!{\em numeric}|)}
+
+\section{Strings}
+
+\index{strings|(}
+The {\tt string} type holds character-string values, used to represent
+and manipulate text.
+
+\subsection{String Constants}
+\label{string-constants}
+
+\index{constants!string|(}
+You create string constants by enclosing text within either single
+({\tt '}) or double ({\tt "}) quotes.
+
+\index{constants!string!single-quoted}
+{\em Glish} treats text within single quotes as a single
+string value; these constants are scalars.
+For example,
+\begin{verbatim}
+    'hello there'
+\end{verbatim}
+yields a {\tt string} value of one element.  That element has 11 characters.
+
+\index{constants!string!double-quoted}
+{\em Glish} breaks up text within double quotes into {\em words} at each block
+of {\em whitespace} (blanks, tabs, or newlines).  The whitespace is removed
+from the result.  Thus
+\begin{verbatim}
+    "hello there"
+\end{verbatim}
+yields a two-element {\tt string} value.  The first element 
+is the character string {\tt hello} and the second element the string
+{\tt there}.  Leading and trailing whitespace is ignored, so
+\begin{verbatim}
+    " hello     there "
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    "hello there"
+\end{verbatim}
+
+\index{escape sequences}
+In both kinds of string constants, a backslash character (\verb+\+) 
+introduces an {\em escape sequence\/}.  Except for the standard
+escape sequences (see Table~\ref{escape-std}, page~\pageref{escape-std}), any other character
+following a backslash, ``\verb+\+'', is passed along literally.
+For example,
+\begin{verbatim}
+    "hello \"there\" how \
+     are\nyou?"
+\end{verbatim}
+yields the string
+\begin{verbatim}
+    hello "there" how are you?
+\end{verbatim}
+whose length is {\tt 5} (recall that the \verb+\n+ newline is treated as 
+whitespace and removed from the string), while
+\begin{verbatim}
+    'hello \'there\' how \
+     are\nyou?'
+\end{verbatim}
+yields the single-element {\tt string}
+\begin{verbatim}
+    hello 'there' how are
+    you?
+\end{verbatim}
+\index{constants!string|)}
+
+\subsection{String Operators}
+
+\index{operators!string}
+There are a number of options available for manipulating strings:
+
+\begin{itemize}
+
+\item {\em regular expression} (see \xref{regular-exprs}) provide
+great flexiblity for manipulating, matching, and {\em splitting}
+strings;
+
+\item {\em comparison operators} (see \xref{rel-operators}) perform
+character by character comparisons based on the native character set,
+usually {\em ASCII};
+
+\item {\em functions} (see \xref{predefineds-string}) are available
+for basic string manipulation;
+\end{itemize}
+
+\index{strings|)}
+
+\section{Records}
+\label{records}
+
+\index{records|(}
+A {\tt record} is a collection of values.  Each value has a name, and
+\index{records!fields}
+is referred to as one of the record's {\em fields\/}.  The values do
+not need to have the same type, and there is no restriction on the
+allowed types (i.e., each field can be {\em any} type).
+
+\subsection{Record Constants}
+\label{record-constants}
+
+\index{constants!record|(}
+You create record constants in a manner similar to vector constants,
+\indoptwo{[]}{record creation operator}
+by enclosing values within square brackets ({\tt []}).  Unlike
+vectors, though,
+\indopone{=}{record field name}
+each value must be preceded with a name and an
+equal sign ({\tt =}).  For example:
+\index{example!creating a record}
+\begin{verbatim}
+    r := [foo=1, bar=[3.0, 5.3, 7], bletch="hello there"]
+\end{verbatim}
+creates a record {\tt r} with three fields, named ``foo", ``bar",
+and ``bletch".  These fields have types integer, double, and string,
+respectively.  Empty records can be created using~{\tt [=]}:
+\begin{verbatim}
+    empty := [=]
+\end{verbatim}
+As explained in \xref{creating-vectors},
+if {\tt []} is used instead of {\tt [=]} then {\tt empty} will have
+type {\tt boolean} instead of {\tt record}.
+\index{constants!record|)}
+
+\subsection{Accessing Fields Using ``{\tt .}''}
+\label{record-dot}
+
+\index{records!fields!accessing}
+\indopone{.}{record field access operator}
+You access record fields using the ``{\tt .}'' (dot or period) operator,
+as in many programming languages.  Continuing the above example for the record
+{\tt r},
+\begin{verbatim}
+    r.bar
+\end{verbatim}
+denotes the three-element {\tt double} vector
+\begin{verbatim}
+    [3.0, 5.3, 7]
+\end{verbatim}
+and
+\begin{verbatim}
+    r.bar[2]
+\end{verbatim}
+is the {\tt double} value {\tt 5.3}.  Field names specified with ``{\tt .}''
+\index{records!fields!legal names}
+must follow the same syntax as that for {\em Glish} variable names (see
+\xref{variables}), namely they must begin with a letter or
+an underscore (``{\tt \_}'') followed by zero or more letters, underscores,
+or digits.  Unlike variable names, {\em Glish} reserved words such as
+{\tt if} or {\tt whenever} are legal for field names.  Field names are
+\index{names!case-sensitive}
+case-sensitive.
+
+\index{records!fields!assigning}
+\indopone{.}{record field access operator}
+You can assign to a record field using the ``{\tt .}'' operator, too.  After
+executing
+\begin{verbatim}
+    r.date := "30Jan92"
+\end{verbatim}
+{\tt r} now has four fields, the fourth named {\tt date}.
+
+\index{records!fields!number of}
+\indfunc{length}
+The {\tt length} (or {\tt len}) function returns the number of fields
+in a record.  For our running example,
+\begin{verbatim}
+    len(r)
+\end{verbatim}
+now returns the integer value {\tt 4}.
+
+\indfunc{field\_names}
+\index{records!fields!names}
+The {\tt field\_names} function returns a {\tt string} vector whose elements
+are the names of the fields of its argument, in the order the
+fields were created.  For example, at this point
+\begin{verbatim}
+    field_names(r)
+\end{verbatim}
+yields the vector
+\begin{verbatim}
+    ["foo", "bar", "bletch", "date"]
+\end{verbatim}
+
+\subsection{Accessing Fields Using {\tt []}}
+\label{record-brackets}
+
+\indoptwo{[]}{record field access operator}
+\index{records!fields!access with string subscripts}
+In addition to using the ``{\tt .}'' operator to access fields,
+records can also be indexed using~{\tt []}'s with string-valued indices.
+For example,
+\begin{verbatim}
+    r["bar"]
+\end{verbatim}
+is equivalent to {\tt r.bar}.  Furthermore, the index does not need
+to be a constant; any string-valued expression will do:
+\begin{verbatim}
+    b := "I'll meet you at the bar"
+    print r[b[6]]
+\end{verbatim}
+prints {\tt r}'s {\tt bar} field.
+
+Just as the ``{\tt .}" operator can be used to assign record fields, so
+can {\tt []}:
+\begin{verbatim}
+    r["date"] := "30Jan92"
+\end{verbatim}
+is equivalent to the example using {\tt r.date} above.
+
+\index{records!fields!legal names}
+When accessing fields using {\tt []}, any string can be used, not just
+those conforming to the field names allowed with the ``{\tt .}" operator
+(see above).  For example,
+\begin{verbatim}
+    expletive['&)#% (&%!'] := T
+\end{verbatim}
+is legal.  Field names
+\index{records!fields!reserved names}
+\index{reserved names}
+with embedded asterisks (``{\tt *}''), though,
+are reserved for internal use by {\em Glish}.
+
+There are also mechanisms for accessing or modifying more than one field
+at a time.   (See \xref{indexing}.)
+
+\subsection{Accessing Fields Using Numeric Subscripts}
+\label{records-as-vectors}
+
+\indoptwo{[]}{record field access operator}
+\index{records!fields!access with {\em numeric} subscripts|(}
+You can also index records using {\tt []} with {\em numeric} subscripts,
+much as with vectors.  For example,
+\begin{verbatim}
+    r[3]
+\end{verbatim}
+refers to the third field assigned to {\tt r}; for our running example
+this is {\tt bletch}, a 2-element {\tt string} vector.  As with vectors,
+\index{records!fields!first field is [1]}
+\index{errors!record index out of range}
+all indexing operations are checked to make sure the index is within
+bounds (between 1 and the length of the record).
+
+You can then alter record fields by assigning to them in the same fashion:
+\begin{verbatim}
+    r[3] := F
+\end{verbatim}
+changes the {\tt bletch} field to be a scalar {\tt boolean} value.  New
+\index{records!assigning beyond end}\index{records!extending}
+fields are created by assigning to {\tt r} using an index one greater
+than the number of fields in {\tt r}.  For our running example {\tt r}
+has 4 elements, so
+\begin{verbatim}
+    r[5] := [real=0.5, imag=2.0]
+\end{verbatim}
+adds a new field to {\tt r} with a value that has  a record with two fields.
+The field is given an arbitrary, internal name, guaranteed not to conflict
+\index{records!fields!internal names}
+with other fields in {\tt r} and containing an embedded `{\tt *}' character.
+
+It is not legal to add a new field to a record at a position greater than
+one more than the number of fields.  For example,
+\begin{verbatim}
+    r[7] := [1, 4, 7]
+\end{verbatim}
+is illegal since {\tt len(r)} is {\tt 5}.
+
+An important point is that vector-style indexing of records allows
+\index{vectors!with different types of elements}
+the creation of ``arrays" with  elements that have different types.  For
+example,
+\begin{verbatim}
+    a := [=]
+    a[1] := 32
+    a[2] := "hello there"
+    a[3] := [field1=T, field2="the more the merrier"]
+\end{verbatim}
+creates what is for most purposes (see \xref{multiple-record-fields},
+for exceptions) an ``array" {\tt a} with the first element
+an {\tt integer}, the second a {\tt string}, and the third a {\tt record}.
+While a number of {\em Glish} types ({\tt record}, {\tt function}, {\tt agent},
+\index{records!vectors of}
+\index{functions!vectors of}
+\index{agents!vectors of}
+\index{references!vectors of}
+and {\tt reference}) are not ``vector types'' in the sense that each
+value of the type is implicitly a vector, arrays of these types can be
+created using records in the above fashion.
+\index{records!fields!access with {\em numeric} subscripts|)}
+\indoptwo{[]}{record field access operator}
+\index{records|)}
+
+\section{Attributes}
+\label{attributes}
+
+\index{attributes|(}
+All values in {\em Glish} can have attributes associated with them. Attributes
+contain extra information about the value. In many ways, attributes are
+similar to {\em Glish} {\tt records} (see \S~\ref{records}). 
+
+\subsection{Accessing Attributes Using ``{\tt ::}''}
+\label{attribute-operator}
+
+\index{attributes!accessing}
+\index{example!creating attributes|(}
+Each attribute has a name
+and an associated value. Attributes can be attached to {\em any} {\em
+Glish} value.
+The \indoptwo{::}{attribute operator}
+attribute operator, {\tt ::}, provides access to the attributes of a value.
+For example,
+\begin{verbatim}
+    a := [1,2,3,4]
+    a::shape := [2,2]
+\end{verbatim}
+assigns to the attribute of {\tt a} named {\tt shape} a vector of length two.
+This same operator, {\tt ::}, is used to retrieve attribute values. Continuing
+the example from above,
+\begin{verbatim}
+    b := a::shape
+\end{verbatim}
+{\tt b} is assigned the value of {\tt a}'s {\tt shape} attribute
+and {\tt b}
+is now equal to {\tt [2, 2]}. In this example, the attribute name is {\tt shape},
+but the name can be {\em any} string. 
+\index{example!creating attributes|)}
+
+An attribute operator is accessed without quotes if the
+attribute name begins with a letter or an underscore (``{\tt \_}'') and
+is followed by zero or more letters, underscores, or digits. If, however,
+the attribute name contains non-standard characters, the attribute name must
+be within quotes. So,
+\begin{verbatim}
+    a::"T##12" := "quotes needed here"
+    a::_t12 := "not here"
+    a::try := "nor here"
+\end{verbatim}
+in this example, the attribute \verb-T##12- requires quotes because of the hash (\verb-#-)
+character. 
+
+\subsection{Accessing Attributes Using {\tt []}}
+\label{attribute-brackets}
+
+\index{attributes!access with string subscripts}
+Attributes can also be accessed using square brackets
+(\xref{record-brackets})
+similar to accessing  record elements.
+One or more attributes are  accessed by using a string or vector of strings:
+\begin{verbatim}
+    c := a::[["_t12","try"]]
+    d := a::["_t12 try"]
+    e := a::['T##12']
+\end{verbatim}
+When more than one attribute is selected with square brackets, the result is a
+record with field names that are the selected attributes, and the values of the fields
+are the corresponding attribute values. In this case, both {\tt c} and {\tt d} equal
+\verb-[_t12="not here", try="nor here"]-. {\tt e} equals the string {\tt "quotes needed here"}.
+(See \S~\ref{records} for information on records, and \S~\ref{string-constants} for 
+information on string vectors.)
+
+\subsection{Accessing All Attributes}
+\label{attribute-wildcard}
+
+\index{attributes!access all at once|(}
+All of the attributes for a value can be accessed by using the attribute operator
+with no specified attributes, as in:
+\begin{verbatim}
+    f := a::
+\end{verbatim}
+This assigns to {\tt f} a record containing all of {\tt a}'s attributes
+and  associated values. In this case, given the continuing example, {\tt f}
+equals a record with fields {\tt dim}, \verb-_t12-, {\tt try} and \verb-T##12-.
+\index{attributes!access all at once|)}
+
+\index{attributes!assigning all at once|(}
+\index{attributes!deleting|(}
+\index{example!deleting attributes|(}
+This operator can be assigned to as well. All attributes can be
+set at once, as shown below
+\begin{verbatim}
+    f:: := [one="buckle", two="my", three="shoe"]
+\end{verbatim}
+In this example, all of {\tt f}'s attributes are set at once. After the
+assignment, {\tt f} will have three attributes, any previous attributes
+are deleted. 
+This is also the way attributes are cleared,
+\begin{verbatim}
+    f:: := [=]
+\end{verbatim}
+The above example clears all of {\tt f}'s attributes.  \index{bugs!missing features!attributes}
+Currently there is  no way to delete individual attributes. This problem
+will be resolved in the future.
+\index{example!deleting attributes|)}
+\index{attributes!deleting|)}
+\index{attributes!assigning all at once|)}
+
+\subsection{Cascaded Attributes}
+\label{attribute-cascading}
+
+\index{attributes!cascading|(}
+The attribute operator is left associative, and the value of an attribute can have
+attributes of its own. Attribute access are cascaded, as in:
+\begin{verbatim}
+    tmp::try::harder := 23
+\end{verbatim}
+In this example, the value of the {\tt try} attribute {\tt tmp} is given a 
+{\tt harder} attribute, and the value of this attribute is set to the scalar
+{\tt 23}. Because {\tt tmp} previously didn't have a {\tt try}
+attribute, its value
+defaults to the {\tt boolean} scalar {\tt F}. Accessing {\tt tmp}'s attributes
+\begin{verbatim}
+    x := tmp::
+\end{verbatim}
+results in {\tt x} having the record value {\tt [try=F]}. The {\tt harder} attribute,
+however, is also retrieved; {\tt x.try::harder} is equal to the scalar 23.
+\index{attributes!cascading|)}
+
+\index{attributes|)}
+
+\section{Multi-Element Indexing}
+\label{indexing}
+
+\index{vectors!indexing!multi-element|(}
+While {\em Glish} supports the ``usual" form of single-element vector access
+familiar to~C and {\sc Fortran} programmers, it also provides
+ways for accessing or modifying more than one vector element at a time.
+
+{\em Glish} vector indices needn't be scalar values; the indices can also
+be multi-element vectors.  The indices have different meanings depending
+upon whether their type is {\tt integer} or {\tt boolean}.  Each is  
+discussed below.
+
+\subsection{Integer Indices}
+\label{integer-indices}
+
+\index{vectors!indexing!with integer vector|(}
+\index{example!indexing vector with another vector}
+If the index's type is {\tt integer} (or {\em numeric} and hence convertible
+to {\tt integer}; but {\em not} {\tt boolean}),
+then the values of the index indicate
+the desired elements of the indexed vector.  For example, if we have
+\begin{verbatim}
+    a := [5, 9, 0, -3, 7, 1]
+    b := [4, 2]
+\end{verbatim}
+then
+\begin{verbatim}
+    a[b]
+\end{verbatim}
+yields the vector
+\begin{verbatim}
+    [-3, 9]
+\end{verbatim}
+Because {\tt -3} is the 4th element of {\tt a} and {\tt 9} is the 2nd element.
+There's no special need for the vector index to be a variable; it
+can also  be a constant:
+\begin{verbatim}
+    a[[4,2]]
+\end{verbatim}
+(which is equivalent to {\tt a[b]}) or a vector-valued expression:
+\begin{verbatim}
+    a[b+2]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [1, -3]
+\end{verbatim}
+because these are the 6th and 4th elements of {\tt a}.
+
+\index{: sequence operator!and vector indexing}
+Because the {\tt :} operator yields an integer vector, you can
+use it to access a contiguous sequence of elements in a vector:
+\begin{verbatim}
+    a[3:5]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [0, -3, 7]
+\end{verbatim}
+because these are the 3rd through 5th elements of {\tt a}.  Similarly,
+\begin{verbatim}
+    a[2:1]
+\end{verbatim}
+yields
+\begin{verbatim}
+    [9, 5]
+\end{verbatim}
+as these are the 2nd and 1st elements of {\tt a}.  If you
+have a vector {\tt x} and you want to reverse the order of its
+elements, you can do this like:
+\begin{verbatim}
+    rev_x := x[len(x):1]
+\end{verbatim}
+
+\indfunc{ind}
+The {\tt ind} function provides a convenient way for generating
+a vector value's indices:
+\begin{verbatim}
+    ind(x)
+\end{verbatim}
+is equivalent to:
+\begin{verbatim}
+    1:len(x)
+\end{verbatim}
+
+\indfunc{seq}
+The {\tt seq} function (see \xref{predefined-vectors}) provides a
+flexible way to generate vector indices.  This function takes one,
+two, or three arguments. If {\tt seq} is invoked with just one scalar
+argument then it returns a vector of the integers from 1 to that value,
+for example
+\begin{verbatim}
+    seq(7)
+\end{verbatim}
+yields
+\begin{verbatim}
+    [1, 2, 3, 4, 5, 6, 7]
+\end{verbatim}
+If {\tt seq} is invoked with a single non-scalar argument
+\index{seq function!with one argument}
+it returns a vector of the integers from 1 to the length of the argument:
+\begin{verbatim}
+    seq([3, 1, 4, 1, 5, 9])
+\end{verbatim}
+yields
+\begin{verbatim}
+    [1, 2, 3, 4, 5, 6]
+\end{verbatim}
+
+If {\tt seq} is invoked with two arguments it returns
+\index{seq function!with two arguments}
+the integers between the two, inclusive:
+\begin{verbatim}
+    seq(5,2)
+\end{verbatim}
+yields
+\begin{verbatim}
+    [5, 4, 3, 2]
+\end{verbatim}
+If the first argument is a non-scalar, the first element is used
+to determine where the sequence begins.
+
+If\index{seq function!with twoz@with three arguments}
+invoked with three arguments {\tt seq} returns the integers between
+\index{vectors!indexing!with stride}
+the first two using the third as a {\em stride}.  Starting  with the first
+value it works its way to the second, each time incrementing by the
+stride.  It stops when it passes the second argument.  So
+\begin{verbatim}
+    seq(3,10,2)
+\end{verbatim}
+yields
+\begin{verbatim}
+    [3, 5, 7, 9]
+\end{verbatim}
+and
+\begin{verbatim}
+    seq(20,8,-4)
+\end{verbatim}
+yields
+\begin{verbatim}
+    [20, 16, 12, 8]
+\end{verbatim}
+while
+\begin{verbatim}
+    x[seq(1,len(x),2)]
+\end{verbatim}
+yields every other element of {\tt x}.
+Note that in the second example, using
+\begin{verbatim}
+    seq(20,8,4)
+\end{verbatim}
+instead would result in a run-time error.  If a stride is given,
+it must reflect the direction the sequence will proceed.
+
+\subsection{Boolean Indices}
+\label{boolean-indices}
+
+\index{vectors!indexing!with boolean vector|(}
+\index{vectors!indexing!masks|(}
+\index{example!indexing vector with another vector}
+A {\tt boolean} vector index forms a {\em mask}
+that selects those elements for which the mask is true.  For example,
+\begin{verbatim}
+    a := "hello there, how are you?"
+    print a[[F,T,T,F,F]]
+\end{verbatim}
+prints ``there, how".  Similarly,
+\begin{verbatim}
+    y := x[x > 5 & x < 12]
+\end{verbatim}
+assigns to {\tt y} a vector of only those elements of {\tt x}
+that are greater
+than 5 and less than 12. The expression {\tt x > 5 \& x < 12} returns
+a boolean mask that is true for those elements of {\tt x} greater
+than 5 and less than 12, and false for the remainder.  Another example:
+\begin{verbatim}
+    max(x[x < 10])
+\end{verbatim}
+returns the largest element of {\tt x} that is less than 10. (See
+\xref{predefined-vectors} for a discussion of {\tt max} and
+other related functions.)
+
+Often you want to know the {\em indices} of vector elements with a
+certain property, rather than the {\em values} of those elements.  The
+\index{vectors!indices for particular elements}
+following illustrates the idiom for doing so:
+\begin{verbatim}
+    neg_indices := ind(x)[x < 0]
+\end{verbatim}
+Here you assign to \verb+neg_indices+ the indices of those
+elements of {\tt x} that are less than 0.  Thus
+\begin{verbatim}
+    x[neg_indices]
+\end{verbatim}
+and
+\begin{verbatim}
+    x[x < 0]
+\end{verbatim}
+are equivalent expressions.
+
+Boolean\index{errors!vector-index-mask size mismatch}
+indices must have the same number of elements as the
+indexed vector, otherwise a run-time error occurs.
+
+\subsection{Assigning Multiple Elements}
+\label{multiple-assign}
+
+\index{assignment!to multiple elements}
+In addition to using vector indices to {\em access} multiple vector
+elements, you can also use them to {\em modify} multiple elements.
+\begin{verbatim}
+    a[[5,3,7]] := 10:12
+\end{verbatim}
+assigns to the 5th, 3rd, and 7th elements of {\tt a} the numbers 10, 11, and
+12, respectively.  The right-hand-side of the assignment can also be
+a scalar value:
+\begin{verbatim}
+    a[[5,3,7]] := 0
+\end{verbatim}
+sets those same elements to 0.  
+
+Similar operations can be accomplished using masks:
+\begin{verbatim}
+    a[a > 7] := 32
+\end{verbatim}
+changes all elements of {\tt a} that are greater than 7 to 32, and
+\index{example!computing absolute value using vector masks}
+\begin{verbatim}
+    x[x < 0] := -x[x < 0]
+\end{verbatim}
+is the same as
+\begin{verbatim}
+    x := abs(x)
+\end{verbatim}
+indeed, this is how {\tt abs} is implemented; it converts the
+negative elements of {\tt x} to their absolute value. (See
+\xref{predefined-vectors}, for a discussion of {\tt abs} and other
+related functions.)
+
+\index{vectors!type conversion when assigning elements}
+\index{assignment!type compatibility}
+\index{assignment!type conversions}
+As with simple scalar assignments, the types on both sides
+of the {\tt :=} operator must be compatible, as discussed in
+\xref{type-conversion}.
+
+\index{vectors!assigning multiple elements}
+\index{assignment!to multiple elements}
+The right-hand-side must either be a scalar or have the same number of
+elements as indicated by the indices or mask used on the left-hand-side.
+\index{errors!multiple element assignment mismatch}
+For example,
+\begin{verbatim}
+    a[1:3] := [2,4]
+\end{verbatim}
+is not allowed.
+\index{vectors!indexing!masks|)}
+\index{vectors!indexing!with boolean vector|)}
+\index{vectors!indexing!with integer vector|)}
+
+\subsection{Accessing and Modifying Multiple Record Fields}
+\label{multiple-record-fields}
+
+\index{records!fields!multiple|(}
+As with vectors, you can access and modify multiple record fields
+using multi-element indices.  For records the index must be a vector
+of strings.  For example,
+\begin{verbatim}
+    a := [foo=1, bar=[3.0, 5.3, 7], bletch="hello there"]
+    b := a[["foo", "bar"]]
+\end{verbatim}
+assigns to {\tt b} a record that has a  {\tt foo} field with the
+{\tt integer} value
+1 and whose {\tt bar} field is the {\tt double} vector {\tt [3.0, 5.3, 7.0]}.
+Because of the way double-quoted string literals are broken up into a vector
+(see \xref{string-constants}), the second statement could
+\index{records!fields!access with string literals}
+also have been written:
+\begin{verbatim}
+    b := a["foo bar"]
+\end{verbatim}
+
+\index{assignment!to multiple record fields}
+You can assign multiple record fields in a similar fashion:
+\begin{verbatim}
+    a["foo bar"] := [x=[9,1], y=T]
+\end{verbatim}
+changes {\tt a}'s {\tt foo} field to be the integer vector {\tt [9,1]},
+and {\tt a}'s {\tt bar} field to the boolean value {\tt T}.  You can
+\index{records!assigning part to another record}
+also make similar assignments by accessing multiple-field elements
+on the right-hand-side.  For example, the following is equivalent:
+\index{example!record assignment}
+\begin{verbatim}
+    r := [x=[9,1], y=T, z="ignore me"]
+    a["foo bar"] := r["x y"]
+\end{verbatim}
+For the assignment to be legal, the right-hand-side must be a record with
+\index{errors!record assignment mismatch}
+the same number of fields as the left-hand-side (as in the example above).
+The field names are ignored, and the assignment is done field-by-field,
+left-to-right.
+
+As discussed in \xref{records-as-vectors}, you
+can access records using {\em numeric} subscripts, and you can use multiple
+numeric subscripts to access and modify more than one field in the record.
+For example, the following reverses the fields of {\tt r}:
+\index{example!reversing fields of a record}
+\begin{verbatim}
+    r := [x=1, y=T, z="hello"]
+    r[3:1] := r
+\end{verbatim}
+now {\tt r.x} is {\tt "hello"}, {\tt r.y} remains {\tt T},
+and {\tt r.z} is {\tt 1}.
+\index{records!fields!multiple|)}
+\index{vectors!indexing!multi-element|)}
+
+\section{Arrays}
+\label{arrays}
+
+\index{arrays|(}
+\index{vectors!multi-dimensional|(}
+{\em Glish} also has multi-dimensional arrays. These arrays
+can be manipulated much like single dimension vectors. There are operations
+which permit ``slices'' and ``picks'' to be taken of arrays.  Most
+of the functions and operators work on arrays and one dimensional
+vectors.
+
+\subsection{Creating Arrays}
+\label{creating-arrays}
+
+Typically, \index{arrays!creating|(}
+\index{example!creating an array|(}
+an {\em array} is created using the {\tt array} \indfuncbegin{array}
+function. This function takes an arbitrary number of arguments.
+The first argument is the initial value for the new array. The remaining
+arguments are the lengths of the dimensions of the array. So, to create
+a cube,
+\begin{verbatim}
+    cube := array(0,4,4,4)
+\end{verbatim}
+creates a three dimensional array that is initialized to all zeros. Each of
+the three dimensions of the cube has a length of four. The array can also be
+initialized with a vector:
+\begin{verbatim}
+    plane := array(1:4,4,3)
+\end{verbatim}
+This creates a matrix that has two dimensions. Each of the three columns are 
+initialized to {\tt [1, 2, 3, 4]}. If the initialization vector has fewer
+elements than the final array, the vector is replicated to fill the array.
+If the initialization vector has more elements than the final array, only 
+the initial portion of the vector will be used to fill the array; the rest
+will be ignored. In the following
+\begin{verbatim}
+    one := array([3,5],3,3)
+    two := array(1:25,3,4)
+\end{verbatim}
+{\tt one} is filled with repeating {\tt [3, 5]} in column-major order. The
+first (and third) columns equal {\tt [3, 5, 3]} while the second
+column equals
+{\tt [5, 3, 5]}. In the case of {\tt two}, the elements of the array are
+filled (in column-major order) with integers starting with {\tt 1} and 
+ending with {\tt 12}; the first column of {\tt two} contains {\tt [1, 2, 3]}.
+\indfuncend{array}
+\index{example!creating an array|)}
+\index{arrays!creating|)}
+
+\subsection{Indexing Arrays}
+\label{indexing-arrays}
+
+Arrays \index{arrays!indexing|(}
+are indexed using the the {\tt []} operator. This operator is used with one
+subscript for each dimension of the array. This operator can be used to 
+access a single element, a contiguous section, or elements sprinkled throughout
+the array.
+
+\subsubsection{Element Indexing with Subscripts}
+\label{indexing-array-elements-subscript}
+
+Access to individual elements\index{arrays!element indexing!with subscripts|(}
+\index{example!array indexing!with subscripts}
+of arrays is accomplished much like indexing one dimensional vectors. The only
+difference is instead of a single subscript, multiple subscripts are
+used, one for each dimension. For example,
+\begin{verbatim}
+    x := array([3,5],3,3)
+    for (i in 1:3 ) x[i,i] *:= 3
+\end{verbatim}
+a three by three matrix is assigned to {\tt x}. The {\tt for} 
+loop (\xref{for-loops}) then multiplies each
+of the elements along the diagonal of {\tt x} by {\tt 3}. If {\tt x} had three
+dimensions instead of two, then three subscripts would be required. As with
+vector indexing, the array subscripting operation are used to {\em get} as well
+as {\em put} values in the array.
+\index{arrays!element indexing!with subscripts|)}
+
+\subsubsection{Slice Indexing with Subscripts}
+\label{indexing-array-slices-subscript}
+
+Multiple elements of arrays\index{arrays!slice indexing!with subscripts|(}
+\index{example!array indexing!with subscripts}
+can be accessed as well. Often, however, the result will be another array
+instead of a vector. For example,
+\begin{verbatim}
+    cube := array([3,5],3,3,3)
+    for (i in 1:3 ) x[1:3,1:3,i] *:= i
+\end{verbatim}
+Here {\tt cube} is a three dimensional array, and the {\tt for} loop 
+multiplies each plane in the cube by its position. The first plane is
+unchanged, i.e. multiplied by {\tt 1}, but the second plane is multiplied
+by {\tt 2} and the last plane is multiplied by {\tt 3}. {\tt x[1:3,1:3,i]}
+selects a whole plane from the cube, in particular the {\tt i}th plane.
+The {\tt 1:3} in the first two subscript positions  selects 
+all of the elements
+in those dimensions, but the third subscript, {\tt i}, limits selection
+in that direction. Selecting large sections of the array in this manner
+is often referred to as ``slicing'' the array.
+
+Often, all of the elements along a dimension are not selected. In this
+case, the elements of interest must be listed explicitly. When all of
+the elements along a certain dimension are desired,
+as the case above, omitting a particular subscript implies all of the
+elements along that dimension. The example above can be rewritten:
+\begin{verbatim}
+    cube := array([3,5],3,3,3)
+    for (i in 1:3 ) x[,,i] *:= i
+\end{verbatim}
+Omitting subscripts implies the whole dimension. Whole array operations
+are permitted much as they are for vector access (see \S~\ref{multiple-assign}).
+\index{arrays!slice indexing!with subscripts|)}
+
+\subsubsection{Element Indexing with an Array}
+\label{indexing-array-elements-array}
+
+\index{arrays!element indexing!with an array|(}
+\index{example!array indexing!with an array}
+The ability to use subscripts to access either single elements or slices of
+an array covers most of the operations typically performed on arrays. Sometimes,
+however, this is not sufficient. Suppose, for example, you want to 
+access the
+top left corner and bottom right corner of a matrix. With the available
+subscript operations presented above, the best that you can do is the following:
+\begin{verbatim}
+    mat := array(1:16,4,4)
+    tlc_brc := mat[[1,4],[1,4]]
+\end{verbatim}
+This unfortunately sets {\tt tlc\_brc} equal to a two by two array that 
+contains each of the four corners. To handle array accesses where desired
+array elements are distributed throughout the array, a single subscript
+that itself is an array can be used to access the elements of the array.
+The problems with the example above can be fixed as follows:
+\begin{verbatim}
+    tlc_brc := mat[array([1,4],2,2)]
+\end{verbatim}
+In this example, an array is used as the single index into the array.
+The rows of the subscript array indicate the elements of {\tt mat} to
+be selected. So the number of columns of the subscript array will
+{\em always} equal the dimensionality of the array being accessed. In
+the example above, the first point, {\tt [1, 1]}, is the first row of
+the subscript array, and the second point, {\tt [4, 4]}, is the second
+(and final) row. The subscript array can have an arbitrary number of rows.
+This type of subscripting implements what is commonly known as a
+``pick'' operation. Array subscript indexing can be use to both
+{\em get} and {\em put} elements of the array.
+
+Arrays that are used as an array index should not be of type {\tt boolean}.
+(See \S~\ref{indexing-array-boolean-indices} for a discussion of boolean
+array indexes.)
+\index{arrays!element indexing!with an array|)}
+
+\subsubsection{Slice Indexing with a Record}
+\label{indexing-array-elements-record}
+
+\index{arrays!slice indexing!with a record|(}
+As with ``picks'', sometimes specifying slices with multiple
+subscripts doesn't work. The situation may 
+occur when writing a function that manipulates an array of an
+arbitrary dimensionality. In this case, use of multiple subscripts breaks
+down. Indexing with a subscript array solves this problem for
+accessing individual elements of the array, and indexing with a
+record solves it for accessing slices of the array.
+
+\index{example!array indexing!with a record}
+A record can be used to specify the elements of the slice. The {\tt length}
+(see \xref{length-func}) of the record must equal the dimensionality of
+the array. The field values of the record are used irrespective of the
+field label, and each of the field values acts as one of the subscripts
+in the slice operation. For example,
+\begin{verbatim}
+    cube := array(1:27,3,3,3)
+    one := cube[,3,]
+    two := cube[[a=1:3,b=3,c=[]]]
+\end{verbatim}
+{\tt cube} is assigned an array with three dimensions. Here {\tt one} is
+assigned the ``right'' slice along the {\em z} axis. The assignment to
+{\tt two} demonstrates how
+you  use a record to index the same slice of the array. Each of
+the fields of the record correspond to the respective dimension of
+the array. The position of the field, rather than the field name, is
+used to determine the dimension it specifies. In the assignment
+to {\tt two}, the first field contains {\tt 1:3} so the entire first
+dimension participates in the slice, the second field to is set to 3 thus
+limiting the second dimension, and since the final field is an empty array,
+the entire third dimension participates in the slice. In this example,
+{\tt one} and {\tt two}
+have the same value after the  assignment. Since the field names are ignored,
+numeric subscripts can also be used to set up the index:
+\begin{verbatim}
+    index := [=]
+    index[1] := []
+    index[2] := 3
+    index[3] := 1:3
+    three := cube[index]
+\end{verbatim}
+Here {\tt index} is set up with a record equivalent (for the purposes
+of indexing arrays) to the one that was used to set {\tt two} above. Thus after this
+example, {\tt one}, {\tt two} and {\tt three} all have the same value.
+
+As was indicated, \index{attributes!system defined!{\tt shape}}
+\index{attributes!system defined!{\tt shape}|(}
+\index{arrays!{\tt shape} attribute|(}
+this is mainly used when the shape of the array is not
+known ahead of time. Functions that deal with arrays of a non-predetermined shape
+can use the system defined attribute {\tt shape} (which is defined for all arrays) to 
+determine the shape of the array at runtime. For arrays, this {\tt shape} 
+attribute always contains a vector that indicates the shape of the array. In 
+the following,
+\begin{verbatim}
+    func s( ary ) { return ary::shape }
+\end{verbatim}
+the function {\tt s} returns the shape of arrays. If {\tt s} is invoked with
+{\tt cube} from the previous example as an argument, the result is {\tt [3, 3, 3]}.
+\index{arrays!{\tt shape} attribute|)}
+\index{attributes!system defined!{\tt shape}|)}
+\index{arrays!slice indexing!with a record|)}
+\index{arrays!indexing|)}
+
+\subsection{Arrays as Vectors}
+\label{indexing-array-as-vectors}
+
+\index{arrays!as vectors|(}
+As was mentioned earlier, most functions and operators accept arrays
+or vectors as parameters. All \index{arrays!{\em not} matrices} of the
+arithmetic, comparison, and logical operators operate element by element
+on arrays as well as vectors. This is {\em not} matrix arithmetic but
+rather element by element array arithmetic.
+
+It is easy to write functions which operate on both vectors
+and arrays. This is because arrays are 
+implemented as a vector plus a {\tt shape} attribute. So an array
+can easily be constructed from a vector, for example
+\begin{verbatim}
+    vec := [3, 4, 9, 12, 8, 2, 10, 21, 5]
+    vec::shape := [3, 3]
+    v := vec[3, 3]
+\end{verbatim}
+Here a vector, {\tt vec}, is constructed, and then by adding
+a {\tt shape} attribute is turned into an array, and from that point
+on it can be manipulated as an array. {\tt v} equals {\tt 5}. Deleting
+the shape attribute turns {\tt vec} back into a vector,
+\begin{verbatim}
+    vec:: := [=]
+\end{verbatim}
+Now, an attempt to use array addressing, e.g. {\tt vec[3, 3]}, results
+in an error.
+
+The underlying vector can always be accessed for any array, and the 
+{\tt shape} attribute need not be cleared. For arrays, whenever a single
+non-{\tt boolean} vector value is used as a subscript, the underlying vector
+is accessed. In the following,
+\begin{verbatim}
+    vec := 1:9
+    vec::shape := [3, 3]
+    a := vec[3, 3]
+    b := vec[len(vec)]
+\end{verbatim}
+both array accesses are valid, and both {\tt a} and {\tt b}  have the
+same value, {\tt 9}.  {\tt length}  applied to an array returns the 
+length of the underlying vector. 
+
+If \index{arrays!vector/shape mismatch|(}
+the underlying vector and the {\tt shape} of an array  do not match,
+errors can result. If the length of the vector is greater than the
+length implicit in the shape, there is no problem; only a portion
+of the underlying vector will be used. If, however, the vector length
+is less than the length implied by the {\tt shape}, runtime errors will
+be reported when accesses are attempted past the end of the vector.
+If the {\tt array} function is used to create arrays, these errors can
+not happen.
+\index{arrays!vector/shape mismatch|)}
+\index{arrays!as vectors|)}
+
+\subsection{Operators and Boolean Indices}
+\label{indexing-array-boolean-indices}
+
+\index{arrays!boolean indices|(}
+\index{arrays!comparison operators|(}
+As discussed above, many of the operators and functions operate 
+element by element on arrays and vectors. This is how boolean
+indices are used with arrays. In the following,
+\begin{verbatim}
+    ary := array([1, -3, -4, 7, 2, -1, 10, -6, 3],3,3)
+    ary[ary < 0] := 0
+\end{verbatim}
+{\tt ary} is assigned a two dimensional array. The next statement
+alters all of the elements of the array that  have negative
+values by setting them to zero. The comparison operators applied to
+arrays operate element by element, and the result is another array.
+If two arrays are involved, their lengths must be equal, and if a
+scalar and an array are involved, as above, the scalar is compared
+with each element of the array. A {\tt boolean} array is generated as 
+a result. This {\tt boolean} array is then used to select elements from
+the array in the same way that boolean masks are used with vectors
+(\xref{boolean-indices}). A 
+single boolean vector or array subscript acts as a mask, and as a result,
+the {\tt length} of the {\tt boolean} subscript must equal the {\tt length} 
+of the array being indexed.
+\index{arrays!comparison operators|)}
+\index{arrays!boolean indices|)}
+
+\index{arrays!arithmetic operators|(}
+Arithmetic operations applied to arrays are identical to the corresponding
+vector operations. If an arithmetic operator is applied to two arrays, their
+lengths must be equal, and the result is the array generated by the element
+by element application of the operator. In the following,
+\begin{verbatim}
+    ten := array(1:9,3,3) + array(9:1,3,3)
+    ident := array(0,4,4)
+    ident[array(1:4,4,2)] := 1
+    o := array(seq(1,4,.2),4,4)
+    r := ident * o
+\end{verbatim}
+{\tt ten} is a two dimensional array, and each of its elements equals
+{\tt 10}. {\tt ident}, after the two assignments, is the identity matrix
+with {\tt 1}s along the diagonal and {\tt 0}s elsewhere. {\tt o} has 
+{\tt 1:4} along its diagonal and the intermediate numbers elsewhere.
+When {\tt ident} is multiplied by {\tt o} the result, {\tt r}, is a
+matrix with {\tt 1:4} along its diagonal, but zeros elsewhere. This 
+demonstrates the nature of array arithmetic within {\em Glish}. Arithmetic operators
+perform element by element operations; they {\em do not} obey the rules of 
+matrix arithmetic.
+\index{arrays!arithmetic operators|)}
+
+\index{arrays!logical operators|(}
+Logical operators also perform element by element operations. For example,
+\begin{verbatim}
+    _2b := array(F,3,3)
+    the_question := _2b | ! _2b
+\end{verbatim}
+Here {\tt \_2b} is a two dimensional {\tt boolean} array, {\tt the\_question} 
+is a two dimensional array with each element set to {\tt T}. This is a result
+of the element by element nature of {\em Glish} logical operations.
+\index{arrays!logical operators|)}
+
+\index{vectors!multi-dimensional|)}
+\index{arrays|)}
+
+\section{References}
+\label{references}
+
+\index{references|(}
+A reference is an alias to another variable, record field, or, for some types,
+a portion of a variable or record field. It provides a mechanism to allow two
+or more variables to refer to the same value. References are created using
+the {\tt ref} operator.
+
+\subsection{Whole Value References}
+\label{whole-value-references}
+\index{references!whole value|(}
+The most straight forward type of references are ``whole value'' references. In this
+case, a reference is made into another variable or record field.
+
+\subsubsection{Creating References}
+\index{references!whole value!creating|(}
+Whole variable references are created as follows:\index{example!references!whole value}
+\begin{verbatim}
+    a := 1:5
+    b := ref a
+    b[2] := 9
+    print a
+\end{verbatim}
+prints {\tt [1 9 3 4 5]} and not {\tt [1 2 3 4 5]}.  If you now execute:
+\begin{verbatim}
+    a[3] := 121
+\end{verbatim}
+{\tt b} will equal {\tt [1 9 121 4 5]} (as will {\tt a}). References
+\index{example!references!to record field}
+to record field are created in the the same way:
+\begin{verbatim}
+    rxd := [a = 3:1, b = "hello there"]
+
+    sxd := [x = ref rxd.a, y = ref rxd.b]
+
+    sxd.x[2] := -4            # changes rxd.a[2], too
+
+    print rxd.a[2]
+\end{verbatim}
+prints {\tt -4}. 
+\index{references!whole value!creating|)}
+
+\subsubsection{Breaking References}
+\index{references!whole value!breaking|(}
+
+A very important point
+\index{references!assignment to}
+\index{assignment!to references}
+to keep in mind when using reference is the way references
+can be broken through assignment. This can be a source of unexpected problems. A reference
+allows two variables to refer to the same value, but assigning to either of the 
+variables, as opposed to their elements, breaks the link. 
+\index{references!breaking}
+\index{example!references!breaking}
+In the following,
+\begin{verbatim}
+    x := 1:3
+    y := ref x
+    x[3] := 9        # changes y[3], too
+    y[1] := 10       # changes x[1], too
+    x := 3:1         # !! breaks the reference !!
+    x[2] := 121      # does NOT modify y
+\end{verbatim}
+the next to last assignment of {\tt 3:1} to {\tt x}, instead of subscripted elements
+of {\tt x}, breaks the reference, and as a result, the final assignment does {\em not}
+modify {\tt y}. After the last assignment, {\tt x} equals {\tt [3, 121, 1]}, and {\tt y}
+equals {\tt [10, 2, 9]}. References to record fields behave in the same way.
+\index{references!whole value!breaking|)}
+
+\subsubsection{Explicitly Maintaining References}
+\index{references!whole value!maintaining|(}
+
+The reference connection is maintained across assignment by
+\index{references!maintaining across assignment}
+\indtt{val}{operator}
+\index{example!references!maintaining}
+explicitly using the {\tt val} operator.  For
+example, after executing:
+\begin{verbatim}
+    c := [1, 3, 7, 12]
+    d := ref c
+    val c := "hello there"
+\end{verbatim}
+the value of {\tt d} (and of course {\tt c}) is the two-element
+string {\tt "hello there"}.  Assigning to {\tt val d} will similarly
+change the value of {\tt c}.
+
+\index{example!references!to record fields}
+The behavior of record fields are  identical to other variables. For
+example,
+\begin{verbatim}
+    r := [foo = 1:3, bar = "hello there"]
+
+    s := [a = ref r.foo, b = ref r.bar]
+
+    s.a[2] := -4            # changes r.foo[2], too
+    s.a := [T, T, T, T, T]  # doesn't change r.foo
+
+    val r.bar := 1:7 ^ 2    # changes s.b, too
+
+    print r.foo[2], s.b[5]
+\end{verbatim}
+prints {\tt -4} followed by {\tt 25}.
+
+The second assignment makes {\tt s} a record with two fields, {\tt a} and
+{\tt b}, which  are references to {\tt r.foo} and {\tt r.bar}.
+
+The third assignment changes {\tt s.a[2]} and {\tt r.foo[2]} to be {\tt -4}.
+
+The fourth assignment breaks the link between {\tt s.a} 
+and {\tt r.foo},
+because {\tt s.a} is assigned to the entire variable and not just
+some of its elements.
+
+The fifth assignment modifies both {\tt r.bar} and {\tt s.b} to be
+a vector of the first 7 integers squared.  Without the {\tt val} operator, only
+{\tt r.bar}  changes, and the link between {\tt r.bar}
+and {\tt s.b} is broken.
+
+It is also possible, though not recommended, to make the value referred to
+by a reference constant. This is done as follows:
+\begin{verbatim}
+    c := 1
+    d := ref c
+    const val d := 2
+\end{verbatim}
+The last assignment changes {\tt c} to a constant value, and {\tt d} is a reference to
+{\tt c}. After this, {\tt c} cannot be modified.
+
+\index{references!whole value!maintaining|)}
+\index{references!whole value|)}
+
+\subsection{Partial Value References}
+\label{partial-value-references}
+\index{references!partial value|(}
+
+Partial value references can be created for any of the vector types. These
+references are created much like whole value references, but partial value
+references reference only a portion of the value. They also have more
+restrictions on their use than whole value references.
+
+\subsubsection{Creating References}
+
+\index{references!partial value!creating|(}
+Partial value references are also created with the {\tt ref} operator. Unlike whole
+value references, partial value references create an alias to a ``sub-vector'' or
+``sub-array''. That is, they reference a portion of another vector or array. So for
+example,\index{example!references!partial value}
+\begin{verbatim}
+    vec := [1:10]
+    svec := ref vec[5:9]
+    svec[4] := 20           # modifies vec[8], too
+\end{verbatim}
+Here a vector with ten elements, {\tt vec}, is created, and then a reference to a
+portion of that vector is created, {\tt svec}. Modification to any of {\tt svec}
+elements changes the respective elements in {\tt vec}. In this case, modifying the
+forth element in {\tt svec} also changes the eighth element of {\tt vec}. The
+{\tt length} of {\tt svec} is {\tt 5} not {\tt 10}.
+
+Partial value references are created for vector or array valued fields in the
+same way. For example,
+\begin{verbatim}
+    xle := [x=1:10, l=10:1, e=[2,7]]
+    m := [t=ref xle.x[9:10], u=ref xle.l[9:10], v=ref xle.e]
+
+    m.u[2] := m.t[2]            # modifies xle.l[10] as well
+\end{verbatim}
+This example shows how sub-vector references of fields are similar
+to whole value references
+of fields. It is important to note, however, that you {\em cannot} take a 
+partial value reference of a record. So,
+\begin{verbatim}
+    mz := ref xle["x e"]
+\end{verbatim}
+is {\em not} valid.
+
+Partial value references can also be created for arrays, and this is probably where
+they prove most useful. In the following,
+\begin{verbatim}
+    base := array(0,5,5)
+    diag := ref base[array(1:5,5,2)] # a vector
+    lower := ref base[4:5,]          # a 2x5 array
+    diag[3] := 1                     # modifies base[3,3], too
+    lower[1:2,[1,5]] := 5            # modifies base[4:5,[1,5]],
+                                     # AND diag[5], as well
+\end{verbatim}
+In this example, an array, {\tt base}, is created. Then two partial value 
+references, {\tt diag} and {\tt lower}, are created. The partial
+reference {\tt diag} references 
+elements along the diagonal of {\tt base}, and the partial
+reference {\tt lower} references
+the fourth and fifth rows of {\tt base}. Modifying elements of either of
+the references modifies the corresponding elements of
+{\tt base}.
+\index{references!partial value!creating|)}
+
+\subsubsection{Breaking References}
+
+\index{references!partial value!breaking|(}
+It is important to realize that partial value references are broken the
+same way as whole value references. Continuing with the previous 
+\index{example!references!breaking}
+example,
+\begin{verbatim}
+    diag := 5:9                      # !! breaks reference !!
+    lower[2,2] := 22                 # modifies base[5,2], also
+\end{verbatim}
+the assignment to {\tt diag} does {\em not} modify {\tt base}. It breaks the
+reference link, and sets {\tt diag} equal to {\tt 5:9}. Assignments to {\tt lower}
+elements, e.g. the second one, still modify {\tt base} because that link
+remains intact.
+
+Breaking partial value references to record fields happens identically.
+\index{references!partial value!breaking|)}
+
+\subsubsection{Explicitly Maintaining References}
+\index{references!maintaining!partial value|(}
+
+There are more restrictions maintaining partial element references 
+than there are with whole value references. The {\tt val}
+operator is used to explicitly maintain partial value references. For 
+\index{references!maintaining across assignment}
+\indtt{val}{operator}
+\index{example!references!maintaining}
+example,
+\begin{verbatim}
+    a := 1:10
+    b := ref a[6:10]
+    val a := 10:1      # modifies b as well
+\end{verbatim}
+Here a vector, {\tt a }, and a partial value reference, {\tt b} are
+set up. Modifying the entirety of {\tt a} changes the elements which
+{\tt b} references. This type of manipulation must be done very cautiously, 
+however, because if the referenced vector, {\tt a}, is shortened the reference
+vector may become invalid. In the following,
+\begin{verbatim}
+    val a := 6:10      # b is now INVALID!
+\end{verbatim}
+{\tt a} is assigned a shorter vector. At this point, {\tt b} is now
+invalid, and subsequent indexing into {\tt b} will generate  error
+messages.
+
+The partial value reference can also be assigned to, but with restrictions.
+The {\tt length} of the new value must match the length of the reference.
+So,
+\begin{verbatim}
+    a := 1:10
+    b := ref a[6:10]
+    val b := 11:15     # modifies a as well
+\end{verbatim}
+here {\tt b} is used in a {\tt val} assignment, but because the {\tt length}
+of {\tt b} and the {\tt length} of the value being assigned are equal, all of
+{\tt b} and the selected portion of {\tt a} changes. If the lengths were
+not equal, an error message would be  reported. Continuing this example,
+\begin{verbatim}
+    val b := 1:15     # ERROR!
+\end{verbatim}
+An assignment such as this generates an error message.
+\index{references!maintaining!partial value|)}
+\index{references!partial value|)}
+
+\index{references|)}
+
+\section{Constant Values}
+\label{constant-values}
+
+\index{constant!values|(}
+
+The {\tt const} keyword  is used to indicate that certain values cannot be
+modified. In general, {\tt const} can be applied to any {\em Glish} value. There
+are two general types of ``constness'' in {\em Glish}. If {\tt const} occurs on
+the left hand side of the assignment operator, it indicates that the value
+cannot be reassigned or modified (changing elements of a vector or fields of
+a record). Reassignment changes the whole value. When {\tt const} occurs on
+the right hand side of an assignment, it
+indicates that the value is constant, but that the {\em Glish} variable can be
+reassigned. This type of ``constness'' is most useful with records 
+(\S~\ref{const-record}) and references (\S~\ref{const-reference}).
+
+The {\tt const} values are different from {\em type constants} that
+were discussed
+earlier. Type constants allow you to explicitly specify a member of a
+particular type, e.g. 2.361, but {\tt const}
+values allow you to make a particular value unmodifiable. 
+
+Using {\tt const} can help prevent important functions or values from being
+accidentally overwritten. Attempts to modify {\tt const} values result in
+an error. However, {\tt const} values are not quit as {\em constant} as
+perhaps they should be, {\tt const} values can be deleted with {\tt symbol\_delete}
+(\S~\ref{symbol_delete-func}).
+The following sections (\S~\ref{first-const}--\S~\ref{last-const})
+explain {\tt const} values in more detail.
+
+\subsection{Constant Arrays and Vectors}
+\index{arrays!{\tt const}|(}
+\index{vectors!{\tt const}|(}
+\label{first-const}
+
+Typically, any {\em Glish} value is made {\tt const} by putting the {\tt const}
+keyword at the beginning of an assignment statement:
+\begin{verbatim}
+    const PI := 3.141592653589793238462643
+\end{verbatim}
+Now  {\tt PI} cannot be modified; attempts to modify it will result
+in error messages. Type constants are not the only place where this can be
+of use; if the constant must be calculated, for example:
+\begin{verbatim}
+    ident := array(0,4,4)
+    ident[array(1:4,4,2)] := 1
+    const ident := ident
+\end{verbatim}
+the value can be made {\tt const} after the calculation is complete. In this
+case, it
+takes more than one line to set up {\tt ident}, and after this is done it
+is made {\tt const}.
+
+\index{arrays!{\tt const}|)}
+\index{vectors!{\tt const}|)}
+
+\subsection{Constant Records}
+\label{const-record}
+
+\index{records!{\tt const}|(}
+In the case of records, the whole record can be {\tt const},
+individual fields can be {\tt const}, or the field names can be {\tt const}.
+
+\subsubsection{Constant Whole Record}
+Because a  record as whole is just like arrays, vectors, or any other value in
+{\em Glish},
+the whole record can be made {\tt const} like other values:
+\begin{verbatim}
+    const rec1 := [ x=2.76, y=9.7102 ]
+    rec2 := [=]
+    rec2[1] := 8.261
+    rec2[2] := 3.902
+    const rec2 := rec2
+\end{verbatim}
+Here {\tt rec1} is initialized to a record value and made {\tt const} in one
+statement. After this, any attempt
+to reassign {\tt rec1}, e.g. \verb+rec1 := 0+, or to modify the fields,
+e.g. \verb+rec1.x := 0+ or \verb+rec1.z := 0+, results in an error.
+{\tt rec2} behaves in the same way.
+
+\subsubsection{Constant Field Names}
+\index{records!fields!{\tt const} names|(}
+Sometimes it is important to have a record whose fields can be used
+and modified but new fields cannot be added. One case where
+this might be useful is in handling two dimensional coordinates. In
+this case, the record contains two fields:
+\begin{verbatim}
+    coord := const [ x=0, y=0 ]
+    coord.x := 3.451
+    coord.y := 0.829
+    coord2 := coord
+\end{verbatim}
+Here two coordinates are created, {\tt coord} and {\tt coord2}. The
+fields that these contain can be modified, but an error results if
+an attempt is made to add new fields. Here it is not the values,
+{\tt coord} and {\tt coord2}, that are constant but rather the
+fields in the record. Either {\tt coord} or {\tt coord2} can
+be reassigned, \verb+coord := 0+.
+\index{records!fields!{\tt const} names|)}
+
+\subsubsection{Constant Fields}
+\index{records!fields!{\tt const}|(}
+The fields of a record can also be made {\tt const}. In this case,
+new fields can be added to the record, but some fields cannot be
+modified. For example:
+\begin{verbatim}
+    rec := [ one=1:4, const two=3.871 ]
+    rec.three := [ 2.56, 1.639 ]
+    const rec.four := 1984
+\end{verbatim}
+In this example, fields {\tt one} and {\tt three} can be modified,
+but the rest cannot. Also, {\tt rec} can be reassigned.
+
+With {\tt const} fields and {\tt const} field names, records can be
+created so that the fields cannot be modified and new fields cannot
+be added:
+\begin{verbatim}
+    rec := const [ const x=2.3, const y=7.4 ]
+    const rec2 := [ x=2.3, y=7.4 ]
+\end{verbatim}
+Here {\tt rec} is the same as {\tt rec2} except that {\tt rec} can
+be reassigned.
+\index{records!fields!{\tt const}|)}
+\index{records!{\tt const}|)}
+
+\subsection{Constant References}
+\label{const-reference}
+\label{last-const}
+
+\index{constant!references|(}
+It is good to note that {\tt const} whole value (see \xref{whole-value-references}) and partial value
+(see \xref{partial-value-references}) references can also be created. These
+allow the referenced value to be accessed, but not modified:
+\begin{verbatim}
+    var := 1:10
+    vref := const ref var
+    const cref := ref var
+    var[2] := 90
+\end{verbatim}
+In this example, as {\tt var} changes so will {\tt vref} and {\tt cref},
+but neither {\tt vref} nor {\tt cref} can be use to modify {\tt var}. The
+difference between the two is that {\tt vref} can be reassigned but {\tt cref}
+cannot. Partial value references can be created and used in the same way.
+
+Once a reference is constant, subsequent references to the constant reference
+are themselves constant. In this example:
+\begin{verbatim}
+    var := 1:10
+    ref1 := ref const ref var
+    ref2 := const ref var
+    ref3 := ref ref2
+\end{verbatim}
+{\tt ref1}, {\tt ref2}, and {\tt ref3} are all constant references, and
+as a result, they cannot be used to modify {\tt var}.
+\index{constant!references|)}
+\index{constant!values|)}
+
+\section{Copy On Write}
+\label{copy-on-write}
+\index{values!copy-on-write|(}
+\index{copy-on-write}
+This section really describes an implementational detail whose entire
+purpose is to prevent you from having to worry about {\tt references}
+or the expense of copying large values. {\em Glish} values are implemented 
+using {\em copy-on-write}
+techniques. What this means is that values are not copied until
+absolutly necessary. In the case of something like:
+\begin{verbatim}
+    a := 1:1e7
+    b := a
+\end{verbatim}
+{\tt a} and {\tt b}, internal to {\em Glish}, share the same underlying storage.
+They will share the same storage until one of these values is modified so
+that {\em semantically} they can no longer share the storage. So, if something
+like:
+\begin{verbatim}
+    a[1] := 90
+\end{verbatim}
+is done, it means a copy will have to be made. However, sometimes
+a copy may {\em never} have to be made. For instance, 
+with the return value of a function
+a copy need not be made because the function never modifies
+the return value after it returns. In passing parameters, if the function
+does not modify one of the {\tt val} parameters a copy is not made.
+
+So while you  should not have to worry about the implementation of the
+underlying values in {\em Glish}, understanding that {\em copy-on-write} is used
+to store values explains the delayed copying cost and may provide some
+peace of mind.
+\label{last-type}
+\index{values!copy-on-write|)}
+
+
+
+
+
+

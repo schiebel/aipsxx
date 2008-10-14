@@ -1,0 +1,93 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: gridzilla
+#-----------------------------------------------------------------------------
+# Utility that starts the multibeam gridder.
+#
+# Original: 1998/05/25 MRC
+# $Id: gridzilla,v 19.8 2005/05/24 00:26:26 mcalabre Exp $
+#-----------------------------------------------------------------------------
+# Check that the DISPLAY variable is set.
+  if [ "$DISPLAY" = "" ]
+  then
+    echo "DISPLAY variable is not set, abort!"
+    exit 1
+  fi
+
+# Check that AIPSPATH is defined.
+  if [ "$AIPSPATH" = "" ]
+  then
+    # aips++ initialization.
+    if [ -f /nfs/aips++/aipsinit.sh ]
+    then
+      echo "aips++ initialization..."
+      . /nfs/aips++/aipsinit.sh
+    else
+      echo "ERROR: AIPSPATH is undefined!  Please invoke aipsinit." 1>&2
+      exit 1
+    fi
+
+  elif [ "$USER" = cal103 ]
+  then
+    echo "Adding gridzilla customization for cal103..."
+    if [ "$GRIDZILLA_CLIENT_DIR" = "" ]
+    then
+      # It's undefined, set it to void.
+      GRIDZILLA_CLIENT_DIR=
+    fi
+
+    export GRIDZILLA_CLIENT_DIR
+
+  else
+    # Make sure that we use the aips++ Glish installation.
+    AIPSBIN=`echo $AIPSPATH | awk '{print $1"/"$2"/bin"}'`
+    hash glish 2>/dev/null
+    if ! hash | grep $AIPSBIN/glish >/dev/null
+    then
+      PATH=${AIPSBIN}:$PATH
+      export PATH
+    fi
+  fi
+
+# Use local copies of third-party libraries (for pks system)?
+  AIPSROOT=`echo $AIPSPATH | awk '{print $1}'`
+  if [ -d $AIPSROOT/extlibs ]
+  then
+    EXTARCH=`echo $AIPSPATH | awk '{print $2}' | sed 's/_.*//'`
+    EXTLIBS=$AIPSROOT/extlibs/$EXTARCH/lib
+
+    if [ "$LD_LIBRARY_PATH" != "" ]
+    then
+      LD_LIBRARY_PATH=$EXTLIBS:$LD_LIBRARY_PATH
+      export LD_LIBRARY_PATH
+    fi
+
+    TCL_LIBRARY=$EXTLIBS/tcl8.3
+    TK_LIBRARY=$EXTLIBS/tk8.3
+    export TCL_LIBRARY TK_LIBRARY
+  fi
+
+# Delete log files that were last modified in the specified period.
+  case $GRIDZILLA_LOG_RMTIME in
+  [0-9]*)
+    MTIME=+$GRIDZILLA_LOG_RMTIME
+    ;;
+  [+-][0-9]*)
+    MTIME=$GRIDZILLA_LOG_RMTIME
+    ;;
+  "")
+    MTIME=+30
+    ;;
+  *)
+    MTIME=
+    ;;
+  esac
+
+  if [ "$MTIME" != "" ]
+  then
+    find . -maxdepth 1 -name 'gridzilla-????????.log' -mtime $MTIME \
+      -exec rm -f {} \;
+  fi
+
+# Start the gridder user interface.
+  exec glish $* -l gridzillarc.g -plain

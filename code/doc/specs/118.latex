@@ -1,0 +1,250 @@
+% aips++ VLBI spec
+% TJB 22FEB96
+\documentstyle[11pt]{article}
+\topmargin -0.8in
+\textheight 9.0in
+\oddsidemargin -0.20in
+\textwidth 6.3in
+\parskip 2mm
+\begin{document}
+\normalsize
+
+\def\singlespace{\baselineskip 13pt}		%single line space 1
+\def\middlespace{\baselineskip 18pt}		%middle line space 1.5
+\def\doublespace{\baselineskip 22pt}		%double line space 2
+
+\font\bbf=cmbx10 scaled\magstep1 % for titles
+\font\bbbf=cmbx10 scaled\magstep2 % for big titles
+\def\hang#1  {\par\noindent\hangindent1cm {#1}} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\centerline {\bbbf VLBI Requirements for aips++}
+\vskip 1.0cm
+
+\centerline {\bbf A.J. Beasley}
+\vskip 0.4cm
+\centerline {National Radio Astronomy Observatory}
+\centerline {PO Box 0, Socorro, NM 87801, USA}
+\vskip 0.3cm
+\centerline {14 May 1996}
+
+It is currently planned that within a year there will be a release of
+aips++ in which radio interferometric data can be reduced. The primary
+instrument models for software development have been connected-element
+(CE) arrays like the VLA and the ATCA, although much care has been
+taken to adopt a formalism that is not tied to any specific instrument
+or type of data (the measurement equation). There are, however,
+specific requirements for very-long-baseline interferometry (VLBI) that
+should be identified and incorporated into the software development in
+its earliest stages. The purpose of this document is to outline those
+requirements.
+
+In this outline I have tried to avoid producing yet another shopping
+list of what we will ultimately want aips++ to do. I have assumed that
+the aips++ infrastructure development has taken care of such tasks as
+as data-editing, plotting/graphics display, phase(only)+amplitude
+self-calibration routines, coordinate handling, model-fitting, imaging
+algorithms and so on (i.e. all the standard operations that might be
+performed on CE data). I will not discuss software efficiency or
+runtime. In discussing VLBI-specific requirements, parallels to
+existing or developing AIPS routines will be drawn. I think it is
+important to note that some fraction of the requirements for aips++
+outlined here are only now being addressed in AIPS VLBI development
+(e.g. external data input for calibration, model recalculation,
+polarization, Space VLBI), so in some sense we are guessing at the
+final form some of these tasks will take.
+
+I have broken up the VLBI aips++ requirements into two areas: 
+\begin{itemize}
+\item {\bf Implementation}: The impact of VLBI on the core
+development of aips++.
+\item {\bf Algorithms/Techniques}: The algorithms and techniques
+that will have to implemented to enable processing of VLBI data. 
+\end{itemize}
+
+This documents addresses the fundamental
+requirements to enable VLBI data reduction in a debugged,
+fully-functional and user-friendly aips++ system.  This document has
+been produced after discussions with NRAO, JIVE and SHEVE staff, and
+draws on previous documents such as the {\em aips++ Consortium User
+Specifications} and a draft of {\em Post-Correlation Data Processing
+Requirements for the Enhanced EVN} by Dave Shone (Jodrell Bank).
+
+\newpage
+
+\section{Implementation}
+There are only a few VLBI-specific areas which impact the core development
+of aips++.
+
+\subsection{Quantities}
+All quantities such as antenna position, sky position, time, earth
+orientation parameters, delay and rate should have sufficient precision
+for VLBI purposes, requiring a double in most cases. There should also
+be ID strings attached to them to specify the coordinate system they
+refer to. It will be insufficient, for example, to demand that all
+aips++ antenna positions will be IERS XYZs. The VLBA uses USNO
+terrestrial/celestial frames and EOPs, while preliminary discussion
+suggests that the JIVE correlator may use IERS frames. These differences
+are important for VLBI observing, particularly for astrometric/geodetic
+experiments. Full support of phased--arrays as VLBI elements should be 
+provided. 
+
+\subsection{Version Typing}
+All programs should enter and/or pass complete version information
+concerning any model applied to the data (e.g. geometric,
+tropospheric/ionospheric, source structure) to enable complete
+reconstruction of the total delays measured.
+
+\subsection{Multi-File Datasets}
+The short integration times and abundant channelization required for VLBI
+data (due to weak phase stability) leads to large datasets, particularly 
+for spectral-line experiments. At present, typical maximum AIPS file sizes
+are $\sim$2 Gb, which has been severely limiting in certain cases. The
+ability to transparently address large datasets spread across many
+disks is of growing importance for VLBI data reduction, and should be
+implemented in aips++.
+
+\subsection{Variable Integration Times}
+In the case of space VLBI, the ability to have different integration
+times on different baselines will be needed. This should be made
+possible in the aips++ table system.  
+
+\newpage
+\section{Algorithms/Techniques} VLBI--specific tasks that will be
+required are outlined below.
+
+\subsection{Data Input/Output Formats}
+Data readers for the various correlator outputs
+(VLBA/JIVE/SHEVE/S2/K4/??) will be required. In some cases (e.g. VLBA)
+this is FITS format, however data readers should be separate individual
+tasks, not part of any generalized FITS readers (to avoid the FITLD
+problem discussed below). It is part of the aips++ consortium
+requirements that the code can be used for on-line reductions, e.g. at
+correlation time; this may require data readers for internal archive
+formats at various correlators. (AIPS equivalent: FITLD, MK3IN, VLBIN).
+Support of the Haystack HOPS format should also be possible.
+
+It is certain that aips++ VLBI data will need to be subsequently
+exported to astrometric/geodetic packages such as CALC/SOLVE and
+SPRINT. Data writers for these formats are required. (AIPS equiv:
+CL2HF/HF2SV/HFPRT).
+
+\subsection{Correlator Effects}
+Individual correlators will introduce different residual amplitude
+and/or delay errors to the data which will need to be corrected; one
+example of this is the FFT artifact in VLBA data. State-count
+corrections (if not performed by the correlator) are another example.
+The AIPS approach for VLBA data has been to apply this correction on
+input, which has necessarily produced an extremely large and unwieldy
+program (FITLD).  Separate tasks for each correlator, each of which
+potentially requiring correction templates or additional information,
+will be needed. (AIPS equiv: FXVLB, FXPOL, sections of FITLD).
+
+\subsection{Amplitude Calibration}
+Amplitude calibration of VLBI data is generally accomplished using measured
+data from all the antennas, typically system or antenna temperatures, 
+sensitivity estimates (Jy/K), opacity corrections based on tipping runs,
+CE estimates of source flux densities (e.g. the phased VLA). Although
+specifications of the file formats for external antenna-base log
+information exist and are slowly being enforced, there will still exist
+three or more fundamental types (e.g. MKIII/MK-IV/VEX and VLBA log formats).
+Amplitude calibration tasks capable of processing one or more of these
+external input formats will be required. (AIPS equiv: ANCAL,
+ANTAB/APCAL).
+
+\subsection{Delay/Phase Calibration}
+The weaker phase stability of VLBI data makes this the main area requiring
+additional development compared to any aips++ CE data path. Programs
+needed:
+
+\begin{itemize}
+\item {\bf Fringe-fitting}. The ability to self-calibrate the
+delay/rate/phase of a data set using a simple point-source (or more
+complex) model is {\em the fundamental requirement before VLBI data can
+be processed in aips++}. At present, discussion concerning a redesign
+of the AIPS FRING program are underway, but the current functionality
+provided by FRING should be a starting goal for the aips++ equivalent.
+More complex variants (incoherent fringe fitting, baseline-based
+fitting etc.) should come later. (AIPS equiv: FRING, BLING/BLAPP).
+
+\item {\bf External Data Calibration}. Information such as weather
+information, total-electron-content measurements, WVR data, CALC/SOLVE
+output etc. may be available in many cases. Tasks to read and implement
+corrections to VLBI data will be needed, but at some later stage. (AIPS
+equiv: under development in Socorro).
+
+\item {\bf Phase-cal information}. Most VLBI antennas inject tones into
+the signal path which are extracted downstream to assess the varying
+electronic delays between IFs. Routines to read and apply these corrections
+to data are need, again at some later stage. (AIPS equiv: PCLOD. PCCOR,
+under development in Socorro)
+\end{itemize}
+
+
+\subsection{Polarization}
+Flexible polarization calibration reflecting all currently-available
+polarization VLBI algorithms is required eventually. Most of this will
+be variants of the mainstream polarization calibration, and so it is
+unclear if specific VLBI polarization tasks will be needed. Support for
+different types of antenna mounts is obviously required.
+
+\subsection{Space VLBI}
+The large and rapid changes to many standard VLBI software packages
+(and AIPS) to support space VLBI suggest that this is an area to avoid
+for the present. Some space-VLBI-specific aspects to consider:
+\begin{itemize}
+\item Complex fringe-fitting routines
+\item Additional information will be carried along with the data (e.g.
+satellite parallactic angle, sensitivity, position, downlink
+information, etc.), and tasks to read, process and apply corrections
+based on these data will be required.
+\item Extra tasks to correct for intrinsic satellite effects (e.g.
+delay flutter, frequency variations).
+\end{itemize}
+
+\subsection{Miscellaneous}
+Various miscellaneous routines, none needed immediately: 
+
+\begin{itemize}
+\item Fringe rate plotting/mapping (AIPS equiv: FRPLT, FRMAP)
+\item Model recalculation (AIPS equiv: PHREF, under development)
+\item Velocity correction: different correlators may do the  fringe
+rotation in different ways, therefore an aips++ equivalent to AIPS CVEL may
+be required for spectral line.
+\item Pulsar gating support
+\end{itemize}
+
+
+
+\newpage
+
+
+\section{Conclusions}
+
+The following is a reasonable order for VLBI initial software
+development.  I have noted how many {\bf tasks} might be needed to support
+the VLBA and JIVE (the main testbeds for development):
+
+\begin{enumerate}
+\item Data readers (2 tasks)
+\item Amplitude/Correlator--effects Calibration (4--8 tasks)
+\item Fringe-fitting (1 task)
+\end{enumerate} 
+
+All of the above items can proceed in parallel, assuming the aips++
+data structure and calibration system are in place.  When the above are
+complete, a minimal yet functional ability to reduce stokes-I VLBI data
+should be available to the community.
+
+The bulk of the work in implementing a complete VLBI reduction system
+in aips++ lies in writing methods to hang off existing mainstream
+calibration tasks, and implement slightly different algorithms or
+techniques specific to VLBI, for example polarization and bandpass
+calibration. The ability to display and manipulate quantities not
+normally associated with interferometric data (delay, satellite
+parallactic angle etc.) implies development for many core programs as
+well.
+
+\end{document}
+

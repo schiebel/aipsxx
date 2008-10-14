@@ -1,0 +1,273 @@
+\chapter{Arecibo Observatory Spectral Line Reduction with DISH}
+\label{aohi}
+
+{\em K. O'Neil and J. McMullin}
+
+\section{AIPS++ Versions Available at Arecibo}
+
+The are a number of different version of AIPS++ available at Arecibo: 
+
+\begin{itemize}
+
+\item{}
+    {\bf Stable:} This is the version which should be the most reliable aips++ 
+	version available at Arecibo. On the other hand, this is often the least
+	recent version available, as it is only updated every month. 
+
+\item{}
+    {\bf Weekly:} This version exists for those people who wish to run an 
+up-to-date version of aips++, and who are willing to accept a few bugs/problems
+with the version. As its name indicates, this version is updated once a week 
+and is used mainly be folks working on developing aips++ software. 
+
+\item{}
+    {\bf Daily:} This version should only be used by aips++ software 
+	developers. Because it is updated daily, it can be extremely unreliable. 
+\end{itemize}
+
+\section{Setting Your Environment}\label{sect:2}
+
+\subsection{Starting AIPS++}
+
+To start AIPS++, issue the following commands (from the c shell):
+
+\begin{verbatim}
+> source /pkg/aips++/stable/aipsinit.csh
+> aips++ -l naic.g
+\end{verbatim}
+
+\subsection{Making AIPS++ run faster}
+
+Here are several hints for speeding up your performance,
+if the operation/startup of AIPS++ seems sluggish.
+
+\begin{itemize}
+\item{} Store cache files on the computer you run from by adding the
+        following line to your .aipsrc file:
+        \begin{verbatim}
+        user.aipsdir: /tmp/username_aips++
+
+        where username is your username, e.g.,
+        user.aipsdir: /tmp/rphillips_aips++
+        \end{verbatim}
+
+
+\item{} If you do not want to have the toolmanager GUI available on starting
+        AIPS++, you can suppress it and speed up the startup time by including
+        the following lines in your .aipsrc file (located in your home directory):
+        \begin{verbatim}
+        toolmanager.fullgui: F
+        toolmanager.gui.auto: F
+        \end{verbatim}
+
+        The toolmanager isn't directly needed for any DISH operations. Should
+        you want it, it can be used at a later time by typing:
+        \begin{verbatim}
+        tm.gui();
+        \end{verbatim}
+
+\item{} Run AIPS++ from the computer which hosts the disks with your data.
+        Typically the data I/O over NFS is slow and the above bypasses this
+        as much as possible
+
+\end{itemize}
+
+AIPS++ builds its cache file structure the first time it is started with a
+new user.aipsdir, and each time you start a new version. Judge its startup
+speed on the {\it second} time you start it up, not the first.
+
+\subsection{Paging}
+
+If you find that error messages, code, and data listings scroll off of your
+terminal window, you might need to assign the {\bf PAGER} environment
+variable. You can remedy this by setting {\bf PAGER} to 'less' in your
+UNIX startup scripts.
+
+\begin{verbatim}
+export PAGER='less'
+\end{verbatim}
+
+\section{Converting AO Data into SDFITS}
+
+Arecibo data must first be converted from its native format
+into single-dish FITS format, through use of the "sdtest" program
+(/usr/S2local/bin/sdtest). Single-dish fits data are stored as FITS binary 
+tables with a single row for each spectrum: A single dump usually generates 
+4 or 8 spectra (four subcorrelators with either one or two polarizations per 
+board). If data are taken with different numbers of channels per spectrum, 
+the file size will be as if they all had the largest number of channels. 
+If the number of channels increases during the conversion, then sdtest will 
+resize the entire file, which may take a while. 
+
+Before running the sdtest program you need to know the following:
+
+\begin{itemize}
+\item{} Where is your data located (i.e. at /share/olcor/... or /proj/a9999/...) 
+\item{} What was the system temperature for both channel A \& B ? (This is
+only used for the initial data headers, and will be replaced once the data is
+calibrated.) 
+
+\item{} Whether the receiver was set to linear or circular polarization
+
+\item{} The total number of scans/cycle (i.e. its four if you took: ON, OFF, 
+CAL ON, CAL OFF) 
+\end{itemize}
+
+Once you feel confident you know these things, login to an Arecibo computer 
+and then go to whatever directory you wish your files to reside in. 
+Type sdtest to run the SDFITS conversion program. The program will will ask a 
+few questions and then start converting your data. 
+
+{\it Note that you can also run this program "on-the-fly" to continuously update
+a datafile with the online data via: sdtest -c}.
+
+In that case, when you are finished you must quit out of the conversion 
+program by typing \begin{verbatim}^C\end{verbatim} (possibly a few times). 
+
+See http://www.naic.edu/\~astro/data/aips++/ for more complete details.
+
+\subsection{SDFITS and AIPS++}
+
+\subsection{SDFITS Example 1}
+
+A data file with only two observations, each of a different galaxy (UGC 3489 
+and UGC 4431).  Each cycle consisted of ON, OFF, CAL ON, CAL OFF 
+
+\begin{verbatim}
+sdtest
+Enter Input (AO) filename: /proj/a9999/corfile.01jan00.a9999.1
+Enter Output File: 01Jan00a.fits
+
+Channel A system temp? :35
+
+Channel B system temp? :35
+
+Linear or Circular inputs? :C
+Total number of scans in a cycle:4
+Scan 930900005, UTC=2000-01-05T12:06:42, AST=2000-01-05T08:06:42
+Object: U3489
+nter Command (UPPER CASE) or Object Name: (cr will keep U3489
+  QUIT to stop converting,
+  DRIVE to finish entire file with same object name,
+  UNTIL <num|scan>  to continue for num or until reaching scan,
+  NEWCYCLE <num> to change the number of scans in a cycle to num,
+  SKIP  [num | scan] to skip this scan, or num scans, or until scan
+  ASKFREQ to prompt for frequencies each time,
+  ASK to ask basic questions again.): U3489
+Scan 930900009: U3489-1.  RA 11:12:24.40 Dec +31:24:41.0
+Scan 930900010: U3489-2.  Offset 5400.000000 (5400.165333)
+Scan 930900011: U3489-3.  Offset 5400.000000 (5399.659220)
+Scan 930900012: U3489-4.  Offset 5400.000000 (5399.719945)
+Object:U3489
+Enter Command (UPPER CASE) or Object Name: (cr will keep U3489
+  QUIT to stop converting,
+  DRIVE to finish entire file with same object name,
+  UNTIL <num|scan>  to continue for num or until reaching scan,
+  NEWCYCLE <num> to change the number of scans in a cycle to num,
+  SKIP  [num | scan] to skip this scan, or num scans, or until scan 
+  ASKFREQ to prompt for frequencies each time,
+  ASK to ask basic questions again.): U4431
+Scan 930900009: U4131-1.  RA 07:59:11.43 Dec +31:48:23.6
+Scan 930900010: U4131-2.  Offset 5400.000000 (5400.165333)
+Scan 930900011: U4131-3.  Offset 5400.000000 (5399.659220)
+Scan 930900012: U4131-4.  Offset 5400.000000 (5399.719945)
+9632 records translated
+
+\end{verbatim}
+
+\subsection{SDFITS Example 2}
+
+A data file with three observations, two of one galaxy (U5361) and one of 
+another (U5592).  Each cycle consisted of ON, OFF, CAL ON, CAL OFF 
+
+\begin{verbatim}
+sdtest
+Enter Input (AO) filename: /proj/a9999/corfile.01jan00.a9999.4 
+Enter Output File: 01Jan00d.fits   
+
+Channel A system temp? :9.2
+
+Channel B system temp? :9.2
+
+Linear or Circular inputs? :L
+Total number of scans in a cycle:4
+Scan 930900061, UTC=2000-01-05T15:30:13, AST=1999-11-05T11:30:13
+Object: U5361
+Enter Command (UPPER CASE) or Object Name: U5361
+Enter Command (UPPER CASE) or Object Name: (cr will keep U5361
+  QUIT to stop converting,
+  DRIVE to finish entire file with same object name,
+  UNTIL <num|scan>  to continue for num or until reaching scan,
+  NEWCYCLE <num> to change the number of scans in a cycle to num,
+  SKIP  [num | scan] to skip this scan, or num scans, or until scan 
+  ASKFREQ to prompt for frequencies each time,
+  ASK to ask basic questions again.): U5361
+Scan 930900061: U5361-1.  RA 09:55:03.25 Dec +25:12:10.6
+Scan 930900062: U5361-2.  Offset 8955.000000 (8948.313686)
+Scan 930900063: U5361-3.  Offset 8955.000000 (8948.299047)
+Scan 930900064: U5361-4.  Offset 8955.000000 (8948.302798)
+Scan 930900065, UTC=2000-01-05T15:42:43, AST=1999-11-05T11:42:43
+Object: U5361
+Enter Command (UPPER CASE) or Object Name: (cr will keep U5361
+  QUIT to stop converting,
+  DRIVE to finish entire file with same object name,
+  UNTIL <num|scan>  to continue for num or until reaching scan,
+  NEWCYCLE <num> to change the number of scans in a cycle to num,
+  SKIP  [num | scan] to skip this scan, or num scans, or until scan 
+  ASKFREQ to prompt for frequencies each time,
+  ASK to ask basic questions again.): 
+Scan 930900065: U5361-1.  RA 09:55:03.25 Dec +25:12:10.2
+Scan 930900066: U5361-2.  Offset 8955.000000 (8948.189632)
+Scan 930900067: U5361-3.  Offset 5400.000000 (5399.836752)
+Scan 930900068: U5361-4.  Offset 8955.000000 (8948.473693)
+Scan 930900069, UTC=2000-01-05T15:57:01, AST=1999-11-05T11:57:01
+Object: U5361
+Enter Command (UPPER CASE) or Object Name: (cr will keep U5361
+  QUIT to stop converting,
+  DRIVE to finish entire file with same object name,
+  UNTIL <num|scan>  to continue for num or until reaching scan,
+  NEWCYCLE <num> to change the number of scans in a cycle to num,
+  SKIP  [num | scan] to skip this scan, or num scans, or until scan 
+  ASKFREQ to prompt for frequencies each time,
+  ASK to ask basic questions again.): U5592
+Scan 930900069: U5592-1.  RA 10:21:31.63 Dec +22:32:51.0
+Scan 930900070: U5592-2.  Offset 5400.000000 (5401.432019)
+Scan 930900071: U5592-3.  Offset 5400.000000 (5400.222629)
+Scan 930900072: U5592-4.  Offset 5400.000000 (5400.127029)
+14448 records translated
+\end{verbatim}
+
+\section{Available AIPS++ Routines}
+
+The following provides details on the available routines to apply 
+gain/temperature corrections for Arecibo data, as well as details of the
+"ao.import" routine:
+
+\input{README.latex}
+
+\section{Sample Data Reduction Session}\label{sect:1}
+
+This example assumes that an AIPS++ installation is available in directory
+/pkg/aips++/stable and that the AIPS++ sample data is available in the
+data repository at /pkg/aips++/data/demo/dishdemo/U3294.sdfit.
+Modify the first few lines of this example appropriately if your installation
+has a different path.
+
+\begin{verbatim}
+% source /pkg/aips++/stable/aipsinit.csh
+% cp /pkg/aips++/data/demo/dishdemo/U3294.sdfit .
+% aips++ -l naic.g
+...
+Time to initialize DISH =  11.978507
+DISH tool is --> d
+AO   tool is --> ao
+Glish version 2.7. 
+- ao.import('/pkg/aips++/data/demo/dishdemo/U3294.sdfit');
+T
+- #this automatically opens up the file
+- ao.gaincorr('U3294_ms1');
+\end{verbatim}
+
+After the above commands, the calibrated data is placed in the dish results manager.
+It can be plotted with the "ao.plot" command.
+

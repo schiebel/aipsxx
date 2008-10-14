@@ -1,0 +1,1140 @@
+<html>
+<head>
+<title>AIPS++ Newsletter - August 1998</title>
+</head>
+<body background="augbar.gif" bgcolor="#ffffff" text="#000000" 
+link="#0088c66" vlink="00009c">
+
+<table cellpadding=0 cellspacing=0 width=450>
+<table cellpadding=6 cellspacing=8 border=0 width=450>
+<tr><td colspan=2>
+<img src="augmast.gif" border=0><BR>
+*Please note Middle European Time (MET) is -2:00 GMT</td></tr>
+<tr><td colspan=2 align="right">
+<font size="3" face=helvetica color="#d95b0f">
+<b>August 1998</b></font>
+</td></tr>
+
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional<br> Remembrance</i></b></font></a>
+</td>
+
+<td valign=top>
+<a name="pulsar">
+<FONT FACE=helvetica size="+3">
+Pulsar Data in AIPS++</FONT></a><br>
+<I>Rick Fisher </I>- NRAO, Green Bank
+
+<P>
+The <font face=helvetica><b>AIPS++</b></font> tool-box offers the possibility 
+of 
+analyzing pulsar data for time of arrival, flux density, profile shape, 
+dispersion, and other parameters of interest. I have used it look at pulsar 
+data from the 140-ft spectral processor using <I>Glish</I> routines and my 
+own <A HREF="http://www.gb.nrao.edu/~rfisher/Glish/solar_system.html">solar 
+system ephemeris client</A> (also see The <I>Glish</I> Software Bus in this 
+issue of the Newsletter to see an example of how to implement <I>Glish</I> 
+clients).<P>
+
+This note is a brief description of how you can build your own pulsar 
+analysis scripts in <I>Glish</I>. Some of the functions that I originally 
+wrote in <I>Glish</I> are now available as faster <b>C++</b> modules in 
+<font face=helvetica><b>AIPS++</b></font>. This is often a good migration path 
+for new routines because <I>Glish</I> is a reasonably powerful mathematics 
+engine by itself. Eventually, we'd like to add pulsar analysis to the single 
+dish part of <font face=helvetica><b>AIPS++</b></font> with a proper GUI and 
+other 
+support.<P>
+
+In pulsar timing mode the spectral processor's output is a set of 
+2-D matrices of intensity as a function of sky frequency and pulsar phase 
+with one matrix for each receiver channel. Feel free to contact me for 
+the details on how to create an <font face=helvetica><b>AIPS++</b></font> 
+table 
+from the spectral processor FITS files, but for this example let's assume 
+that one matrix and the necessary header information has been loaded into 
+<I>Glish</I> variables as follows:
+
+<PRE>  
+  data      matrix of 256 frequency channels by 128 time bins
+  utcstart  UTC time of the leading edge of the first time bin 
+            in seconds
+  mjd       modified Julian date that goes with utcstart
+  phasetime spacing or width of time bins in seconds
+  freqres   spacing of frequency channels in Hz
+  ctrfreq   sky frequency of the center of frequency channel 129,
+            where the channel numbers run from 1 to 256
+  dispmeas  pulsar dispersion measure in parsec/cm^3
+  rfsideb   R.F. sideband, 0 = upper, 1 = lower
+  ifsideb   I.F. sideband, 0 = upper, 1 = lower
+  template  an array of 128 bins which contains the pulsar's
+            profile template</PRE>
+
+
+<P>
+First, we do a rough normalization of the data by dividing each frequency 
+channel column by the average power in that column. This removes the receiver 
+passband shape to first order.
+<P>
+<PRE>
+  - for (ch in 1:data::shape[1]) {
+  -     avg := sum(data[ch,]) / data::shape[2]
+  -     data[ch,] /:= avg
+  - }
+</PRE>
+<P>Now, if you display the normalized 2-D array, you will see the pulse 
+in the frequency/pulse phase plane. If there is much dispersion at the 
+observed frequency, the track will be a diagonal across the image.
+<P>
+<PRE>
+  - dd.array(data)
+</PRE>
+
+<P>
+To dedisperse the pulse each frequency column must be shifted in time 
+to line up with the center frequency column. The amount of shift depends 
+on the dispersion measure, center frequency, frequency offset, and time 
+bin width. The shift operation is done with the 
+<font face=helvetica><b>AIPS++</b></font> mathematics module FFT server's 
+shift 
+function. This shift is actually an array rotation, which is what we want.
+<P>
+<PRE>
+  - fftserv := fftserver()
+  - dm_coef := 0.0041494 * dispmeas
+  - one_over_cf_sq := 1.0e18 / ctrfreq^2
+  - freq_step := freqres
+  - if (rfsideb != ifsideb) freq_step := - freq_step
+  - for (ch in 1:data::shape[1]) {
+  -     ch_offset := as_double(ch - (data::shape[1] / 2) - 1)
+  -     freq := ctrfreq + (freq_step * ch_offset)
+  -     time_shift := dm_coef * ( 1.0e18 / (freq^2) 
+        - one_over_cf_sq)
+  -     bin_shift := -time_shift / phasetime
+  -     data[ch,] := fftserv.shift(data[ch,], bin_shift)
+  - }
+</PRE>
+<P>
+Now, to look at the pulse profile all we need to do is sum the frequency 
+bins in each time bin row.<P>
+
+<PRE>
+  - profile := array(0.0, data::shape[2])
+  - for (bin in 1:data::shape[2]) {
+  -     profile[bin] := sum(data[,bin]) / data::shape[1]
+  - }
+  - dp.ploty(profile, style_='lines')
+</PRE>
+<P>
+The pulse arrival time can be found by cross-correlating the dedispersed 
+profile with the profile template.
+<P>
+<PRE>
+  - cc := fftserv.crosscorr(profile - 1.0, template)
+  - dp.ploty(cc, style_='lines')</PRE>
+<P>
+Then solve for the time of the cross-correlation peak offset by fitting 
+a y-axis parabola through the three points nearest the peak<P>
+
+<PRE>
+  - nch := length(cc)
+  - peak_ch := order(cc)[nch]
+  - if ((ch := peak_ch - 1) &lt; 1) ch := nch
+  - y1 := cc[ch]
+  - y2 := cc[peak_ch]
+  - y3 := cc[(peak_ch % nch) + 1]
+  - k := (y3 + y1 - 2.0 * y2) / 2.0
+  - x0 := (y1 - y3) / (4.0 * k) + peak_ch - 1.0
+</PRE>
+<P>
+and then add that time offset to the UTC of the beginning of the data array 
+to get the pulse time of arrival.
+<P>
+<PRE>
+  - toa := utcstart + x0 * phasetime
+  - if (toa = 86400.0) {
+  -     toa -:= 86400.0;
+  -     mjd +:= 1;
+  - }
+  - print 'TOA: MJD', mjd, 'UTC', toa, 'seconds'
+</PRE>
+<P>
+This time of arrival may then be corrected to the solar system barycenter 
+for comparison with other measurements of the same pulsar. The JPL solar 
+system ephemeris will soon be part of the <font face=helvetica><b>AIPS++</b></font> 
+<FONT FACE=courier>measures</FONT> module with a function that returns 
+the barycenter delay. In the meantime you are welcome to use the 
+<I>Glish</I> client <FONT FACE=courier>ephemeris,</FONT> that I wrote for 
+this purpose, as described in 
+<A HREF="http://www.gb.nrao.edu/~rfisher/Glish/solar_system.html">
+http://www.gb.nrao.edu/~rfisher/Glish/solar_system.html</A>.
+<P>
+I have also written a <A HREF="http://www.aoc.nrao.edu/~rhjellmi/aips++/newsletter/aug98/psrexample.g">Glish script</A> that elaborates on this code 
+using two <font face=helvetica><b>AIPS++</b></font> tables containing pulsar data.
+
+</td></tr>
+
+<tr><td colspan=2><img src="augbar2.gif"</td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional <br>
+Remembrance</i></b></font></a>
+
+</td>
+<td valign=top>
+<a name="projectnews"><FONT FACE=helvetica size="+3">Project News Summary</FONT></a><br>
+<I>Tim Cornwell </I>- NRAO, Socorro<P>
+
+<P>The next, third, beta release continues to consume much of our time.  
+We know that users are eagerly awaiting this release, and we'll be pleased 
+to finally get it done. The response to the first release in February 1997 
+was substantial and we learned a lot about how users viewed the system. 
+The second beta release in September 1997 elicited less comment, 
+presumably because the incremental changes were small. Hence the main goal 
+for the third  release is to make substantial improvements in user interface, 
+functionality and documentation. Much of the necessary work has been 
+completed and tested but we have still to complete the following:<P>
+
+
+<UL>
+<LI>Improved documentation, based on terminology and concepts acceptable 
+to our users. Astronomers from our testing group at the AOC are helping 
+write this documentation.
+
+<LI>Improved calibration tools, including some tools for data access 
+and calibration transfer.
+
+<LI>Testing of some functionality.
+</UL>
+
+<P>
+We expect these to be largely completed in August or September 1998, 
+and the third beta release will occur soon after. If no large new changes 
+are required, a fourth beta will follow within 3-4 months, and then a first 
+public release some time in the first half of 1999. Our main concern is 
+with the user interface. If this is seen to require more work, then the 
+first public release will be further delayed.
+</td></tr>
+
+<tr><td colspan=2><img src="augbar2.gif"></td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional<br> 
+Remembrance</i></b></font></a>
+</td>
+
+<td valign=top>
+<a name="programmers"><FONT FACE=helvetica size="+3">Programmer's Corner - Part 3</FONT></a><br>
+<I>Brian Glendenning </I>- NRAO, Socorro<P>
+
+We now will finish our example of using <I>Glish</I> to convolve planes 
+of any orientation from an image of any shape. This chapter is somewhat 
+more involved than the previous segments 
+(<A HREF="http://aips2.nrao.edu/aips++/docs/newsletters/mar98/marchnews/marchnews.html#programmers">Part 1</A>, <A HREF="http://aips2.nrao.edu/aips++/docs/newsletters/apr98/aprilnews/aprilnews.html#program">Part 2</A>). To recap, 
+how do you loop over all planes of the image (that is, set up 
+<FONT FACE=courier>blc</FONT> and <FONT FACE=courier>trc</FONT> appropriately 
+so that you can call the <FONT FACE=courier>getchunk</FONT> method of 
+<FONT FACE=courier>image</FONT>)?
+<P>
+Let's suppose for the sake of argument that you have a cube with a shape 
+[512,512,4,128]. A cube like this might be a spectral line image cube with 
+full polarization, i.e. RA,DEC,POL,FREQ, and 128 frequency channels. 
+If you are interested in getting at the RA,DEC planes from the image, 
+then you need to generate the following series of <FONT FACE=courier>BLC</FONT> and <FONT FACE=courier>TRC </FONT>values:<P>
+
+<PRE>
+
+BLC (RA,DEC,POL,FREQ)| TRC (RA,DEC,POL,FREQ)
+===========================================
+1,1,1,1              | 512,512,1,1
+1,1,2,1              | 512,512,2,1
+1,1,3,1              | 512,512,3,1
+1,1,4,1              | 512,512,4,1
+1,1,1,2              | 512,512,1,2
+...                  | ...
+1,1,3,128            | 512,512,3,128
+1,1,4,128            | 512,512,4,128
+</PRE>
+
+<P>
+How can you do this? First, let's note that you can index into a 
+<I>Glish</I> array with both a scalar and array. For example:<P>
+<FONT FACE=courier><P>- a := 1:5<BR>
+- a[1] := 0 # Index with a scalar<BR>
+- a<BR>
+[0 2 3 4 5] <BR>
+- a[[1,2,3]] := 9 # Index with the array [1,2,3]<BR>
+- a<BR>
+[9 9 9 4 5]</FONT> <P>
+
+<P>
+Indexing with an array is just like looping over all indices in that 
+array, however it is considerably faster and more concise. <P>
+
+Besides indexing with an array of "indices", you can also index with a 
+<FONT FACE=courier>mask</FONT>, which is an array of 
+<FONT FACE=courier>booleans</FONT>. Array values are kept only where the 
+mask is <FONT FACE=courier>True</FONT>. For example:<P>
+
+<FONT FACE=courier><P>- a := 1:5<BR>
+- a[[T,F,F,F,T]]<BR>
+[1 5] </P>
+</FONT><P>
+Since the logic of incrementing an index is kind of complicated, 
+let's put it into a function called <FONT FACE=courier>bump</FONT>:<P>
+
+<PRE>
+bump := function(where, shape, axis=1)
+{
+    where[axis] +:= 1;
+    if (where[axis]  shape[axis] &amp;&amp; axis &lt; length(shape)) {
+&#9;# If we are beyond the end of the current axis, set it to one and
+        # ancrement the next axis.
+&#9;where[axis] := 1;
+&#9;return bump(where, shape, axis+1);
+    } else {
+        return where;
+    }
+}</PRE>
+
+<P>
+In the example, <FONT FACE=courier>shape</FONT> is [4,128] and 
+<FONT FACE=courier>where</FONT> runs from [1,1] to [4,128]. 
+Note that this is an example where it is somewhat easier to write 
+the function using recursion.<P>
+
+Now you can finally write a loop to go through all planes of the image:<P>
+<PRE>
+while (!any(blc[mask] &gt; lengths[mask])) {        #1
+    pixels := im.getchunk(blc,trc);              #2
+    # ... convolve as before ...                 #3
+    blc[mask] := bump(blc[mask], lengths[mask]); #4
+    trc[mask] := blc[mask];                      #5
+}</PRE>
+
+<P>The following steps are accomplished with this <I>Glish</I> code.<P>
+
+<OL>
+<LI>Loop until <FONT FACE=courier>blc[mask]</FONT> has gone "past the end", 
+i.e. given the way <FONT FACE=courier>bump</FONT> is implemented it 
+will stop at [5,128].  <FONT FACE=courier>lengths</FONT> is the "shape" 
+of the image, in this case [512,512,4,128].
+
+<LI>Get the pixels from the image.
+
+<LI>Convolve the pixels as before.
+
+<LI>Increment the parts of the <FONT FACE=courier>blc</FONT> that change to 
+the next plane. In the example, after this is called for the first time, 
+<FONT FACE=courier>blc[mask]</FONT> is [2,1]).
+
+<LI>Copy the changed values from <FONT FACE=courier>blc</FONT> to 
+<FONT FACE=courier>trc</FONT>.
+</OL>
+
+<P>
+That's it for this article and series. I had intended to move next into 
+GUI programming and other advanced topics. However, as was announced in 
+the last <font face=helvetica><b>AIPS++</b></font> Newsletter, I have moved to the 
+MMA project, so I will bring this series to a halt, at least for the moment.
+
+</td></tr>
+<tr><td colspan=2><img src="augbar2.gif"></td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional <br>
+Remembrance</font></a></td>
+
+<td valign=top>
+
+<a name="glish"><FONT FACE=helvetica size="+3"><b>The Glish Software Bus</b>
+</FONT></a><br>
+<I>Darrell Schiebel </I>- NRAO, Charlottesville<P>
+
+<P>
+<I>Glish's</I> vector oriented command language is very powerful. A large 
+portion of <font face=helvetica><b>AIPS++</b></font> is written in 
+<I>Glish</I>. 
+The language has arrays, records, and all of the basic types. However, 
+it is not the <I>Glish</I> scripting language which makes <I>Glish</I> 
+unique, but rather the underlying "software bus". I would like to close out 
+this series of articles on the "Story of <I>Glish</I>" by discussing 
+<I>Glish's</I> software bus in a little more detail.
+<P>
+Because of its roots as software for controlling distributed physics 
+experiments, <I>Glish</I> has a very flexible <FONT FACE=courier>event 
+transport</FONT> layer integrated into the language. This integration of 
+distributed control makes <I>Glish</I> unique. Few other languages 
+attempt this level of process control. <b>CORBA</b> (Common Object Resource 
+Broker Architecture) and other libraries are now attempting to make this 
+sort of control functionality available, but they were not available when 
+<font face=helvetica><b>AIPS++</b></font> adopted <I>Glish</I>.
+<P>
+<I>Glish</I> can start programs, called clients, on either the local host 
+or remote hosts, and then interact with these programs. Clients are 
+"plug-compatible" because of the way they can accept and generate events. 
+<I>Glish</I> controls clients by sending events to them. An event is simply 
+a name plus a value. By limiting the interaction between <I>Glish</I> and 
+the clients to a series of discrete events, it is easy to substitute 
+one client for another. As long as the new client accepts the same events, 
+the substitution can be made without affecting <I>Glish</I> or the other 
+clients. The clients are an encapsulation of a particular functionality.
+<P>
+For <font face=helvetica><b>AIPS++</b></font>, clients are typically written in 
+<b>C++</b>. The following is a simple example which returns the current time. 
+The source code for this client looks like: </P>
+<PRE>
+    int main( int argc, char** argv )
+        {
+        Client c( argc, argv );
+        timeval tval;
+
+        for ( GlishEvent* e; (e = c.NextEvent()); )
+            {
+            if ( ! strcmp(e-Name(),"time") )
+                {
+                if ( gettimeofday( &amp;tval, 0 ) <0 )
+                    c.Error( "couldn't get current time" );
+                else if ( e->IsRequest() )
+                    c.Reply( ctime( &amp;tval.tv_sec ) );
+                else
+                    c.PostEvent( "result", 
+                    ctime( &amp;tval.tv_sec ) );
+                }
+            else
+                c.Unrecognized( );
+            }
+
+        return 0;
+        }</PRE>
+
+<P>
+The <i>client class</i> is the connection which <b>C++</b> clients use to 
+communicate with the <I>Glish</I> interpreter. The <FONT FACE=courier>
+NextEvent()</FONT>function is used to get events as they are sent from 
+the interpreter. In this case, the client has a loop for accepting events. 
+<FONT FACE=courier>NextEvent()</FONT>returns a null pointer when the client 
+should exit. <FONT FACE=courier>Reply()</FONT>,<FONT FACE=courier>
+PostEvent()</FONT>, <FONT FACE=courier> Error()</FONT>, and 
+<FONT FACE=courier>Unrecognized()</FONT> </FONT>are all member functions of 
+client, and they are used to send events back to the <I>Glish</I> 
+interpreter.<P>
+
+<P>In Glish, the use of this client (if compiled into an executable 
+called <FONT FACE=courier>time_client</FONT>) looks like:<P>
+
+<FONT FACE=courier><P>- x := client('time_client')<BR>
+- print x-&gt;time()<BR>
+Tue Aug 4 10:40:16 1998<BR>
+- x-&gt;time()<BR>
+warning, event echo_client.result (Tue Aug 4 10:40:36 1998) dropped</font><P>
+
+With the print statement, <FONT FACE=courier>Reply()</FONT> is invoked in 
+<FONT FACE=courier>time_client</FONT> because the <I>Glish</I> interpreter 
+is waiting for a reply. In the next statement, another 
+<FONT FACE=courier>time</FONT> event is sent to the client. In this case 
+no result is needed, so the interpreter continues, and later receives the 
+<FONT FACE=courier>result</FONT> event generated in the 
+<FONT FACE=courier>time_client</FONT> by the call to 
+<FONT FACE=courier>PostEvent()</FONT>.
+<P>
+The <FONT FACE=courier>Error()</FONT> member function of Client is to 
+indicate that an error has occurred, in this case due to a problem with 
+<FONT FACE=courier>gettimeofday()</FONT>.  The <FONT FACE=courier>
+Unrecognized()</FONT>member function is called to indicate that the event 
+received has an unrecognized event name, in this case any event name other 
+than <FONT FACE=courier>time</FONT>.
+
+<P>
+Once created, clients greatly enhance the capabilities of <I>Glish</I>. 
+This is the mechanism through which much of the functionality of the 
+<font face=helvetica><b>AIPS++</b></font> libraries, written in <b>C++</b>, 
+is made available to <I>Glish</I>. These clients can run transparently on 
+local or remote machines. The resources provided by each of the clients 
+can be utilized and combined in <I>Glish</I> scripts to solve complicated 
+problems in ways unanticipated by the authors of the individual clients. 
+This sort of flexibility and plug-compatibility is achieved because each 
+client has a well-defined interface. Separate processes do a nice job of 
+enforcing encapsulation. Existing stand-alone programs can be made into 
+<I>Glish</I> clients by adding the <b>C++</b> code necessary to generate 
+the events by which <I>Glish</I> and the "program" initiate and return 
+results.
+
+
+</td></tr>
+<tr><td colspan=2><img src="augbar2.gif"></td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional <br>
+Remembrance</i></b></font></a></td>
+
+
+
+
+<td valign=top>
+
+<a name="recipe"><FONT FACE=helvetica size="+3">Recipe of the Month -<BR>
+Glish Matrix Operations Doing Least Squares Fitting 
+with Error Analysis</FONT></a>
+<P>
+<I>Bob Hjellming </I>- NRAO, Socorro<P>
+
+<P>
+Some of the advanced mathematical operations in <I>Glish</I> are 
+in packages like <FONT FACE=courier>matrix</FONT> and 
+<FONT FACE=courier>mathematics</FONT>. In this recipe we show how you can read 
+in a table of (x,y) data and do least squares fitting to these data with complete 
+error analysis including not only estimation of the errors in the polynomial 
+coefficients, but also computation of the covariance matrix and correlation 
+coefficients.
+
+<P>
+This is also an example of using a <I>matrix</I> object to carry out matrix 
+operations.
+
+
+<TABLE CELLSPACING=8 BORDER=0 CELLPADDING=7>
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Goals</b></FONT></TD>
+<TD VALIGN="TOP">
+<B>Read an ASCII table of (x,y) data, fit a polynomial to the data, 
+perform error analysis on the fit, and plot data and fit.</B></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Using</b></FONT></TD>
+<TD VALIGN="TOP">
+<I>tablefromascii</I> function, <I>Table</I>, and <I>Matrix objects</I></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Results</b></FONT></TD>
+<TD VALIGN="TOP">
+Polynomial fit parameters, their errors, related Covariance and Correlation 
+Coefficient matrices, and plots data and fit.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Assume</b></FONT></TD>
+<TD VALIGN="TOP">
+You have an input file of ASCII data in columns, and a header description file. 
+In this recipe the ASCII data file named <tt>
+<A HREF="begdata.txt">begdata.txt</A>
+</tt>has two columns of numbers. The ASCII header file describes the data columns 
+in the data file; in this case a header file 
+<tt><a href="begdatahdr.txt">begdatahdr</a></tt> assigns names and data types to each 
+column, following the rules described in documentation of <tt>
+<A HREF="../../user/Utility/Utility.html">header file contents</A></tt>. Both input and header files must be in the 
+directory from which you started <font face=helvetica><b>AIPS++</b></font>.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE=4 COLOR="#ff0000"><b>Script</b></FONT></TD>
+<TD VALIGN="TOP">
+A <A HREF="polylsq.g.txt">Glish script</A> executes this example.</TD>
+</TR>
+</TABLE>
+
+<P><HR><P>
+<TABLE CELLSPACING=8 BORDER=0 CELLPADDING=8>
+<TR><TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE="+2" COLOR="#ff0000"><b>AIPS++/<i>Glish</i><br> 
+commands and results</b></FONT></TD>
+<TD VALIGN="TOP">
+<FONT FACE=helvetica SIZE="+2" COLOR="#ff0000"><b>Purpose and background</b></FONT>
+</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<tt><b>tablefromascii('begtable','begdata.txt',<BR>
+'begdatahdr')</b></tt></TD>
+
+<TD VALIGN="TOP">
+Put ASCII table of data into an <font face=helvetica><b>AIPS++</b></font> table using the 
+<font face=helvetica><b>AIPS++</b></font> <tt>tablefromascii</tt> function. For details on 
+what you can do with <font face=helvetica><b>AIPS++</b></font> tables click  
+<A HREF="../../user/Utility/Utility.html">here</A>.
+<P>
+The result of invoking <tt>tablefromascii</tt> is an 
+<font face=helvetica><b>AIPS++</b></font> Table named <i>begtable</i> 
+written to disk.
+</TD></TR>
+<TR><TD VALIGN="TOP">
+<tt><b>xydata := table('begtable')</b></tt></TD>
+<TD VALIGN="TOP">
+<P>Read this Table into a <i>Glish</i> object named 
+<tt>xydata</tt></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><B>xydata.getkeywords()</B></tt></TD>
+<TD VALIGN="TOP">
+View keywords defined in the <tt>gbihdr</tt> file</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><b>[XDATA=Independent Variable,<BR>
+YDATA=Dependent Variable] </b></tt></TD>
+<TD VALIGN="TOP">
+<P>Results in a  list of keywords</TD></TR>
+<TR><TD VALIGN="TOP">
+
+<B><tt>x := xydata.getcol('XDATA')<P>
+y := xydata.getcol('YDATA')<P>
+</B></tt></TD>
+
+<TD VALIGN="TOP">
+Extract columns from the table and assign them to 1-D arrays using 
+<font face=courier>getcol</font> on the <i>Glish</i> table object called 
+<tt>xydata</tt></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<tt><B>N := length(y)<P>
+PolynomialOrder := 2<P>
+M := PolynomialOrder+1<P>
+ydata := array(y,N,1) </B></tt>></TD>
+<TD VALIGN="TOP">
+Extract number of <tt>(x,y)</tt> points<BR>
+Select polynomial fit to order 2<P>
+Order-dependent matrix parameter<P>
+Need <b><i>y</i></b> in array type for matrix input</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>mx := matrix_functions()</tt></B></TD>
+<TD VALIGN="TOP">
+Make matrix object named <b><i>mx</i></b></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>A := array(0,N,M)<P>
+A[,1] := 1<P>
+for (i in 1:N) for (j in 2:M)<BR>
+A[i,j] := x[i]^(j-1)<P>
+</tt></B></TD>
+
+<TD VALIGN="TOP">
+Build <b><i>A = 0</i></b> matrix of right shape and 
+put correct values into <b><i>A</i></b><P></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Atran := mx.transpose(A)
+G := mx.mult(Atran,A)<P>
+Ginv := mx.invert(G)<P>
+</tt></B></TD>
+
+<TD VALIGN="TOP">
+Transpose <i><b>A</b></i>, then multiply <b><i>Atran</i></b> by 
+<i><b>A</b></i> to get <b><i>G</i></b> matrix<BR>
+Invert <i><b>G</b></i></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Coef := mx.mult(Ginv,mx.mult(Atran,ydata))</tt></B></TD>
+
+<TD VALIGN="TOP">
+Polynomial fit to <b><i>y(x)</i></b></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt><P>ysoln := mx.mult(A,Coef)</tt></B></FONT></TD>
+
+<TD VALIGN="TOP">
+Compute <b><i>y</i></b> solution from fit </TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>errsq := N*mx.mean((ydata - ysoln)^2)/(N-1)<P>
+rms := errsq^0.5<P>
+Cov := errsq*Ginv</tt></B></TD>
+
+<TD VALIGN="TOP">
+Compute rms error<P>
+and Covariance matrix</TD></TR>
+
+<TR><TD VALIGN="TOP">
+
+<B><tt>for (j in 1:M) sigma[j] := Cov[j,j]^0.5</tt></B></TD>
+<TD VALIGN="TOP">
+Compute errors for each coefficient</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt><P>r := Cov <br>
+for (j in 1:M) for (k in 1:M) <BR>
+r[j,k] := Cov[j,k]/(Cov[j,j]*Cov[k,k])^0.5M</tt></B></TD>
+
+<TD VALIGN="TOP">
+<P>Compute <b><i>r</i></b>= correlation coefficient matrix</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>Coef<BR>
+rms<BR>
+Cov<BR>
+sigma<BR>
+r<tt></B></TD>
+
+<TD VALIGN="TOP">
+Print out the polynomial coefficients and the various 
+error parameters</TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>pl := pgplotter(background="white") <P>
+red := 2<P>
+blue := 4<P>
+pl.sci(blue)<P>
+pl.env(min(x),max(x),min(y),max(y),0,1)<P>
+pl.lab("x","y","Plot Data (Red) and Second<BR>
+Order Polynomial Fit to Data (Blue)")<tt></B></TD>
+
+<TD VALIGN="TOP">
+Make a <I>pgplotter</I> object named <b><i>pl</i></b>, set  
+background to white, open plot window on the screen
+Set color values for plot<P>
+
+Set plot maxima and minima and
+label plot and axes<BR></TD></TR>
+
+<TR><TD VALIGN="TOP">
+<B><tt>pl.line(x,ysoln)<P>
+pl.sci(red)<P>
+pl.pt(x,ydata,4)</tt></B></TD>
+
+<TD VALIGN="TOP">
+Plot polynomial fit as blue line and
+data point with red symbols<P>
+Final plot shown below.</TD></TR>
+
+<TR><TD VALIGN="TOP">
+</TD>
+<TD VALIGN="TOP">
+In the <I>Pgplotter</I> window, <i>File</i> can be used to 
+print and save the plot(s)</TD>
+</TR>
+</TABLE>
+
+<P>
+<center><a href="polylsq.gif"><IMG SRC="polylsq2.gif"></a><br>
+<i>Click on image to obtain larger view</i></center>
+<P>
+
+<P>Contributions of recipes or other material for a prototype 
+<font face=helvetica><b>AIPS++</b></font> Cookbook are welcome. 
+Please send to <A HREF="mailto:rhjellmi@nrao.edu">rhjellmi@nrao.edu</A>.
+
+</td></tr>
+<tr><td colspan=2><img src="augbar2.gif"></td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - A <br><i>Professional <br>
+Remembrance</i></b></font></a>
+</td>
+<td valign=top>
+
+<a name="new"><FONT FACE=helvetica size="+3">What's New in AIPS++</font></a><br>
+<I>Athol Kemball and Tim Cornwell </I>- NRAO, Socorro<P>
+
+The following personnel changes have occurred in the 
+<font face=helvetica><b>AIPS++</b></font> Project:<P>
+
+<UL>
+<LI>Jeff Uphoff (NRAO) has left to join TransMeta Corp. 
+(where he will be working with Linus Torvalds (creator of Linux), 
+among others!); and 
+
+<LI>Joe McMullin (NRAO) has moved from Green Bank to Charlottesville.</UL>
+
+<P>
+The following changes have been made in <font face=helvetica><b>AIPS++</b></font>:
+<P>
+
+<UL>
+<LI>A new script, <FONT FACE=courier>visplot.g</FONT>, is available which 
+allows general display of visibility data. It has been extensively revised 
+to incorporate user feedback regarding both capabilities and layout. 
+<P>
+<LI>A GUI utility, <FONT FACE=courier>simpleimage.g</FONT>, has been added 
+to provide a semi-automated interface to the synthesis imaging capabilities 
+in the <i><b>sky</b></i> package. This is a first attempt to provide and 
+evaluate  a dedicated synthesis GUI. 
+
+<LI>The display utility, <b><i>Aipsview</i></b>, has been modified to use 
+0 for the default, starting slice for the Z-axis when the axis name is 
+<FONT FACE=courier>STOKES</FONT>. This should simplify start-up. 
+
+<LI>The <FONT FACE="Courier New" SIZE=2>measures.g</FONT><FONT SIZE=2> </FONT>script has been split into <FONT FACE="Courier New" SIZE=2>measures.g</FONT><FONT SIZE=2> </FONT>and <FONT FACE="Courier New" SIZE=2>measuresgui.g</FONT><FONT SIZE=2> </FONT>for faster initialization. The underlying Measures code has been rationalized by placing Quantum and Units classes in a separate code module. Support for ITRF and topocentric frames has been added to Direction measures. 
+
+<LI>The keywords <FONT FACE=courier>AS </FONT>and <FONT FACE=courier>IN</FONT> have been added to the table query language (<b><i>TaQL</i></b>) to mirror 
+their use in <b><i>SQL</i></b>. 
+
+<LI>There has been continuing work on support for source component models, 
+with the introduction of <FONT FACE=courier>componentmodels.g</FONT>, 
+containing <FONT FACE=courier>componenteditor.g</FONT> and 
+<FONT FACE=courier>componentlist.g</FONT>. Support for elliptical disks 
+has been added, as well as reference frequency manipulation, 
+along with a range of other capabilities. 
+
+<LI>A mechanism to verify <font face=helvetica><b>AIPS++</b></font> distributions 
+has been implemented, which allows <font face=helvetica><b>AIPS++</b></font> 
+updates to be verified as correctly passing a set of tests before they 
+are distributed to other sites. 
+
+<LI>Pop-up help utilities have been modified to minimize the problem 
+of leftover help windows. 
+
+<LI>A <I>Glish</I> utility, <FONT FACE=courier>regionmanager.g</FONT>, 
+has been implemented to allow the manipulation of image regions of interest. 
+This has included the development of underlying code in the library to 
+provide support for image region selection and specification in general. </LI>
+<LI>A holography application, <FONT FACE=courier>holog.g</FONT>, 
+has been implemented for WSRT data. 
+
+<LI>The support for the Cygnus <b><i>egcs</i></b> compiler and the SGI native 
+compiler has been extended, with small changes throughout the system to 
+provide compatibility on points of syntax. 
+
+<LI>The flags <FONT FACE=courier>-help</FONT>, 
+<FONT FACE=courier>-version</FONT> and <FONT FACE=courier>-info 
+</FONT>have been added to <I>Glish</I>. Documentation changes have been 
+made in preparation for <I>Glish</I> v2.7, along with other general updates. 
+These include the rationalization of <FONT FACE=courier>gmisc.g</FONT>, 
+which will be removed shortly. 
+
+<LI>The new table browser has been revised to support new features, 
+including th capability to plot rows versus columns. 
+
+<LI>The UVFITS writer, <i><b>UVFitsWriter</b></i>, 
+has been modified to optionally write system temperature (TY) and gain 
+curve (GC) tables. This allows the export of <font face=helvetica><b>AIPS++</b></font> data to other packages earlier in the data reduction sequence.
+
+<LI>The new <font face=helvetica><b>AIPS++</b></font> web page has been adopted, 
+and extensively revised to support new features and incorporate user 
+comments regarding the layout. 
+
+<LI>There has been work on NFRA <I>Glish</I> data display 
+utilities, including <FONT FACE=courier>datalinetool</FONT>and 
+<FONT FACE=courier>mstool</FONT>. These extend or replace previous 
+<I>Glish</I> data display utilities. More general utilities have
+been updated including <FONT FACE=courier>buttonscript.g</FONT>, 
+(which generates <I>Glish </I> 
+scripts from GUI button presses), <FONT FACE=courier>glishelp.g</FONT>
+(GUI <I>Glish</I> help) and <FONT FACE=courier>inspect.g</FONT>
+(interactively inspect a <I>Glish</I> variable). 
+A new application, <FONT FACE=courier>j2convert</FONT>, 
+has been added to read and convert the uvw coordinates of a WSRT 
+measurement set. 
+
+<LI>Code for a command line parameter-setting shell has been checked in, 
+which will be available shortly for general use as 
+<FONT FACE=courier>app.g</FONT>. 
+
+<LI>A <b><i>Tcl/Tk</i></b> based widget client has been checked in 
+to the system. A first version of a PGPlot  driver for the 
+WorldCanvas  has also been implemented. 
+
+<LI>The application <FONT FACE=courier>fits2table</FONT> now converts 
+SDFITS files accurately into an <font face=helvetica><b>AIPS++</b></font> table 
+for correct handling by the DISH package. 
+<LI><b>GBT</b> spectrometer test data can be imported into an 
+<font face=helvetica><b>AIPS++</b></font> table.</UL>
+
+</td></tr>
+
+<tr><td colspan=2><img src="augbar2.gif"></td></tr>
+<tr><td valign=top>
+<a href="#pulsar">
+<font color="#008c66">
+<b>Pulsar Data <br>in <font face=helvetica>
+<b>AIPS++</b></font></font></a><p>
+
+<a href="#projectnews">
+<font color="#008c66">
+<b>Project News Summary</b></font></a><p>
+
+<a href="#programmers">
+<font color="#008c66">
+<b>Programmer's Corner<br>
+ - Part 3</b></font></a><p>
+
+
+
+<a href="#glish">
+<font color="#008c66">
+<b>The <i>Glish</i><br>
+ Software Bus</b></font></a><p>
+
+<a href="#recipe">
+<font color="#008c66">
+<b>Recipe of the Month</b></font></a><p> 
+
+<a href="#new">
+<font color="#008c66">
+<b>What's New <br>in <font face=helvetica><b>
+AIPS++</b></font></a><p>
+
+<a href="#briggs">
+<font color="#008c66">
+<b>Dan Briggs<br>
+ - <i>A <br>Professional <br>
+ Remembrance</i></b></font></a>
+</td>
+<td valign=top>
+<a name="briggs"><FONT FACE=helvetica size="+3"><b><i>Dan Briggs: A Professional Remembrance</b></i></FONT></a>
+<br><I>Tim Cornwell</I>- NRAO, Socorro<P>
+
+We were shocked and saddened by the tragic news that Dan Briggs of the 
+NCSA/BIMA <font face=helvetica><b>AIPS++</b></font> group was killed in a 
+sky-diving accident on July 4. Dan was well-known to many of us as a 
+colleague and friend. Dan's many friends have put together a memorial 
+page that you can find at <A HREF="http://www.nmt.edu/~pio/dbriggs/">
+http://www.nmt.edu/~pio/dbriggs/</A> This memorial page describes 
+Dan's attitude towards life and many personal accomplishments. 
+Here I'd like to say something about my memories of his professional 
+career.
+<P>
+I'd personally known Dan for a long time in a number of different roles: 
+as a stilt-walker in Socorro parades, as a student at New Mexico Tech, 
+as my Ph.D. student in the early 90's, and then as a collaborator and 
+colleague within <font face=helvetica><b>AIPS++</b></font>. He came to Socorro 
+as a graduate student in physics after completing degrees in physics and 
+mathematics at Caltech. My first contact with him was to 
+<A HREF="http://www.nmt.edu/~pio/dbriggs/images/sam.html">see him 
+walking on stilts in a parade in Socorro</A>, a picture that is accessible 
+from his memorial page. In the late eighties, he began spending time at 
+NRAO, working with Rick Perley and then Craig Walker on different projects. 
+He eventually came to me to ask about doing a Ph.D. on radio-astronomical 
+imaging, something that I readily agreed to once I realized his great 
+range of talents. For his Ph.D., and then later on in his career, he 
+worked as what I would call a technical radio-astronomer, 
+interested more in the techniques of astronomy rather than the results. 
+Dan had an excellent combination of attributes for a researcher: 
+great basic intelligence, varied technical skills, persistence, 
+a judicious amount of perfectionism, and an enormous appetite for hard work. 
+His Ph.D. from New Mexico Tech, which was overseen by myself and  
+Jean Eilek, showed the quality of work that he was capable of producing 
+(his thesis is available on the web at 
+<A HREF="http://www.aoc.nrao.edu/ftp/dissertations/dbriggs/diss.html">
+http://www.aoc.nrao.edu/ftp/dissertations/dbriggs/diss.html</A>). 
+It covers the image processing of moderately resolved sources observed 
+with radio-interferometric arrays. It's a stunningly complete piece of work, 
+in which each substantive assertion is carefully described, analyzed and 
+demonstrated. It contains two things that deserve to be called by his name. 
+First, an analysis of the effect whereby deconvolution errors on moderately 
+resolved sources can masquerade as calibration errors. Second, a new form 
+of weighting, which he called robust weighting, whereby resolution and 
+sidelobe-level could be traded one against the other, thus obtaining 
+a compromise of improved resolution and signal-to-noise which optimizes 
+the use of telescope time. Robust weighting was immediately recognized 
+by others as a very useful technique and has been adopted in many 
+reduction packages. In recognition of Dan's contribution, it has been 
+suggested that the term Briggs' weighting to be used in place of robust 
+weighting.<P>
+
+
+
+After his Ph.D. was completed in Socorro, Dan moved to Washington, D.C., to 
+work at the Naval Research Lab as a postdoc, first on the Big Optical Array, 
+and then on low-frequency imaging with the VLA (in collaboration with 
+Namir Kassim, Kurt Weiler and others). In the latter work, Dan developed 
+an existing, limited package for wide-field imaging from VLA B-configuration 
+327 MHz data into a well-engineered, very capable package for 
+A-configuration data, that could run in a reasonable amount of time on 
+a parallel machine. This exploited many of his skills: understanding of 
+the physics and mathematics, expertise at meeting the complicated computing 
+requirements, and appreciation of the resulting science.<P>
+
+Following his time at NRL, he moved on to work with the NCSA/BIMA group 
+on parallelization of code, and he was just starting to implement wide-field 
+imaging in <fnt face=helvetica>AIPS++</font>. In addition to the personal 
+tragedy, his death is a great loss for radio astronomy. Dan was only getting 
+started on what I'm sure would have been a very interesting and productive 
+career. I know that I'll miss his quick mind, willingness to get involved, 
+and high standards -- qualities that also showed up in his personal pursuits. 
+One very typical memory that I have of him professionally is the Friday 
+afternoon meetings on radio-astronomical imaging that we used to have at 
+the Array Operations Center in the early nineties. In a very short time, 
+he could pick up a new idea, reflect on it, fit it into his understanding, 
+and then offer insightful comments, all while leaning laconically 
+against the whiteboard. I miss the "to and fro" of the discussions 
+in those meetings.<br><img align="right" src="tinydan.gif" hspace=4 vspace=4><br>
+<i>Dan, we'll all miss you.</i>
+
+</tr></td>
+</table>
+</table>
+</body>
+</html>

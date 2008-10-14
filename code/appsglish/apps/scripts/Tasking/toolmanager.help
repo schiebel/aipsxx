@@ -1,0 +1,536 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: toolmanager.help,v 19.2 2004/08/25 02:06:13 cvsmgr Exp $
+\begin{ahobject}{toolmanager}{Tool for using \aipspp\ tools and functions}
+\ahinclude{toolmanager.g}
+
+\begin{ahdescription} 
+
+{\tt toolmanager} is the prime interface to the \aipspp\ tools
+and functions. It provides graphical and command line interfaces
+for using tools and functions.
+
+\subsubsection*{Using the toolmanager}
+
+The use of the {\tt toolmanager} is documented in
+\htmladdnormallink{Getting Started in AIPS++}
+{../gettingstarted/gettingstarted.html}.
+
+\subsubsection*{Making a tool or function}
+
+If you have created an tool that you wish to show up in the
+toolmanager then the tool must obey the following rules:
+
+\begin{itemize}
+\item Be a record containing only functions
+\item Have a function {\em done} to terminate instances of
+the tool.
+\item AND:
+\begin{description}
+\item[Either] have a function {\tt gui} that starts a GUI,
+\item[Or] have a meta information file containing a description
+of the GUI to be built automagically.
+\end{description}
+\end{itemize}
+
+If the tool is to be classified correctly, then a help file must be in
+the system, and built into the documentation. Otherwise the tool will
+be shown under unclassified (Note: this is considered a serious
+wart and will be fixed soon).
+
+An example of a trival compliant tool is:
+
+\begin{verbatim}
+  const foo := function() {
+    public := [=];
+    public.type := function() {return 'foo'};
+    # A do-nothing-much function
+    public.gui := function() {
+      f:=frame(title='foo.gui');
+      b:=button(f, 'Press here to continue');
+      await b->press;
+      note('foo.gui() finished');
+      f:=F;
+      public:=F;
+      return T;
+    };
+    # Another do-nothing-much function
+    public.another := function() {
+      print "foo.another";
+      return T;
+    };
+    # Another do-nothing-much cli
+    public.anothercli := function() {
+      print "foo.anothercli";
+      return T;
+    };
+    # Another do-nothing-much gui
+    public.anothergui := function() {
+      f:=frame(title='foo.anothergui');
+      b:=button(f, 'Press here to continue');
+      await b->press;
+      note('foo.anothergui() finished');
+      f:=F;
+      public:=F;
+      return T;
+    }
+    return ref public;    
+  }
+  # Add the required meta-information
+  types.class('foo').function('ctor_foo');
+\end{verbatim}
+
+An example of a more detailed meta information file follows:
+
+\begin{verbatim}
+pragma include once;			# Include once only
+
+include 'types.g';			# Required
+
+# Name the include file that defines the tool
+types.class('imager').includefile('imager.g');
+
+# Constructors are preceeded by ctor_. Then follows the
+# list of arguments.  Each argument is defined in this form:
+#
+# type(arg, default=unset, dir='in', checkeval=T)
+#
+# where type is defined in type.g and is one of:
+#
+# file|table|string|integer|float|double|record|boolean|vector_string|complex
+#
+# arg is the name of the argument
+# default sets default values (may be an executable string)
+# dir sets the direction of the argument
+# checkeval=T means that a string value is eval'ed and checked,
+# otherwise no such check is done.
+#
+# Define two constructors, one with just a table name, and the other
+# with more arguments
+types.function('ctor_imager').table('filename').
+    function('ctor_imagertester').string('filename', '3C273XC1.ms').
+    integer('size', 256).string('cell', '0.7arcsec').string('stokes', 'IV').
+    string('coordinates', 'b1950');
+
+# Functions
+# Open with just a table name
+types.function('open').table('thems');
+
+# Plain close
+types.function('close');
+
+# Get the name back
+types.function('name').string('return');
+
+# Summary
+types.function('summary');
+
+# Set various image parameters. Note the use of the measures
+# tool to set the phasecenter.
+types.function('setimage').integer('nx',128).integer('ny',128).
+    string('cellx','1arcsec').string('celly','1arcsec').
+    string('stokes', 'I').
+    boolean('doshift', F).
+    record('phasecenter', 'dm.direction(\'b1950\', \'0d\', \'0d\')',checkeval=F).
+    string('shiftx','0arcsec').string('shifty','0arcsec').
+    string('mode', 'mfs').integer('nchan', 1).integer('start', 1).
+    integer('step', 1).string('mstart', '0km/s').string('mstep', '0km/s').
+    integer('spwid', 1).integer('fieldid', 1);
+\end{verbatim}
+
+The toolmanager's own constructor is called during startup. Since only one
+toolmanager can be created, you should never have to call
+this constructor. The {\em only} toolmanager that exists
+has the conventional abbreviation {\tt tm}.
+
+\subsubsection*{Minimizing use of the toolmanager}
+
+If you wish, the toolmanager may be prevented from doing
+very much by putting the following in your .aipsrc file
+\begin{verbatim}
+toolmanager.fullgui:	F
+\end{verbatim}
+\end{ahdescription}
+
+\begin{ahfunction}{usegui}{Use GUIs if possible}
+\begin{ahdescription}
+Note that the GUI can only be used if Glish has access to a GUI!
+
+An alternate function of specifying this is via the aipsrc mechanism:
+add the following to your .aipsrc file
+\begin{verbatim}
+toolmanager.gui.auto:	T
+\end{verbatim}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{usecli}{Use CLI}
+\begin{ahdescription}
+The CLI can always be used.
+
+An alternate function of specifying this is via the aipsrc mechanism:
+add the following to your .aipsrc file
+\begin{verbatim}
+toolmanager.gui.auto:	F
+\end{verbatim}
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{show}{Show one of: the toolmanager, a tool or function}
+\begin{ahdescription}
+{\tt show} can be used in four ways:
+\begin{itemize}
+\item To show the toolmanager:
+\begin{verbatim}
+tm.show()
+\end{verbatim}
+\item Or, to show a GUI or CLI for a specific tool:
+\begin{verbatim}
+tm.show('imgr')
+\end{verbatim}
+\item Or, to show a GUI or CLI for a specific global function:
+\begin{verbatim}
+tm.show('imagerwizard')
+\end{verbatim}
+\item Or, to show a GUI or CLI for a tool constructor:
+\begin{verbatim}
+tm.show('imager')
+\end{verbatim}
+\end{itemize}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{what}{Name of thing to be displayed}{''}{String}
+\ahaddarg{prefergui}{Use a GUI if possible}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{showconstructor}{Show the constructors of a tool}
+\begin{ahdescription}
+Show the constructors of a type of tool. Before a type of tool {\em e.g.} {\tt
+imager} can be used, it must be constructed into an actual tool {\em
+e.g.} {\tt myimager}. There are usually a number of ways of
+constructing a tool. {\tt showconstructor} allows one of these to
+be selected, the arguments set, and the constructor executed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Type of the tool to be constructed}{''}{String}
+\ahaddarg{prefergui}{Use a GUI if possible}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.showconstructor('imager')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{showtool}{Show a user interface for a tool}
+\begin{ahdescription}
+Show a user interface (GUI or CLI) for a tool. This interface will
+allows functions of the tool to be executed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Type of the tool to be constructed}{''}{String}
+\ahaddarg{prefergui}{Use a GUI if possible}{T}{Bool}
+\ahaddarg{forceauto}{Force use of the auto GUI}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.showtool('myimager')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{showglobalfunction}{Show a user interface for a global
+function}
+\begin{ahdescription}
+Show a user interface (GUI or CLI) for a global function. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ofn}{Type of the tool to be constructed}{''}{String}
+\ahaddarg{prefergui}{Use a GUI if possible}{T}{Bool}
+\ahaddarg{forceauto}{Force use of the auot GUI}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.showglobalfunction('imagertest')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{showitemmanager}{Show a user interface for a tool
+function}
+\begin{ahdescription}
+Show a user interface (GUI or CLI) for an itemmanager.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ofn}{Type of the tool to be constructed}{''}{String}
+\ahaddarg{prefergui}{Use a GUI if possible}{T}{Bool}
+\ahaddarg{forceauto}{Force use of the auot GUI}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.showitemmanager('defaultmodelmanager')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{where}{Find package, module and description of a
+type of tool}
+\begin{ahdescription}
+This returns a record containing the package {\em e.g.} {\tt aips} or 
+{\tt synthesis}, module {\em e.g.} {\tt images} or {\tt utility},
+and description of a type of tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Type of tool}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- print tm.where('image')
+[package='aips', module='images', description='']
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{istool}{Is this a tool?}
+\begin{ahdescription}
+Is the named Glish variable a tool? For example, {\tt imager}
+is a type of tool that can be created, whereas {\tt myimager}
+is an actual tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of candidate}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.istool('imager')
+F
+- tm.istool('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{istooltype}{Is this a tool type?}
+\begin{ahdescription}
+Is the named Glish variable a tool? For example, {\tt imager}
+is a type of tool that can be created, whereas {\tt myimager}
+is an actual tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of candidate}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.istooltype('imager')
+T
+- tm.istooltype('myimager')
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tooltype}{Return tool type}
+\begin{ahdescription}
+Show the type of the named Glish variable {\em e.g.} {\tt imager, 
+ms, regionmanager}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of candidate}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.tooltype('myimager')
+imager
+- tm.tooltype('drm')
+regionmanager
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{registertool}{Register a tool}
+\begin{ahdescription}
+Register a tool with the tool manager. This is performed
+by the toolmanager itself but may also be performed otherwise.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\ahaddarg{status}{Status of tool}{'-'}{String}
+\ahaddarg{description}{Description of tool}{unset}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.registertool('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{settoolstatus}{Set the tool status}
+\begin{ahdescription}
+The status of a tool is informative only. Recommended use
+is the name of an executing function or the string 'Idle'.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\ahaddarg{status}{Status of tool}{'-'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.settoolstatus('myimager', 'clean')
+T
+- tm.settoolstatus('myimager', 'Idle')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{deletetool}{Delete a tool}
+\begin{ahdescription}
+Delete a tool: first unregister the tool with the tool manager,
+and then delete the tool. This is performed
+by the toolmanager itself but may also be performed otherwise.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.deletetool('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{killtool}{Kill a tool}
+\begin{ahdescription}
+Kill the server associated with a given tool. Note that
+multiple tools may be present in one server so that if
+you have to kill a given tool, you may end up killing its
+cousins as well. This is a current limitation of the
+tasking system in AIPS++ that will probably be fixed in
+version 1.5 or 1.6.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.killtool('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{unregistertool}{Unregister a tool}
+\begin{ahdescription}
+Unregister a tool with the tool manager. This is performed
+by the toolmanager itself but may also be performed otherwise.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.unregistertool('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{isregistered}{Is this tool registered?}
+\begin{ahdescription}
+Is this tool registered?
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+- tm.isregistered('myimager')
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{toolinfo}{Show information about a registered tool}
+\begin{ahdescription}
+Show information about a registered tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Name of tool}{None}{String}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+- print tm.toolinfo('myimager')
+[type='imager', status='Idle', description='Synthesis imaging and deconvolution']
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahfunction}{is\_tool}{Is this a tool}
+\begin{ahdescription}
+Check to see if the Glish variable is a valid tool. To be a tool, a
+variable must be a record, with a field named {\tt type} that is a function
+returning a string.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tool}{Variable to be tested}{None}{Glish variable}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{toolmanagertest}{Test the tool manager}
+\begin{ahdescription}
+Run a set of tests on the toolmanager. 
+\end{ahdescription}
+\ahreturns{Number of failed tests (Int)}
+\begin{ahexample}
+\begin{verbatim}
+- toolmanagertest()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+

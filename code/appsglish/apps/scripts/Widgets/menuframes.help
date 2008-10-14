@@ -1,0 +1,268 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: menuframes.help,v 19.2 2004/08/25 02:16:29 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{menuframes}{Tk widget to hide and expose a number of embedded frames on demand}
+
+\ahinclude{menuframes.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+This widget handles switching between a number of frames, controlled
+by a menu button. The widget is created with a parent frame and a
+specified menu button. Named frames may be added using the {\tt add}
+function. Switching between these frames is possible either by issuing
+{\tt switch} and {\tt delete} commands on named frames, or by user
+interaction via the menu button.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+tmenuframes := function(exclusive=T) {
+
+  prvt := [=];
+
+  prvt.frame:=dws.frame(side='top');
+  prvt.topmenubar := dws.frame(prvt.frame,side="left", relief="raised",
+				     expand="x");
+  prvt.filebutton := dws.button(prvt.topmenubar, "File",
+				      relief="flat", type="menu");
+  prvt.filebutton.shorthelp := 'Do various operations';
+  prvt.filemenu := [=];
+
+  prvt.filemenu['exit'] := dws.button(prvt.filebutton, 'Exit',
+				      type='halt');
+  prvt.filemenu['exit'].shorthelp := 'Exit this window: the tool is done and the window exits';
+  
+  prvt.windowbutton := dws.button(prvt.topmenubar, 'Windows',
+				  relief='flat', type='menu');
+
+  prvt.rightmenubar := dws.frame(prvt.topmenubar,side='right');
+  
+  prvt.helpmenu := dws.helpmenu(prvt.rightmenubar);
+ 
+  prvt.windowmenu := menuframes(prvt.frame, prvt.windowbutton, exclusive=exclusive);
+
+  myframe:=dws.frame(prvt.windowmenu.add('My frame'), relief='sunken');
+  myframe2:=dws.frame(prvt.windowmenu.add('My frame #2'), relief='sunken');
+
+  mylabel := dws.label(myframe, 'First frame');
+  done := dws.button(myframe, 'Done', type='halt');
+  whenever done->press do {
+    prvt.windowmenu.delete('My frame')
+    deactivate;
+  }
+  mylabel2 := dws.label(myframe2, 'Second frame');
+  dismiss := dws.button(myframe2, 'Dismiss', type='dismiss');
+  whenever dismiss->press do {
+    prvt.windowmenu.switch('My frame #2', on=F);
+  }
+
+  prvt.windowmenu.switch('My frame');
+
+  prvt.bottomframe := dws.frame(prvt.frame, side='right');
+  prvt.donebutton := dws.button(prvt.bottomframe, 'Done', type='halt');
+  whenever prvt.donebutton->press do {
+    prvt.windowmenu.done();
+    prvt.frame->unmap();
+    val prvt := F;
+  }
+
+  return T;
+}
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{menuframes}{Construct a menuframes}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{menubutton}{Menu button}{}{Tk button}
+  \ahaddarg{exclusive}{Show only one frame at once?}{T}{Boolean}
+  \ahaddarg{widgetset}{Widget set to use}{dws}{A widgetserver closure tool}
+\end{ahargs}
+\ahreturns{menuframes widget}
+\begin{ahdescription}
+Constructs a menuframes according to the specified construction arguments,
+and returns a ref to the widget.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'menuframes.g'   
+f := frame();
+f1 := frame();
+mb := button(f1, 'Windows', type='menu')
+r := menuframes(f, mb);
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+\begin{ahfunction}{add}{Add a named frame and return the frame}
+\ahreturns{Tk frame}
+\begin{ahdescription}
+This adds a frame by name and returns the actual frame. The name
+is that by which the user selects the frame in the menu button.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{title}{Title of the frame to be added}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+include 'menuframes.g'   
+f := frame();
+f1 := frame();
+mb := button(f1, 'Windows', type='menu')
+r := menuframes(f, mb);
+f1 := r.add('Frame 1')
+f2 := r.add('Frame 2')
+f3 := frame(f1, relief='sunken');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{Delete}{Delete a named frame}
+\ahreturns{Tk frame}
+\begin{ahdescription}
+This deletes a frame by name.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{title}{Title of the frame to be deleted}{}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+include 'menuframes.g'   
+f := frame();
+f1 := frame();
+mb := button(f1, 'Windows', type='menu')
+r := menuframes(f, mb);
+f1 := r.add('Frame 1')
+f2 := r.add('Frame 2')
+f3 := frame(f1, relief='sunken');
+r.delete('Frame 1')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{switch}{Switch the visible state of the menuframes}
+\ahreturns{Bool}
+\begin{ahdescription}
+A call to this function will flip the visibility of a given
+frame.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{title}{Title of the frame to be flipped}{}{String}
+\ahaddarg{on}{Should the state be on?}{T}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+r := menuframes(f, mb);
+f1:=r.add('Frame 1');
+f2:=r.add('Frame 2');
+r.switch('Frame 1');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{disable}{Disable the menuframes}
+\ahreturns{Bool}
+\begin{ahdescription}
+A call to this function disables the menuframes.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+r := menuframes(f, mb);
+# ...
+r.disable();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{enable}{Enable the menuframes}
+\ahreturns{Bool}
+\begin{ahdescription}
+A call to this function enables the menuframes.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+r := menuframes(f, mb);
+# ...
+r.enable();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This tool function destroys the widget.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- r := menuframes(f, mb);
+- r.done();
+T
+- r
+F
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+ 
+\begin{ahfunction}{state}{Return the state of the frames in a record}
+\ahreturns{Record}
+ 
+\begin{ahdescription}
+This tool function returns the state of the frames in a record.
+\end{ahdescription}
+ 
+\end{ahfunction}
+ 
+\end{ahobject}

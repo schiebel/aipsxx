@@ -1,0 +1,3069 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: table.help,v 19.6 2006/09/26 06:29:33 gvandiep Exp $
+\begin{ahmodule}{table}{Glish interface to table system}
+
+\ahinclude{table.g}
+
+\begin{ahdescription}
+
+\aipspp\ stores all data inside \aipspp\ tables which 
+are stored on disk.
+An \aipspp\ table consists of an unlimited number of columns of data,
+with optional column keywords and optional table keywords. Columns are
+named and rows are numbered (starting at 1).  The columns hold data,
+such as visibilities and uv coordinates, while the keywords hold
+general information such as units or revision numbers or table author
+or even other tables.
+
+To make this concrete, examples of columns might be:
+
+\begin{verbatim}
+  U       V        W         TIME        ANT1   ANT2      VISIBILITY
+124.011 54560.0  3477.1  43456789.0990    1      2        4.327 -0.1132
+34561.0 45629.3  3900.5  43456789.0990    1      3        5.398 0.4521
+....
+....
+....
+\end{verbatim}
+
+and examples of keywords might be:
+
+\begin{verbatim}
+REVISION=2.01
+AUTHOR="Tim Cornwell"
+INSTRUMENT="VLA"
+\end{verbatim}
+
+Everything in an \aipspp\ table (and thus all data stored in \aipspp) is
+potentially accessible and changable from Glish. The table module
+provides a convenient way of accessing and changing \aipspp\ tables from
+inside Glish. To do this one creates table tools inside Glish. The
+resulting tools can be operated on in various ways:
+
+\begin{itemize}
+\item Opening, copying, renaming of existing tables, (using
+\ahlink{table}{table:table.table.constructor},
+\ahlink{tablecopy}{table:tablecopy},
+\ahlink{tablerename}{table:tablerename}),
+\item Get and put of table cells, columns and keywords,
+\item Selection and sorting with 
+ \htmladdnormallink{TaQL}{../../notes/199/199.html} (using the
+ \ahlink{query}{table:table.query} tool function or
+ \ahlink{calc}{table:table.calc} tool function or
+ \ahlink{tablecommand}{table:tablecommand}),
+\item Iteration by subtables (using
+ \ahlink{tableiterator}{table:tableiterator}),
+\item Get and put of table information strings,
+\item Access via table columns (using \ahlink{tablecolumn}{table:tablecolumn}),
+\item Access via table rows (using \ahlink{tablerow}{table:tablerow}),
+\item Indexed access (using \ahlink{tableindex}{table:tableindex}),
+\item Browsing of tables (using the \ahlink{browse}{table:table.browse} tool function),
+\item Printing of a summary of a table (using \ahlink{summary}{table:table.summary}
+tool function),
+\item Determine if a Glish value is a valid table (using \ahlink{is\_table}{table:is\_table}),
+\item Writing or reading a table to or from an ASCII format (using
+\ahlink{tablefromascii}{table:table.tablefromascii.constructor}, and 
+\ahlink{toascii}{table:table.toascii}),
+\item Reading a table from binary FITS format (using
+\ahlink{tablefromfits}{table:table.tablefromfits.constructor})
+\end{itemize}
+There is no \texttt{tofits} function available. It might get available 
+in the future.
+
+In addition this module contains a number of global functions
+related to tables, such as determining if a table exists 
+(\ahlink{tableexists}{table:tableexists}).
+
+All operations are done inside the Glish client and are not written
+to disk until an explicit flush command is performed. 
+
+The most typical operation on an \aipspp\ table is to open it by
+creating a table tool inside Glish, load a column from the table
+into Glish, alter it using Glish capabilities, and then write it
+back to the table. For this only a few commands are relevant: see the
+example below.
+
+Sorting and selecting of tables is possible. The table thus produced
+is a {\em reference} table, and points back to the original table.
+
+The Glish client handling all table events and operations is the
+\texttt{tableserver}. At startup of \texttt{table.g}
+the \texttt{defaulttableserver} is
+started which runs until the glish session ends. This server is by
+default used. It is, however, possible to start another one like:
+\begin{verbatim}
+  mytableserver:=tableserver();
+\end{verbatim}
+and use that in the various constructors and functions taking a 
+\texttt{tableserver} argument.
+In a similar way the \texttt{defaulttableserver} can be restarted
+in case it crashes in one way or another.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+  include "table.g"
+  vis:=table("3C273XC1.MS", readonly=F);
+  vis.summary();
+  uvw:=vis.getcol("UVW");
+  spw:=table("3C273XC1.MS/SPECTRAL_WINDOW", readonly=T);
+  freq:=spw.getcell("REFERENCE_FREQUENCY", 1);
+  uvw*:=(1.420E9/freq);
+  vis.putcol("UVW", uvw);
+  vis.close();
+\end{verbatim}
+\end{ahexample}
+\begin{ahseealso}
+\ahlink{tablecolumn}{table:tablecolumn}
+\ahlink{tablerow}{table:tablerow}
+\ahlink{tableiterator}{table:tableiterator}
+\ahlink{tableindex}{table:tableindex}
+\end{ahseealso}
+
+\begin{ahaipsrc}
+\ahaddarg{table.relinquish.reqautolocks.interval}{nr of seconds to wait before relinquishing autolocks requested in another process}{5}{float}
+\ahaddarg{table.relinquish.allautolocks.interval}{nr of seconds to
+wait before relinquishing all autolocks}{60}{float}
+\ahaddarg{table.endianformat}{endian format to be used for storing data in new tables}{big}{big,little,local}
+\end{ahaipsrc}
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{table}{Access tables from Glish}
+\begin{ahdescription}
+table is the tool that contains all the tool functions relevant for
+table handling. To make a table tool, use the
+\ahlink{constructor}{table:table.tablefromascii.constructor}.
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{table}{Construct table tool}
+\begin{ahdescription}
+Use this constructor to construct a table tool inside Glish from
+the name of a disk file containing an \aipspp\ Table. A
+new table may also be created from a table descriptor
+(see \ahlink{tablecreatedesc}{table:tablecreatedesc.function}).
+When creating a new table, detailed data manager information can be
+given using the \texttt{dminfo} argument. This is a record as
+returned by the \ahlink{getdminfo}{table:table.getdminfo.function}
+function.
+
+Most of the arguments are rarely used: most of the time, you'll
+just need to use the tablename, and perhaps readonly.
+
+A table can be shared by multiple processes by using the appropriate
+locking options. The possible options are:
+\\- auto: let the system take care of locking. At regular time
+intervals these autolocks are released to give other processes the
+opportunity to access the table. The aipsrc variable
+\\\texttt{table.relinquish.reqautolocks.interval} defines the number
+of seconds between releasing autolocks on tables needed in another process.
+\\\texttt{table.relinquish.allautolocks.interval} defines the number
+of seconds between releasing all autolocks.
+\\- autonoread: as auto, but no read locking is needed. This must be
+used with care, because it means that reading can be done while
+the table tool is not synchronized with the table file (as is
+normally done when a lock is acquired). The function \texttt{resync}
+can be used to explicitly synchronize the table tool
+\\- user: the user takes care by explicit calls to lock and unlock
+\\- usernoread: as user and the no readlocking behaviour of autonoread.
+\\- permanent: use a permanent lock; the constructor fails when the table is
+already in use in another process
+\\- permanentwait: as above, but wait until the other process
+releases its lock
+\\- default: this is the default option.
+If the given table is already open, the locking option in use is not
+changed. Otherwise it reverts to auto.
+\\When auto locking is used, it is possible to give a record containing
+the fields option, interval, and/or maxwait. In this way advanced
+users have full control over the locking options. In practice this is
+hardly ever needed.
+
+When creating a new table, the endian format in which the
+data should be stored, can be specified. The possible values are:
+\\- big: big endian format (as used on e.g. SUN)
+\\- little: little endian format (as used on e.g. PC)
+\\- local: use the endian format of the machine being used
+\\- aipsrc: use the endian format specified in aipsrc variable
+table.endianformat (which defaults to big).
+\\The default is aipsrc.
+\\Note that usually it is best to store data in local endian format,
+because that requires the least amount of byte swapping. However,
+if the table must be accessible with AIPS++ version 1.7 or before,
+big endian should be used.
+
+When creating a new table, the table will normally reside on disk. It
+is, however, possible to specify that the table should be held in
+memory. In such a case the table is process specific, thus cannot be
+seen by other processes. Note that a memory table uses the MemoryStMan
+storage manager for all its stored columns, but it is still possible
+to use virtual columns as well.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table on disk}{F}{String|Bool}
+\ahaddarg[in]{tabledesc}{Table descriptor}{F}{Descriptor|Bool}
+\ahaddarg[in]{nrow}{Number of rows}{0}{Int}
+\ahaddarg[in]{readonly}{Open Read-only?}{T}{Bool}
+\ahaddarg[in]{lockoptions}{locking to be used}{default}{String|Record}
+\ahaddarg[in]{ack}{Acknowledge creations, etc}{T}{Bool}
+\ahaddarg[in]{dminfo}{Data manager info for new table}{F}{Record}
+\ahaddarg[in]{endian}{Endian format of new table}{aipsrc}{String}
+\ahaddarg[in]{memorytable}{Hold new table in memory?}{F}{Bool}
+\ahaddarg[in]{tableserver}{Table handler to be used}{defaulttableserver}{Any tableserver}
+\ahaddarg[in]{tablenote}{note function to be used}{note}{Any note function}
+\ahaddarg[in]{handle}{attach to this table handle}{F}{for internal use only}
+\end{ahargs}
+\ahreturns{table tool}
+
+\begin{ahexample}
+\begin{verbatim}
+  table1:=table("3C273XC1.MS");
+  table1.browse();
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+The first line opens an existing table 3C273XC1.MS, the second browses
+it using the \ahlink{browse}{table:table.browse} tool function.
+
+\begin{verbatim}
+  table2:=table("name", readonly=F, lockoptions='user', endian='local');
+  table2.lock();
+  table2.addRows();
+  table2.unlock();
+\end{verbatim}
+In this example explicit user locking is used. The function lock
+is needed to acquire a (write) lock before the addRows is done.
+Thereafter the lock is released to give other processes the chance
+to operate on the table.
+\\Note that releasing a lock implies flushing the table, so doing
+that very often can be quite expensive.
+\end{ahcomments}
+\end{ahconstructor}
+
+\begin{ahconstructor}{tablefromfits}{Create an \aipspp\ table from
+binary FITS}
+\begin{ahdescription}
+Create a table from binary FITS format. This generates an AIPS table
+from the binary FITS table in the given HDU (header unit) of the
+FITS file. Note that other FITS formats ({\em e.g.}
+Image FITS and UVFITS) are read by other means.
+\\It is possible to specify the storage manager to use for the table:
+\\\texttt{standard} is the default storage manager.
+\\\texttt{incremental} is efficient for slowly varying data.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table to be created}{}{String}
+\ahaddarg[in]{fitsfile}{Name of FITS file to be read}{}{String}
+\ahaddarg[in]{whichhdu}{Which HDU to read (0-relative to primary HDU i.e. 1 is the smallest valid value)}{1}{Int}
+\ahaddarg[in]{storage}{Storage manager to use (standard or incremental)}{standard}{String}
+\ahaddarg[in]{convention}{Convention to use (SDFITS or none)}{sdfits}{String}
+\ahaddarg[in]{readonly}{Open Read-only?}{T}{Bool}
+\ahaddarg[in]{lockoptions}{locking to be used}{default}{String|Record}
+\ahaddarg[in]{ack}{Acknowledge creations, etc}{T}{Bool}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{table tool}
+\end{ahconstructor}
+
+\begin{ahconstructor}{tablefromascii}{Create an \aipspp\ table from an ASCII format}
+\begin{ahdescription}
+Create a table from a file in ASCII format. Columnar data as well as
+table and column keywords may be specified.
+\\Once the table is created from the ASCII data, it is opened in the
+specified mode and a table tool is returned.
+
+The table columns are filled from a file containing the data values
+separated by a separator (one line per table row). The default
+separator is a blank. Blanks after the separator are ignored.
+\\If a non-blank separator is used, values can be empty. Such values
+default to 0, empty string, or F depending on the data type. E.g.
+1,,2, has 4 values of which the 2nd and 4th are empty and default to 0.
+Similarly if fewer values are given than needed, the missing values
+get the default value.
+
+Either the data format can be explicitly specified or it can be found
+automatically. The former gives more control in ambiguous situations.
+Both scalar and array columns can be generated from the ASCII input.
+The format string determines the type and optional shape.
+
+In automatic mode (\texttt{autoheader=T}) the first line
+of the ASCII data is analyzed
+to deduce the data types. Only the types I, D, and A can be
+recognized. A number without decimal point or exponent is I (integer),
+otherwise it is D (double). Any other string is A (string).
+Note that a number may contain a leading sign (+ or -).
+The \texttt{autoshape} argument can be used to specify if the input
+should be stored as multiple scalars (the default) or as a single
+array. In the latter case one axis in the shape can be defined as
+variable length by giving it the value 0. It means that the actual
+array shape in a row is determined by the number of values in the
+corresponding input line.
+Columns get the names \texttt{Column1}, \texttt{Column2}, etc..
+\\For example:
+\begin{enumerate}
+\item
+\texttt{autoshape=[]} (which is the default) means that all values
+are to be stored as scalar columns.
+\item
+\texttt{autoshape=0} means that all values in a row are to be stored as
+a variable length vector.
+\item
+\texttt{autoshape=10} defines a fixed length vector. If an input
+line contains less than 10 values, the vector is filled with default
+values. If more than 10 values, the latter values are ignored.
+\item
+\texttt{autoshape=[5,0} defines a 2-dim array of which the 2nd axis is
+variable. Note that if an input line does not contain a multiple of 5
+values, the array is filled with default values.
+\end{enumerate}
+
+If the format of the table is explicitly specified, it has to be done
+either in the first two lines of the data file (named by the
+argument filename), or in a separate header file (named by the
+argument headerfile). In both forms, table keywords may also be
+specified before the column definitions.
+The column names and types can be described by two lines:
+
+\begin{enumerate}
+\item The first line contains the names of the columns.
+These names may be enclosed in quotes (either single or double). 
+\item The second line contains the data type and optionally the shape
+of each column. Valid types are: 
+\begin{itemize}
+\item S for Short data 
+\item I for Integer data 
+\item R for Real data 
+\item D for Double Precision data 
+\item X for Complex data (Real followed by Imaginary) 
+\item Z for Complex data (Amplitude then Phase) 
+\item DX for Double Precision Complex data (Real followed by Imaginary) 
+\item DZ for Double Precision Complex data (Amplitude then Phase) 
+\item A for ASCII data (a value must be enclosed in single or double quotes
+        if it contains whitespace) 
+\item B for Boolean data (False are empty string, 0, or any string
+        starting with F, f, N, or n).
+\end{itemize}
+\end{enumerate}
+If a column is an array, the shape has to be given after the data type
+without any whitespace. E.g. \texttt{I10} defines an integer vector
+of length 10. \texttt{A2,5} defines a 2-dim string array with shape
+[2,5]. Note that \texttt{I} is not the same as \texttt{I1} as the
+first one defines a scalar and the other one a vector with length 1.
+The last column can have one variable length axis denoted by the value
+0. It "consumes" the remainder of the input line.
+
+If the argument headerfile is set then the header information is
+read from that file instead of the first lines of the data file.
+
+To give a simple example of the form where the header information
+is located at the top of the data file:
+
+\begin{verbatim}
+COLI   COLF   COLD       COLX        COLZ       COLS
+ I      R      D          X           Z          A
+1      1.1    1.11       1.12 1.13   1.14 1.15  Str1
+10     11     12         13   14     15   16    ""
+\end{verbatim}
+Note that a complex number consists of 2 numbers.
+\\Also note that an empty string can be given.
+
+Let us now give an example of a separate header file that one might use to get
+interferometer data into \aipspp:
+
+\begin{verbatim}
+U     V      W         TIME        ANT1       ANT2      DATA
+R     R      R          D           I          I        X1,0
+\end{verbatim}
+
+The data file would then look like:
+
+\begin{verbatim}
+124.011 54560.0  3477.1  43456789.0990    1      2        4.327 -0.1132
+34561.0 45629.3  3900.5  43456789.0990    1      3        5.398 0.4521
+\end{verbatim}
+Note that the DATA column is defined as a 2-dim array of 1
+correlation and a variable number of channels, so the actual number of
+channels is determined by the input. In this example both rows will
+have 1 channel (note that a complex value contains 2 values).
+
+
+Tables may have keywords in addition to the columns. The keywords
+are useful for holding information that is global to the entire
+table (such as author, revision, history, {\em etc,}).
+\\The keywords in the header definitions must preceed the column descriptions.
+They must be enclosed between a line that starts with ".key..." and
+a line that starts with ".endkey..." (where ... can be anything).
+Between these two lines each
+line should contain the following as listed below.
+A table keywordset and column keywordsets can be specified.
+The latter can be specified by specifying the column name after the
+.keywords string.
+
+\begin{itemize}
+\item The keyword name, e.g., ANYKEY 
+\item The datatype and optional  shape of the keyword
+      (cf. list of valid types above) 
+\item The value or values for the keyword (the keyword may contain 
+a scalar or an array of values). e.g., 3.14159 21.78945 
+\end{itemize}
+
+Thus to continue the example above, one might wish to add keywords
+as follows:
+
+\begin{verbatim}
+.keywords
+DATE        A  "97/1/16"
+REVISION    D 2.01
+AUTHOR      A "Tim Cornwell"
+INSTRUMENT  A "VLA"
+.endkeywords
+.keywords TIME
+UNIT A "s"
+.endkeywords
+U     V      W         TIME        ANT1       ANT2      DATA
+R     R      R          D           I          I        X1,0
+\end{verbatim}
+Similarly to the column format string, the keyword formats can also
+contain shape information. The only difference is that if no shape is
+given, a keyword can have multiple values (making it a vector).
+
+It is possible to ignore comment lines in the header and data file
+by giving the \texttt{commentmarker}. It indicates that lines
+starting with the given marker are ignored. Note that the marker can
+be a regular expression (e.g. texttt{' *//'} tells that lines starting
+with // and optionally preceeded by blanks have to be ignored).
+
+With the arguments \texttt{firstline} and \texttt{lastline} one can
+specify which lines have to be taken from the input file. A negative value
+means 1 for \texttt{firstline} or end-of-file for \texttt{lastline}.
+Note that if the headers and data are combined in one file,
+these line arguments apply to the whole file. If headers and data are in
+separate files, these line arguments apply to the data file only.
+
+Also note that ignored comment lines are counted, thus are used to
+determine which lines are in the line range.
+
+The number of rows is determined by the number of lines read from the data
+file. 
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table to be created}{}{String}
+\ahaddarg[in]{asciifile}{Name of ASCII file to be read}{}{String}
+\ahaddarg[in]{headerfile}{Name of an optional file defining the format}{''}{String}
+\ahaddarg[in]{autoheader}{Determine header information automatically}{F}{Boolean}
+\ahaddarg[in]{autoshape}{Shape to be used if autoheader=T}{[]}{Vector of Ints}
+\ahaddarg[in]{sep}{Value separator}{' '}{String}
+\ahaddarg[in]{commentmarker}{Regex indicating comment line}{''}{String}
+\ahaddarg[in]{firstline}{First line to use}{1}{Int}
+\ahaddarg[in]{lastline}{Last line to use}{-1}{Int}
+\ahaddarg[in]{readonly}{Open Read-only?}{T}{Bool}
+\ahaddarg[in]{lockoptions}{locking to be used}{default}{String|Record}
+\ahaddarg[in]{ack}{Acknowledge creations, etc}{T}{Bool}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{table tool}
+\end{ahconstructor}
+
+\begin{ahfunction}{flush}{flush the current contents to disk}
+\begin{ahdescription}
+Until a flush is performed, the results of all operations
+are not reflected in any change to the
+disk file. Hence you {\em must} do a flush to write the changes
+to disk.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{recursive}{Flush all subtables recursively?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{resync}{resync the table tool with table file}
+\begin{ahdescription}
+Acquiring a read or write lock automatically synchronizes the internals
+of the table tool with the actual contents of the table files.
+In this way different processes accessing the same table always
+use the same table data.
+\\However, a table can be used without read locking. In that case
+the table tool internals are not synchronized automatically.
+The resync function offers a way to do explicit synchronization.
+It is only useful if the table is opened with locking mode
+\texttt{autonoread} or \texttt{usernoread}.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{close the table tool}
+\begin{ahdescription}
+First a flush is done, then the table is closed inside Glish and
+is no longer available for use.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{copy}{copy a table}
+\begin{ahdescription}
+Copy the table. All subtables are also copied.
+References to another table are preserved.
+
+The argument \texttt{deep} determines how a reference table (i.e. the
+result of a \ahlink{query}{table:table.query}) is copied. By default
+a file copy is made, thus the resulting table still contains
+references and no actual data. If, however, \texttt{deep=T} is given,
+a deep copy is made which means that the actual data are copied. Also
+all subtables are copied.
+\\Normally a plain table is copied by copying the files. However,
+if \texttt{deep=T} and \texttt{valuecopy=T} are given, a plain table is
+copied by copying all its values and subtables. This is useful to
+reorganize the tables, i.e. to regain file space that is wasted by
+frequent updates to a table.
+\\The argument \texttt{dminfo} can be used to specify explicit data
+manager info for the columns in the new plain table. It can be used to
+change, for example, a storage manager from IncrStMan to StandardStMan.
+The \texttt{dminfo} is a record as returned by the
+\ahlink{getdminfo}{table:table.getdminfo.function}
+If \texttt{dminfo} is a non-empty record, it forces \texttt{valuecopy=T}.
+
+By default all data are copied when a table and its subtables are
+copied. However, by giving \texttt{copynorows=T} the rows are not copied,
+thus only the table structure and keywords are copied.
+
+The standard operation is make the copy to a plain table. It is,
+however, possible to copy to a memory table by giving \texttt{memorytable=T}.
+
+The endian format for the newly created table can be specified. This
+is only meaningful if a deep copy is made to a plain table.
+The possible values are:
+\\- big: big endian format (as used on e.g. SUN)
+\\- little: little endian format (as used on e.g. PC)
+\\- local: use the endian format of the machine being used
+\\- aipsrc: use the endian format specified in aipsrc variable
+table.endianformat (which defaults to big).
+\\The default is aipsrc.
+
+Normally the \texttt{copy} function only copies the table and does not
+create a new table tool object. The user can do that by opening the newly
+created table in the standard way. However, it is possible to get an
+object back by using \texttt{returnobject=T}. An object is always
+returned if the copy is made to a memory table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{newtablename}{Name of newtable on disk}{}{String}
+\ahaddarg[in]{deep}{Make a deep copy of a reference table?}{F}{Bool}
+\ahaddarg[in]{valuecopy}{Make a deep copy of any table?}{F}{Bool}
+\ahaddarg[in]{dminfo}{Data manager info for new table}{[=]}{Record}
+\ahaddarg[in]{endian}{Endian format of new table}{aipsrc}{String}
+\ahaddarg[in]{memorytable}{Hold new table in memory?}{F}{Bool}
+\ahaddarg[in]{returnobject}{Return a tool object for the new table}{F}{Bool}
+\ahaddarg[in]{copynorows}{Make no copy of the rows?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{copyrows}{copy rows from this table to another}
+\begin{ahdescription}
+Copy rows from this table to another. By default all rows of this
+table are appended to the output table. It is possible though to
+control which rows are copied.
+\\Rows are added to the output table as needed.
+Because no rows can be added to a reference table, it is only possible
+to overwrite existing rows in such tables.
+
+Only the data of columns existing in both tables will be copied.
+Thus by making a reference table consisting of a few columns, it
+is possible to copy those columns only.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{outtable}{table object of output table}{}{String}
+\ahaddarg[in]{startrowin}{First row to take from input table}{1}{Int}
+\ahaddarg[in]{startrowout}{First row to write in output table}{-1 (=end)}{Int}
+\ahaddarg[in]{nrow}{Nr of rows to copy}{-1 (=all)}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+This example appends rows to the table itself, thus doubles the number
+of rows.
+\begin{verbatim}
+  t:=table('test.ms',readonly=F)
+  t.copyrows(t)
+\end{verbatim}
+This example copies 10 rows of the selected subset of the MS to the
+beginning of the output MS.
+\begin{verbatim}
+  t:=table("3C273XC1.MS")
+  tout:=table('test.ms',readonly=F)
+  t1:=t.query('ANTENNA1==0')
+  t1.copyrows(tout,nrow=10,startrowout=1)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{end the table tool}
+\begin{ahdescription}
+End the table tool and free up all memory. It cannot be reused anymore.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{iswritable}{is the table writable?}
+\begin{ahdescription}
+Test if the table is opened for write.
+\\Note that the global function \texttt{tableiswritable(tablename)}
+tests if a table with the given name is writable.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{endianformat}{get the endian format used for this table}
+\begin{ahdescription}
+Get the endian format used for this table.
+It returns a string with value 'big' or 'little'.
+\end{ahdescription}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{lock}{acquire a lock on the table}
+\begin{ahdescription}
+Try to acquire a read or write lock on the table. Nothing will be
+done if the table is already correctly locked by this process.
+It is only needed when user locking is used.
+When the lock is acquired, the internal caches will be synchronized
+with the (possible changed) contents of the table.
+\\It is possible to specify the number of attempts to do (1 per
+second) in case the table is locked by another process. The default 0
+is trying indefinitely.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{write}{Write lock? (F=read lock)}{T}{Bool}
+\ahaddarg[in]{nattempts}{Nr of attempts}{0}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{unlock}{unlock and flush the table}
+\begin{ahdescription}
+The table is flushed and the lock on the table is released.
+This function is only needed when user locking is used.
+However, it is also possible to use it with auto locking. In that case
+the lock will automatically be re-acquired before the next table operation.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{datachanged}{has data changed in table?}
+\begin{ahdescription}
+This function tests if data in the table have changed (by another
+process) since the last call to this function.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{haslock}{has this process a lock on the table?}
+\begin{ahdescription}
+Has this process a read or write lock on the table?
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{write}{Has it a write lock? (F=read lock)}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{lockoptions}{get the lock options used for this table}
+\begin{ahdescription}
+Get the lock options used for this table.
+It returns a record with the fields option, interval and maxwait.
+The record can be used as the lockoptions argument in the table constructor.
+\end{ahdescription}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{ismultiused}{is the table in use in another process?}
+\begin{ahdescription}
+Is the table still in use in another process?
+If so, the table cannot be deleted.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{checksubtables}{check if subtables are multiused?)}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{browse}{browse a table using a graphical browser}
+\begin{ahdescription}
+To start the \ahlink{browser}{table:tablebrowser}, the environment variable
+DISPLAY must be set.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{name}{return name on disk}
+\begin{ahdescription}
+This gives the name of the \aipspp\ table on disk that this
+table tool corresponds to {\em i.e.} this is the name that
+the table was constructed from.
+\end{ahdescription}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("3C273XC1.MS")
+  t.name()
+# 3C273XC1.MS
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{toascii}{Write \aipspp\ table into an ASCII format}
+\begin{ahdescription}
+Write a table into an ASCII format. Both columnar data (scalar) and
+table keywords may be written. The separator between values can be
+specified and defaults to a blank. Note that columns containing
+arrays will be ignored (after showing a warning).
+
+The output format is that read by the constructor
+\ahlink{tablefromascii}{table:table.tablefromascii.constructor}.
+
+If the argument headerfile is set then the header information is
+written to that file instead of the first two lines of the data file.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{asciifile}{Name of ASCII file to be written}{}{String}
+\ahaddarg[in]{headerfile}{Name of an optional file defining the format}{''}{String}
+\ahaddarg[in]{columns}{Names of columns to be written}{All}{Vector of strings}
+\ahaddarg[in]{sep}{Value separator}{' '}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+
+\begin{ahfunction}{query}{Make a table from a query}
+\begin{ahdescription}
+Make a table from a query applied to the current table. The query is
+the qualification part of the
+\ahlink{tablecommand}{table:tablecommand}.
+It is also possible to specify column(s) and/or expressions to sort on
+and to specify the columns to be contained in the output table.
+See the example below.
+A new table tool is returned. The new (reference) table can be given a
+name and will then be written to disk. Note that the
+resulting table is just a reference to the original table.
+One can make a deep copy of the query result using the
+\ahlink{copy}{table:table.copy} function (see example).
+
+If the arguments \texttt{query}, \texttt{sortlist}, and
+\texttt{columns} are empty strings (their default values), the
+\ahlink{taqlwidget}{widgets:taqlwidget}
+will be started (if a GUI is available) before the query function is
+executed. In that way it is possible to let the user form the query
+interactively.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{query}{Query string}{''}{String}
+\ahaddarg[in]{name}{Name of resulting reference table}{''}{String}
+\ahaddarg[in]{sortlist}{Sort string (one or more expressions separated by commas)}{''}{String}
+\ahaddarg[in]{columns}{List of column names separated by commas}{''}{String}
+\end{ahargs}
+\ahreturns{table tool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("3C273XC1.MS");
+  subt:=t.query("SPECTRAL_WINDOW_ID==1",
+                sortlist="ARRAY_ID", columns="TIME, DATA, UVW");
+  print subt.ncols();
+# 3
+  t.close();
+  subt.copy ("3C273XC1_spw1.MS", T);
+  subt.close();
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+From the original table corresponding to the disk file 3C273XC1.MS,
+only rows with SPECTRAL\_WINDOW\_ID equal to 1 are selected and sorted
+by ARRAY\_ID. Only
+the columns TIME DATA UVW are written. Thereafter a deep copy of the
+result is made.
+The table query command is equivalent to:
+\begin{verbatim}
+  subt:=tablecommand(paste('select TIME, DATA, UVW from 3C273XC1.MS',
+                           'where SPECTRAL_WINDOW_ID==1',
+                           'orderby ARRAY_ID'))
+\end{verbatim}
+The sortlist argument can be used to sort in ascending or descending
+order (or a mix of them) on one or more columns. Default is ascending.
+It is also possible to remove duplicate values using the word
+NODUPLICATES at the beginning.
+E.g.:
+\begin{verbatim}
+  sortlist='TIME desc'
+  sortlist='noduplicates ANTENNA1,ANTENNA2'
+  sortlist='ANTENNA1 desc, ANTENNA2 asc'
+  sortlist='desc ANTENNA1, ANTENNA2, TIME'
+\end{verbatim}
+\end{ahcomments}
+\begin{ahseealso}
+\ahlink{tablecommand}{table:tablecommand}
+\end{ahseealso}
+\end{ahfunction}
+
+\begin{ahfunction}{calc}{Calculate an expression on a table}
+\begin{ahdescription}
+Get the result from the calculation of an expression on a table.
+using a CALC command given to the \ahlink{tablecommand}{table:tablecommand}
+function.
+The expression can be any expression that can be given in the WHERE
+clause of a SELECT expression (thus including subqueries).
+The given expression determines if the result is a scalar, a vector,
+or a record containing arrays. See the examples below.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{expr}{Expression string}{}{String}
+\end{ahargs}
+\ahreturns{record, vector, or scalar}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("3C273XC1.MS");
+  t.calc ('DATA+1');
+\end{verbatim}
+returns a (potentially enormous) record where a field contains the
+value of the expression for the row with that number. Note that it
+returns a record because for each row the expression results in an array.
+It should be clear that this example is useless. However, something
+like this could be useful for a column with (very) small arrays.
+\begin{verbatim}
+  t:=table("3C273XC1.MS");
+  t.calc ('ntrue(FLAG)');
+\end{verbatim}
+returns for each row the number of flags set. The result is a vector,
+because for each row the expression results in a scalar.
+\begin{verbatim}
+  t:=table("3C273XC1.MS");
+  t.calc ('sum([select from $1 giving [ntrue(FLAG)]])');
+\end{verbatim}
+returns the total number of flags set in the table (in a single
+scalar).
+It is the same as
+\begin{verbatim}
+  sum(t.calc ('ntrue(FLAG)'));
+\end{verbatim}
+The latter is easier to write, but sends (much) more data over the
+glish bus.
+\end{ahexample}
+\begin{ahseealso}
+\ahlink{tablecommand}{table:tablecommand}
+\end{ahseealso}
+\end{ahfunction}
+
+\begin{ahfunction}{selectrows}{Make a table from a selection of rows}
+\begin{ahdescription}
+Create a (reference) table containing a given subset of rows.
+It is, for instance, useful when a selection is done
+on another table containing the row numbers in the main table.
+It can be useful to apply the Glish function unique to those
+row numbers, otherwise the same row might be included multiple
+times (see example).
+
+Note that usually such referencing row numbers are 0-based, while
+the selectrows function expects 1-based row numbers. It means that
+in such cases 1 should be added (see example).
+
+It is possible to give a name to the resulting table. If given,
+the resulting table is made persistent with that table name.
+Otherwise the table is transient and disappears when closed or when
+Glish exits.
+
+The \ahlink{rownumbers}{table:table.rownumbers} function returns a
+vector containing the row number in the main table for each row in the
+selection table.
+Thus given a row number vector \texttt{rownrs}, the following is
+always true.
+\begin{verbatim}
+  rownrs == maintable.selectrows(rownrs).rownumbers()
+\end{verbatim}
+However, it is not true when selectrows is used on a selection table.
+because \texttt{rownumbers} does not return the row number in that
+selection table but in the main table.
+\\It means that one has to take great care when using
+\texttt{selectrows} on a selection table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rownrs}{1-based Row Numbers}{}{Vector of Ints}
+\ahaddarg[in]{name}{Name of resulting table}{''}{Any String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+#   Do the query on the main table.
+  maintable := table('SOMENAME');
+  scantable := maintable.query(command);
+#   Get the column containing the 0-based row numbers in the BACKEND table.
+#   Make the row numbers unique and make them 1-based.
+  backrows := unique(scantable.getcol('NS_GBT_BACKEND_ID')) + 1;
+#   Form the table subset of the BACKEND table containing those rows.
+  backtable := table('SOMENAME/GBT_BACKEND');
+  scanback := backtable.selectrows(backrows);
+#   Do something with that table.
+  print scanback.nrows();
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+The last statement is equivalent to the query command:
+\begin{verbatim}
+  scanback := backtable.query("rownumber() in $backrows");
+\end{verbatim}
+However, the query takes much, much, much more time to execute,
+especially for larger tables and larger row number vectors.
+Furthermore, the \texttt{backrows} variable need to be global to be
+able to substitute it in the query command.
+\end{ahcomments}
+\ahreturns{table tool}
+\end{ahfunction}
+
+\begin{ahfunction}{putinfo}{set the info record}
+\begin{ahdescription}
+The info record contains information on the table. It is
+written by applications, and used by, for example, the \ahlink{catalog}
+{catalog} directory browser to determine what type of
+information is stored in a table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{value}{Info record}{}{info record}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  include 'catalog.g'
+  dc.whatis("MS")
+# [type=Measurement Set, istable=T, subType=observed]
+  dc.whatis("tcal")
+# [type=Calibration, istable=T, subType=T Jones]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{info}{get the info record}
+\begin{ahdescription}
+The info record contains information on the table. It is
+written by applications, and used by, for example, the \ahlink{catalog}
+{catalog} directory browser to determine what type of
+information is stored in a table.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{addreadmeline}{add a readme line to the info record}
+\begin{ahdescription}
+A readme line is part of the info record associated with a table.
+It is to inform the user, and is not used by any application directly.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{value}{readme line}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{summary}{summarize the contents of the table}
+\begin{ahdescription}
+A (terse) summary of the table contents is sent to the defaultlogger.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{recurse}{Summarize subtables recursively}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").summary()
+# successful readonly open of table  tcal :  9 columns, 11 rows
+# Table summary: tcal
+# Shape: 9 columns by 11 rows
+# Info: [type=Calibration, subType=T Jones, readme=]
+# Table keywords: [Type=T Jones, Interval=30, DeltaT=1]
+# Columns: StartTime StopTime Gain SolutionOK Fit FitWeight
+# iSolutionOK iFit iFitWeight
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{colnames}{return the names of the columns}
+\begin{ahdescription}
+The names of the columns in the table are returned as a vector
+of Strings.
+\end{ahdescription}
+\ahreturns{Vector of Strings}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").colnames()
+# StartTime StopTime Gain SolutionOK Fit FitWeight iSolutionOK iFit iFitWeight
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{rownumbers}{return the row numbers in the (reference) table}
+\begin{ahdescription}
+This function can be useful after a selection or a sort.
+It returns the row numbers of the rows in this table with respect
+to the given table. If no table is given, the original table is used.
+\\For example:
+\begin {verbatim}
+  t:=table('W53.MS')
+  t1:=t.selectrows([1,3,5,7,9])
+  t1.rownumbers(t)
+# [1 3 5 7 9]
+  t2:=t1.selectrows([2,5])
+  t2.rownumbers(t1)
+# [2 5]
+  t2.rownumbers(t)
+# [3 9]
+  t2.rownumbers()
+# [3 9]
+\end{verbatim}
+The last statements show that the function returns the row numbers
+referring to the given table. Table t2 contains rows 2 and 5 in table t1,
+which are rows 3 and 9 in table t.
+
+Note that when a table is opened using its name, that table can
+be a reference table. Thus in the example above
+the last 2 statements may give different results depending on the fact
+if W53.MS is a reference table or not.
+\\The function should always be called with a table argument.
+The ability of omitting the argument is only present for backward
+compatibility.
+
+The function can be useful to get the correct values from the result of a
+getcol or getcolslice on the original table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{Table to which the row numbers refer}{F}{Record}
+\ahaddarg[in]{nbytes}{Maximum cache size in bytes}{}{Int}
+\end{ahargs}
+\ahreturns{Vector of Ints}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("W53.MS")
+  t.nrows()
+# 1920
+  data:=t.getcolslice("Data", [1,1], [1,1])
+  data::shape
+# [1 1 1920]
+  selt:=t.query("ANTENNA1==1")
+  selt.nrows()
+# 300
+  subdata:=data[,,selt.rownumbers(t)]
+  subdata::shape
+# [300]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setmaxcachesize}{set maximum cache size for column in the table}
+\begin{ahdescription}
+It can sometimes be useful to limit the size of the cache used by
+a column stored with the tiled storage manager.
+This function requires some more knowledge about the table system
+and is not meant for the casual user.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{nbytes}{Maximum cache size in bytes}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("W53.MS")
+  t.nrows()
+# 1920
+  t.setmaxcachesize ("DATA", 4*1024*1024);
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{isscalarcol}{is the specified column scalar?}
+\begin{ahdescription}
+A column may contain either scalars or arrays in each cell. 
+This tool function tests if the specified column has scalar contents.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").isscalarcol("StartTime")
+# T
+  table("tcal").isscalarcol("Gain")
+# F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{isvarcol}{tell if column contains variable shaped arrays}
+\begin{ahdescription}
+This functions tells if the column contains variable shaped arrays.
+If so, the function \texttt{getvarcol} should be used to get the
+entire column. Otherwise \texttt{getcol} can be used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{coldatatype}{return the column data type}
+\begin{ahdescription}
+A column may contain various data types. This tool function returns the
+type of the column as a string.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").coldatatype("StartTime")
+# double
+  table("tcal").coldatatype("Gain")
+# complex
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{colarraytype}{return the column array type}
+\begin{ahdescription}
+The possible column array types are defined as:
+\begin{description}
+\item[FixedShape]  FixedShape means that the shape of the array must be the
+same in each cell of the column. If not given, the array
+shape may vary. Option Direct forces FixedShape. 
+\item[Direct] Direct means that the data is directly stored in the 
+table. Direct forces option FixedShape. If not given, the array is
+indirect, which implies that the data will be stored in a
+separate file.  
+\end{description}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{String}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").colarraytype("Gain")
+# Direct,FixedShape
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ncols}{return number of columns}
+\ahreturns{Int}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").ncols()
+# 9
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{nrows}{return number of rows}
+\begin{ahdescription}
+Note that rows are numbered starting at 1.
+\end{ahdescription}
+\ahreturns{Int}
+\begin{ahexample}
+\begin{verbatim}
+  table("tcal").nrows()
+# 11
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{addrows}{add a specified number of rows}
+\begin{ahdescription}
+Rows can be added to the end of a table that was opened readonly=F.
+The new rows are empty.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{nrow}{Number of rows to add}{1}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{removerows}{remove the specified rows}
+\begin{ahdescription}
+Remove the row numbers specified in the vector from the table.
+It fails when the table does not support row removal.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rownrs}{Row numbers to remove}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{addcols}{add one or more columns}
+\begin{ahdescription}
+Columns can be added to a table that was opened readonly=F.
+The new columns will be filled with a default value (0 or blank).
+\\For each column to be added a column description has to be setup
+using function
+\ahlink{tablecreatescalarcoldesc}{table:tablecreatescalarcoldesc.function} or
+\ahlink{tablecreatearraycoldesc}{table:tablecreatearraycoldesc.function}.
+When multiple columns are used, they have to be combined in a single
+record using
+\ahlink{tablecreatedesc}{table:tablecreatedesc.function}. 
+\\It is possible to specify data manager info in order to define a
+data manager (storage manager or virtual column engine) for the
+columns to be added.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{desc}{Description of one or more columns}{}{Descriptor}
+\ahaddarg[in]{dminfo}{Optional description data manager to use}{F}{Record}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("mytable", readonly=F)
+  dc3:=tablecreatescalarcoldesc('C3', 'a')   
+  dc4:=tablecreatescalarcoldesc('C4', as_float(0))
+  dc5:=tablecreatearraycoldesc('C5', as_double(0), 2, [10,20])
+  t.addcols(dc3)
+# T
+  t.addcols(tablecreatedesc(dc4, dc5))
+# T
+\end{verbatim}
+A single column can be added as such, but multiple columns have
+to be combined.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{renamecol}{rename a column}
+\begin{ahdescription}
+A column can be renamed in a table that was opened readonly=F.
+\\However, renaming is not possible in a (reference) table resulting
+from a select or sort operation.
+\begin{ahargs}
+\ahaddarg[in]{oldname}{name of column to be renamed}{}{String}
+\ahaddarg[in]{newname}{new name of column}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("mytable", readonly=F)
+  t.renamecol ('colold', 'colnew')
+# T
+\end{verbatim}
+Column \texttt{colold} is renamed to \texttt{colnew}.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{removecols}{remove one or more columns}
+\begin{ahdescription}
+Columns can be removed from a table that was opened readonly=F.
+\\It may not always be possible to remove a column, because some data
+managers do not support column removal. However, if all columns of
+a data manager are removed, it will always succeed. It results in the
+removal of the entire data manager (and its possible files).
+\\Note that function \ahlink{getdminfo}{table:table.getdminfo.function}
+can be used to find which columns are served by which data manager.
+\begin{ahargs}
+\ahaddarg[in]{columnames}{names of columns to be removed}{}{Vector of Strings}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("mytable", readonly=F)
+  t.removecols ("col1 col2")
+# T
+\end{verbatim}
+Two columns are removed.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{iscelldefined}{test if a specific cell contains a value}
+\begin{ahdescription}
+A column containing variable shaped arrays can have an empty cell
+(if no array has been put into it). This function tests if a cell
+is defined (thus is not empty).
+Note that a scalar column and a fixed shape array column cannot have
+empty cells.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getcell}{get a specific cell}
+\begin{ahdescription}
+A cell is the value at one row in one column. It may be a scalar
+or an array.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\end{ahargs}
+\ahreturns{Value}
+\end{ahfunction}
+
+\begin{ahfunction}{getcellslice}{get a slice from a specific cell}
+\begin{ahdescription}
+A cell is the value at one row in one column. It must be an array.
+The slice must be specified as blc, trc with an optional stride.
+\\In blc and trc -1 can be used to indicate all values for a dimension
+(-1 in blc is equivalent to 1, so -1 is especially useful for trc).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Array}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("W53.MS")
+  data:=t.getcellslice("DATA", 1, [1,1], [2,1])
+  data::shape
+# [2 1]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcol}{get a specific column}
+\begin{ahdescription}
+The entire column (or part of it) is returned. Warning: it might be big!
+The functions can only be used if all arrays in the column have the
+same shape. That is guaranteed for columns containing scalars or fixed
+shaped arrays. For columns containing variable shaped arrays it only
+succeeds if all those arrays happen to have the same shape.
+\\Note that function \texttt{getvarcol} can be used to get a column of
+arbitrary shaped arrays, which also handles empty cells correctly.
+Function \texttt{isvarcol} tells if a column contains variable shaped arrays.
+shaped 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  gain:=t.getcol("Gain")
+  gain::shape
+# [2 2 28 1 11]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getvarcol}{get a specific column (for variable arrays)}
+\begin{ahdescription}
+Function \texttt{getcol} can only used if values in the column cells to get
+have the same shape. Function \texttt{getvarcol} addresses this limitation by
+returning the values as a record instead of an array. Each field in
+the record contains the value for a column cell. If the value is
+undefined (i.e. the cell does not contain a value), the unset value is
+put in the record. Each field name is the letter r followed by the
+row number. The length of the record is the number of rows to get.
+\\Note that the function \texttt{isvarcol} tells if a column contains
+variable shaped arrays.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  gain:=t.getvarcol("Gain")
+  length(gain)
+# 11
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcolslice}{get a slice from a specific column}
+\begin{ahdescription}
+A slice from the entire column (or part of it) is returned.
+Warning: it might be big!
+\\In blc and trc -1 can be used to indicate all values for a dimension
+(-1 in blc is equivalent to 1, so -1 is especially useful for trc).
+Note that blc and trc should not contain the row number, only the
+blc and trc of the arrays in the column.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("W53.MS")
+  data:=t.getcolslice("DATA", [1,1], [2,1])
+  data::shape
+# [2 1 1920]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putcell}{put a specific cell}
+\begin{ahdescription}
+A cell is the the value at one row in one column. It
+may be a scalar or an array.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{rownr}{Row number(s) (1-relative)}{}{Vector of Ints}
+\ahaddarg[in]{value}{Value}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putcellslice}{put a slice into a specific cell}
+\begin{ahdescription}
+A cell is the value at one row in one column. It must be an array.
+The slice must be specified as blc, trc with an optional stride.
+\\In blc and trc -1 can be used to indicate all values for a dimension
+(-1 in blc is equivalent to 1, so -1 is especially useful for trc).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\ahaddarg[in]{value}{Value}{}{}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putcol}{put a specific column}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Array}{}{}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  gain:=t.getcol("Gain")
+  gain[1,1,1,6,]:=1+0i
+  t.putcol("Gain", gain)
+  t.flush()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putvarcol}{put a specific column (for variable arrays)}
+\begin{ahdescription}
+\\\texttt{putcol} can only used if values in the column cells to put
+have the same shape. \texttt{putvarcol} addresses this limitation by
+passing the values as a record instead of an array. Each field in
+the record contains the value for a column cell. So the length of the
+record has to match the number of rows to put. If a value is the unset
+value, no put is done for that row.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Record with values}{}{}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  gain:=t.getvarcol("DATA", 1, 10)
+  t.putvarcol("Gain", gain, 11, 10)
+  t.flush()
+\end{verbatim}
+This example copies the values from row 1-10 to row 11-20.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putcolslice}{put a slice into a specific column}
+\begin{ahdescription}
+\\In blc and trc -1 can be used to indicate all values for a dimension
+(-1 in blc is equivalent to 1, so -1 is especially useful for trc).
+Note that blc and trc should not contain the row number, only the
+blc and trc of the arrays in the column.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Array}{}{}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  gain:=t.getcolslice("Gain", [1,1,1,6,1], [1,1,1,6,20])
+  gain:=1+0i
+  t.putcolslice("Gain", gain, [1,1,1,6,1], [1,1,1,6,20])
+  t.flush()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcolshapestring}{get shape of arrays in a specific column}
+\begin{ahdescription}
+The shapes of the arrays in the entire column (or part of it) are
+returned as strings like [20,3]. When the column contains fixed shaped
+arrays, a single string is returned. Otherwise a vector of strings is
+returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array of Strings}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("tcal",readonly=F)
+# successful read/write open of table  tcal :  9 columns, 11 rows
+  shapes:=t.getcolshapestring("Gain")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getkeyword}{get value of specific table keyword}
+\begin{ahdescription}
+The value of the given table keyword is returned. The value can be of any
+type, including a record and a table.
+\\If a keyword is a table, its value is returned as a string containing
+the table name prefixed by 'Table: '. That prefix is automatically
+removed by table functions like \texttt{open} and \texttt{tableexists}.
+\\It is possible that the value of a keyword is a record itself
+(arbitrarily deeply nested). A field in such a subrecord can be
+read by separating the name with dots.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Value}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table('tcal')
+# successful readonly open of table  tcal :  9 columns, 33 rows
+  t.getkeyword('Interval')
+# 30
+  t.getkeyword('rec.fld')     # get field from a record
+# 3.14
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getkeywords}{get values of all table keywords}
+\begin{ahdescription}
+The values of all table keywords are returned. The values can be of any
+type, including a record and a table.
+\\If a keyword is a table, its value is returned as a string containing
+the table name prefixed by 'Table: '. That prefix is automatically
+removed by table functions like \texttt{open} and \texttt{tableexists}.
+\end{ahdescription}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table('tcal')
+# successful readonly open of table  tcal :  9 columns, 33 rows
+  t.getkeywords()
+# [Type=T Jones, Interval=30, DeltaT=1]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcolkeyword}{get value of specific column keyword}
+\begin{ahdescription}
+The value of the given column keyword is returned. The value can be of any
+type, including a record and a table.
+\\If a keyword is a table, its value is returned as a string containing
+the table name prefixed by 'Table: '. That prefix is automatically
+removed by table functions like \texttt{open} and \texttt{tableexists}.
+\\It is possible that the value of a keyword is a record itself
+(arbitrarily deeply nested). A field in such a subrecord can be
+read by separating the name with dots.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Value}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS")
+# successful readonly open of table  MS :  22 columns, 7669 rows
+  t.getcolkeyword("UVW", "UNIT")
+# m
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcolkeywords}{get values of all keywords for a column}
+\begin{ahdescription}
+The values of all keywords for the given column are returned.
+The values can be of any type, including a record and a table.
+\\If a keyword is a table, its value is returned as a string containing
+the table name prefixed by 'Table: '. That prefix is automatically
+removed by table functions like \texttt{open} and \texttt{tableexists}.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS")
+# successful readonly open of table  MS :  22 columns, 7669 rows
+  t.getcolkeywords("UVW")
+# [UNIT=m, MEASURE_TYPE=UVW, MEASURE_REFERENCE=, _ForwardColumn_TableName=MS]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putkeyword}{put a specific table keyword}
+\begin{ahdescription}
+Put a table keyword. The value of the keyword can be a scalar or
+an array of any type or it can be a record.
+\\It is possible to define a keyword holding a subtable. In that
+case a special string containing the name of the subtable will be
+passed to the table client.
+\\It is possible that the value of a keyword is a record itself
+(arbitrarily deeply nested). A field in such a subrecord can be
+written by separating the name with dots. If a subrecord does not
+exist, an error is returned unless \texttt{makesubrecord=T} is given.
+In such a case intermediate records are created when needed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\ahaddarg[in]{value}{Value of keyword}{}{}
+\ahaddarg[in]{makesubrecord}{Create intermediate records}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS", readonly=F)
+  t.putkeyword("VERSION", "1.66")
+# T
+#      define ANTENNA subtable
+  t.putkeyword("ANTENNA", 'Table: MS/ANTENNA')
+  t.flush()
+# T
+#      write a field in a record and create subrecords when needed
+  t.putkeyword("REC.SUB.FLD", "val", T)
+# T
+#      write a keyword with a record value
+  t.putkeyword("REC", [SUB=[FLD="val"]])
+# T
+\end{verbatim}
+Note that the last example does the same as the previous one (assuming
+that \texttt{REC} does not exist yet with other fields).
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putkeywords}{put multiple table keywords}
+\begin{ahdescription}
+Put multiple table keywords. All fields in the given record are put
+as table keywords. The value of each field can be a scalar or
+an array of any type or it can be a record.
+\\It is also possible to define a keyword holding a subtable.
+This can be done by giving the keyword a string value consisting of
+the subtable name prefixed by 'Table: '. Remember to use single quotes,
+otherwise glish turns it into a string vector.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{value}{Record of keyword=value pairs}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table('tcal', readonly=F)
+  kw:=t.getkeywords()
+  print kw
+# [Type=T Jones, Interval=30, DeltaT=1]
+  kw.Interval:=45
+  t.putkeywords(kw)
+# T
+  t.flush()
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putcolkeyword}{put a specific keyword for a column}
+\begin{ahdescription}
+Put a keyword in the given column.
+The value of the keyword can be a scalar or
+an array of any type or it can be a record.
+\\It is possible to define a keyword holding a subtable. In that
+case a special string containing the name of the subtable will be
+passed to the table client.
+\\It is possible that the value of a keyword is a record itself
+(arbitrarily deeply nested). A field in such a subrecord can be
+written by separating the name with dots. If a subrecord does not
+exist, an error is returned unless \texttt{makesubrecord=T} is given.
+In such a case intermediate records are created when needed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\ahaddarg[in]{value}{Value of keyword}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS", readonly=F)
+  t.putcolkeyword("UVW", "MEASURE_UNIT", "m")
+# T
+  t.flush()
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{putcolkeywords}{put multiple keywords for a column}
+\begin{ahdescription}
+Put multiple keywords in the given column.
+All fields in the given record are put
+as column keywords. The value of each field can be a scalar or
+an array of any type or it can be a record.
+\\It is also possible to define a keyword holding a subtable.
+This can be done by giving the keyword a string value consisting of
+the subtable name prefixed by 'Table: '. Remember to use single quotes,
+otherwise glish turns it into a string vector.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Record of keyword=value pairs}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS", readonly=F)
+  t.getcolkeywords("UVW")
+  kw:=[UNIT=m, MEASURE_TYPE=UVW, MEASURE_REFERENCE=, _ForwardColumn_TableName=MS]
+  kw.MEASURE_REFERENCE='B1950'
+  t.putcolkeywords(kw)
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{removekeyword}{remove a specific table keyword}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS", readonly=F)
+  t.removekeyword("VERSION")
+# T
+  t.flush()
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{removecolkeyword}{remove a specific keyword for a column}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table("MS", readonly=F)
+  t.removecolkeyword("UVW", "MEASURE_UNIT")
+# T
+  t.flush()
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getdminfo}{get the info about data managers}
+\begin{ahdescription}
+This function returns the types and names of the data managers used.
+For each data manager it also returns the names of the columns served by it.
+The information is returned as a record containing a subrecord for
+each data manager. Each subrecord contains the fields TYPE, NAME and
+COLUMNS.
+\end{ahdescription}
+\ahreturns{record}
+\begin{ahexample}
+\begin{verbatim}
+  t1:=table('/aips++/code/aips/implement/Tables/test/tTable_2.data_v0')
+# successful readonly open of default-locked table
+#   /aips++/code/aips/implement/Tables/test/tTable_2.data_v0:
+#   9 columns, 10 rows
+  t.getdminfo()
+# [*1=[TYPE=StandardStMan, NAME=SSM, COLUMNS=ac ad ag arr1 arr2 arr3],
+#  *2=[TYPE=StManAipsIO, NAME=, COLUMNS=ab],
+#  *3=[TYPE=IncrementalStMan, NAME=ISM, COLUMNS=ae af]]
+\end{verbatim}
+This shows that the table uses 3 storage managers.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{keywordnames}{get the names of all table keywords}
+\begin{ahdescription}
+This function returns a vector of strings containing the names
+of all table keywords.
+\end{ahdescription}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{fieldnames}{get the names of fields in a table keyword}
+\begin{ahdescription}
+This function returns a vector of strings containing the names
+of all fields in the given table keyword.
+It is only valid if the keyword value is a record.
+\\If no keyword name is given, the names of all table keywords are returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{keyword}{keyword name}{''}{String}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{colkeywordnames}{get the names of all keywords in a column}
+\begin{ahdescription}
+This function returns a vector of strings containing the names
+of all keywords in the column with the given name..
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{columnname}{column name}{}{String}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{colfieldnames}{get the names of fields in a keyword in a column}
+\begin{ahdescription}
+This function returns a vector of strings containing the names
+of all fields in the given keyword in the given column.
+It is only valid if the keyword value is a record.
+\\If no keyword name is given, the names of all keywords in the column
+are returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{columnname}{column name}{}{String}
+\ahaddarg{keyword}{keyword name}{''}{String}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{getdesc}{get the table description}
+\begin{ahdescription}
+The table description is a Glish record that contains a complete 
+description of the layout
+of the table (except for the number of rows). It can be used as a
+template in the creation of another table using the table constructor.
+\\
+By default the actual table description is returned (thus telling the
+actual shapes and data managers used). It is also possible to get
+the table description used when creating the table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{actual}{actual table description?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Table description record}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table('tcal')
+# successful readonly open of table  tcal :  9 columns, 33 rows
+  t.getdesc()
+# [StartTime=[valueType=double, dataManagerType=StandardStMan,
+#     dataManagerGroup=StandardStman, option=5, maxlen=0, comment=],
+#  StopTime=[valueType=double, dataManagerType=StandardStman,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=],
+#  Gain=[valueType=complex, dataManagerType=StandardStMan,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=,
+#      ndim=4, shape=[2 2 28 1] ],
+#  SolutionOK=[valueType=boolean, dataManagerType=StandardStman,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=],
+#  Fit=[valueType=float, dataManagerType=StandardStMan,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=],
+#  FitWeight=[valueType=float, dataManagerType=StandardStMan,
+#      dataManagerGroup=StandardStman, option=5, maxlen=0, comment=],
+#  iSolutionOK=[valueType=boolean, dataManagerType=StandardStman,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=,
+#      ndim=2, shape=[28 1] ],
+#  iFit=[valueType=float, dataManagerType=StandardStMan,
+#      dataManagerGroup=StandardStman, option=5, maxlen=0, comment=,
+#      ndim=2, shape=[28 1] ],
+#  iFitWeight=[valueType=float, dataManagerType=StandardStMan,
+#      dataManagerGroup=StandardStMan, option=5, maxlen=0, comment=,
+#      ndim=2, shape=[28 1] ]]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getcoldesc}{get the description of a specific
+column}
+\begin{ahdescription}
+The column description is a Glish record that contains a complete 
+description of the layout
+of a specified column (except for the number of rows). It can be used 
+to construct a table description.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columnname}{Name of column}{}{String}
+\end{ahargs}
+\ahreturns{Column description record}
+\begin{ahexample}
+\begin{verbatim}
+  t:=table('tcal')
+# successful readonly open of table  tcal :  9 columns, 33 rows
+  t.getcoldesc('Gain')
+# [valueType=complex, dataManagerType=StandardStMan, dataManagerGroup=StandardStMan, option=5, comment=, ndim=4, shape=[2 2 28 1] ]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{ok}{Is the table tool ok?}
+\begin{ahdescription}
+Perform a number of sanity checks and return T if ok.
+Failure (returning F) is a sign of a bug.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahobject}{tablecolumn}{Allows access to a column in a table}
+\begin{ahdescription}
+This is a convenience tool for access to a table column. It offers the
+same functionality as the column access functions in the table tool
+(e.g. getcell). The advantage is that the column name does not need
+to be specified each time.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include "table.g"
+vis:=table("3C273XC1.MS", readonly=T);
+vistimc:=tablecolumn(vis,"TIME");
+vistimc.getcol();
+vistimc.done();
+\end{verbatim}
+\end{ahexample}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{tablecolumn}{Construct table column tool}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be accessed}{}{table tool}
+\ahaddarg[in]{column}{column name}{}{String}
+\end{ahargs}
+\end{ahconstructor}
+
+\begin{ahfunction}{table}{return the table tool}
+\begin{ahdescription}
+Return the table tool used with this tablecolumn tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{table tool}
+\end{ahfunction}
+
+\begin{ahfunction}{name}{return the column name}
+\begin{ahdescription}
+Return the name of the column used with this tablecolumn tool.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{isscalar}{is the specified column scalar?}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{isvar}{tell if column contains variable shaped arrays}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{datatype}{return the column data type}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{arraytype}{return the column array type}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{nrows}{return number of rows}
+\ahreturns{Int}
+\end{ahfunction}
+
+\begin{ahfunction}{getdesc}{get the description of a specific column}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Column description record}
+\end{ahfunction}
+
+\begin{ahfunction}{iscelldefined}{test if a specific cell contains a value}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getcell}{get a specific cell}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\end{ahargs}
+\ahreturns{Value}
+\end{ahfunction}
+
+\begin{ahfunction}{getcellslice}{get a slice from a specific cell}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Array}
+\end{ahfunction}
+
+\begin{ahfunction}{getcol}{get a specific column}
+\begin{ahargs}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array}
+\end{ahfunction}
+
+\begin{ahfunction}{getvarcol}{get a specific column (for variable arrays)}
+\begin{ahargs}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{getcolslice}{get a slice from a specific column}
+\begin{ahargs}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array}
+\end{ahfunction}
+
+\begin{ahfunction}{putcell}{put a specific cell}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number(s) (1-relative)}{}{Vector of Ints}
+\ahaddarg[in]{value}{Value}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putcellslice}{put a slice into a specific cell}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number, starting at 1}{}{Int}
+\ahaddarg[in]{value}{Value}{}{}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putcol}{put a specific column}
+\begin{ahargs}
+\ahaddarg[in]{value}{Array}{}{}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putvarcol}{put a specific column (for variable arrays)}
+\begin{ahargs}
+\ahaddarg[in]{value}{Record with values}{}{}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putcolslice}{put a slice into a specific column}
+\begin{ahargs}
+\ahaddarg[in]{value}{Array}{}{}
+\ahaddarg[in]{blc}{Bottom left corner (e.g. [1,1,1] is start of 3D array)}{}{Vector of Ints}
+\ahaddarg[in]{trc}{Top right corner}{}{Vector of Ints}
+\ahaddarg[in]{incr}{Stride (defaults to 1 for all axes)}{}{Vector of Ints}
+\ahaddarg[in]{startrow}{First row to put (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to put (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to put (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{getshapestring}{get shape of arrays in a specific column}
+\begin{ahargs}
+\ahaddarg[in]{startrow}{First row to read (default 1)}{}{Int}
+\ahaddarg[in]{nrow}{Number of rows to read (default -1 means till the end)}{}{Int}
+\ahaddarg[in]{rowincr}{Increment in rows to read (default 1)}{}{Int}
+\end{ahargs}
+\ahreturns{Array of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{getkeyword}{get value of specific column keyword}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Value}
+\end{ahfunction}
+
+\begin{ahfunction}{getkeywords}{get values of all keywords for a column}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{putkeyword}{put a specific keyword for a column}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\ahaddarg[in]{value}{Value of keyword}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{putkeywords}{put multiple keywords for a column}
+\begin{ahargs}
+\ahaddarg[in]{value}{Record of keyword=value pairs}{}{}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{removekeyword}{remove a specific keyword for a column}
+\begin{ahargs}
+\ahaddarg[in]{keyword}{Name or seqnr of keyword}{}{String|Int}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{keywordnames}{get the names of all keywords in a column}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{fieldnames}{get the names of fields in a keyword in a column}
+\begin{ahargs}
+\ahaddarg{keyword}{keyword name}{''}{String}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\end{ahfunction}
+
+\begin{ahfunction}{makeiter}{make a table iterator tool}
+\begin{ahdescription}
+Create a tableiterator tool based on this column.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{order}{Order when sorting the table}{''}{String}
+\ahaddarg[in]{sort}{Sort the table first?}{T}{Bool,String}
+\end{ahargs}
+\ahreturns{tableiterator tool}
+\end{ahfunction}
+
+\begin{ahfunction}{makeindex}{make a table index tool}
+\begin{ahdescription}
+Create a tableindex tool based on this column.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{sort}{Sort the table first?}{T}{Bool,String}
+\end{ahargs}
+\ahreturns{tableindex tool}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{close the tablecolumn tool}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{end the tablecolumn tool}
+\begin{ahdescription}
+End the tablecolumn tool and free up all memory. It cannot be reused anymore.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahobject}{tablerow}{Allows access to rows of a table tool}
+\begin{ahdescription}
+A table row is a record containing the values of a single row for
+all or optionally just specified
+columns from a table. In constructing the tablerow tool, one
+can specify which columns are to be included or excluded.
+Tool functions then allow getting and putting of table rows.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+include "table.g"
+vis:=table("3C273XC1.MS", readonly=T);
+vis.summary();
+columns:=["TIME", "UVW", "DATA"];
+visrow:=tablerow(vis, columns);
+nrows:=vis.nrows();
+for (irow in 1:nrows) print irow, visrow.get(irow);
+visrow.close();
+\end{verbatim}
+\end{ahexample}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{tablerow}{Construct table row tool}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be accessed}{}{table tool}
+\ahaddarg[in]{columns}{Array of column names}{All}{Vector of Strings}
+\ahaddarg[in]{exclude}{Exclude instead of include the named columns?}{F}{Bool}
+\end{ahargs}
+\end{ahconstructor}
+
+\begin{ahfunction}{set}{Set table and columns to be accessed}
+\begin{ahdescription}
+Reset the \texttt{tablerow} tool to use the given table and columns.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be accessed}{}{table tool}
+\ahaddarg[in]{columns}{Array of column names}{All}{Vector of Strings}
+\ahaddarg[in]{exclude}{Exclude instead of include the named columns?}{F}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{get}{Get a table row}
+\begin{ahdescription}
+Get the values in the given row. The values are returned as a record
+where the field names are the column names.
+Note that rows are numbered starting at 1.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number}{}{Int}
+\end{ahargs}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{put}{Put a table row}
+\begin{ahdescription}
+Put the values in the given record into the given table row.
+By default only the fields will be put with a name matching a column
+name in the \texttt{tablerow} tool.
+However, if \texttt{matchingfields=F} the given record must exactly
+match the tablerow layout (i.e. the column names in it). This is
+faster and can be used to put a record acquired using the /texttt{get}
+function.
+
+Note that rows are numbered starting at 1.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{rownr}{Row number}{}{Int}
+\ahaddarg[in]{value}{Values to put}{}{Record}
+\ahaddarg[in]{matchingfields}{F=value record must match tablerow layout}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{Close the tablerow}
+\begin{ahdescription}
+Close the tablerow. It can thereafter be reused using the set function.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{End the tablerow tool}
+\begin{ahdescription}
+End the \texttt{tablerow} tool and free up all memory. It cannot be
+reused anymore.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahobject}{tableiterator}{Allows iteration through a table tool}
+
+\begin{ahdescription}
+A tableiterator allows iteration through a table based on the contents
+of one or more columns. Each step in the iteration process forms
+a subset of the table for which the specified columns have the same value.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+vis:=table("3C273XC1.MS");
+vis.summary();
+visbyants:=tableiterator(vis, "ANTENNA1 ANTENNA2");
+visbyants.reset();
+while(visbyants.next()) {
+  nrows:=visbyants.table().nrows();
+  print "Antenna1 ", visbyants.table().getcell("ANTENNA1", 1),
+        " Antenna2 ", visbyants.table().getcell("ANTENNA2", 1),
+        ": ", nrows, "samples";
+}
+\end{verbatim}
+This example iterates through the table on ANTENNA1 and ANTENNA2.
+Thus each call to \texttt{next} forms a (reference) table
+containing the rows of a single baseline in the main table.
+The \texttt{table} function can be used to get access to the current
+subset.
+\\Note that a \texttt{next} has to be done to get the first subset.
+\end{ahexample}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{tableiterator}{Construct a tableiterator}
+\begin{ahdescription}
+Construct an iterator for the given table. Each step in the iteration
+returns a subtable for which the values of the given columns are
+equal. By default the table will be sorted before the iteration is
+started to achieve that all equal values are grouped together.
+\\The optional order argument can be given to define how the table
+has to be sorted. 'a' is ascending, 'd' is descending, other is don't care
+(which comes to ascending). Instead of a single letter any word can be
+used starting with a or d (e.g. asc).
+\\The optional sort argument can be given to define if the table
+has to be sorted. F means no sorting. The default T means sorting.
+The default sort algorithm used is heapsort.
+By giving the sort argument a string value, it can also be used to
+specify another sort algorithm. 'n' is no sort, 'q' is quicksort,
+'i' is insertion sort, other is heapsort. A full word can also be used.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be iterated}{}{table tool}
+\ahaddarg[in]{columns}{Array of column names}{}{Vector of Strings}
+\ahaddarg[in]{order}{Order when sorting the table}{''}{String}
+\ahaddarg[in]{sort}{Sort the table first?}{T}{Bool,String}
+\end{ahargs}
+\end{ahconstructor}
+
+\begin{ahfunction}{table}{Return the current table subset}
+\begin{ahdescription}
+Return a \texttt{table} tool for the current subset.
+\\Note that \texttt{next} has to be called to form the first subset.
+\end{ahdescription}
+\ahreturns{table tool|Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{reset}{Reset iteration to the beginning}
+\begin{ahdescription}
+It resets the iteration to the beginning of the table.
+Note that \texttt{next} has to be called to get the first subset.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{next}{Advance to the next table subset}
+\begin{ahdescription}
+Form the next subset of the table.
+It returns a false status if no more subsets are available
+The subset can be accessed using the \texttt{table} function.
+\\Note that \texttt{next} has to be called to form the first subset.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{terminate}{Terminate the iteration and clean up memory}
+\begin{ahdescription}
+This function has to be called if the iteration is ended prematurely.
+Otherwise tables are left open.
+If the iteration is done until the end, \texttt{terminate} does not
+need to be called, but it does not harm to call it.
+\\Hereafter it is still possible to restart the iteration using the
+\texttt{reset} function.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{close the tableiterator tool}
+\begin{ahdescription}
+A synonym for terminate.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{end the tableiterator tool}
+\begin{ahdescription}
+Terminate the iteration and free up all memory. It cannot be reused anymore.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahobject}{tableindex}{Allows value based table access}
+
+\begin{ahdescription}
+A tableindex makes it possible to find rows in a table based on their
+contents. When constructing the tableindex it has to be specified for
+which column or columns an index has to be built. Those columns will
+be loaded in memory and thereafter row numbers can be found in a fast way
+using a binary search.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+vis:=table("3C273XC1.MS");
+vis.summary();
+visinx:=tableindex(vis, "ANTENNA1");
+rows:=visinx.rownrs(4);
+rows:=visinx.rownrs(4,7);
+\end{verbatim}
+This example builds an index for column ANTENNA1.
+The one but last line returns the row numbers (1-relative) of all rows
+with value 4 for ANTENNA1. There after these row numbers can, for
+example be used in \ahlink{getcell}{table:table.getcell} to read data.
+The last line is similar, but in this case the search interval 4-7 is
+given. So all rows with value 4, 5, 6, or 7 in ANTENNA1 are found.
+An optional 3rd and 4th argument can be given to tell if the interval
+is open or closed (i.e. if the boundaries are part of the interval).
+Note that for indices on floating point numbers it is best to use
+a search interval, because an exact match on such numbers usually fails.
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+vis:=table("3C273XC1.MS");
+vis.summary();
+visinx:=tableindex(vis, "ANTENNA1 ANTENNA2");
+rows:=visinx.rownrs([ANTENNA1=4, ANTENNA2=5);
+rows:=visinx.rownrs([ANTENNA1=4, ANTENNA2=5), [ANTENNA1=4, ANTENNA2=8];
+\end{verbatim}
+This example builds an index for column ANTENNA1 and ANTENNA2.
+Because multiple columns are used, the arguments for function
+\ahlink{rownrs}{table:tableindex.rownrs} have to be records now.
+So the one but last line returns the row numbers (1-relative) of all rows
+with value 4 for ANTENNA1 and 5 for ANTENNA2.
+The last line defines a search interval again. In this case the
+ordering of the columns in the index is important. It finds the rows
+of ANTENNA1=4 where ANTENNA2 is in the interval 5-8.
+\end{ahexample}
+
+Normally a column used in a tableindex has to be a scalar column.
+However, if a single column is used that column can contain arrays.
+In such a case the \texttt{rownrs} function finds the rows where
+a value in its array matches the given search value.
+
+If all key values in the index are unique, the function
+\ahlink{rownr}{table:tableindex.rownr} can be used as well. It returns
+a single row number instead of a vector.
+\ahfuncs{}
+
+\begin{ahconstructor}{tableindex}{Construct a tableindex}
+\begin{ahdescription}
+Construct an index for the given table. The names of one or more
+scalar columns forming the index have to be given.
+If a single name is given, the column can be an array column too.
+Normally a sort will be done to get the key values in the correct order.
+If the table is already in the order of the data in the given columns, the
+argument \texttt{sort} can be set to F to avoid needless sorting.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be indexed}{}{table tool}
+\ahaddarg[in]{columns}{column names}{}{Vector of Strings}
+\ahaddarg[in]{sort}{is a sort of the key values needed?}{T}{Bool}
+\end{ahargs}
+\end{ahconstructor}
+
+\begin{ahfunction}{set}{Set table and columns to be indexed}
+\begin{ahdescription}
+Reset the \texttt{tableindex} tool to index the given table and
+columns. It works similar to the tableindex constructor.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{table to be indexed}{}{table tool}
+\ahaddarg[in]{columns}{column names}{}{Vector of Strings}
+\ahaddarg[in]{sort}{is a sort of the key values needed?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{isunique}{Are all key values in the index unique?}
+\begin{ahdescription}
+T is returned if all key values in the index are unique. In that case
+the function \ahlink{rownr}{table:tableindex.rownr} can also be used.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{setchanged}{Tell the index that columns have changed}
+\begin{ahdescription}
+When data are changed in an indexed column, the index should be
+updated. The tableindex tool recognizes addition and deletion of rows
+and updates the index accordingly. However, it does not recognize if data in a
+column are changed. This function can be used to tell the tableindex
+that data in one or more columns are changed and force it to update
+the index. If no column names are given it assumes all columns have changed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columns}{names of changed columns}{All}{Vector of Strings}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{rownr}{Find the row number matching the search value}
+\begin{ahdescription}
+Find the row number (1-relative) of the row containing the given
+search value. If no row is found, 0 is returned.
+This function can only be used if the index contains unique
+key values (thus if \ahlink{isunique}{table:tableindex.isunique}
+returns T), otherwise \texttt{rownrs} should be used. 
+\\Normally the search value should be given as a record in which the
+field names match the column names in the index. However, if the index
+is formed from a single column the search value can be given directly
+as shown in the examples in the introduction. The data type should be
+correct though.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{key}{search value}{}{Record}
+\end{ahargs}
+\ahreturns{Int}
+\end{ahfunction}
+
+\begin{ahfunction}{rownrs}{Find the row numbers matching search values}
+\begin{ahdescription}
+Find the row numbers of the rows matching the given search value or
+interval. An interval
+is given if the \texttt{upperkey} argument is also given. In that case
+the 3rd and 4th argument determine if the boundaries of the interval
+are inclusive (i.e. part of the interval).
+\\As in function \texttt{rownr} the search values must be given as a
+record if the index consists of multiple columns.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{key}{search value}{}{Record}
+\ahaddarg[in]{upperkey}{end of search interval}{unset}{Record}
+\ahaddarg[in]{lowerincl}{include lower boundary}{T}{Bool}
+\ahaddarg[in]{upperincl}{include upper boundary?}{T}{Bool}
+\end{ahargs}
+\ahreturns{Vector of Ints}
+\end{ahfunction}
+
+\begin{ahfunction}{close}{Close the tableindex}
+\begin{ahdescription}
+Close the tableindex. It can thereafter be reused using the set function.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{End the tableindex tool}
+\begin{ahdescription}
+End the tableindex and free up all memory. It cannot be reused anymore.
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+
+% Global functions follow:
+
+\begin{ahfunction}{is\_table}{Is this a valid table tool?}
+\begin{ahdescription}
+Determine if this is a table by the following criteria:
+\begin{itemize}
+\item tab must be a record AND
+\item tab must have a field ok AND
+\item tab.ok must be a function AND
+\item tab.ok() must be TRUE
+\end{itemize}
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tab}{Putative table tool}{}{Any value}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tableopentables}{return names of open tables}
+\begin{ahdescription}
+Return the names of all tables open by this tableserver.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Vector of Strings}
+\begin{ahexample}
+\begin{verbatim}
+  print tableopentables();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tableexists}{does this table exist on disk?}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table on disk}{}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  print tableexists("3C273XC1.MS");
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tableiswritable}{is this table writable?}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table on disk}{}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+  print tableiswritable("3C273XC1.MS");
+# T
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tableinfo}{return the info record}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table on disk}{}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+  print tableinfo("3C273XC1.MS");
+# [type=Measurement Set, subType=observed, readme=This is a MeasurementSet Table holding measurements from a Telescope]
+\end{verbatim}
+\end{ahexample}
+In case the table does not exist, it returns a similar record where
+the values are empty strings.
+\end{ahfunction}
+
+\begin{ahfunction}{tabledemo}{Perform a demonstration: Not yet implemented}
+\end{ahfunction}
+
+\begin{ahfunction}{tabletest}{Perform a test}
+\begin{ahdescription}
+Most of the functions allowed are exercised on small example tables
+that are created. If any operation fails, then the fail is returned.
+If the entire test succeeds, a T is returned.
+
+It calls the test function in the script \texttt{ttable.g}, which
+might also be useful as an example how to use the \texttt{table} tool.
+\end{ahdescription}
+\ahreturns{Bool|Fail}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecommand}{Execute a table command}
+\begin{ahdescription}
+This function makes it possible to do selection and sorting on tables
+using an SQL-like grammar. It returns a table tool which can be used
+as any other table tool.
+\\It is also possible to do a calculation on a table which returns the
+result as a record, vector, or scalar (see function
+\ahlink{calc}{table:table.calc}).
+
+The grammar for the command string is SQL-like and is described in 
+\htmladdnormallink{Note 199}{../../notes/199/199.html}. 
+
+Between SELECT and FROM, you can give some column names (separated by
+commas). Then the output table will contain those columns only.  If no
+column names are given, all columns will be selected.  E.g.:
+\\\texttt{SELECT column1, column2,column3 FROM table.in GIVING table.out}
+
+The WHERE part (like \texttt{column1*column2$>$10})
+contains an arbitrary expression.
+Functions (like sin, max, ceil) are supported. Only scalar columns
+(or keywords) can be used in the expression. Complex numbers must
+be given as, for example, \texttt{3.4+4i} (similar to Glish).
+With some extra syntax (not explained here) it is even possible
+to use keywords from other tables in the expression.
+Rows obeying the WHERE expression will be selected.
+
+Sorting can be done with the ORDERBY clause. You can give there any
+number of (scalar) columns separated by commas. You can use a mix of
+ascending (is default) and descending. E.g.:
+\\\texttt{ORDERBY column1 DESC, column2, column3 ASC, column4 DESC}
+
+The GIVING clause defines the output table containing the
+requested rows and columns. It can be used as any other table.
+
+Each part (column list, WHERE, ORDERBY) is optional,
+but at least one of them should be given. Otherwise no operation
+would be done on the input table.
+The GIVING part is also optional.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{comm}{Command string}{}{String containing any valid table command}
+\ahaddarg[in]{handle}{Table handle}{F}{Is meant for internal use only}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{table tool, record, vector, or scalar}
+\begin{ahexample}
+\begin{verbatim}
+t := tablecommand('SELECT FROM table.in
+                   WHERE column1*column2 > 10
+                   ORDERBY column1 GIVING table.out');
+t.summary();
+tablecommand('CALC FROM table.in CALC column1+2')
+tablecommand('CALC 1+2')
+\end{verbatim}
+The last example shows that it can be used as a desk calculator.
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecopy}{copy a table}
+\begin{ahdescription}
+Copy a table on disk. All subtables are also copied.
+References to another table are preserved.
+
+The argument \texttt{deep} determines how a reference table (i.e. the
+result of a \ahlink{query}{table:table.query}) is copied. By default
+a file copy is made, thus the resulting table still contains
+references and no actual data. If, however, texttt{deep=T} is given,
+a deep copy is made which means that the actual data are copied. Also
+all subtables are copied.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of existing table on disk}{}{String}
+\ahaddarg[in]{newtablename}{Name of newtable on disk}{}{String}
+\ahaddarg[in]{deep}{Make a deep copy of a reference table?}{F}{Bool}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tablerename}{rename a table}
+\begin{ahdescription}
+Rename a table on disk. All subtables are also renamed.
+References to another table are preserved.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of existing table on disk}{}{String}
+\ahaddarg[in]{newtablename}{Name of newtable on disk}{}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tabledelete}{delete a table}
+\begin{ahdescription}
+Delete a table on disk. All subtables are also deleted.
+The delete fails when the table is still in use in another process.
+When it is in use in this process only, it is closed and deleted.
+Optionally it also checks if subtables are in use in another process.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{tablename}{Name of table on disk}{}{String}
+\ahaddarg[in]{checksubtables}{Check if subtables are multiused?)}{T}{Bool}
+\ahaddarg[in]{ack}{Acknowledge deletion of table)}{T}{Bool}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecloseall}{close all open table tool objects}
+\begin{ahdescription}
+It can easily happen that a table tool object is overwritten which may
+leave open the underlying table object. For instance:
+\begin{verbatim}
+  t := table('a.b')
+  t := table('c.d')
+\end{verbatim}
+overwrites \texttt{t} and leaves open table \texttt{a.b}.
+
+This function closes all open table objects, thus also all open tables
+for which a valid tool object still exists.
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecreatedesc}{create a table descriptor}
+\begin{ahdescription}
+Creates a table descriptor from a set of column descriptions.
+The resulting table descriptor can be used in the constructor.
+
+Any number of column descriptors may be given as arguments. Just add
+more arguments as needed.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columndesc}{Column descriptor}{}{Any valid column descriptor}
+\end{ahargs}
+\ahreturns{Table descriptor record}
+\begin{ahexample}
+\begin{verbatim}
+scd1:=tablecreatescalarcoldesc("col2","aa")
+scd2:=tablecreatescalarcoldesc("col1",1,"IncrementalStMan")
+scd3:=tablecreatescalarcoldesc("colrec1",[=])
+acd1:=tablecreatearraycoldesc("arr1",1,0,[2,3,4])
+acd2:=tablecreatearraycoldesc("arr2",as_complex(0))
+td:=tablecreatedesc(scd1, scd2, scd3, acd1, acd2)
+tab:=table("mytable", tabledesc=td, nrow=100)
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This creates a table descriptor td from five column descriptors
+and then creates a 100-row table called mytable from the table
+descriptor.
+\\The columns contain respectivily strings, integer scalars, records,
+3D integer arrays with fixed shape [2,3,4], and complex arrays with
+variable shape.
+\end{ahcomments}
+\begin{ahseealso}
+\ahlink{table}{table:table}
+\ahlink{tablecreatescalardesc}{table:tablecreatescalardesc.function}
+\ahlink{tablecreatearraydesc}{table:tablecreatearraydesc.function}
+\end{ahseealso}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecreatescalarcoldesc}{create descriptor of
+a scalar column}
+\begin{ahdescription}
+A descriptor for a scalar column can be created from a name for
+the column, and a data value, which is used only to determine the
+type of the column. Note that a record value is also possible.
+
+It is possible to create the column descriptor in more detail
+by giving the data manager name, group, option and comment as well.
+
+The data manager type tells which data manager (storage manager)
+is used to store the columns. The data manager type and group are
+explained in more detail in the
+\htmladdnormallink{Tables module description}{../../aips/implement/Tables.html}. 
+The option allowed is:
+\begin{description}
+\item[Undefined] If not given,
+all possible values of the scalar have a meaning. If given, a value
+equal to the undefined values in ValType.h is a truely undefined
+value. 
+\end{description}
+
+The column descriptor is used in creating a table descriptor.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Example data value}{}{Any type}
+\ahaddarg[in]{datamanagertype}{Type of data manager}{''}{String: StandardStMan|IncrementalStMan|TiledColumnStMan|TiledCellStMan|StManAipsIO}
+\ahaddarg[in]{datamanagergroup}{Group of data manager}{''}{String}
+\ahaddarg[in]{options}{Options}{0}{Int}
+\ahaddarg[in]{maxlen}{Maximum string length}{0}{Int}
+\ahaddarg[in]{comment}{Comment: informational for user}{''}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Column descriptor record}
+\begin{ahexample}
+\begin{verbatim}
+scd1:=tablecreatescalarcoldesc("col2","aa"));
+scd2:=tablecreatescalarcoldesc("col1",1,"IncrementalStMan");
+td:=tablecreatedesc(scd1, scd1);
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This creates a table description consisting of an integer column col1,
+and a string column col2. col1 uses the IncrementalStMan storage manager,
+while col2 uses the default storage manager StandardStMan.
+\end{ahcomments}
+\begin{ahseealso}
+\ahlink{tablecreatedesc}{table:tablecreatedesc.function}
+\ahlink{tablecreatearraycoldesc}{table:tablecreatearraycoldesc.function}
+\end{ahseealso}
+\end{ahfunction}
+
+\begin{ahfunction}{tablecreatearraycoldesc}{create descriptor of 
+an array column}
+\begin{ahdescription}
+A descriptor for an array column is created from the following
+arguments:
+\begin{description}
+\item The name of the column.
+\item A data value, which is only used to determine the
+data type of the column.
+\item Optionally the number of dimensions. A value $>$ 0 means that all
+arrays in the column must have that dimensionality. Note that the
+arrays can still differ in shape unless the shape vector is also given.
+\item Optionally a vector of integers giving the shape of the array in each
+cell. If given, it enables option FixedShape (see below) and sets the number
+of dimensions (if not given). All arrays in the column get the
+given shape and the array is created as soon as a row is added.
+\\Note that the shape vector gives the shape in each table cell; the
+number of rows in the table should NOT be part of it (otherwise you
+may run out of disk space).
+\item Optionally the data manager type and group telling which data manager
+(storage manager) is used to store the columns. By default
+StandardStMan is used. The data manager type and group are explained
+in  more detail in the
+\htmladdnormallink{Tables module description}
+{../../aips/implement/Tables.html}. 
+\item Optionally array options which can be added to combine them.
+\begin{description}
+\item[1] means Direct.
+It tells that the data are directly stored in the table. Direct
+forces option FixedShape. If not given, the array is indirect, which
+means that the data will be stored in a separate file.  
+\item[4] means FixedShape. This option does not need to be given,
+because it is enforced when the shape is given. 
+FixedShape means that the shape of the array must be the same in each
+cell of the column. Otherwise the array shapes may vary along the
+column and is it possible that a cell does not contain an array at all.
+Note that when given (or implicitly by option Direct), the
+shape argument must be given as well.
+\end{description}
+\item Optionally maxlen telling the maximum length of strings. The
+default value 0 means no maximum length.
+\item Optionally a comment string.
+\end{description}
+
+The column descriptor is used in creating a table descriptor.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[in]{columname}{Name of column}{}{String}
+\ahaddarg[in]{value}{Example data value}{}{Any type}
+\ahaddarg[in]{ndim}{Number of dimensions for a cell}{Length of shape}{Int}
+\ahaddarg[in]{shape}{Length of each axis for a cell}{[]}{Vector of Int}
+\ahaddarg[in]{datamanagertype}{Type of data manager}{''}{String: StandardStMan|IncrementalStMan|TiledColumnStMan|TiledCellStMan|TiledShapeStMan|StManAipsIO}
+\ahaddarg[in]{datamanagergroup}{Group of data manager}{''}{String}
+\ahaddarg[in]{options}{Options}{0}{Int}
+\ahaddarg[in]{maxlen}{Maximum string length}{0}{Int}
+\ahaddarg[in]{comment}{Comment: informational for user}{''}{String}
+\ahaddarg[in]{tableserver}{Table server to be used}{defaulttableserver}{Any tableserver}
+\end{ahargs}
+\ahreturns{Column descriptor record}
+\begin{ahexample}
+\begin{verbatim}
+acd1:=tablecreatearraycoldesc("arr1",as_float(1),0,[2,3,4]);
+td:=tablecreatedesc(acd1);
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This creates a table description consisting of an array
+column arr1 containing 3D arrays of floats with shape [2,3,4].  Note how
+the {\tt value} parameter is used to set the type of the values that
+can be placed in the column. Other useful glish functions for this 
+purpose are {\tt as\_double(), as\_complex(), as\_boolean()}, etc.  See the
+``Type Conversions" subsection of the Glish User's Manual for a list.
+\end{ahcomments}
+\begin{ahseealso}
+\ahlink{tablecreatedesc}{table:tablecreatedesc.function}
+\ahlink{tablecreatescalarcoldesc}{table:tablecreatescalarcoldesc.function}
+\end{ahseealso}
+\end{ahfunction}
+
+\begin{ahfunction}{tabledefinehypercolumn}{define a hypercolumn in a table descriptor}
+\begin{ahdescription}
+Defines a hypercolumn in the given table descriptor.
+A hypercolumn is an entity used by the Tiled Storage Managers (TSM). It
+defines which columns have to be stored together with a TSM.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg[inout]{tabledesc}{Table descriptor}{}{Any valid table descriptor}
+\ahaddarg[in]{name}{Name of hypercolumn}{}{String}
+\ahaddarg[in]{ndim}{Dimensionality of hypercolumn}{}{Int}
+\ahaddarg[in]{datacolumns}{Data columns to be stored with TSM}{}{Vector of strings}
+\ahaddarg[in]{coordcolumns}{Coordinate columns to be stored with TSM}{none}{Vector of strings}
+\ahaddarg[in]{idcolumns}{Id columns to be stored with TSM}{none}{Vector of strings}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+scd1:=tablecreatescalarcoldesc("col2","aa")
+scd2:=tablecreatescalarcoldesc("col1",1,"IncrementalStMan")
+scd3:=tablecreatescalarcoldesc("colrec1",[=])
+acd1:=tablecreatearraycoldesc("arr1",1,0,[2,3,4])
+acd2:=tablecreatearraycoldesc("arr2",as_complex(0))
+td:=tablecreatedesc(scd1, scd2, scd3, acd1, acd2)
+tabledefinehypercolumn(td, "TiledArray", 4, "arr1")
+tab:=table("mytable", tabledesc=td, nrow=100)
+\end{verbatim}
+\end{ahexample}
+\begin{ahcomments}
+This creates a table descriptor td from five column descriptors
+and then creates a 100-row table called mytable from the table
+descriptor.
+\\The columns contain respectivily strings, integer scalars, records,
+3D integer arrays with fixed shape [2,3,4], and complex arrays with
+variable shape.
+The first array is stored with the Tiled Storage Manager (in this case
+the TiledColumnStMan).
+\end{ahcomments}
+\begin{ahseealso}
+\ahlink{tablecreatedesc}{table:tablecreatedesc.function}
+\ahlink{tablecreatescalardesc}{table:tablecreatescalardesc.function}
+\ahlink{tablecreatearraydesc}{table:tablecreatearraydesc.function}
+\end{ahseealso}
+\end{ahfunction}
+
+\input{tablebrowser.help}
+
+\input{tablecomparer.help}
+
+\input{tableplot.help}
+
+\end{ahmodule}

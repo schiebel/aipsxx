@@ -1,0 +1,349 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: stopwatch.help,v 19.2 2004/08/25 02:10:18 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{stopwatch}{stopwatch style timer functions}
+
+\ahinclude{stopwatch.g}
+
+\ahkeyword{timer}{}
+\ahkeyword{stopwatch}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+The stopwatch class provides a set of timer functions with the
+functionality of a traditional stopwatch.  Any number of stopwatches may be
+created, which can then individually be started, stopped, reset, displayed
+and interrogated.  A function can be passed to a stopwatch, which is then
+run and timed.  This is particularly useful for benchmarking purposes.  Due
+to the distributed process nature of \aipspp , it is very difficult correctly
+to account for all the resources used by a given calculation.  Thus only
+wall clock time is implemented in this class, as opposed to the ``system,
+user and wall clock'' accounting often found in simple single threaded
+applications.  Multiple stopwatch timers will not interfere with each other.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+
+- include "stopwatch.g"               # no timer is created by default
+T 
+- tim := stopwatch()
+- tim.show()                          # timer created running
+timer is RUNNING, value is 3.56s 
+F 
+- tim.stop()                          # stop and start 
+timer stopped at 9.31s 
+F 
+- tim.show()
+timer is STOPPED, value is 9.31s
+F
+- tim.start()                         # restartable
+timer restarted from 9.31s
+F
+-tim.reset()                          # reset doesn't change state
+timer reset to zero
+F 
+- tim.show()
+timer is RUNNING, value is 12.35s
+F 
+- tim.stop()                          # values can be retrieved
+timer stopped at 1m 8.73s 
+F 
+- tim.value()
+68.733093
+- tim.fmtvalue()
+1m 8.73s  
+- tim.state()
+STOPPED
+- tim.start(quiet=T)                  # suppress messages
+- split_time := tim.value()           # a value while running is a split time
+- split_time
+74.526214
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+See \ahlink{timefunc}{misc:stopwatch.timefunc} for examples of how to time
+functions.  stopwatch tools also provide standard functions {\tt ok()} and
+{\tt delete()}.
+\end{ahcomments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{stopwatch}{Construct stopwatch tool}
+
+\begin{ahdescription}
+Creates a stopwatch tool, initialized to zero and running.  Any
+number of stopwatches may be created without interfering with each
+other.
+\end{ahdescription}
+
+\ahreturns{stopwatch tool}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{start}{start timer running}
+
+\begin{ahdescription}
+In the running state, the timer advances at real time.  The value of
+the timer is not reset to zero, and the timer may be restarted after
+it has been stopped.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{quiet}{Suppress status output?}{F}{}
+\end{ahargs}
+
+\begin{ahcomments}
+A timer is created zeroed and running, so you may not need to call {\tt
+start()} explicitly.  Similarly, there is no need to directly set the state
+of the timer when timing functions,
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{stop}{stop timer}
+
+\begin{ahdescription}
+In the stopped state, the timer does not advance, though it can
+be interrogated for the value in different formats.  It may be
+restarted.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{quiet}{Suppress status output?}{F}{}
+\end{ahargs}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{reset}{reset time value to zero}
+
+\begin{ahdescription}
+The timer value is reset to zero, but the run state is not changed.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{quiet}{Suppress status output?}{F}{}
+\end{ahargs}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{zero}{stop and reset timer}
+
+\begin{ahdescription}
+The timer is stopped and the value is reset to zero.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{quiet}{Suppress status output?}{F}{}
+\end{ahargs}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{value}{get numerical value of timer in seconds}
+
+\ahreturns{numerical value of timer in seconds}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{fmtvalue}{formatted string value of timer with units}
+
+\begin{ahargs}
+\ahaddarg{value}{Time in seconds to be formatted}{Current value()}{}
+\end{ahargs}
+
+\ahreturns{formatted time string value with units}
+
+\begin{ahdescription}
+If no explicit value is passed to the function, the current value of
+the stopwatch will be used.  Leading fields with zero value are
+suppressed.
+\end{ahdescription}
+
+\begin{ahexample}
+An extreme example might be
+\begin{verbatim}
+- tim.fmtvalue()
+27y 306d 20h 45m 54.44s
+\end{verbatim}
+Or when passing in an explicit value
+\begin{verbatim}
+- tim.fmtvalue(90)
+1m 30.00s 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{state}{get run state of timer}
+
+% I'd prefer this version, but it tickles a problem in help2tex
+%\ahreturns{either \{\tt 'RUNNING'\} or \{\tt 'STOPPED'\}}
+\ahreturns{either 'RUNNING' or 'STOPPED'}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{show}{show value and run state of timer}
+
+\begin{ahexample}
+\begin{verbatim}
+- tim.show()
+timer is RUNNING, value is 1m 8.73s
+F 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{timefunc}{time a function}
+
+\begin{ahdescription}
+Run a function, and display the runtime.  The function to be timed should
+take no arguments, but constant arguments may be passed in by defining
+a function expression in the call.  After the function is run, the
+numerical value of the runtime can be retrieved from the time with
+\ahlink{value}{misc:stopwatch.value}.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{func}{Function to be timed}{}{}
+\ahaddarg{niter}{Number of iterations}{1}{}
+\ahaddarg{name}{Output label}{'' or func}{}
+\ahaddarg{quiet}{Suppress status output?}{F}{}
+\end{ahargs}
+
+\begin{ahexample}
+\begin{verbatim}
+                                      # a function that might take a while
+- function iter_sin (iter=10,len=10000) { 
++ v:=[1:len]; while (iter>0) { iter:=iter-1; v := sin(v); } v; }
+
+- tim.timefunc(iter_sin)              # time it
+Timing function...
+return value is [0.462957899 0.471936887 0.137069347 -0.448762012 ... ] 
+Function took 0.15s  to run
+F 
+-                                     # can supply args this way
++ tim.timefunc(function () { iter_sin(1000) })
+Timing function...
+return value is [0.0545929715 0.0546066474 0.0510562464 -0.0545696198 ... ] 
+Function took 9.31s  to run
+F 
+-                                     # or this way
++ function tmpfunc() { iter_sin(1000) }
+tim.timefunc(tmpfunc,quiet=T)                
+F 
+- tim.show()
+timer is STOPPED, value is 9.21s      # timings are reasonably consistent
+F
+-                                     # can average multiple runs
++ t.timefunc(function() { iter_sin(1000)}, 3, 'big_demo')  
+Timing function big_demo 3 times...
+return value is [0.0545929715 0.0546066474 0.0510562464 -0.0545696198 ... ] 
+Function big_demo took 9.20s to run
+return value is [0.0545929715 0.0546066474 0.0510562464 -0.0545696198 ... ] 
+Function big_demo took 9.26s to run
+return value is [0.0545929715 0.0546066474 0.0510562464 -0.0545696198 ... ] 
+Function big_demo took 9.31s to run
+
+Function big_demo took an average of 9.26s to run, over 3 iterations
+T 
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+The func argument may also be be a string containing the name of
+the function to be timed.  In this case, the name argument will default
+to the function name.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{help}{display help}
+
+\begin{ahexample}
+\begin{verbatim}
+- tim.help()
+Stopwatch style timing.  Available member functions:
+ 
+tim := stopwatch()  # timer is created running and zeroed
+ 
+tim.start()       # timer returns mutable values
+tim.stop()        # timer returns fixed values
+tim.reset()       # zeros time w/o state change
+tim.zero()        # stop followed by reset
+tim.state()       # returns 'RUNNING' or 'STOPPED'
+tim.value()       # return current value in seconds
+tim.fmtvalue(v)   # return string formatted value, with units
+tim.show()        # print state and value of timer
+tim.timefunc(func,niter,label)
+                  # time function f.  Should take no parameters
+tim.delete()      # destroy the tool
+ 
+Most functions take an optional quiet argument to suppress informational
+messages.  Notice that tim.timefunc(function () {foo(5)}) is a valid call
+if you wish to avoid defining a new function to provide arguments.  After
+timing a function, the numerical interval can be retrieved with tim.value()
+F 
+\end{verbatim}
+\end{ahexample}
+
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{delete}{destroy the tool}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{ahobject}
+\end{document}

@@ -1,0 +1,153 @@
+%% Copyright (C) 1999,2000,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: multibeam.help,v 19.0 2003/07/16 03:35:25 aips2adm Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+
+\begin{document}
+
+\begin{ahmodule}{multibeam}{Module for Multibeam receiver data processing}
+
+\begin{ahdescription} 
+
+This module pertains to the processing of
+\htmladdnormallink{Multibeam}{http://www.atnf.csiro.au/research/multibeam}
+data. 
+
+
+{\stff Livedata}, the Parkes Multibeam data reduction task, directs and
+regulates the flow of Multibeam data between the following six
+independent clients:
+
+\begin{verbatim}
+Reader ->
+          Bandpass calibrator
+                              -> Data monitor
+                              -> Writer
+                                              -> Statistics
+                                              -> Gridder
+\end{verbatim}
+
+Data flow is from left to right.  All clients other than the reader may
+be disabled or short-circuited, i.e.  any line(s) of the above may be
+deleted other than the first except that the statistics calculator and
+gridder are dependent on the writer since they process its output file. 
+However, once started, the gridder may remain active even after the
+writer has been disabled since it is fed via a special purpose queue. 
+
+{\stff Livedata} is started by issuing the command
+
+\begin{verbatim}
+% glish -l 'livedata.g'
+\end{verbatim}
+
+This starts up the {\stf Livedata} GUI from which operations are controlled.
+The GUI has popuphelp attached.   Consult with your local Multibeam
+expert for details on the reduction process as required.
+
+
+\begin{itemize}
+
+\item Reader: This client reads data from either an MBFITS format file (the
+   single-dish variant of RPFITS), or an \aipspp\ Measurement Set.  The
+   input data, which may be selected on a beam-by-beam basis, is
+   packaged as a \glish\ record for the next client in the chain.
+
+\item Bandpass calibrator: This client does most of the work in calibrating
+   Multibeam data.  It operates in several modes depending on the method
+   of observation:
+
+\begin{itemize}
+
+\item Scanning modes as used in HIPASS and ZOA surveys.
+\item Frequency switching modes.
+\item Position switching modes where each element of the Multibeam
+        system is pointed at the source in turn.
+\item Extended source modes such as used for High Velocity Clouds.
+
+Each of these modes uses a separate bandpass calibration strategy.
+These are based on robust statistical estimators, particularly median
+estimators, which allow rejection of RFI without human intervention.
+
+\end{itemize}
+
+\item Data monitor: The data monitor interfaces to {\stf MultibeamView}, a specially
+   modified version of the Karma \htmladdnormallink{Karma}{http://www.atnf.csiro.au/karma}
+   package {\stf kview} application.  In fact, it invokes
+   {\stf MultibeamView} twice, once for each polarization, to provide two
+   panels displaying frequency versus time with various image
+   enhancement options.  This provides visual inspection for each pair
+   of polarizations of the 13 beams, one pair at a time.
+
+\item Writer: Data is written to an \aipspp\ Measurement Set by the writer
+   client.  These measurementsets are converted to SDFITS format for
+   data archiving by a separate offline task.
+
+\item Statistics: The statistics client reads through an \aipspp\ Measurement Set
+   and computes basic statistical measures for each beam and
+   polarization.
+
+\item Gridder: Each Multibeam integration consists of a spectrum taken at a
+   particular point on the sky.  The gridder takes the spectra from a
+   collection of bandpass-calibrated measurementsets and interpolates
+   them onto a regular map grid, writing the result to a \fits\ data cube
+   as it goes.  Typically each point in the sky is sampled many times in
+   separate observations and the gridder combines these using robust
+   (median) statistics to automatically eliminate Radio Frequency Interference.
+
+   Being the most computationally intensive client, the gridder is
+   usually used separately for offline data reduction.  However, it can
+   be linked into the Livedata reduction chain, though, unlike the other
+   clients, it may run remotely on another machine in a quasi-batch mode.
+
+\end{itemize}
+
+{\stff LiveData} operates in near-realtime at the Parkes telescope to allow
+immediate assessment of data quality.  However, it may also be used for
+offline data processing.
+
+Each client is implemented as a C++ program with a separate controlling
+\glish\ script client (subsequence) which provides an optional GUI.  The
+six script clients are coordinated by another script client which
+directs and regulates the flow of data between them by means of \glish\
+events.  This "reducer", the {\stff LiveData} control hub, also maintains the
+input queue for the gridder.
+
+An additional "scheduler" client is added for interactive use.  It
+provides a queueing mechanism which supplies input to the data reduction
+pipeline.  It provides LiveData's near-realtime capability by
+automatically discovering MBFITS files as they are written by the
+Multibeam correlator. 
+
+{\stf LiveData} may be run in batch mode by invoking the reducer directly
+(usually from a \glish\ script) thus bypassing the scheduler (discuss this
+with your local Multibeam data processing expert).
+
+
+\end{ahdescription}
+
+\end{ahmodule}
+\end{document}

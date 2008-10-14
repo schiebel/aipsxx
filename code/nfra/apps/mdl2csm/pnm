@@ -1,0 +1,79 @@
+#!/local/bin/perl
+# pbm.pl: purge newstar model file.  Removes white-space and unnecessary 
+# header and page header information producing a file suitable for mdl2csm.
+# Program reads from STDIN and writes to STDOUT out. Run it like this:
+#
+#   	pnm < nmFile > pnmFile
+#
+# where nmFile is the original NewStar model file and pnmFile is the purged
+# version of this file.
+#
+#   Copyright (C) 1995,1996,1997
+#   Associated Universities, Inc. Washington DC, USA.
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the Free
+#   Software Foundation; either version 2 of the License, or (at your option)
+#   any later version.
+#
+#   This program is distributed in the hope that it will be useful, but WITHOUT
+#   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#   FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+#   more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   675 Massachusetts Ave, Cambridge, MA 02139, USA.
+#
+#   Correspondence concerning AIPS++ should be addressed as follows:
+#          Internet email: aips2-request@nrao.edu.
+#          Postal address: AIPS++ Project Office
+#                          National Radio Astronomy Observatory
+#                          520 Edgemont Road
+#                          Charlottesville, VA 22903-2475 USA
+#
+#   $Id: pnm,v 19.0 2003/07/16 03:38:30 aips2adm Exp $
+
+# Header contains the word "epoch". Read file until this is found. Print the
+# epoch value and the RA/DEC from the following line.
+while (<>) {
+    if (/epoch/) {
+    	/epoch\s(\d*)/;
+	$epoch = $1;
+	# get the next line.
+	$_ = <>;
+	/(\d*\.\d*),\s*(\d*\.\d*)/;
+	print "$epoch $1 $2\n";
+	last;
+    }
+}
+
+# The rest of the file contains the data interspersed with blank lines and
+# page headers.  Each data line contains a number of fields beginning with
+# a data line number (which begins at 1).  For each data line only fields
+# of interest are printed.
+
+$cnt = 0;   	    	# dataline counter
+$I = 2;     	    	# stokesI is field 2
+$l = 3;     	    	# arcSecs relative to RA (field 3)
+$m = 4;     	    	# arcSecs relaive to DEC (field 4)
+$Q = 6;     	    	# conmponent of flux (field 6)
+$U = 7;     	    	# component of flux (field 7)
+$V = 8;     		# component of flux (field 8)
+$long = 9;  	    	# (field 9)
+$short = 10;	    	# (field 10)
+$PA = 11;   	    	# (field 11)
+while (<>) {
+    @iline = split /\s+/;
+    if ($iline[1] == ($cnt + 1)) {
+        $tmp = $iline[$PA];
+        $tmp =~ /(\d*)/;
+	$iline[$PA] = $1;
+    	print "$iline[$I] $iline[$l] $iline[$m] $iline[$Q] $iline[$U]";
+	print " $iline[$V] $iline[$long] $iline[$short] $iline[$PA]\n";
+	$cnt++;
+    }
+}
+    
+
+

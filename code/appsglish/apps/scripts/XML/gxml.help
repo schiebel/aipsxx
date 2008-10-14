@@ -1,0 +1,1360 @@
+%% Copyright (C) 2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: gxml.help,v 19.2 2004/08/25 02:22:47 cvsmgr Exp $
+\documentclass{article}
+\usepackage{aips2help,html}
+%\providecommand{\gxml}{\texttt{gxml}}
+%\providecommand{\gxmlf}[1]{\ahlink{\tt gxml.#1()}{xml:gxml.#1}}
+%\providecommand{\gxmlf}[1]{\texttt{gxml.#1()}}
+
+\begin{document}
+
+\begin{ahmodule}{xml}{Module for manipulating XML data}
+
+
+\begin{ahdescription} 
+
+This module contains various tools for reading, writing, creating, and
+manipulating XML data.  
+
+The \ahlink{gxml}{#gxml} family of tools is for building an XML
+document tree in memory which can be printed out as an XML document.
+The \ahlink{gxmlparser tool}{xml:gxmlparser} is used for loading
+existing an XML document into a gxml tree.
+
+\end{ahdescription}
+
+\subsubsection{gxml - Family of Tools}
+
+\ahinclude{gxml.g}
+
+\begin{ahdescription}
+
+\texttt{gxml} is a record of functions that are used to create and manipulate
+XML data.  The various XML data items--such as elements, text, and
+comments--are linked together in memory as a tree structure that
+reflects the structure of the XML document.  One can use the \texttt{gxml} 
+functions to build up the tree; once the tree is complete, it's
+contents can be printed out as an XML document.  \texttt{gxml} is intended
+for use primarily in scripts (and interactive glish sessions); thus,
+a toolmanager interface is not supported.
+
+\textbf{Creating and Printing XML Document Trees}
+
+Many of the \texttt{gxml} functions are constructors for creating tools that
+represent the various components of the document (see listing below).
+Typically, however, applications would normally only use \texttt{gxml.doc()},
+\texttt{gxml.fromrec()}, and perhaps \texttt{gxml.element()}.  The
+\texttt{gxml.doc()} constructor returns a tool that represent an XML
+document.  One can then call its various tool functions to add
+components to the document:
+
+\begin{ahexample}
+\begin{verbatim}
+include 'gxml.g'
+mydoc := gxml.doc()
+mydoc.addcomment("Here is the root element")
+myroot := mydoc.setroot("measure")
+myroot.setattribute("id", "meas")
+m0 := myroot.childelement("m0")
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+myroot.addtextelement("refer", "UTC")
+myroot.addtextelement("type", "epoch")
+mydoc.tostring(pretty=T)             # returns the XML document as a string
+\end{verbatim}
+results in ...
+\begin{verbatim}
+<?xml version="1.0" ?>
+<!-- Here is the root element -->
+<measure id="meas">
+    <m0>
+        <value>52383.9</value>
+        <unit>d</unit>
+    </m0>
+    <refer>UTC</refer>
+    <type>epoch</type>
+</measure> 
+\end{verbatim}
+\end{ahexample}
+
+In the above example, \texttt{mydoc} is a document tool, and
+\texttt{myroot} and \texttt{m0} are both element tools.  The
+\texttt{mydoc} tool stores internally references to each of its
+child nodes--the processing instruction, the comment, and
+\texttt{myroot}, the root element.  \texttt{mydoc} in turn stores
+references to its child elements.  
+
+The above example also shows how to print an XML document from \texttt{gxml}
+tree via the \texttt{gxml.doc} tool's 
+\ahlink{tostring()}{xml:gxml.doc.tostring()} function.  
+
+It should be noted that \texttt{gxml} functions do not absolutely guarantee
+legal XML (as of yet); for example, it is possible to give an XML
+document multiple root elements or to put the document type node in
+the wrong place.  Nor do they provide any facility for ensuring
+compliance with a Document Type Definition (DTD).  
+
+The \texttt{gxml.fromrec()} function is a special constructor for converting
+Glish records into XML; see its documentation for details and an
+example.  The reverse transformation, from XML to Glish record, is
+also possible via the \ahlink{torec() function}{xml:gxml.element} of
+the \texttt{gxml.doc} and \texttt{element} tools.  
+
+\textbf{Tool Interfaces}
+
+The \texttt{gxml} family provides a tool for each of the major node types:
+document, element, comment, processing node, document type, and text.
+White space is handled as a special form of text.  Because of their
+ability to hold other XML nodes, \texttt{gxml.doc} and \texttt{gxml.element} are
+the two tools one tends to interact directly with most.  These tools
+provide functions for adding and inserting other nodes of the various
+types as children.  
+
+All XML node tools have two functions in common:
+
+\begin{itemize}
+\item \textbf{tostring()} --- converts the node to its XML-string
+representation.  When applied to the \texttt{gxml.element} tool, not only is
+the opening and closing element tags printed but also all of the
+element's descendants.  The \texttt{gxml.doc} tool prints out the entire XML
+tree as an XML document.  This is the primary way to print an XML
+document. 
+
+\item \textbf{getrep()} --- returns a reference to the Glish record
+containing internal representation of the XML node.  The structure of
+this record is node-dependent; see descriptions for the individual
+node tools.  
+
+\item \textbf{clone()} --- returns a copy of the node, include all
+children. 
+\end{itemize}
+
+\textbf{Caveats}
+
+The \texttt{gxml} family of tools, while convenient for simple manipulations
+of moderate sized XML documents, does have its limitations.  This
+library is based on the common model for manipulating XML using ``live
+trees.''  This means that nodes of the tree are accessed via
+references; thus, this allows one to update a node deep in the
+document and have that change reflected in the document as a whole.
+Glish's handling of references (designed so that users normally don't
+have to think about them) can produce some unexpected behavior if the
+user is not careful.  If you find yourself moving nodes around in the
+document, keep in mind the following tips:
+
+\begin{enumerate}
+\item \textbf{Always pass \texttt{gxml} nodes explicitly as
+references.}  In \texttt{gxml}, nodes are represented as tools.  If
+you forget to pass a tool as a reference, you may wind up with a copy
+of the node that is detached from its document; thus, when you print
+out the document, you won't see any changes to made to the node.
+Sometimes nothing goes wrong; that's because Glish's copy-on-write
+feature only makes a copy when the contents of an object is updated.
+
+\item \textbf{Avoid saving newly creating \texttt{gxml} tools to local
+variables.}  This problem often comes up inside a function where you
+might do the following:
+
+\begin{verbatim}
+appendMYCHILD := function(ref element) {
+    local child := gxml.element('MYCHILD');
+    element.appendchild(child);
+    return T;
+}
+\end{verbatim}
+
+The newly created child is passed by reference to the element it is
+added to.  However, when Glish leaves the function, the memory
+associated with \texttt{child} is cleaned up; this will cause the
+reference to the child held by \texttt{element} to be set to
+\texttt{F}.  One solution to this is to save the newly created element
+to some variable that will persist past the exiting of the function,
+either a global variable or a private variable of a tool.  
+\end{enumerate}
+
+Although these problems may get corrected in the future within the
+context of \texttt{gxml}, it is expected that this tool will be
+eventually superceded by a C++ implementation that would ultimately be
+more robust.
+
+\end{ahdescription}
+
+\begin{ahobject}{gxml.doc}{a tool representing an XML document}
+\ahinclude{gxml.g}
+\ahkeyword{xml}{}
+
+\begin{ahdescription}
+The \texttt{gxml.doc} tool is used to create, manipulate, and print an
+XML document.  It represents the top node of an XML tree.
+
+By default, the constructor automatically adds an XML processing
+instruction.  A DOCTYPE node, however, must be added explicitly if it
+is desired, as shown in the example below.  The root element can be 
+set with the \ahlink{setroot()}{xml:gxml.doc.setroot()} function.  When
+the XML tree is fully set, the document can be printed out via the 
+\ahlink{tostring()}{xml:gxml.doc.tostring()} function.
+
+The \texttt{gxml.doc} tool implementation inherits from the
+\texttt{gxml.element} tool; thus, all \texttt{gxml.element} functions
+are supported.
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+mydoc.setdoctype('measure', 'http://myserver.mydomain/xml/measure.dtd'))
+myroot := mydoc.setroot('measure')
+myroot.setattribute('id', 'meas')
+myroot.addtextelement('type', 'epoch')
+myroot.addtextelement('refer', 'UTC')
+mydoc.tostring(pretty=T)
+\end{verbatim}
+
+This results in:
+\begin{verbatim}
+<?xml version="1.0" ?>
+<!DOCTYPE measure SYSTEM http://myserver.mydomain/xml/measure.dtd>
+<measure id="meas">
+    <type>epoch</type>
+    <refer>UTC</refer>
+</measure> 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahconstructor}{gxml.doc}{Construct an XML document}
+\begin{ahdescription}
+This constructs a tool for building up an XML document.  Unless 
+\texttt{doxmlproc=F}, it automatically adds an XML processing
+instruction.  A DOCTYPE node, however, must be added explicitly if it 
+is desired (see \ahlink{setdoctype()}{xml:gxml.doc.setdoctype}).  
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc(standalone="yes")
+- mydoc.tostring(pretty=T)
+<?xml version="1.0" standalone="yes" ?> 
+\end{verbatim}
+\end{ahexample}
+\begin{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{doxmlproc}{if true, automatically add the xml processing 
+	             instruction}{T}{boolean}
+\ahaddarg{standalone}{if specified, set the standalone attribute to
+	             this value}{'' -- do not set the attribute}{'yes', 'no'}
+\ahaddarg{version}{the XML version}{1.0}{}
+\end{ahargs}
+\end{ahconstructor}
+
+\begin{ahfunction}{setroot}{set and return the root element}
+
+\begin{ahdescription}
+This function sets and returns the root element.  No check is made to 
+ensure that the element name matches that set by the DOCTYPE node.
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc(standalone='yes')
+- myroot := mydoc.setroot('measure')
+- myroot.setattribute('id', 'meas')
+- myroot.addtextelement('type', 'epoch')
+- myroot.addtextelement('refer', 'UTC')
+- mydoc.tostring(pretty=T)
+<?xml version="1.0" standalone="yes" ?>
+<measure id="meas">
+    <type>epoch</type>
+    <refer>UTC</refer>
+</measure> 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{the name to give the root element}{}{string}
+\end{ahargs}
+\ahreturns{an \texttt{element} tool}
+\end{ahfunction}
+
+\begin{ahfunction}{getroot}{find and return the root element}
+\begin{ahdescription}
+This function finds and returns the root element of this document or F
+if the root element has not yet been set.  
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc(standalone='yes')
+- mydoc.setroot('measure')
+- myroot := mydoc.getroot()
+- myroot.setattribute('id', 'meas')
+- myroot.addtextelement('type', 'epoch')
+- myroot.addtextelement('refer', 'UTC')
+- mydoc.tostring(pretty=T)
+<?xml version="1.0" standalone="yes" ?>
+<measure id="meas">
+    <type>epoch</type>
+    <refer>UTC</refer>
+</measure> 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\ahreturns{an \texttt{element} tool or F if the root has not been set yet}
+\end{ahfunction}
+
+\begin{ahfunction}{getrootname}{return the tag name for the root
+element}
+
+\begin{ahdescription}
+This function returns the tag name for the root element or an empty
+string if the root element has not been set yet.
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc(standalone='yes')
+- mydoc.setroot('measure')
+- mydoc.getrootname()
+measure
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\ahreturns{string; the string is empty if the root element has not
+been set}
+\end{ahfunction}
+
+\begin{ahfunction}{getdoctype}{return the DOCTYPE node}
+\begin{ahdescription}
+This function returns the DOCTYPE node of this document as a
+\texttt{gxml.doctype} tool or \texttt{F} if it has not been set yet.
+The DOCTYPE can be set via the \ahlink{setdoctype() function}{xml:gxml.doc.setdoctype}.  
+
+\ahreturns{a gxml.doctype tool if it is available; F, otherwise}
+
+\begin{ahexample}
+\begin{verbatim}
+- doc := gxml.doc();
+- doc.setdoctype(root='MYXML', systemid='http://example.org/xml/myxml.dtd');
+T
+- doc.getdoctype().tostring();
+<!DOCTYPE MYXML PUBLIC "http://example.org/xml/myxml.dtd">
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setdoctype}{set the DOCTYPE node}
+\begin{ahdescription}
+This function inserts a DOCTYPE node into this document.  A doctype
+node is usually the second line in the XML file and looks something
+like this:
+
+\begin{verbatim}
+<!DOCTYPE MYXML PUBLIC "http://example.org/xml/myxml.dtd">
+\end{verbatim}
+
+It indicates what the name of the root element is ("MYXML") and where
+a DTD can be obtained for validating the document.
+
+The DOCTYPE node can be retrieved via the \texttt{getdoctype()} function.
+
+\begin{ahargs}
+\ahaddarg{root}{the name of the root element}{}{string}
+\ahaddarg{systemid}{a URL that points to the DTD}{''--no systemid
+attribute is set}{string; an empty string prevents the attribute from
+being set}
+\ahaddarg{publicid}{the public identifier for the DTD}{''--no publicid
+attribute is set}{string; an empty string prevents the attribute from
+being set}
+\ahaddarg{decls}{miscellaneous entity declarations.  This argument
+should contain the raw declarations in XML DTD syntax and include any 
+desired newline characters}{''--no declartions are added}{string}
+\end{ahargs}
+\ahreturns{T if successful; F, otherwise}
+
+\begin{ahexample}
+\begin{verbatim}
+- doc := gxml.doc();
+- doc.setdoctype(root='MYXML', systemid='http://example.org/xml/myxml.dtd');
+T
+- doc.getdoctype().tostring();
+<!DOCTYPE MYXML PUBLIC "http://example.org/xml/myxml.dtd">
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{getxmlproc}{return the "xml" processing node}
+\begin{ahdescription}
+This function returns the "xml" processing node of this document as a
+\texttt{gxml.proc} tool or \texttt{F} if it has not been set yet.
+This node, usually the first child of the document, can either be set
+when \ahlink{constructing a gxml.doc}{xml:gxml.doc.doc}
+tool or via the \ahlink{setxmlproc() function}{xml:gxml.doc.setxmlproc}. 
+
+\ahreturns{a gxml.proc tool if it is available; F, otherwise}
+
+\begin{ahexample}
+\begin{verbatim}
+- doc := gxml.doc()
+- doc.getxmlproc().tostring()
+<?xml version="1.0" encoding="utf-8" ?> 
+- doc.setxmlproc(standalone="yes");
+T
+- doc.getxmlproc().tostring()
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?> 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setxmlproc}{set the "xml" processing node}
+\begin{ahdescription}
+This function inserts an "xml" processing node as the first child of
+this document.  If the document already has such a node, it will be
+replaced. 
+
+The "xml" processing node is usually the first node of the document
+and signals standard information to parsers.  It has a form something
+like this:
+
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?> 
+\end{verbatim}
+
+The \texttt{version} attribute indicates the version of XML that the
+document complies with.  The \texttt{version} attribute indicates the
+encoding standard used for the characters in this document;
+traditional ASCII (the only form supported by \texttt{gxml}) is
+'utf-8'.  The \texttt{standalone} attribute, when present and equal to
+"yes", indicates that no DTD should be loaded when parsing this
+document (presumably because none exists); thus, validation is not
+done.  If \texttt{standalone} is not present or equal to "no", a DTD
+is expected (as part of the DOCTYPE node) and will be loaded if
+available. 
+
+\begin{ahargs}
+\ahaddarg{standalone}{if given, a standalone attribute will be
+inserted}{''--no attribute will be added}{string: 'yes' or 'no'}
+\ahaddarg{encoding}{the value of the encoding attribute}{'utf-8'}{string}
+\ahaddarg{version}{the version of XML that this document complies
+with}{'1.0'}{string} 
+\end{ahargs}
+\ahreturns{T if insertion is successful; F, otherwise}
+
+\begin{ahexample}
+\begin{verbatim}
+- doc := gxml.doc()
+- doc.getxmlproc().tostring()
+<?xml version="1.0" encoding="utf-8" ?> 
+- doc.setxmlproc(standalone="yes");
+T
+- doc.getxmlproc().tostring()
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?> 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{addcomment}{Add an XML comment}
+\begin{ahdescription}
+This function creates a \texttt{gxml.comment} node and appends it after the
+last child of this document.  
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc()
+- mydoc.addcomment("Here is the root element")
+- mydoc.setroot("measure")
+- mydoc.tostring(pretty=T)
+<?xml version="1.0" ?>
+<!-- Here is the root element -->
+<measure/> 
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{text}{the node tool to add.}{}{a reference to a node tool}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{addprocinstruction}{Add a processing instruction}
+\begin{ahdescription}
+This function creates a \texttt{gxml.proc} node and appends it after the
+last child of this document.  
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc(standalone='yes')   
+- mydoc.addprocinstruction('archive', 'ingest override="T"')
+- mydoc.tostring(pretty=T)
+<?xml version="1.0" standalone="yes" ?>
+<?archive ingest override="T" ?> 
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{target}{the target name for the instruction.}{}{string}
+\ahaddarg{text}{the arguments to the instruction.}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{addspace}{Add white space}
+\begin{ahdescription}
+This function creates a \texttt{gxml.space} node and appends it after the
+last child of this document.  White space is usually added to improve 
+the appearance of the printed version of an XML document.  Since this
+is usually handled automatically by the 
+\ahlink{tostring()}{xml:gxml.doc.tostring()} function (via the
+\texttt{pretty} argument), this function is not usually used
+explicitly by applications.
+
+Note that the \texttt{gxml.space} tool is simply a special form of text.
+While in practice one would only pass space characters 
+(e.g. '$\backslash$t$\backslash$n'),
+this function will take any text string.  The only difference from a
+\texttt{gxml.space} tool from a \texttt{gxml.text} tool is how it is handled by 
+the the \texttt{tostring()}'s \texttt{preserve} argument which
+controls whether space nodes should be printed out.  
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc()
+- mydoc.addspace('\n')       # add an explicit carraige return
+- mydoc.addcomment("Here is the root element")
+- mydoc.setroot("measure")
+- mydoc.tostring(pretty=F)   # do not add automatic space
+<?xml version="1.0" ?>
+<!-- Here is the root element --><measure/> 
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{text}{the white space characters to add.}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{appendchild}{add a child node to this document}
+\begin{ahdescription}
+This a general purpose function that will add a child node to the document.
+The new child will be added after the current last child in the
+document.  The child should be a \texttt{gxml} tool which must be created
+separately via its \texttt{gxml} constructor.   If the child is not a
+\texttt{gxml} tool, it will be interpreted as CDATA data.  
+
+Be careful not to append a child that is already a part of the XML
+document; this will cause an infinite loop when printing the document
+out.
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+mydoc.appendchild(gxml.doctype('measure', 
+			       'http://myserver.mydomain/xml/measure.dtd'))
+mydoc.tostring(pretty=T)
+\end{verbatim}
+
+This results in:
+\begin{verbatim}
+<?xml version="1.0" ?>
+<!DOCTYPE measure SYSTEM http://myserver.mydomain/xml/measure.dtd>
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{child}{the node tool to add.}{}{a reference to a node tool}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{getchildnodes}{return all children of this
+document}
+\begin{ahdescription}
+This function returns a list of this element's children as a record
+vector.  The record will be empty if the document is empty.
+\end{ahdescription}
+\ahreturns{a record that should be accessed via its integer indicies}
+\end{ahfunction}
+
+\begin{ahfunction}{getelementsbypath}{return the descendent elements 
+matching a (simplified) path}
+\begin{ahdescription}
+This function all elements contained in this document that match a
+given simplified version of an XPath string.  Currently, only paths 
+made up of explicit element names are supported;
+e.g. \texttt{measure/m0}.  Matching elements are returned as a record
+vector; the record will be empty if there are not matching elements.
+
+\begin{ahexample}
+\begin{verbatim}
+# create an XML document
+mydoc := gxml.doc()
+mydoc.addcomment("Here is the root element")
+myroot := mydoc.setroot("measure")
+myroot.setattribute("id", "meas")
+m0 := myroot.childelement("m0")
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+myroot.addtextelement("refer", "UTC")
+myroot.addtextelement("type", "epoch")
+
+# extract a subelement
+valuenode := mydoc.getelementsbypath('measure/m0/value')
+valuenode[1].childrentostring()
+\end{verbatim}
+results in...
+\begin{verbatim}
+52383.9
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{path}{the element path string}{}{}
+\end{ahargs}
+
+\ahreturns{a record that should be accessed via its integer indicies}
+\end{ahfunction}
+
+\begin{ahfunction}{lastchild}{return the last child in this
+document}
+\begin{ahdescription}
+This function returns the last child node in this document in the
+form of it's corresponding \texttt{gxml} tool.  F is returned if this
+document has no contents.
+\end{ahdescription}
+\ahreturns{a \texttt{gxml} tool or F}
+\end{ahfunction}
+
+\begin{ahfunction}{removelast}{remove the last child in this
+document}
+\begin{ahdescription}
+This function removes the last direct child node of this document.
+\end{ahdescription}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{insertbefore}{insert a child node}
+
+\begin{ahdescription}
+This function inserts a new child node in front of another
+already-inserted node.  The input child nodes passed to this function
+should both be (references to) \texttt{gxml} tools.  The first child--the one
+being inserted--should not already appear in the current document (otherwise,
+it will send \texttt{tostring()} into an infinite loop).  The second
+child, however, must be a current child of this document; if it is
+not, this function will return F.  
+
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{newchild}{the new child node to be inserted}{}{gxml tool}
+\ahaddarg{refchild}{a child node of this document that the new node
+will be inserted before}{}{gxml tool}
+\end{ahargs}
+\ahreturns{T if insertion is successful; F, otherwise}
+\end{ahfunction}
+
+\begin{ahfunction}{insertbeforeelement}{insert a child node before a
+set of elements}
+
+\begin{ahdescription}
+
+This function inserts a new child node just before the first element
+with a name found from a given list.  If no element is found with any
+of these names, the new child will be appended to the current list of
+childrend.  This function (inherited from the \texttt{gxml.element} tool) is
+useful for inserting comments or other non-element nodes just prior to
+the root element.
+
+\begin{ahexample}
+\begin{verbatim}
+# create an XML document
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure")
+
+# now insert a comment just before the root element
+mycomm := gxml.comm("Here is the root element")
+mydoc.insertbeforeelement(mycomm, mydoc.getrootname())
+mydoc.tostring(pretty=T)
+\end{verbatim}
+
+results in ...
+
+\begin{verbatim}
+<?xml version="1.0" ?>
+<!-- Here is the root element -->
+<measure/> 
+\end{verbatim}
+
+\end{ahexample}
+
+
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{newchild}{the new child node to be inserted}{}{gxml tool}
+\ahaddarg{ellist}{a string vector containing the names of elements to
+look for}{}{gxml tool}
+\end{ahargs}
+\ahreturns{T if insertion is successful; F, otherwise}
+\end{ahfunction}
+
+\begin{ahfunction}{tostring}{convert this XML document to a string}
+\begin{ahdescription}
+This function is the primary way to print out a \texttt{gxml} document tree
+into an XML document, returning the full XML rendering as a single
+string.  
+
+This function does its work (via
+\ahlink{childrentostring()}{xml:gxml.doc.childrentostring()}) by
+stepping through its children, calling their \texttt{tostring()}
+functions in turn.  Ultimately, this causes the entire tree to be
+traversed and printed in order.  
+
+\begin{ahexample}
+\begin{verbatim}
+# create an XML document
+mydoc := gxml.doc()
+mydoc.addcomment("Here is the root element")
+myroot := mydoc.setroot("measure")
+myroot.setattribute("id", "meas")
+m0 := myroot.childelement("m0")
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+myroot.addtextelement("refer", "UTC")
+myroot.addtextelement("type", "epoch")
+
+# print out the document to a file
+out := open(">mydoc.xml")
+write(mydoc.tostring(pretty=T));
+\end{verbatim}
+
+The contents of \texttt{mydoc.xml} will look like this:
+\begin{verbatim}
+<?xml version="1.0" ?>
+<!-- Here is the root element -->
+<measure id="meas">
+    <m0>
+        <value>52383.9</value>
+        <unit>d</unit>
+    </m0>
+    <refer>UTC</refer>
+    <type>epoch</type>
+</measure>
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{preserve}{if T, preserve any explicitly included
+                    space}{T}{boolean} 
+\ahaddarg{pretty}{if T, space (carriage returns, indent spacing) will
+                    be automatically inserted for easier
+                    viewing}{F}{boolean} 
+\ahaddarg{indent}{indent this document by this number of 
+		    spaces}{T}{0 = no indentation}
+\end{ahargs}
+\ahreturns{T}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getrep}{return the internal representation of this node}
+
+\begin{ahdescription}
+This function returns a reference to the Glish record containing the
+internal representation of this node.  
+
+The returned record will contain the following fields:
+\begin{itemize}
+\item \textbf{type} -- always equal to 'do' for document nodes
+\item \textbf{name} -- always equal to 'DOC' for document nodes
+\item \textbf{atts} -- an empty record; not used.
+\item \textbf{data} -- a record array that contains references to each
+of the document's children in order.  
+\end{itemize}
+
+\ahreturns{reference to a record}
+
+\begin{ahexample}
+\begin{verbatim}
+- mydoc := gxml.doc()
+- mydoc.getrep()
+ref [type=do, name=DOC, atts=[=], data=[*1=[gxml=668822193, tostring=<function>,
+getrep=<function>, clone=<function>]]] 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{clone}{return a deep copy of this document}
+\begin{ahdescription}
+This function returns a deep copy of this document; that is, not only
+is copy of the document node made but also all of its descendent
+nodes.  
+
+\begin{ahexample}
+\begin{verbatim}
+- doc := gxml.doc()
+- doc.setdoctype(root='measure')
+- doc.tostring(pretty=T)
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE measure> 
+- newdoc := doc.clone();
+- newdoc.setdoctype(root='region')
+- newdoc.tostring(pretty=T)
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE region> 
+- doc.tostring(pretty=T)                   # original document is unchanged
+<?xml version="1.0" encoding="utf-8" ?> 
+<!DOCTYPE measure> 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+\begin{ahobject}{gxml.element}{a tool representing an XML element}
+\ahinclude{gxml.g}
+\ahkeyword{xml}{}
+
+\begin{ahdescription}
+The \texttt{gxml.element} tool is used to manipulate an element in an
+XML document.  Normally, one need not use the \ahlink{gxml.element
+constructor}{xml:gxml.element.element}; rather one extracts an element
+from a document (e.g. \texttt{gxml.doc}'s
+\ahlink{getroot()}{xml:gxml.doc.getroot}, 
+\ahlink{getelementsbytagname()}{xml:gxml.doc.getelementsbytagname}, or
+\ahlink{getelementsbypath()}{xml:gxml.doc.getelementsbypath}), get and set its
+attributes, and add new child nodes to it via one of the "add"
+functions:
+\begin{itemize}
+\item \ahlink{addelement()}{xml:gxml.element.addelement}
+\item \ahlink{childelement()}{xml:gxml.element.childelement}
+\item \ahlink{addtextelement()}{xml:gxml.element.addtextelement}
+\item \ahlink{addtext()}{xml:gxml.element.addtext}
+\item \ahlink{addspace()}{xml:gxml.element.addspace}
+\item \ahlink{addcomment()}{xml:gxml.element.addcomment}
+\item \ahlink{addprocinstruction()}{xml:gxml.element.addprocinstruction}
+\end{itemize}
+Sometimes, though, it is more convenient to first create the element
+via the \ahlink{constructor}{xml:gxml.element.element}, add its
+attributes and children, and then add it to its parent element via the more
+generic functions:
+\begin{itemize}
+\item \ahlink{appendchild()}{xml:gxml.element.appendchild}
+\item \ahlink{insertbefore()}{xml:gxml.element.insertbefore}
+\item \ahlink{insertbeforeelement()}{xml:gxml.element.insertbeforeelement}
+\end{itemize}
+
+\end{ahdescription}
+
+\begin{ahfunction}{addcomment}{Add an XML comment}
+\begin{ahdescription}
+This function creates a \texttt{gxml.comment} node and appends it after the
+last child of this element.  
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure");               # myroot is an element tool
+myroot.addcomment("This node describes a measure")
+m0 := myroot.childelement("m0");
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+mydoc.tostring(pretty=T)
+\end{verbatim}
+results in ...
+
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8" ?>
+<measure>
+    <!-- This node describes a measure -->
+    <m0>
+        <value>52383.9</value>
+        <unit>d</unit>
+    </m0>
+</measure> 
+\end{verbatim}
+
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{text}{the node tool to add.}{}{a reference to a node tool}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{addprocinstruction}{Add a processing instruction}
+\begin{ahdescription}
+This function creates a \texttt{gxml.proc} node and appends it after the
+last child of this element.  
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure");               # myroot is an element tool
+m0 := myroot.childelement("m0");                  # m0 is an element tool
+m0.addtextelement("value", 52383.9242)
+m0.addprocinstruction('archive', 'ingest override="T"')
+m0.addtextelement("unit", 'd')
+mydoc.tostring(pretty=T)
+\end{verbatim}
+results in ...
+
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8" ?>
+<measure>
+    <m0>
+        <value>52383.9</value>
+        <?archive ingest override="T" ?>
+        <unit>d</unit>
+    </m0>
+</measure> 
+\end{verbatim}
+
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{target}{the target name for the instruction.}{}{string}
+\ahaddarg{text}{the arguments to the instruction.}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{addspace}{Add white space}
+\begin{ahdescription}
+This function creates a \texttt{gxml.space} node and appends it after the
+last child of this element.  White space is usually added to improve 
+the appearance of the printed version of an XML document.  Since this
+is usually handled automatically by the 
+\ahlink{tostring()}{xml:gxml.element.tostring()} function (via the
+\texttt{pretty} argument), this function is not usually used
+explicitly by applications.
+
+Note that the \texttt{gxml.space} tool is simply a special form of text.
+While in practice one would only pass space characters 
+(e.g. '$\backslash$t$\backslash$n'),
+this function will take any text string.  The only difference from a
+\texttt{gxml.space} tool from a \texttt{gxml.text} tool is how it is handled by 
+the the \texttt{tostring()}'s \texttt{preserve} argument which
+controls whether space nodes should be printed out.  
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure");               # myroot is an element tool
+m0 := myroot.childelement("m0");                  # m0 is an element tool
+m0.addspace('\n  ')
+m0.addtextelement("value", 52383.9242)
+m0.addspace('\n  ')
+m0.addtextelement("unit", 'd')
+m0.addspace('\n')
+mydoc.tostring(pretty=F)
+\end{verbatim}
+results in ...
+
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8" ?><measure><m0>
+  <value>52383.9</value>
+  <unit>d</unit>
+</m0></measure> 
+\end{verbatim}
+
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{text}{the white space characters to add.}{}{string}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{appendchild}{add a child node to this element}
+\begin{ahdescription}
+This a general purpose function that will add a child node to an element.
+The new child will be added after the current last child of the
+element.  The child should be a \texttt{gxml} tool which must be created
+separately via its \texttt{gxml} constructor.   If the child is not a
+\texttt{gxml} tool, it will be interpreted as CDATA data.  
+
+Be careful not to append a child that is already a part of the XML
+document; this will cause an infinite loop when printing the document
+out.
+
+\begin{ahexample}
+\begin{verbatim}
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure");               # myroot is an element tool
+m0 := myroot.childelement("m0");                  # m0 is an element tool
+m0.addtextelement("value", 52383.9242)
+unit := gxml.element('unit');
+unit.setattribute('type', 'time');
+unit.addtext('d');
+m0.appendchild(unit);
+mydoc.tostring(pretty=T)
+\end{verbatim}
+
+This results in:
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8" ?>
+<measure>
+    <m0>
+        <value>52383.9</value>
+        <unit type="time">d</unit>
+    </m0>
+</measure> 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{child}{the node tool to add.}{}{a reference to a node tool}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{getchildnodes}{return all children of this
+element}
+\begin{ahdescription}
+This function returns a list of this element's children as a record
+vector.  The record will be empty if the document is empty.
+\end{ahdescription}
+\ahreturns{a record that should be accessed via its integer indicies}
+\end{ahfunction}
+
+\begin{ahfunction}{getelementsbypath}{return the descendent elements 
+matching a (simplified) path}
+\begin{ahdescription}
+This function all elements contained in this document that match a
+given simplified version of an XPath string.  Currently, only paths 
+made up of explicit element names are supported;
+e.g. \texttt{measure/m0}.  Matching elements are returned as a record
+vector; the record will be empty if there are not matching elements.
+
+\begin{ahexample}
+\begin{verbatim}
+# create an XML document
+mydoc := gxml.doc()
+myroot := mydoc.setroot("measure")
+m0 := myroot.childelement("m0")
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+myroot.addtextelement("refer", "UTC")
+myroot.addtextelement("type", "epoch")
+
+# extract a subelement
+valuenode := myroot.getelementsbypath('m0/value')
+valuenode[1].childrentostring()
+\end{verbatim}
+results in...
+\begin{verbatim}
+52383.9
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{path}{the element path string}{}{}
+\end{ahargs}
+
+\ahreturns{a record that should be accessed via its integer indicies}
+\end{ahfunction}
+
+\begin{ahfunction}{lastchild}{return the last child of this element}
+\begin{ahdescription}
+This function returns the last child node of this element in the
+form of it's corresponding \texttt{gxml} tool.  F is returned if this
+document has no contents.
+\end{ahdescription}
+\ahreturns{a \texttt{gxml} tool or F}
+\end{ahfunction}
+
+\begin{ahfunction}{removelast}{remove the last child of this element}
+\begin{ahdescription}
+This function removes the last direct child node of this document.
+\end{ahdescription}
+\ahreturns{T}
+\end{ahfunction}
+
+\begin{ahfunction}{insertbefore}{insert a child node}
+
+\begin{ahdescription}
+This function inserts a new child node in front of another
+already-inserted node.  The input child nodes passed to this function
+should both be (references to) \texttt{gxml} tools.  The first child--the one
+being inserted--should not already appear in the current document (otherwise,
+it will send \texttt{tostring()} into an infinite loop).  The second
+child, however, must be a current child of this element; if it is
+not, this function will return F.  
+
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{newchild}{the new child node to be inserted}{}{gxml tool}
+\ahaddarg{refchild}{a child node of this element that the new node
+will be inserted before}{}{gxml tool}
+\end{ahargs}
+\ahreturns{T if insertion is successful; F, otherwise}
+\end{ahfunction}
+
+\begin{ahfunction}{insertbeforeelement}{insert a child node before a
+set of child elements}
+
+\begin{ahdescription}
+
+This function inserts a new child node just before the first element
+with a name found from a given list.  If no element is found with any
+of these names, the new child will be appended to the current list of
+children.  This function is helpful for ensuring that the children of
+this element conform to a desired order.  Normally, the element names
+given will be all the allowed child elements in order.  
+
+\begin{ahexample}
+Suppose you have a 'VOTABLE' element for which the DTD
+prescribes the follow syntax for its contents:
+
+\begin{verbatim}
+<!ELEMENT VOTABLE (DESCRIPTION?, DEFINITIONS?, INFO*, RESOURCE*)>
+\end{verbatim}
+
+When you insert a DEFINITION element, you can ensure that the results
+conforms to the syntax via the following:
+
+\begin{verbatim}
+# votable is a VOTABLE element tool that may or may not have children
+# already added to it.
+def := gxml.element('DEFINITION');
+votable.insertbeforeelement(def, "INFO RESOURCE");
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{newchild}{the new child node to be inserted}{}{a gxml tool}
+\ahaddarg{ellist}{a string vector containing the names of elements to
+look for}{}{string vector}
+\end{ahargs}
+\ahreturns{T if insertion is successful; F, otherwise}
+\end{ahfunction}
+
+\begin{ahfunction}{tostring}{convert this XML element to a string}
+\begin{ahdescription}
+This function is provides a way to print out just this element and its
+children in XML format, returning it as a string.
+
+To only print out the children, use 
+\ahlink{childrentostring()}{xml:gxml.element.childrentostring()}.
+
+\begin{ahexample}
+\begin{verbatim}
+# create an XML document
+mydoc := gxml.doc()
+mydoc.addcomment("Here is the root element")
+myroot := mydoc.setroot("measure")
+myroot.setattribute("id", "meas")
+m0 := myroot.childelement("m0")
+m0.addtextelement("value", 52383.9242)
+m0.addtextelement("unit", 'd')
+myroot.addtextelement("refer", "UTC")
+myroot.addtextelement("type", "epoch")
+
+# print out just the m0 node in pretty form
+m0.tostring(pretty=T);
+\end{verbatim}
+And you get...
+\begin{verbatim}
+<m0>
+    <value>52383.9</value>
+    <unit>d</unit>
+</m0>
+
+\begin{verbatim}
+# now print it without pretty-ness:
+m0.tostring(pretty=F);
+\end{verbatim}
+And you get...
+\begin{verbatim}
+<m0><value>52383.9</value><unit>d</unit></m0>
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{preserve}{if T, preserve any explicitly included
+                    space}{T}{boolean} 
+\ahaddarg{pretty}{if T, space (carriage returns, indent spacing) will
+                    be automatically inserted for easier
+                    viewing}{F}{boolean} 
+\ahaddarg{indent}{indent this document by this number of 
+		    spaces}{T}{0 = no indentation}
+\end{ahargs}
+\ahreturns{T}
+
+\end{ahfunction}
+
+\begin{ahfunction}{getrep}{return the internal representation of this node}
+
+\begin{ahdescription}
+This function returns a reference to the Glish record containing the
+internal representation of this node.  
+
+The returned record will contain the following fields:
+\begin{itemize}
+\item \textbf{type} -- always equal to 'el' for document nodes
+\item \textbf{name} -- the element name
+\item \textbf{atts} -- a record containing the attributes in order;
+the field names are the attribute names, and the field values are the
+attribute values.  
+\item \textbf{data} -- a record array that contains references to each
+of the element's children in order.  
+\end{itemize}
+
+\ahreturns{reference to a record}
+
+\begin{ahexample}
+\begin{verbatim}
+- m0 := gxml.element('m0')
+- m0.addtextelement("value", 52383.9242)
+- m0.getrep()
+ref [type=el, name=m0, atts=[=], data=[*1=[gxml=377552975, clear=<function>, 
+setname=<function>, getname=<function>, setattribute=<function>, 
+getattribute=<function>, appendchild=<function>, addtext=<function>, 
+addcomment=<function>, addprocinstruction=<function>, addspace=<function>, 
+addelement=<function>, childelement=<function>, getchildelement=<function>, 
+setchildelement=<function>, addtextelement=<function>, istextelement=<function>,
+getchildnodes=<function>, getelementsbytagname=<function>, 
+getelementsbypath=<function>, lastchild=<function>, insertbefore=<function>, 
+insertbeforeelement=<function>, removelast=<function>, 
+childrentostring=<function>, tostring=<function>, torec=<function>, 
+getrep=<function>, clone=<function>]]] 
+
+- m0.getrep().data[1].getrep()
+ref [type=el, name=value, atts=[=], data=[*2=[gxml=853809891, 
+converttotext=<function>, append=<function>, tostring=<function>, 
+spacetostring=<function>, getrep=<function>, clone=<function>]]] 
+
+- m0.getrep().data[1].getrep().data[1].getrep()
+ref [type=tx, data=52383.9] 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{clone}{return a deep copy of this element}
+\begin{ahdescription}
+This function returns a deep copy of this element; that is, not only
+is copy of the element node made but also all of its descendent
+nodes.  
+
+\begin{ahexample}
+\begin{verbatim}
+- m0 := gxml.element('m0')
+- m0.addtextelement("value", 52383.9242)
+- m1 := m0.clone()
+- m1.addtextelement("unit", 'd')   # does not affect m0
+- m0.tostring(pretty=T)
+<m0>
+    <value>52383.9</value>
+</m0> 
+- m1.tostring(pretty=T)
+<m0>
+    <value>52383.9242</value>
+    <unit>d</unit>
+</m0> 
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+
+\begin{ahobject}{gxmlparser}{an XML document parser}
+\begin{ahdescription}
+This tool can be used to parse XML documents and load their contents
+into \texttt{gxml} trees.  
+
+\begin{ahexample}
+\begin{verbatim}
+include 'gxmlparser.g'
+parser := gxmlparser()
+parser.parsefile("mydoc.xml")
+
+mydoc := parser.getxml()  
+
+# mydoc is an gxml.doc tool ready for manipulation
+mydoc.tostring(pretty=T)
+
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahconstructor}{gxmlparser}{constructs an XML parser tool}
+\begin{ahdescription}
+This tool can be used to parse XML documents and load their contents
+into \texttt{gxml} trees.  
+
+\begin{ahexample}
+\end{ahexample}
+
+\begin{ahargs}
+\ahaddarg{preserve}{if T, ignorable white space is loaded as explicit
+nodes in the resulting tree; otherwise (default), such white space is
+skipped.}{F}{T/F}
+\end{ahargs}
+
+\end{ahdescription}
+
+
+\end{ahfunction}
+
+\end{ahobject}
+
+\end{ahmodule}
+\end{document}
+
+

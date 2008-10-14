@@ -1,0 +1,1461 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/events.tex,v 19.0 2003/07/16 04:18:45 aips2adm Exp $
+
+\chapter{Events}
+\label{events}
+
+\index{events|(}
+{\em Glish}'s main purpose is to coordinate a number of processes that
+form a distributed system.  These processes are instances of programs
+written in compiled languages such as~C or~C++.
+
+\index{event-oriented style}
+\index{modularity}
+Each program is written in an {\em event-oriented} style; the program's
+sole view of the rest of the system comes from {\em events} it receives,
+and its sole mechanism for communicating its state to
+the system is by generating more events.  The programs have no
+knowledge of what other programs the system includes, what is done
+with their results, or where received events come from.  This {\em
+event-oriented} style lends itself to creating modular programs that
+you can connect together in powerful, unforeseen ways.  You make
+these connections using {\em Glish}.
+
+Details of how programs receive, interpret, and
+generate events is discussed in \cxref{client-lib}.  In this chapter the
+focus is on manipulating events from within a {\em Glish} program.
+
+\section{What is an ``Event"?}
+\label{event-defs}
+
+\index{events!definition of}
+\index{events!name/value pair}
+\index{events!attributes}
+An {\em event} has a {\em name} and an associated {\em value\/}.  The
+name is simply an identifier, much like a variable's name.  The value
+can be any {\em Glish} value, of any type: {\em numeric\/}, {\tt string},
+{\tt record}, {\tt reference}, {\tt agent}, or
+{\tt function}\footnote{But when sending events to clients as opposed
+to subsequences, there are restrictions on the value,  see
+\xref{reading-writing}, and \xref{encoding-events}, below.}, along
+with all of its attributes. A {\tt foo} event with
+value {\tt [3, 2, 5]}, means an event whose name is ``foo'' and whose value
+is the particular three-element integer vector {\tt [3, 2, 5]}.
+
+\index{events!as messages}
+An event can be thought of as a message, with the name identifying
+the message's type and the value conveying data specific to a
+particular message.  For example, in addition to the {\tt foo} event,
+discussed above, you might have another {\tt foo} event, this
+time with a value of {\tt "howdy howdy!"}.  Both events can be
+thought of as ``foo"-type events, though their values are different.
+
+{\em Glish} provides ways to generate events and to specify what 
+should happen
+when an event is received.  How events are sent to 
+and received from {\em agent}'s is discussed in the next section.
+
+\section{Agents}
+\label{agents}
+
+\index{agents|(}
+An {\em agent} is an entity that generates and responds to events.
+Typically it's a process running either locally or on a remote computer;
+these agents are called {\em clients\/}.
+
+Agents generate events in order to communicate with the rest of
+the world, namely the {\em Glish} program and any other agents the program
+may have created.  By saying that agents {\em respond} to events
+means that they expect to receive certain types of events,
+and then they perform some action based on the name and value of
+the received event.  The action may entail generating one or more new events
+or it may not.  In general, the events an agent receives and those it
+generates need not be related, though often they are.
+
+\subsection{The {\tt agent} Type}
+\label{agent-type}
+
+\index{agents!creating}
+{\em Glish} provides an {\tt agent} type for values 
+corresponding to agents.
+
+\begin{sloppy}
+\indfunc{client}
+The {\tt client} function provides a way to create an agent associated
+with a running process.  For example,
+\begin{verbatim}
+    demo := client("demo_client")
+\end{verbatim}
+assigns to {\tt demo} an {\tt agent} value corresponding to an
+instance of the program {\tt demo\_client} running on the local host.
+\begin{verbatim}
+    demo := client("demo_client", host="mars")
+\end{verbatim}
+does the same thing except {\tt demo\_client} runs on the remote host
+{\tt mars}.  (See \xref{clients}, for a full discussion of the {\tt
+client} function.)
+\end{sloppy}
+
+You can also create agents that correspond to autonomous entities running
+\indfunc{create\_agent}
+within the context of a {\em Glish} program.  The {\tt create\_agent}
+function takes no arguments and returns an {\tt agent} 
+value corresponding to
+a new, unique agent:
+\begin{verbatim}
+    my_agent := create_agent()
+\end{verbatim}
+This agent can then be sent events using the mechanisms discussed in
+\xref{sending-events}, and respond to those events using {\tt whenever}
+statements, as discussed in \xref{whenever}.
+
+\subsection{Agent Records}
+\label{agent-record}
+
+\index{agents!records}
+Each {\tt agent} value is also a {\tt record}.  Whenever the
+agent generates an event, {\em Glish} sets a field in the {\tt record}
+with the same name to the value of the event.  So, for example,
+if an agent {\tt a} generates a {\tt hello} event with a value of
+{\tt [F, F]}, then {\tt a.hello} is set to {\tt [F, F]}.
+
+For the most part, an {\tt agent}'s 
+record can be used just like any other.
+In particular, you can create new fields in it or modify existing ones.
+Neither of these operations generates an event, though.
+\index{agents|)}
+
+\section{Overview of Agent Interaction}
+\label{event-examples}
+
+As noted earlier, all interactions between the {\em Glish} 
+interpreter and agents
+happen by sending and receiving events. This separation 
+encourages isolation
+of the system components. This isolation makes the components 
+more reusable
+because they have a well defined interface. All of this means that these
+agents can be {\em knitted} together by the {\em Glish} 
+interpreter in unanticipated
+ways. Each agent becomes a pluggable component of the system.
+
+\subsection{Sending Events}
+
+In general, events are sent to agents like:
+\begin{verbatim}
+    demo := client("my_demo")
+    demo->foo( [1, 4, 6] )
+\end{verbatim}
+In this example, the agent {\tt demo} is a process running on the
+local operating system. The {\tt client} function is used to create
+such agents. (See \xref{clients}.)  Once the {\tt demo} agent is created,
+a {\tt foo} event is sent to {\tt demo} with a value of {\tt [1, 4, 6]}.
+
+In this case, no result was expected from {\tt demo} as a result of the
+{\tt foo} event. If the event had been sent in a different context, the
+interpreter would have waited for a result from the agent. For example
+(continuing the previous example):
+\begin{verbatim}
+    if ( demo->bar( 1.71 ) )
+        print "true from demo"
+\end{verbatim}
+In this case, because of the context in which the event is sent, the
+interpreter waits for a result from {\tt demo} and output is generated
+only if the result resolves to {\tt T}. When the client process, ``my\_demo'',
+receives the event, it is notified that a result is expected
+(See \xref{client-class_Reply}).
+
+Sending an event is in many ways similar to making a function call. Values
+can be obtained from an agent:
+\begin{verbatim}
+    v := database->get_voltage( 1:10 )
+\end{verbatim}
+This example sends a {\tt get\_voltage} event to the agent {\tt database}
+with a value of {\tt 1:10}, waits for {\tt database} to generate an event in
+response, and assigns the value of that response to {\tt v}.
+More than one value can be sent to an agent:
+\begin{verbatim}
+    database->insert( "integral", 2.9812 )
+\end{verbatim}
+This example sends {\tt database} an event with two values, the string
+{\tt "integral"} and {\tt 2.9812}.  Values sent to an agent can also be
+named:
+\begin{verbatim}
+    c := 0
+    while ( v := database->get( table = "A", offset = c +:= 1 ) )
+        print v
+\end{verbatim}
+This example repeatedly sends {\tt get} events to the client with the
+``parameter'' {\tt table} equal to \verb+"A"+ and {\tt offset} equal to
+{\tt c}. Here, {\tt c} is incremented each time through the 
+loop {\em before}
+the event is sent. The loop only stops when {\tt demo} 
+returns a value which
+resolves to {\tt F}. Passing these multi-element event 
+values is equivalent
+to passing a single-valued event where the value is a record.  
+This last example,
+for instance, is equivalent to:
+\begin{verbatim}
+    c := 0
+    while ( v := database->get( [table = "A", offset = c +:= 1] ) )
+        print v
+\end{verbatim}
+Finally, if no values are are specified the event values is the boolean
+scalar {\tt F}. Here:
+\begin{verbatim}
+    print database->version( )
+\end{verbatim}
+the value which accompanies this {\tt version} event is {\tt F}.
+
+It is important to note that the {\em context} (whether a result is required
+or not) affects the event that goes to the agent. In general,
+the only time when a result is not expected is when the expression that
+sends the event is on a line by itself. It is the difference between:
+\begin{verbatim}
+    print any_client->event( 1:10 )
+\end{verbatim}
+and
+\begin{verbatim}
+    any_client->event( 1:10 )
+\end{verbatim}
+In the first case, a result is needed so the event type that the client
+receives indicates that it needs to generate a result event. In the second
+case, no result is required.
+
+\subsection{Processing Asynchronous Events}
+
+\index{example!receiving events|(}
+
+ In the cases above, events were sent to agents, but the agents only generated
+an event when it was required by events received by the agent. This
+happened in a {\em request/reply} sort of dialog between the interpreter
+and an agent. Agents can, however, generate events at anytime, and
+{\em Glish}
+has language constructs to deal with these events. These events can
+occur at anytime regardless of what the {\em Glish} interpreter 
+is busy doing.
+
+Suppose {\tt a} is an {\tt agent}-valued variable.  In
+a {\em Glish} program you can process events that {\tt a} generates
+\indtt{whenever}{statement}
+using a {\tt whenever} statement.  Once executed,
+\begin{verbatim}
+    a := client("demo")
+    whenever a->bar do
+        print "got a bar event"
+\end{verbatim}
+prints {\tt "got a bar event"} every time the {\tt demo}
+process generates a {\tt bar} event.
+
+The value of the most recently received event is kept in a
+\index{value@{\tt \$value}}
+special variable {\tt \$value}:
+\begin{verbatim}
+    whenever a->bar do
+        print "got a bar event =", $value
+\end{verbatim}
+This will display the value of each {\tt bar} 
+event that {\tt a} generates.
+
+The {\tt \$value} can be used in expressions just like other variables.
+Here's a fragment that only prints out the value of the {\tt bar} event
+if it's an {\tt integer} vector with 3 elements:
+\begin{verbatim}
+    whenever a->bar do
+        if ( is_integer($value) && len($value) == 3 )
+            print "got a bar event =", $value
+\end{verbatim}
+This fragment prints every other {\tt bar} event:
+\begin{verbatim}
+    count := 0
+    whenever a->bar do
+        {
+        count +:= 1
+        if ( count % 2 == 1 )
+            print $value
+        }
+\end{verbatim}
+Event values can be stored in variables and record fields just
+like any other value:
+\begin{verbatim}
+    last_bar := "none"
+    whenever a->bar do
+        {
+        print "got a bar event =", $value
+        print "the previous bar event was", last_bar
+        last_bar := $value
+        }
+\end{verbatim}
+This prints out both the value of each of 
+{\tt a}'s {\tt bar} events and the
+value the event had the previous time it was received.  The output from
+this program  looks something like:
+\begin{verbatim}
+    got a bar event = 3
+    the previous bar event was none
+    got a bar event = hello there
+    the previous bar event was 3
+    got a bar event = 1 4 7
+    the previous bar event was hello there
+\end{verbatim}
+and so on.
+
+Furthermore, each {\tt agent} value is also a {\tt record}. (See
+\xref{agent-record}.)
+Whenever the agent generates an event, a field in the record with that event's
+name is set to the event's value.  This means that:
+\begin{verbatim}
+    whenever a->bar do
+        print "got a bar event =", $value
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    whenever a->bar do
+        print "got a bar event =", a.bar
+\end{verbatim}
+and that it's easy to refer to past events with different names:
+\begin{verbatim}
+    whenever a->bar do
+        {
+        print "got a bar event =", a.bar
+        print "the last foo event was", a.foo
+        }
+\end{verbatim}
+\index{example!receiving events|)}
+
+\section{Send Expressions}
+\label{sending-events}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%  this label is out of date but it is retained because
+%%  several places point to it
+%%
+\label{request-reply}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\index{events!sending|(}
+Most of the important details about sending events were covered in the
+previous section, but this section includes some details that were missed
+in that overview. Send expressions have two
+\index{send expression}
+forms:
+\begin{quote}
+    {\tt {\em expression} -> {\em name} ( {\em val$_1$}, {\em val$_2$}, $\ldots$ )}
+
+    {\tt {\em expr$_	1$} -> [ {\em expr$_2$ } ] ( {\em val$_1$}, {\em val$_2$}, $\ldots$ )}
+\end{quote}
+In both cases {\em Glish} evaluates the expression to the left of the
+\verb+->+ operator to see whether it's an {\tt agent}.  If not,
+an error is generated.  Otherwise the name of the event is taken from
+\index{events!naming}
+either {\em name} or by evaluating {\em expr$_2$}, which must yield
+a {\tt string} scalar.  The following are equivalent:
+\begin{verbatim}
+    a->foo( 5 )
+    a->["foo"]( 5 )
+\end{verbatim}
+
+The second send-event form is quite flexible.  Here, for example,
+is one way to send {\tt a} three events, {\tt foo}, {\tt bar} and
+{\tt bletch}, with values of {\tt 1}, {\tt 2}, and {\tt 3}:
+\begin{verbatim}
+    for ( i in 1:3 )
+        a->["foo bar bletch"[i]]( i )
+\end{verbatim}
+
+\index{event values}
+\index{events!values}
+The value of the event is taken from the various {\em val\/}'s.  If
+you specify just one {\em val} then that's the event's value.  If
+you don't list any {\em val\/}'s then the event's value is {\tt F}.
+If you give more than one {\em val} then {\em Glish} constructs a
+{\em record} from the {\em val\/}'s.  In this latter case usually the
+{\em val}'s are given names, using the same {\em name {\tt =} expression}
+syntax as when creating records (\xref{record-constants}) or calling
+functions (\xref{param-names}).  (See \S~\ref{event-examples} for examples
+of sending events.)
+
+Depending on the context in which  the send expression occurs, a result
+value may be required from the agent, e.g.
+\begin{verbatim}
+    print a->foobar( action="show all" )
+\end{verbatim}
+here {\tt print} requires a result value. There are a few salient points
+regarding these send expressions which require a result:
+\begin{itemize}
+\item Presently you can only use request/reply events with {\em clients};
+not with subsequences (\xref {subseq}), which presently just immediately
+return {\tt F} in reply to the request (and never see the request event).
+
+\item After a client is sent a request, the {\em Glish} interpreter 
+{\em waits}
+for that client to generate a single event in response.  Any other
+events generated by any other clients will be processed
+normally by existing whenever statements.  If the requested client
+generates any event other than a reply to the request, the {\em Glish}
+interpreter generates a error message and continues to wait.
+
+\item The reply event sent by the client does not have a name, just a
+value.  In particular, no value for it gets entered in the client's
+agent record (See \xref{agent-record}).
+\end{itemize}
+
+\index{events!sending|)}
+
+\section{{\tt whenever} Statement}
+\label{whenever}
+
+\index{events!receiving|(}
+You specify what to do when an agent generates an event using
+\indtt{whenever}{statement}
+a {\tt whenever} statement.  As discussed above and in
+\S~\ref{whenever-stmt}, these look like:
+\begin{quote}
+    {\tt whenever {\em event$_1$}, {\em event$_2$}, $\ldots$ do {\em statement}}
+\end{quote}
+where at least one {\em event} must be listed.
+
+When executed, {\em Glish} evaluates the event specifiers listed after the
+{\tt whenever} keyword, and subsequently whenever any of those events
+are generated {\em Glish} executes {\em statement\/}.  Thus a {\tt whenever} statement
+can refer to several different events generated by several 
+different agents.
+
+\subsection{Event Syntax}
+\label{event-syntax}
+
+You can specify an {\em event} for a {\tt whenever} statement in
+\index{events!designators}
+\indoptwo{->}{event designator}
+one of three forms:
+\begin{quote}
+    {\tt {\em expr} -> {\em name}}
+
+    {\tt {\em expr$_1$} -> [ {\em expr$_2$} ] }
+
+    {\tt {\em expr} -> * }
+\end{quote}
+As when sending events (See \xref{sending-events}), {\em Glish} evaluates the
+expression to the left of the \verb+->+ operator to determine which
+{\tt agent} you're talking about. 
+\index{events!naming}
+With the first form, {\em name} then specifies the name of the event
+of interest. With the second form, {\em Glish} evaluates {\em expr$_2$} to
+produce a {\tt string} value. Each element of 
+that value then designates an
+event produced by the agent.  For example,
+\begin{verbatim}
+    whenever a->["foo bar bletch"] do
+        print $value
+\end{verbatim}
+prints the value of each {\tt foo}, {\tt bar}, and {\tt bletch}
+event generated by the agent {\tt a}; it is equivalent to:
+\begin{verbatim}
+    whenever a->foo, a->bar, a->bletch do
+        print $value
+\end{verbatim}
+The third form indicates interest in {\em every} event generated by
+the agent.  For example,
+\index{events!receiving every event from an agent}
+\index{whenever statement!receiving every event}
+\index{events!designators}
+\indoponekey{*}{every-event designator}{+3every}
+\begin{verbatim}
+    whenever a->* do
+        print $value
+\end{verbatim}
+prints the value of every event {\tt a} generates.
+
+\subsection{Execution of {\tt whenever}}
+
+\index{whenever statement!execution specifics}
+When a {\tt whenever} is executed, each of the {\em event\/}'s is
+evaluated to see which events of which agents they designate.  Whenever
+any of those events subsequently occurs, {\em statement} is executed.
+\index{whenever statement!body}
+We refer to {\em statement} as the {\em body} of the {\tt whenever} statement.
+
+As noted in \xref{persistent-vars}, if a function executes a {\tt whenever}
+and then exits, its variables persist after the function call finishes,
+and the {\tt whenever} body can access and modify the variables.  For
+example, a call to:
+\begin{verbatim}
+    func report_foo(x)
+        {
+        y := 3
+        whenever x->foo do
+            {
+            print y
+            y +:= 1
+            }
+        y := 7
+        }
+\end{verbatim}
+prints {\tt 7} the first time {\tt x} generates a {\tt foo} event,
+{\tt 8} the next time, and so on.
+
+\index{whenever statement!order of execution}
+{\em Glish} does not define the order of execution of two or more {\tt whenever}
+statements that match the same event.
+
+An important point is that {\em each} time you execute a {\tt whenever},
+a connection is made between the arrival of the given events and executing
+the {\tt whenever}'s body.  If you called {\tt report\_foo} twice with
+the same {\tt x} argument, then the first time {\tt x} 
+generated a {\tt foo}
+event {\em Glish} would print {\tt 7} twice, the second time {\tt 8} twice,
+and so on.  Furthermore, if {\tt x} generated a {\tt foo} event between
+the first and second calls to {\tt report\_foo} then the next time it
+generated a {\tt foo} event {\em Glish} would print {\tt 8} and {\tt 7} (perhaps
+in the opposite order), and the next time {\tt 9} and {\tt 8}.
+
+Similarly, a single call to:
+\index{example!multiple execution of {\tt whenever}}
+\begin{verbatim}
+    func announce_bar(x)
+        {
+        for ( i in 1:3 )
+            whenever x->bar do
+                print "x did bar"
+        }
+\end{verbatim}
+will result in {\em Glish} printing {\tt "x did bar"} three times every time
+{\tt x} generates a {\tt bar} event.
+
+A final note: when {\em Glish} receives an event it
+\index{whenever statement!when executed}
+only executes the corresponding {\tt whenever} bodies at well-defined
+times (in particular, {\em not} when it is in the middle of executing
+any other statements).  (See \xref{program-execution}, for a complete
+discussion of how {\em Glish} proceeds in executing programs and processing
+events.)
+
+\subsection{{\tt \$agent}, {\tt \$name}, and {\tt \$value}}
+\label{event-vars}
+
+Each time {\em Glish} receives an event it sets three special variables:
+\index{agent@{\tt \$agent}}
+\index{value@{\tt \$value}}
+\index{name@{\tt \$name}}
+{\tt \$agent} is the {\tt agent} associated with the event, {\tt \$name}
+the event's name, and {\tt \$value} the event's value.  For example,
+the body of the following {\tt whenever}
+\begin{verbatim}
+    whenever x->foo do
+        print $name
+\end{verbatim}
+always prints {\tt foo}, since a {\tt foo} event is the only possible
+event that can result in the body executing.  The following prints
+the value of each {\tt foo} event generated by {\tt x} or {\tt y},
+but only prints the name of the event if {\tt y} generated it:
+\begin{verbatim}
+    whenever x->foo, y->foo do
+        {
+        print $value
+        if ( $agent == y )
+            print $name
+        }
+\end{verbatim}
+Because {\tt agent} values are also records (See \xref{agent-record}),
+after {\em Glish} receives an event the following is always true:
+\begin{verbatim}
+    $agent[$name] == $value
+\end{verbatim}
+Here {\tt \$name} provides a {\tt string} index for the agent's {\tt record},
+designating the field with the same name as the new event.
+
+\index{name!used with *@used with {\tt *}}
+{\tt \$name} is particularly useful in conjunction with the {\tt *}
+event designator (See \xref{event-syntax}).  For example, the following
+{\tt whenever} ``relays" every event generated by {\tt x} to {\tt y},
+with the same name and value:
+\begin{verbatim}
+    whenever x->* do
+        y->[$name]( $value )
+\end{verbatim}
+{\em Glish} provides a number of functions for 
+doing this sort of relaying. (See \xref{predefined-agents}.)
+
+\subsection{{\tt activate} and {\tt deactivate} Statements}
+\label{activate-stmt}
+\index{whenever statement!activating and deactivating|(}
+\indtt{activate}{statement}
+\indtt{deactivate}{statement}
+
+Ordinarily, once a {\tt whenever} statement is executed, it remains active.  That is, whenever an event arrives corresponding to one
+designated when the statement was executed, {\em Glish} 
+executes the body of
+the {\tt whenever} statement.  Sometimes, though, other events may occur
+leading you to want to deactivate a {\tt whenever} statement so its body
+no longer executes.  {\em Glish} provides a {\tt deactivate} statement for
+turning off execution of a {\tt whenever}'s body, and a corresponding
+{\tt activate} statement for turning it back on.  The simplest form of
+these statements is simply:
+\begin{quote}
+    {\tt activate }
+
+    {\tt deactivate }
+\end{quote}
+These indicate that the ``currently executing'' {\tt whenever} body (or the
+most-recently executed one, if none is current) should be activated or
+deactivated, respectively. For example,
+\begin{verbatim}
+    count := 0
+    whenever a->foo do
+        {
+        do_stuff()
+        count +:= 1
+        if ( count >= 5 )
+            deactivate
+        }
+\end{verbatim}
+will call {\tt do\_stuff()} upon receiving {\tt a}'s first 5 {\tt foo}
+events, but then will quietly ignore the remainder.
+
+You can also give the {\tt activate} and {\tt deactivate} statements an
+optional argument specify which {\tt whenever} statement(s) to affect:
+\begin{quote}
+    {\tt activate {\em expr}}
+
+    {\tt deactivate {\em expr}}
+\end{quote}
+Here {\em expr} must evaluate to an {\tt integer} (possibly a vector)
+built out of values returned using the
+{\tt current\_whenever()}, {\tt last\_whenever\_executed()},
+and {\tt whenever\_stmts()} functions (See \xref{whenever_stmts-func}).
+The corresponding {\tt whenever} bodies are then activated or
+deactivated.  For example, the following only responds to
+{\tt a}'s {\tt foo} events (by calling \verb+do_foo()+) if one or
+more intervening {\tt bar} events have been received since the last
+{\tt foo} event:
+\begin{verbatim}
+    whenever a->foo do
+        {
+        do_foo()
+        deactivate  # wait for bar
+        }
+
+    a_foo := last_whenever_executed()
+
+    whenever a->bar do
+        {
+        do_bar()
+        activate a_foo
+        }
+\end{verbatim}
+The state of a {\tt whenever} statement can be checked with the builtin
+function {\tt whenever\_active()} (See \xref{whenever_active-func}). Given
+an {\em index}, it will return {\tt T} only if the statement is currently
+active.
+
+See the discussion of the {\tt active\_agents()} function
+(\xref{active_agents-func}) for an example of using {\tt deactivate} with
+a vector argument.
+
+\index{whenever statement!activating and deactivating|)}
+
+\section{{\tt await} Statement}
+\label{await}
+
+\indtt{await}{statement}
+As discussed in \S~\ref{await-statement}, the {\tt await} statements comes
+in three forms:
+\begin{quote}
+    {\tt await {\em event$_1$}, {\em event$_2$}, $\ldots$}
+
+    {\tt await only {\em event$_1$}, {\em event$_2$}, $\ldots$}
+
+    {\tt await only {\em event$_1$}, {\em event$_2$}, $\ldots$ except {\em event$_1$}, {\em event$_2$}, $\ldots$}
+\end{quote}
+In each of these forms, {\em event} designates an event just like
+in a {\tt whenever} statement.
+
+\subsection{Usage}
+
+An {\tt await} statement instructs {\em Glish} to wait for one of the listed
+events to occur.  {\em Glish} pauses program execution until this happens.
+Without the {\tt only} keyword, {\em Glish} will still process incoming
+events by executing their corresponding {\tt whenever} bodies.
+This style of {\tt await} can be used to effect synchronous communication
+with an agent.
+For example, suppose that {\tt c} refers to a client
+that when sent a {\tt compute} request performs some computation and
+generates a {\tt compute\_done} event when finished.  If you want to tell
+{\tt c}'s client to do its computation and wait for the result, you
+do the following:
+\begin{verbatim}
+    c->compute()
+    await c->compute_done
+
+    # at this point, c is done
+    # with its computation
+\end{verbatim}
+After an {\tt await} completes, {\tt \$agent}, {\tt \$name}, and {\tt \$value}
+correspond to the event that caused the {\tt await} to finish.  In
+the above example, {\tt \$agent} will be {\tt c}, {\tt \$name} will
+be {\tt "compute\_done"}, and {\tt \$value} will be the value
+of the {\tt compute\_done} event. In general, though, this is probably
+better written as:
+\begin{verbatim}
+    result := c->compute()
+\end{verbatim}
+This version is more concise and more efficient.
+
+\index{await statement!{\tt only}}
+If you use the {\tt only} keyword then while {\em Glish} is waiting for
+one of the listed events, {\em no} intervening events it receives
+will be processed.  Instead, these events are ``dropped"; it
+is as though they had never occurred, though {\em Glish} generates a
+warning message concerning each dropped event.
+
+The {\tt await only} statement is meant for use as 
+a ``hold-point", to freeze
+the effective execution of a {\em Glish} program until some seminal event
+occurs.  For example, suppose that when {\tt key\_program} generates
+a {\tt panic} event that it is vital to suspend execution of the
+{\em Glish} program and its clients until the current program state can
+be archived by the {\tt archiver} client.  You might program this
+using:
+\index{example!{\tt await only}}
+\begin{verbatim}
+    whenever key_program->panic do
+        {
+        print "panic, doing archive snapshot"
+        archiver->do_archive
+        await only archiver->archive_done
+        }
+\end{verbatim}
+
+Sometimes during such an {\tt await only} there are a few events
+that if they arrive still must be processed.  {\em Glish} provides for
+\index{await statement!only ... except@{\tt only $\ldots$ except}}
+this case with the {\tt await only} $\ldots$ {\tt except} statement.
+If in the above example you also have a {\tt high\_priority} client
+that has to continue even during the archiving, you can  use:
+\index{example!await only ... except@{\tt await only $\ldots$ except}}
+\begin{verbatim}
+    whenever key_program->panic do
+        {
+        print "panic, doing archive snapshot"
+        archiver->do_archive
+        await only
+                archiver->archive_done except
+                high_priority->*
+        }
+\end{verbatim}
+Similarly, you can restrict which of {\tt high\_priority}'s events
+were processed during archiving by replacing the {\tt *} event name
+with a specific event name or list of names:
+\begin{verbatim}
+    whenever key_program->panic do
+        {
+        print "panic, doing archive snapshot"
+        archiver->do_archive
+        await only
+                archiver->archive_done except
+                high_priority->interrupt
+        }
+\end{verbatim}
+
+\subsection{Interaction with {\tt whenever}}
+\label{await-and-whenever}
+
+Since in general when executing an {\tt await} other events may
+be processed, leading to the execution of the body of {\tt whenever}
+statements, the question arises ``What happens if one of those
+{\tt whenever} bodies itself executes an {\tt await}?"  We call
+\index{await statement!nested}
+such an {\tt await} within another {\tt await} a {\em nested} {\tt await}.
+
+Only the most recently executed nested {\tt await} is active, i.e.
+execution is stopped until that await gets its event. But all of the
+awaits that are queued up will get their value in the order that they
+started waiting. Lets look at an example:
+\index{example!nested {\tt await} statements}
+\begin{verbatim}
+    c1 := client("c1")
+    c2 := client("c2")
+
+    whenever c1->ready do
+        {
+        c2->doit()
+        await c2->done
+        }
+
+    whenever c2->ready do
+        {
+        c1->doit()
+        await c1->done
+        }
+\end{verbatim}
+if {\tt c1} generates a {\tt ready} event you send a {\tt doit}
+event to {\tt c2} and then enter an {\tt await} waiting for {\tt c2}
+to generate {\tt done}.  If {\tt c2} then first generates {\tt ready}
+prior to generating {\tt done} then you execute the second {\tt whenever}
+clause, resulting in sending a {\tt doit} event to {\tt c1} and then a nested
+{\tt await} as you wait for {\tt c1} to generate {\tt done}.
+
+If {\tt c1} now generates {\tt done} then you go back to waiting for {\tt c2}
+to generate {\tt done}.  {\em But} what happens if {\tt c2} generates a {\tt done}
+event before {\tt c1}? In this case, the {\tt done} event from {\tt c2} is held for
+the {\tt await} pending for {\tt c2} until a {\tt done} event is received from
+{\tt c1}. So where {\tt await}s are concerned, the events are processed in the
+order forced by the script rather than the order the events were received.
+
+There can even be cases where two {\tt await}s are waiting for the {\em same}
+event from the {\em same} client. In this case, the first {\tt await} gets the first
+event coming from the client. The second {\tt await} must continue to wait for the
+next event of the specified type. This is typically what is desired because the agent
+probably processes the first event it recieves and generates a result before starting
+on the second event.
+\indtt{await}{statement}
+\index{events!receiving|)}
+
+\section{Point-to-Point Communication}
+\label{point-to-point}
+
+\index{point-to-point links}
+Sometimes in a {\em Glish} system two clients need to communicate as fast as
+possible.  If the system's {\em Glish} script only forwards events from
+one client to the other without modifying the events' values
+then you  instead use a
+direct connection between the two.  {\em Glish} supports this style of
+\indtt{link}{statement}
+communication using the {\tt link} statement.  When executed, a {\tt link}
+statement directs a client to send a particular event it generates
+directly to another client (perhaps renaming it).  For example,
+\begin{verbatim}
+    link t->transformed_data to
+         d->new_data
+\end{verbatim}
+causes the client associated with {\tt t} to send its
+{\tt transformed\_data} events directly to {\tt d}'s client, that
+sees them as {\tt new\_data} events.  (Other events generated by {\tt t}'s
+client still go to the {\em Glish} interpreter.)  The destination of
+\index{link statement!destination of {\tt *}}
+\indoponekey{*}{same-name in link statement}{+3same}
+a link can use the ``{\tt *}" event to mean ``use the same name":
+\begin{verbatim}
+    link t->transformed_data to d->*
+\end{verbatim}
+sends the {\tt transformed\_data} events along without renaming them.
+
+\index{point-to-point links!suspending and restoring}
+\indtt{unlink}{statement}
+You can suspend point-to-point links with the {\tt unlink} statement:
+\begin{verbatim}
+    unlink t->transformed_data to
+           d->new_data
+\end{verbatim}
+This suspends the link formed in the first example above. Now
+{\tt t}'s agent sends its {\tt transformed\_data} events 
+to the {\em Glish}
+interpreter and executes the corresponding {\tt whenever} bodies.
+Executing another {\tt link} statement restores the point-to-point
+link.
+
+\index{link statement!multiple execution}
+\index{{\em problems}}
+Presently, executing a {\tt link} statement twice causes {\em two} links
+to be established.  Thus
+\begin{verbatim}
+    link a->foo to b->bar
+    link a->foo to b->bar
+\end{verbatim}
+causes {\tt a} to send each {\tt foo} event to {\tt b} twice (i.e., {\tt b}
+sees two {\tt bar} events).  It seems unlikely that this behavior is
+desirable, since there may be times when you want to establish a link and
+are not sure if it has already been established.  So you should not rely
+on this behavior as it may well change in the future.
+
+\section{Creating Clients}
+\label{clients}
+
+\index{clients!creating|(}
+Clients form the heart of the {\em Glish} system.  They can be 
+created in two
+ways.  You can use either the predefined {\tt client} function to execute
+a new instance of a client program (i.e., a program linked with 
+the {\em Glish}
+Client Library; see \cxref{client-lib}), or the predefined {\tt shell}
+function to run an unmodified {\sc Unix} program as a simple type of {\em Glish}
+client.  These two alternatives are discussed below.
+
+\subsection{The {\tt client} Function}
+\label{client-func-long}
+
+\indfunc{client}
+The {\tt client} function takes the name of a program and an optional
+set of arguments, invokes the program with the arguments, and returns
+a {\em Glish} {\tt agent} value.   You can then use this value  
+to manipulate the
+program via events, as discussed in \xref{sending-events}, and \xref{whenever},
+above.
+
+A call to {\tt client} requires at least one argument, a {\tt string}
+giving the name of the program to execute.  If the name begins with
+\index{clients!interpreting executable name}
+a slash ({\tt /}) or a period ({\tt .}) then it is interpreted as
+giving the complete pathname to the program; otherwise
+{\tt system.path.bin.}{\em hostname} is used to locate clients.
+\index{{\tt system} global variable!{\tt path.bin}}
+\label{system-path-bin} {\em hostname} in this case is the host on
+which the client is being started. If no field matching the hostname
+is found in {\tt system.path.bin}, \verb+system.path.bin.default+ is
+used (if it exists). A field for the local host is created in
+\verb+system.path.bin+ at startup time using the {\tt \$PATH} environment
+variable.
+
+Additional arguments to {\tt client} are converted to string
+values, if they are not already strings, and passed to the program.
+For example,
+\begin{verbatim}
+    c := client("tester", 1:3, "hi")
+\end{verbatim}
+invokes the program {\tt tester} and passes it two string arguments,
+``\verb+[1 2 3]+'' and ``{\tt hi}''. The conversion of non-string
+arguments to strings is done in the same mannar as when they are
+printed. An element by element conversion can be done using {\tt as\_string}:
+\begin{verbatim}
+    c := client("tester", as_string(1:3), "hi")
+\end{verbatim}
+would invoke {\tt tester} with four arguments ``{\tt 1}'', ``{\tt 2}'',
+``{\tt 3}'', and ``{\tt hi}''. Starting {\tt tester} with:
+\begin{verbatim}
+    c := client("tester", 'hello there')
+\end{verbatim}
+would invoke {\tt tester} with a single argument ``{\tt hello there}'' whereas:
+\begin{verbatim}
+    c := client("tester", "hello there")
+\end{verbatim}
+invokes {\tt tester} with a two arguments ``{\tt hello}'' and ``{\tt there}''.
+
+When a single multi-element string is supplied, the first element is taken
+to be the name of the program to invoke. The last example can also be written:
+\begin{verbatim}
+    c := client("tester hello there")
+\end{verbatim}
+This invokes the program ``{\tt tester}'', {\em not} ``{\tt tester hello there}''. However,
+\begin{verbatim}
+    c := client('tester hello there')
+\end{verbatim}
+fails because there is no program called ``{\tt tester hello there}''.
+
+The {\tt client} function also takes a number of optional, named parameters:
+\index{client function!optional arguments}
+\begin{description}
+
+\item[host=]
+\indtt{host=}{client argument}
+\index{clients!running on remote hosts}
+specifies on which host to run the client, as a string scalar.
+For example,
+\begin{verbatim}
+    c := client("tester", host="mars")
+\end{verbatim}
+runs {\tt tester} on the remote host {\tt mars}.  If missing, the
+client runs on the local host.
+
+\item[input=]
+\indtt{input=}{client argument}
+\index{clients!standard input}
+takes a {\tt string} value and makes it the client's
+standard input.  The value is split into lines at each occurrence
+of a newline ('\verb+\n+'):
+\begin{verbatim}
+    c := client("tester", input="hello there")
+\end{verbatim}
+results in {\tt tester} seeing a single line on its standard input,
+namely the string ``{\tt hello there}'', while
+\begin{verbatim}
+    c := client("tester", input='how\nare\nyou?')
+\end{verbatim}
+results in three lines appearing on {\tt tester}'s standard input.
+
+Note that presently non-string values are converted to strings as
+though they were being printed, so
+\begin{verbatim}
+    c := client("tester", input=1:3)
+\end{verbatim}
+results in the single line ``{\tt [1 2 3]}'' appearing on the standard
+input.  This may change in the future.
+
+If no {\tt input=} argument appears then the client inherits the
+{\em Glish} interpreter's standard input.
+
+\item[suspend=]
+\indtt{suspend=}{client argument}
+\index{clients!suspending}
+takes a {\tt boolean} value.  If {\em true} then when
+the client runs it will first {\em suspend} itself, allowing a debugger
+to attach.  Suspending clients generate a message like:
+\begin{verbatim}
+    tester @ myhost, pid 18915: suspending ...
+\end{verbatim}
+indicating that the client {\tt tester} running on host {\tt myhost} with
+process ID {\tt 18915} has suspended.
+(See \xref{debugging-clients}, for more information on debugging suspended
+clients.)
+
+\item[ping=]
+\indtt{ping=}{client argument}
+\index{clients!pinging}
+takes a {\tt boolean} value.  If {\em true} then whenever
+an event is sent to the client, the client is ``pinged" by also
+sending it a {\tt SIGIO} signal.  Use of {\tt ping=} is 
+discouraged, because
+it is error-prone (in particular, receipt of a single {\tt SIGIO} signal
+may indicate more than one new event has arrived for the client).  I'm
+interested in hearing from users who find {\tt ping=} indispensable.
+
+\item[async=]
+\indtt{async=}{client argument}
+\index{clients!asynchronous}
+takes a {\tt boolean} value.  A {\em true} value specifies
+an {\em asynchronous} client.  In this case, {\em Glish} 
+does {\em not} execute
+the client process.  Instead it assumes the user has arranged
+a separate mechanism for invoking the process, perhaps because the mechanism
+{\em Glish} uses to invoke remote clients (\cxref{internals}) is unavailable for
+this particular client.
+
+For asynchronous clients, the {\tt client} function still returns an
+{\tt agent} value.  The record associated with this value has its
+{\tt activate} field set to a string giving special command-line
+arguments that need to be passed to the client.  Once the client is
+executed by some means, these arguments will then be interpreted on
+the client's behalf by the {\em Glish} Client Library so that the client
+knows how to connect to the {\em Glish} interpreter.
+
+For example, executing:
+\index{example!asynchronous client}
+\begin{verbatim}
+    a := client("special", async=T)
+    print "executing special using:", a.activate
+\end{verbatim}
+assigns to {\tt a} an {\tt agent} value and then prints out the
+arguments that need to be used to invoke {\tt special} and associate
+it with {\tt a}'s agent.  Note that a {\tt host=} option should {\em not}
+be used even if {\tt special} is running on a remote host.
+
+When the asynchronous client runs and ``joins" the current {\em Glish}
+script it generates an {\tt established} event, just as do regular
+clients (see \xref{predefined-events}, below).  Even before this
+happens, though, you can send events to {\tt a} and execute
+{\tt whenever} statements for responding to {\tt a}'s events.
+
+\end{description}
+
+\subsection{The {\tt shell} Function}
+\label{async-shell}
+
+\indfuncbegin{shell}
+\index{{\sc Unix} programs!running unmodified as {\em Glish} clients}
+You can use the {\tt shell} function to incorporate unmodified {\sc Unix}
+programs into a {\em Glish} program.  As noted in \xref{func-exprs}, above,
+a standard use of {\tt shell} is to run a {\sc Unix} program, wait for
+it to terminate, and collect its output as a {\tt string} vector.  For
+example:
+\begin{verbatim}
+    sources := shell("ls *.c")
+\end{verbatim}
+returns in {\tt sources} a list of all of the files in the current
+directory that end in ``{\tt .c}". The return status of the command which
+the {\tt shell} executes is returned as an attribute:
+\begin{verbatim}
+    print sources::status
+\end{verbatim}
+to allow you to check on the exit status of the {\sc Unix} command.
+
+\index{shell function!optional arguments}
+Similar to {\tt client} (see preceding section),
+{\tt shell} takes a number of optional arguments.  Of these, {\tt host=},
+\indtt{host=}{shell argument}
+\indtt{input=}{shell argument}
+\indtt{ping=}{shell argument}
+\indtt{suspend=}{shell argument}
+{\tt input=}, and {\tt ping=} behave identically ({\tt suspend=} is useful
+only for debugging {\em Glish} itself).
+
+\index{clients!creating!with {\tt shell()}|(}
+\index{asynchronous shell clients|(}
+\indtt{async=}{shell argument}
+The {\tt async=} option behaves differently, though.  It runs the
+shell command {\em asynchronously\/}; that is, it instructs {\em
+Glish} 
+not to wait for the command to complete but instead to use an event-oriented
+interface for the shell command.  The  asynchronous shell commands are
+called ``shell clients".
+
+The asynchronous interface works as follows.  First, when {\tt async=T}
+is used, {\tt shell} returns not a string value but instead an {\tt agent}
+value, as {\tt client} does.  You then use the {\tt agent}
+\indtt{stdin}{shell event}
+\indtt{stdout}{shell event}
+\indtt{EOF}{shell event}
+\indtt{terminate}{shell event}
+value to send {\tt stdin} events to make text appear on the shell client's
+standard input, {\tt EOF} events to close the standard input, and {\tt
+terminate} events to terminate the client.  Furthermore, each line of text
+the shell client writes to its standard output becomes a {\tt stdout}
+event.
+
+To illustrate, here's a {\em Glish} script
+\index{example!asynchronous shell client}
+that uses {\em awk} to print the numbers from 1 to 32 in hexadecimal,
+each appearing as a separate event:
+\begin{verbatim}
+    cvt := "awk '{ printf(\"%x\\n\", $1) }'"
+    hex := shell(cvt, async=T)
+
+    count := 1
+    hex->stdin(count)
+
+    whenever hex->stdout do
+        {
+        print count, "=", $value
+        if ( count < 32 )
+            {
+            count +:= 1
+            hex->stdin(count)
+            }
+        else
+            hex->EOF()
+        }
+\end{verbatim}
+
+The first two statements associate an asynchronous shell client with the
+variable {\tt hex}.  The next line initializes the global {\tt count}
+to 1 and sends that value to {\tt hex}, making it appear on {\em awk\/}'s
+standard input.
+
+The {\tt whenever} body prints out the current count and its hexadecimal
+equivalent, and then either increments the count and sends {\em awk} a new
+input line or closes its standard input.
+
+You might think that a race exists between sending the first {\tt stdin}
+event to {\tt hex}'s client and setting up the {\tt whenever} to deal
+with the client's response.  This problem does not arise, however,
+because the {\em Glish} interpreter does not read events generated by
+clients until it is done executing all of the statements in a script.
+(See \xref{program-execution}, below.)
+
+One final note regarding asynchronous shell commands.
+\index{shell function!buffering}
+\index{pseudo-ttys}
+{\em Glish} uses a technique called ``pseudo-ttys" for communicating with
+shell clients.  This makes the shell clients' standard output
+be line-buffered (instead of block-buffered, the default).  Without
+this technique, in the above example {\em awk} would buffer up its output
+until either it had filled an entire block (a lot of text) or its standard
+input was closed and it exited.  In this case you would not immediately
+get a new {\tt stdout} event for each {\tt stdin} event, and the program
+would not work correctly.  One drawback of using ``pseudo-ttys", though,
+is that the shell command truly believes that it is writing to a terminal.
+Programs that alter their behavior depending on whether they're writing
+to a terminal will engage the altered behavior.  For example, on BSD
+systems the following {\em Glish} program:
+\begin{verbatim}
+    a := shell("ls", async=T)
+    whenever a->stdout do print $value
+\end{verbatim}
+prints out several filenames at a time, because {\em ls} writes its
+output in columns when writing to a terminal.
+\index{asynchronous shell clients|)}
+\index{clients!creating!with {\tt shell()}|)}
+\indfuncend{shell}
+\index{clients!creating|)}
+
+\section{Shared Clients}
+\label{shared-clients}
+\index{shared clients|(}
+\index{clients!shared|(}
+
+Clients can be shared by multiple interpreters. This allows multiple
+{\em Glish} interpreters to share information in a way that compromises
+neither. The client itself indicates that it is intended to be
+shared, and it can indicate that it can be shared either only
+by the {\em user} who started it (multiple interpreters started
+by a single user), by any others in the user's {\em group}, or by any
+user running on a given machine ({\em world}). These modes of starting
+a shared client correspond to the {\sc Unix} permissions.
+
+One important caveat is that the {\em Glish} daemon ({\tt glishd}) must be
+started by the superuser, i.e. {\em root}, on those machines where shared
+clients are to be run. (See \S~\ref{glishd} for more
+information about {\tt glishd}.)  This is necessary because {\tt glishd}
+accepts connections from a published port and to do the necessary
+authentication, root privledge is required.
+
+Section \S~\ref{shared-client-example} has an example of how shared clients
+can be constructed in C++, and the next section discusses how script clients
+can be shared.
+
+\index{clients!shared|)}
+\index{shared clients|)}
+
+\section{Script Clients}
+\label{client-scripts}
+\index{script clients|(}
+\index{clients!script|(}
+\index{interpreter!as a client}
+
+In addition to running separate programs or shell commands as clients,
+you can also use {\em Glish} scripts as clients in other {\em Glish}
+scripts.  These
+scripts are referred to as ``script clients''.  You create script clients
+using the {\tt client} function, much as you might expect:
+\begin{verbatim}
+    sc := client("glish myscript.g")
+\end{verbatim}
+In general you use the same argument syntax as when running a script
+directly (See \xref{interpreter}).
+
+In every {\em Glish} script, whether run as a script client or not,
+{\em Glish} provides
+a global variable called {\tt script} (See \xref{script-var}).  If you run
+the script directly (not as a script client), then {\tt script} has
+the {\tt boolean} value {\tt F}.  If however you run the script as a
+script client then {\tt script} is an {\tt agent} record (See \xref{agent-record}),
+and can be used in {\tt whenever} and send statements to receive
+and send events.  You can also determine whether a script is being run
+as a script client by checking whether ``{\tt system.is\_script\_client}'' is
+{\tt T} or {\tt F}. (See \xref{system-var} for further description of the
+{\tt system} global variable).
+
+For example, the following script computes a ``timestamp'' string
+(perhaps to be used in constructing archive file names).  If invoked
+directly the script prints the current timestamp and exits.  But
+if invoked as a script client, it waits for {\tt get\_timestamp} events.
+Upon receiving one it generates a {\tt timestamp} event with the current
+timestamp and goes back to waiting for the next {\tt get\_timestamp} event.
+\index{example!script client|(}
+\begin{verbatim}
+    # Script to compute timestamps.
+    # Run independently, prints current timestamp
+    # and exits. Run as a script client, responds to
+    # "get_timestamp" events by fetching the current
+    # timestamp and sending it out in an "timestamp"
+    # event.
+
+    if ( system.is_script_client )
+        {
+        whenever script->get_timestamp do
+            script->timestamp( current_timestamp() )
+        }
+
+    else
+        # Run independently.
+        print "Current timestamp:", current_timestamp()
+
+
+    func current_timestamp()
+        shell("date +%a-%h-%d-%T")
+\end{verbatim}
+
+If this script were in a file {\em timestamp.g\/}, you could then use it
+in another script as follows:
+\begin{verbatim}
+    timestamp := client("glish timestamp.g")
+    ...
+    # Return current timestamp.
+    func stamp()
+        {
+        timestamp->get_timestamp()
+        await timestamp->timestamp
+        return $value
+        }
+\end{verbatim}
+\index{example!script client|)}
+
+Script clients behave, in general, identically to regular clients.  In
+particular, they respond to and generate the predefined events defined
+in \xref{predefined-events} below.
+
+\index{pragma!shared user|(}
+\index{pragma!shared group|(}
+\index{pragma!shared world|(}
+Script clients can also be shared by multiple users. This is done
+by simply adding one of the following statements to the beginning of the
+script:
+\begin{itemize}
+\item \verb+pragma shared user+
+\item \verb+pragma shared group+
+\item \verb+pragma shared world+
+\end{itemize}
+The shared script processes events as usual; the only difference is that
+the events are coming from multiple interpreters. Currently, there is
+no way for the script to select a specific interpreter to send the event
+to. This will be fixed in a future release.
+\index{pragma!shared world|)}
+\index{pragma!shared group|)}
+\index{pragma!shared user|)}
+\index{clients!script|)}
+\index{script clients|)}
+
+\section{Predefined Events}
+\label{predefined-events}
+
+\index{predefined events|(}
+{\em Glish} predefines several events for every client to provide automatic
+access to the client's state:
+
+\begin{sloppy}
+\begin{description}
+
+\item[established] is
+\indtt{established}{predefined event}
+\index{clients!establishment}
+\index{predefined events!{\tt established}}
+generated when a client first begins running.  Return of the {\tt client}
+call does not guarantee that the client is now running (especially if
+the {\tt async=T} option has been used. (See \xref{client-func-long}, 
+above.)
+A client's {\tt established} event is usually of interest only with
+asynchronous clients, since you can send events to a client and execute
+{\tt whenever} statements referring to a client before the client has
+become established.
+
+\item[unrecognized] is
+\indtt{unrecognized}{predefined event}
+\index{events!unrecognized}
+\index{predefined events!{\tt unrecognized}}
+generated when a client does not recognize an event sent to it.  By
+convention, clients also generate {\tt error} events when an event sent
+to them is erroneous in some way (for example, a mandatory field is
+missing from the event's value), but {\tt error} events are not (yet)
+automatically generated.
+
+\item[done] is
+\indtt{done}{predefined event}
+\index{clients!termination!successful}
+\index{predefined events!{\tt done}}
+generated when the client finishes successfully.  Contrast with:
+
+\item[fail] is
+\index{{\tt fail}!predefined event}
+\index{clients!termination!unsuccessful}
+\index{predefined events!{\tt fail}}
+generated on behalf of a client that terminates abnormally.
+For example, if a client faults due to a bus error and crashes, the 
+{\em Glish} interpreter detects the client's 
+failure and generates a {\tt fail}
+event.  If communication with a client is lost due to network problems,
+though, {\em Glish} may not detect the problem for a long time.
+
+\item[terminate]
+\indtt{terminate}{predefined event}
+\index{clients!termination!forced}
+\index{predefined events!{\tt terminate}}
+can be sent to any client to tell it to exit.  All
+clients are sent implicit {\tt terminate} events when a {\em Glish} program
+terminates due to an {\tt exit} statement (See \xref{exit-stmt}).
+
+\end{description}
+\end{sloppy}
+
+\index{error detection}
+\index{clients!error detection}
+These events form the mechanism by which you can control clients and
+detect their errors.  In general, if a client generates an event which 
+has no corresponding {\tt whenever} specifying what to do when that
+\index{errors!event without matching {\tt whenever} (warning)}
+event occurs, then the {\em Glish} interpreter generates a warning message.
+This message is not generated, though, for unnoticed {\tt established}
+and {\tt done} events.
+
+Ideally the above events should apply to all {\em agents} and
+not just clients.  This means that 
+{\em subsequences} (see the
+next section) would generate and respond to these events, too.  Presently,
+\index{possible future changes!subsequences and predefined events}
+however, these events only apply to clients (``clients" here includes
+asynchronous shell commands; see \xref{async-shell}).
+\index{predefined events|)}
+
+\section{Subsequences}
+\label{subseq}
+
+\index{subsequences|(}
+Along with clients and asynchronous shell commands, a final way to create
+an agent is using a {\em subsequence\/}.  A
+\index{agent values!returned by subsequences}
+subsequence is just like a function except when called it returns
+an {\tt agent} value, which you can then use to send and receive events to and
+from the subsequence.  In the body of a subsequence the predefined variable
+\index{subsequences!{\tt self} variable}
+\indtt{self}{variable}
+{\tt self} refers to its agent value.  For example, the following script
+\index{subsequences!defined with {\tt subsequence} keyword}
+\index{{\tt subsequence}}
+creates two subsequences, and when executed it prints {\tt 36} followed by
+{\tt [8~125~1030.3]}:
+\index{example!subsequences}
+
+\begin{verbatim}
+subsequence power(exponent)
+    {
+    whenever self->compute do
+        self->ready( $value ^ exponent )
+    }
+
+square := power(2)
+cube := power(3)
+
+square->compute( 6 )
+cube->compute( [2, 5, 10.1] )
+
+whenever square->ready, cube->ready do
+    print $value
+\end{verbatim}
+
+The first set of statements defines {\tt power} as a subsequence that is
+invoked with an argument {\tt exponent} and responds to {\tt compute} events
+by generating a {\tt ready} event whose value is the value of the {\tt
+compute} event raised to the given exponent.  (The keyword {\tt subsequence},
+\index{{\tt subseq}!as abbreviation for {\tt subsequence}}
+by the way, can be abbreviated {\tt subseq}.)
+The two assignments bind {\tt square}
+and {\tt cube} to agents corresponding to different instances of {\tt power}.
+The next two statements send those agents {\tt compute} events with a single
+integer value and a three-element double-precision vector value, respectively.
+The final {\tt whenever} statement prints the value of any {\tt ready} events
+generated by {\tt square} or {\tt cube}.
+
+\index{threads!subsequences as}
+In a sense, a subsequence provides a separate ``thread" running inside
+the {\em Glish} interpreter.  Each instance of a subsequence has its own set
+\index{variables!local!persistent}
+of local variables which it ``remembers" between receiving events.  Presently
+there is little mechanism for controlling a subsequence (as discussed in
+the previous section).  In particular, there is no way right now to
+terminate an instance of a subsequence once it has begun.
+We do not yet have much experience with subsequences so it is
+possible that they will change somewhat in the future.
+
+\begin{sloppy}
+Subsequences are a somewhat more disciplined instance of the
+\indfunc{create\_agent}
+more general {\tt create\_agent} function (\xref{agent-type},
+\xref{predefined-agents}).  In particular, the following subsequence:
+\index{example!subsequences!and {\tt create\_agent()}}
+\begin{verbatim}
+    subseq example(x, y)
+        {
+        do_something(x)
+        whenever self->do_y do
+            do_something(y)
+        }
+\end{verbatim}
+is identical to:
+\begin{verbatim}
+    func example(x, y)
+        {
+        self := create_agent()
+        do_something(x)
+        whenever self->do_y do
+            do_something(y)
+        return self
+        }
+\end{verbatim}
+\end{sloppy}
+\index{subsequences|)}
+\index{events|)}

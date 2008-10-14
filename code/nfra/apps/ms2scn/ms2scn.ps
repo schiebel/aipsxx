@@ -1,0 +1,399 @@
+%!
+
+%A3 (seems not to work, also adapt scaling etc.
+%<</PageSize[842 1188]>>setpagedevice
+
+/ellipsedict 8 dict def
+ellipsedict /mtrx matrix put
+
+
+/ellipse % x y xrad yrad - ellipse with half-axes
+ { 0 360 earc
+ } def
+
+/earc % x y xrad yrad ang1 ang2 - elliptical arc with half-axes on the axes
+      % angles in the coordinate system of the original circle
+ { ellipsedict begin
+    /ang2 exch def
+    /ang1 exch def
+    /yrad exch def
+    /xrad exch def
+    /y exch def
+    /x exch def
+    /savematrix mtrx currentmatrix def
+    x y translate
+    xrad yrad scale
+    newpath 0 0 1 ang1 ang2 arc
+    savematrix setmatrix
+   end
+ } def
+
+
+/rectvals % x1 y1 x2 y2  - rectangle parameters
+ { 
+    /y2 exch def
+    /x2 exch def
+    /y1 exch def
+    /x1 exch def
+    /xc x1 x2 add 2 div def
+    /yc y1 y2 add 2 div def
+    /xw x2 x1 sub def
+    /yw y2 y1 sub def
+ } def
+
+/box % xc yc xw yw - draw rectangle 
+ {
+    rectvals
+    x1 y1 moveto
+    xw 0 rlineto 0 yw rlineto xw neg 0 rlineto 0 yw neg rlineto
+ } def
+
+/ebox % x1 y1 x2 y2 - draw ellipse in a rectangle
+ {
+    rectvals
+    xc yc xw 2 div yw 2 div ellipse
+ } def
+
+
+/loop % xc yc xr yr ang - draw half loop in given direction, radii are given
+ {
+    neg dup 90 sub exch 90 add earc
+ } def
+
+
+/pop4 % pops 4 values off the stack
+{
+    4 {pop} repeat
+} def
+
+/rbox % x1 y1 x2 y2 rad - draw rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+
+/urbox % x1 y1 x2 y2 rad - draw upper rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 rad add y1 moveto
+    x2 y1 x2 y2 rad arcto pop4
+    x2 y2 lineto
+    x1 y2 lineto
+    x1 y1 x2 y1 rad arcto pop4
+} def
+
+/lrbox % x1 y1 x2 y2  - draw lower rounded rectangle
+{
+    /rad exch def
+    rectvals
+    x1 y1 moveto
+    x2 y1 lineto
+    x2 y2 x1 y2 rad arcto pop4
+    x1 y2 x1 y1 rad arcto pop4
+    x1 y1 lineto
+} def
+
+
+/obox % x1 y1 x2 y2 - draw oval splined box
+{
+    rectvals
+    /rad 6 def 
+    xc y1 moveto
+    x2 y1 x2 y1 x2 yc curveto
+    x2 y2 x2 y2 xc y2 curveto
+    x1 y2 x1 y2 x1 yc curveto
+    x1 y1 x1 y1 xc y1 curveto
+} def
+
+
+/leftshow	%stack: string; point at left of line
+{
+  show 
+} def
+
+/centershow	%stack: string; point at center of line
+{
+   dup stringwidth pop 2 div neg 0 rmoveto show 
+} def
+
+/rightshow	%stack: string; point at right of line
+{
+   dup stringwidth pop neg 0 rmoveto show 
+} def
+
+/Inch {72 mul} def
+/SheetClip	% sheetname tx ty px py pw ph mi sx sy rot SheetClip
+		% All dimensions in inches
+		% tx,ty title, px,py origin, pw,ph clipping box
+		% sx,sy sheet coordinate in pixels of upper left point
+		% mi inches/pixels, assumes negative y axis
+		% rotate page if rot is non-zero
+ {
+   /rot exch def
+   /sy exch def
+   /sx exch def
+   Inch /mi exch def
+   Inch /ph exch def
+   Inch /pw exch def
+   Inch /py exch def
+   Inch /px exch def
+   Inch /ty exch def
+   Inch /tx exch def
+   /sheetname exch def
+   gsave
+   rot 0 ne { [0 -1 1 0 0 11 Inch] concat } if
+   tx ty  moveto 
+   (Module: ) show modulename show 
+   (  Sheet: ) show sheetname show 
+   moddate () ne {(  Time: ) show moddate show} if
+   newpath px py moveto
+   pw 0 rlineto 0 ph neg rlineto pw neg 0 rlineto
+   clip newpath
+   px py translate mi dup scale sx neg sy translate
+  } def
+/Sheet % sheetname Sheet
+ {
+   1.0 10.0 1.0 9.5 6.5 8.0 0.01 0 0 0 SheetClip
+  } def
+/Module {/modulename exch def} def
+/Modtime {/moddate exch def} def
+/ShowSheet {showpage grestore} def
+/PlainFont     /Helvetica findfont 12 scalefont def
+/LabelFont     /Helvetica-Oblique findfont 12 scalefont def
+/BoldLabelFont /Helvetica-BoldOblique findfont 12 scalefont def
+/BoldFont      /Helvetica-Bold findfont 12 scalefont def
+/Plain {PlainFont setfont} def
+/Bold {BoldFont setfont} def
+/Label {LabelFont setfont} def
+/BoldLabel{BoldLabelFont setfont} def
+Plain
+2 setlinecap
+1 setlinewidth
+/moddate () def
+
+% define color names
+/red     {0.00 1 1 sethsbcolor} def
+/yellow  {0.17 1 1 sethsbcolor} def
+/green   {0.33 1 1 sethsbcolor} def
+/cyan    {0.50 1 1 sethsbcolor} def
+/blue    {0.67 1 1 sethsbcolor} def
+/magenta {0.83 1 1 sethsbcolor} def
+/white   {0.00 0 1 sethsbcolor} def
+/black   {0.00 0 0 sethsbcolor} def
+/redfill     {0.00 0.35 1 sethsbcolor} def
+/yellowfill  {0.17 0.35 1 sethsbcolor} def
+/greenfill   {0.33 0.35 1 sethsbcolor} def
+/cyanfill    {0.50 0.35 1 sethsbcolor} def
+/bluefill    {0.67 0.35 1 sethsbcolor} def
+/magentafill {0.83 0.35 1 sethsbcolor} def
+/whitefill   {1 setgray} def
+/blackfill   {0.8 setgray} def
+(ms2scn) Module (Wed Feb 12 16:53:17 1997 ) Modtime
+%%EndProlog
+
+
+%%Page: 1 1
+
+(1: Structure of Newstar Files  Panel: \(0,0\)) 1 10.5 0.5 10 7.5 9.5 0.01 0 0 0
+SheetClip
+30 -390 213 -486 box [] 0 setdash white fill 31 -391 212 -410 box [] 0 setdash
+white fill 33 -391 210 -395 box [] 0 setdash white fill 33 -396 210 -408 box
+[] 0 setdash white fill 54 -406 moveto black Bold (NStarSubGroupHeader) leftshow
+33 -409 210 -410 box [] 0 setdash white fill 31 -411 moveto 212 -411 lineto
+[] 0 setdash black stroke 31 -417 212 -429 box [] 0 setdash white fill 32 -417
+33 -430 box [] 0 setdash white fill 34 -427 moveto black Plain
+(-itsHdr:elements from SGH.dsc) leftshow 31 -435 moveto 212 -435 lineto
+[] 0 setdash black stroke 31 -441 212 -453 box [] 0 setdash white fill 32 -441
+33 -454 box [] 0 setdash white fill 34 -451 moveto black Plain
+(+NStarSubGroupHeader\(\)) leftshow 31 -454 212 -466 box [] 0 setdash white fill
+32 -454 33 -467 box [] 0 setdash white fill 34 -464 moveto black Plain (+get*:*)
+leftshow 31 -467 212 -479 box [] 0 setdash white fill 32 -467 33 -480 box
+[] 0 setdash white fill 34 -477 moveto black Plain (-set*:*) leftshow 30 -390
+213 -486 box [] 0 setdash black stroke 63 -255 304 -377 box [] 0 setdash white
+fill 64 -256 303 -275 box [] 0 setdash white fill 66 -256 301 -260 box
+[] 0 setdash white fill 66 -261 301 -273 box [] 0 setdash white fill 112 -271
+moveto black Bold (NStarGeneralFileHeader) leftshow 66 -274 301 -275 box
+[] 0 setdash white fill 64 -276 moveto 303 -276 lineto [] 0 setdash black stroke
+64 -282 303 -294 box [] 0 setdash white fill 65 -282 66 -295 box [] 0 setdash
+white fill 67 -292 moveto black Plain (-itsHdr:elements from GFH.dsc) leftshow
+64 -300 moveto 303 -300 lineto [] 0 setdash black stroke 64 -306 303 -318 box
+[] 0 setdash white fill 65 -306 66 -319 box [] 0 setdash white fill 67 -316
+moveto black Plain (+NStarGeneralFileHeader\(aType,aName\)) leftshow 64 -319 303
+-331 box [] 0 setdash white fill 65 -319 66 -332 box [] 0 setdash white fill 67
+-329 moveto black Plain (+get*:*) leftshow 64 -332 303 -344 box [] 0 setdash
+white fill 65 -332 66 -345 box [] 0 setdash white fill 67 -342 moveto black
+Plain (+set*\(....\):void) leftshow 64 -345 303 -357 box [] 0 setdash white fill
+65 -345 66 -358 box [] 0 setdash white fill 67 -355 moveto black Plain
+(+addSet\(aSet\)) leftshow 64 -358 303 -370 box [] 0 setdash white fill 65 -358
+66 -371 box [] 0 setdash white fill 67 -368 moveto black Plain
+(+write\(aFile\):ostream&) leftshow 63 -255 304 -377 box [] 0 setdash black
+stroke 380 -679 563 -775 box [] 0 setdash white fill 381 -680 562 -699 box
+[] 0 setdash white fill 383 -680 560 -684 box [] 0 setdash white fill 383 -685
+560 -697 box [] 0 setdash white fill 439 -695 moveto black Bold (NStarScan)
+leftshow 383 -698 560 -699 box [] 0 setdash white fill 381 -700 moveto 562 -700
+lineto [] 0 setdash black stroke 381 -706 562 -718 box [] 0 setdash white fill
+382 -706 383 -719 box [] 0 setdash white fill 384 -716 moveto black Plain
+(-itsHdr:elements from SCH.dsc) leftshow 381 -719 562 -731 box [] 0 setdash
+white fill 382 -719 383 -732 box [] 0 setdash white fill 384 -729 moveto black
+Plain (-itsData:Int8*) leftshow 381 -737 moveto 562 -737 lineto [] 0 setdash
+black stroke 381 -743 562 -755 box [] 0 setdash white fill 382 -743 383 -756 box
+[] 0 setdash white fill 384 -753 moveto black Plain (+setData\(anArray\))
+leftshow 381 -756 562 -768 box [] 0 setdash white fill 382 -756 383 -769 box
+[] 0 setdash white fill 384 -766 moveto black Plain (+write\(aFile\)) leftshow
+380 -679 563 -775 box [] 0 setdash black stroke 36 -5 326 -192 box [] 0 setdash
+white fill 37 -6 325 -25 box [] 0 setdash white fill 39 -6 323 -10 box
+[] 0 setdash white fill 39 -11 323 -23 box [] 0 setdash white fill 154 -21
+moveto black Bold (NStarFile) leftshow 39 -24 323 -25 box [] 0 setdash white
+fill 37 -26 moveto 325 -26 lineto [] 0 setdash black stroke 37 -32 325 -44 box
+[] 0 setdash white fill 38 -32 39 -45 box [] 0 setdash white fill 40 -42 moveto
+black Plain (-itsFileName:String) leftshow 37 -45 325 -57 box [] 0 setdash white
+fill 38 -45 39 -58 box [] 0 setdash white fill 40 -55 moveto black Plain
+(-itsFile:ofstream) leftshow 37 -58 325 -70 box [] 0 setdash white fill 38 -58
+39 -71 box [] 0 setdash white fill 40 -68 moveto black Plain
+(-itsGFH:NStarGeneralFileHeader) leftshow 37 -71 325 -83 box [] 0 setdash white
+fill 38 -71 39 -84 box [] 0 setdash white fill 40 -81 moveto black Plain
+(-itsGroups:List<NStarSubGroupHeader*>) leftshow 37 -84 325 -96 box [] 0 setdash
+white fill 38 -84 39 -97 box [] 0 setdash white fill 40 -94 moveto black Plain
+(-itsSets:List<NStarSet*>) leftshow 37 -97 325 -109 box [] 0 setdash white fill
+38 -97 39 -110 box [] 0 setdash white fill 40 -107 moveto black Plain
+(+enum NStarFileType { SCN, WMP }) leftshow 37 -115 moveto 325 -115 lineto
+[] 0 setdash black stroke 37 -121 325 -133 box [] 0 setdash white fill 38 -121
+39 -134 box [] 0 setdash white fill 40 -131 moveto black Plain
+(+NStarFile\(aType,aName\)) leftshow 37 -134 325 -146 box [] 0 setdash white
+fill 38 -134 39 -147 box [] 0 setdash white fill 40 -144 moveto black Plain
+(+~NStarFile) leftshow 37 -147 325 -159 box [] 0 setdash white fill 38 -147 39
+-160 box [] 0 setdash white fill 40 -157 moveto black Plain
+(+addSet\(aSet,aSetID\):Bool) leftshow 37 -160 325 -172 box [] 0 setdash white
+fill 38 -160 39 -173 box [] 0 setdash white fill 40 -170 moveto black Plain
+(+write:Bool) leftshow 37 -173 325 -185 box [] 0 setdash white fill 38 -173 39
+-186 box [] 0 setdash white fill 40 -183 moveto black Plain
+(+getGeneralFileHeader:NStarGeneralFileHeader&) leftshow 36 -5 326 -192 box
+[] 0 setdash black stroke 55 -578 220 -700 box [] 0 setdash white fill 56 -579
+219 -598 box [] 0 setdash white fill 58 -579 217 -583 box [] 0 setdash white
+fill 58 -584 217 -596 box [] 0 setdash white fill 97 -594 moveto black Bold
+(NStarIfrTable) leftshow 58 -597 217 -598 box [] 0 setdash white fill 56 -599
+moveto 219 -599 lineto [] 0 setdash black stroke 56 -605 219 -617 box
+[] 0 setdash white fill 57 -605 58 -618 box [] 0 setdash white fill 59 -615
+moveto black Plain (-itsAddress:size_t) leftshow 56 -618 219 -630 box
+[] 0 setdash white fill 57 -618 58 -631 box [] 0 setdash white fill 59 -628
+moveto black Plain (-itsData:Int16[STHIFR]) leftshow 56 -636 moveto 219 -636
+lineto [] 0 setdash black stroke 56 -642 219 -654 box [] 0 setdash white fill 57
+-642 58 -655 box [] 0 setdash white fill 59 -652 moveto black Plain
+(+write\(aFile\):TMSBoolean) leftshow 56 -655 219 -667 box [] 0 setdash white
+fill 57 -655 58 -668 box [] 0 setdash white fill 59 -665 moveto black Plain
+(+getAddress\(\):size_t) leftshow 56 -668 219 -680 box [] 0 setdash white fill
+57 -668 58 -681 box [] 0 setdash white fill 59 -678 moveto black Plain
+(+getAddress\(aFile\):size_t) leftshow 56 -681 219 -693 box [] 0 setdash white
+fill 57 -681 58 -694 box [] 0 setdash white fill 59 -691 moveto black Plain
+(+NStartIfrTable\(Vector<Int>\)) leftshow 55 -578 220 -700 box [] 0 setdash
+black stroke 335 -236 515 -332 box [] 0 setdash white fill 336 -237 514 -256 box
+[] 0 setdash white fill 338 -237 512 -241 box [] 0 setdash white fill 338 -242
+512 -254 box [] 0 setdash white fill 398 -252 moveto black Bold (NStarSet)
+leftshow 338 -255 512 -256 box [] 0 setdash white fill 336 -257 moveto 514 -257
+lineto [] 0 setdash black stroke 336 -263 514 -275 box [] 0 setdash white fill
+337 -263 338 -276 box [] 0 setdash white fill 339 -273 moveto black Plain
+(-itsHdr:elements from SSH.dsf) leftshow 336 -281 moveto 514 -281 lineto
+[] 0 setdash black stroke 336 -287 514 -299 box [] 0 setdash white fill 337 -287
+338 -300 box [] 0 setdash white fill 339 -297 moveto black Plain (+~NStarSet)
+leftshow 336 -300 514 -312 box [] 0 setdash white fill 337 -300 338 -313 box
+[] 0 setdash white fill 339 -310 moveto black Plain (+getSetNumber:Int) leftshow
+336 -313 514 -325 box [] 0 setdash white fill 337 -313 338 -326 box [] 0 setdash
+white fill 339 -323 moveto black Plain (+setSetNumber\(aNumber\):void) leftshow
+335 -236 515 -332 box [] 0 setdash black stroke 406 -399 587 -560 box
+[] 0 setdash white fill 407 -400 586 -419 box [] 0 setdash white fill 409 -400
+584 -404 box [] 0 setdash white fill 409 -405 584 -417 box [] 0 setdash white
+fill 448 -415 moveto black Bold (NStarSetHeader) leftshow 409 -418 584 -419 box
+[] 0 setdash white fill 407 -420 moveto 586 -420 lineto [] 0 setdash black
+stroke 407 -426 586 -438 box [] 0 setdash white fill 408 -426 409 -439 box
+[] 0 setdash white fill 410 -436 moveto black Plain
+(-itsHdr:elements from STH.dsc) leftshow 407 -439 586 -451 box [] 0 setdash
+white fill 408 -439 409 -452 box [] 0 setdash white fill 410 -449 moveto black
+Plain (-itsScans:List<NStarScan*>) leftshow 407 -452 586 -464 box [] 0 setdash
+white fill 408 -452 409 -465 box [] 0 setdash white fill 410 -462 moveto black
+Plain (-itsIfrTable:NStarIfrTable*) leftshow 407 -470 moveto 586 -470 lineto
+[] 0 setdash black stroke 407 -476 586 -488 box [] 0 setdash white fill 408 -476
+409 -489 box [] 0 setdash white fill 410 -486 moveto black Plain (+set*\(...\))
+leftshow 407 -489 586 -501 box [] 0 setdash white fill 408 -489 409 -502 box
+[] 0 setdash white fill 410 -499 moveto black Plain (+get*\(\)) leftshow 407
+-502 586 -514 box [] 0 setdash white fill 408 -502 409 -515 box [] 0 setdash
+white fill 410 -512 moveto black Plain (+addScan\(aScan\)) leftshow 407 -515 586
+-527 box [] 0 setdash white fill 408 -515 409 -528 box [] 0 setdash white fill
+410 -525 moveto black Plain (+setIfrTable\(aTable\)) leftshow 407 -528 586 -540
+box [] 0 setdash white fill 408 -528 409 -541 box [] 0 setdash white fill 410
+-538 moveto black Plain (+~NStarSetHeader) leftshow 407 -541 586 -553 box
+[] 0 setdash white fill 408 -541 409 -554 box [] 0 setdash white fill 410 -551
+moveto black Plain (#doWrite\(aFile\)) leftshow 406 -399 587 -560 box
+[] 0 setdash black stroke 44 -208 moveto 44 -380 lineto [] 0 setdash black
+stroke 44 -193 moveto 48 -200 lineto 44 -207 lineto 40 -200 lineto 44 -193
+lineto 44 -193 lineto [] 0 setdash black stroke 44 -385 4 4 ellipse [] 0 setdash
+gsave  black fill grestore black stroke 100 -208 moveto 100 -254 lineto
+[] 0 setdash black stroke 100 -193 moveto 104 -200 lineto 100 -207 lineto 96
+-200 lineto 100 -193 lineto 100 -193 lineto [] 0 setdash black stroke 115 -208
+moveto 115 -216 lineto [] 0 setdash black stroke 115 -216 moveto 423 -216 lineto
+[] 0 setdash black stroke 423 -216 moveto 423 -226 lineto [] 0 setdash black
+stroke 115 -193 moveto 119 -200 lineto 115 -207 lineto 111 -200 lineto 115 -193
+lineto 115 -193 lineto [] 0 setdash black stroke 423 -231 4 4 ellipse
+[] 0 setdash gsave  black fill grestore black stroke 509 -333 moveto 509 -355
+lineto [] 0 setdash black stroke 499 -374 moveto 519 -374 lineto [] 0 setdash
+black stroke 509 -375 moveto 509 -398 lineto [] 0 setdash black stroke 499 -373
+moveto 509 -356 lineto [] 0 setdash black stroke 509 -356 moveto 519 -373 lineto
+[] 0 setdash black stroke 405 -507 moveto 134 -507 lineto [] 0 setdash black
+stroke 134 -507 moveto 134 -577 lineto [] 0 setdash black stroke 520 -576 moveto
+520 -669 lineto [] 0 setdash black stroke 520 -561 moveto 524 -568 lineto 520
+-575 lineto 516 -568 lineto 520 -561 lineto 520 -561 lineto [] 0 setdash black
+stroke 520 -674 4 4 ellipse [] 0 setdash gsave  black fill grestore black stroke
+ShowSheet
+
+
+%%Page: 2 2
+
+(2: Conversion class  Panel: \(0,0\)) 1 10.5 0.5 10 7.5 9.5 0.01 0 0 0 SheetClip
+104 -101 272 -197 box [] 0 setdash white fill 105 -102 271 -121 box [] 0 setdash
+white fill 107 -102 269 -106 box [] 0 setdash white fill 107 -107 269 -119 box
+[] 0 setdash white fill 166 -117 moveto black Bold (ms2scn) leftshow 107 -120
+269 -121 box [] 0 setdash white fill 105 -122 moveto 271 -122 lineto
+[] 0 setdash black stroke 105 -128 271 -140 box [] 0 setdash white fill 106 -128
+107 -141 box [] 0 setdash white fill 108 -138 moveto black Plain
+(-aConvertor:ConvertToSCN) leftshow 105 -141 271 -153 box [] 0 setdash white
+fill 106 -141 107 -154 box [] 0 setdash white fill 108 -151 moveto black Plain
+(-aMS:MeasurementSet) leftshow 105 -154 271 -166 box [] 0 setdash white fill 106
+-154 107 -167 box [] 0 setdash white fill 108 -164 moveto black Plain
+(-aName:String) leftshow 105 -172 moveto 271 -172 lineto [] 0 setdash black
+stroke 105 -178 271 -190 box [] 0 setdash white fill 106 -178 107 -191 box
+[] 0 setdash white fill 108 -188 moveto black Plain (main) leftshow 104 -101 272
+-197 box [] 0 setdash black stroke 118 -275 297 -449 box [] 0 setdash white fill
+119 -276 296 -295 box [] 0 setdash white fill 121 -276 294 -280 box [] 0 setdash
+white fill 121 -281 294 -293 box [] 0 setdash white fill 164 -291 moveto black
+Bold (ConvertToSCN) leftshow 121 -294 294 -295 box [] 0 setdash white fill 119
+-296 moveto 296 -296 lineto [] 0 setdash black stroke 119 -302 296 -314 box
+[] 0 setdash white fill 120 -302 121 -315 box [] 0 setdash white fill 122 -312
+moveto black Plain (-itsMS) leftshow 119 -315 296 -327 box [] 0 setdash white
+fill 120 -315 121 -328 box [] 0 setdash white fill 122 -325 moveto black Plain
+(-itsSCN:NStarFile) leftshow 119 -328 296 -340 box [] 0 setdash white fill 120
+-328 121 -341 box [] 0 setdash white fill 122 -338 moveto black Plain
+(-itsIfrTable::NStarIfrTable) leftshow 119 -341 296 -353 box [] 0 setdash white
+fill 120 -341 121 -354 box [] 0 setdash white fill 122 -351 moveto black Plain
+(-itsNrBands:Int) leftshow 119 -354 296 -366 box [] 0 setdash white fill 120
+-354 121 -367 box [] 0 setdash white fill 122 -364 moveto black Plain
+(-itsHAStart:Double) leftshow 119 -367 296 -379 box [] 0 setdash white fill 120
+-367 121 -380 box [] 0 setdash white fill 122 -377 moveto black Plain
+(-itsHAEnd:Double) leftshow 119 -385 moveto 296 -385 lineto [] 0 setdash black
+stroke 119 -391 296 -403 box [] 0 setdash white fill 120 -391 121 -404 box
+[] 0 setdash white fill 122 -401 moveto black Plain (+ConvertToSCN\(aMS,aName\))
+leftshow 119 -404 296 -416 box [] 0 setdash white fill 120 -404 121 -417 box
+[] 0 setdash white fill 122 -414 moveto black Plain (+prepare:Bool) leftshow 119
+-417 296 -429 box [] 0 setdash white fill 120 -417 121 -430 box [] 0 setdash
+white fill 122 -427 moveto black Plain (+convert:Bool) leftshow 119 -430 296
+-442 box [] 0 setdash white fill 120 -430 121 -443 box [] 0 setdash white fill
+122 -440 moveto black Plain (+write:Bool) leftshow 118 -275 297 -449 box
+[] 0 setdash black stroke 194 -198 moveto 194 -274 lineto [] 0 setdash black
+stroke ShowSheet
+
+%%Trailer

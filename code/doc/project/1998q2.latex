@@ -1,0 +1,1409 @@
+\documentclass[11pt]{article}
+\usepackage{html, epsf}
+\begin{document}
+\title{\bf AIPS++ Quarterly Report: 1998 Q2}
+\author{T.J. Cornwell, NRAO}
+\date{1998 July 17}
+\maketitle
+
+\tableofcontents
+
+\section{Introduction}
+
+In this report, we cover the personnel changes and progress in AIPS++
+over the last quarter (1998 Q2). We also discuss the issue of ``Thin
+Path'' development raised by the STAG and mentioned in the previous
+quarterly report.
+
+\section{Personnel changes}
+
+\begin{itemize}
+
+\item Dan Briggs of the NCSA/BIMA AIPS++ group was tragically killed
+in a sky-diving accident on July 5, 1998. Dan joined AIPS++ last
+year to work on synthesis processing and parallelization. Many of us
+knew Dan closely and valued him as an excellent friend and colleague.
+His death is a sore loss for both AIPS++ and the radio-interferometry
+community. A memorial page for Dan can be found at:
+
+\htmladdnormallink{{\em http://www.nmt.edu/\~{}pio/dan/dan-play.html}}
+{http://www.nmt.edu/\~{}pio/dan/dan-play.html}.
+
+\item Brian Glendenning has been chosen to be Head of Computing for
+the NRAO Millimeter Array project. This is a honor for Brian and
+an opportunity not be be missed, but we will miss his presence in
+AIPS++. Brian has been a member of the project during it's entire
+lifetime. He is the key architect of the system and has contributed
+ideas and code to nearly all parts of the system. He is our best
+pinch-hitter, able to work productively in all areas. We wish him
+well in his new position, and note that it augurs well for the
+cooperation between AIPS++ and the MMA. Brian will remain located 
+in Socorro and will be available for occasional consultation.
+
+\item Athol Kemball will replace Brian as Deputy Project Manager,
+effective July 1. Ger van Diepen will be Acting Technical Leader
+until the end of 1998, at which point the question of the requirements 
+for the Technical Leader will be revisited.
+
+\item Mark Holdaway will join the AIPS++ Project on July 13, filling
+the position vacated by Brian Glendenning. Mark will be located in
+Tucson, thus providing a local contact for 12m users. Mark has
+previously worked within AIPS++ and is thus already familiar with both
+the basic AIPS++ library and programming in C++. In addition, Mark has
+great expertise in many areas of interferometry, including mosaicing,
+and the design of the MMA. His first task will be to work on mosaicing
+applications.
+
+\item Jeff Uphoff is leaving the NRAO AIPS++ group in Charlottesville
+to take a position with TransMeta Corp. Joe McMullin will move to
+Charlottesville to replace Jeff, and NRAO will hire a replacement
+for Jeff in Green Bank.
+
+\item John Pixton will leave the NCSA/BIMA AIPS++ group to take a
+position in Norway.
+
+\item David Barnes joined the AIPS++ Project in Epping, and
+Peter Barnes (no relation) joined the AIPS++ Project in Socorro.
+\end{itemize}
+
+As a result of all of these changes, the next quarter will require
+lot of work on hiring. In addition to replacing Dan Briggs and
+Jeff Uphoff, we have to hire a post-doc to work on wide-field
+imaging, and someone to work on parallel i/o for the parallelization
+effort.
+
+The loss of Dan Briggs will slow down our work on wide-field imaging,
+and the departure of Jeff Uphoff will further freeze our work on
+system support.
+
+\section{Developments in 1998 Q2}
+
+In {\bf Single Dish support}, we added the following to the Dish
+program: an operation to save results back to disk, the ability to
+save the state of Dish and its plotter between executions of the
+program, and use of the same pgplotter widget in the dish plotter as
+used elsewhere in Aips++.  The full SDFITS convention is now supported
+in the fits2table application.  At Green Bank, we added support for
+the Holography backend to the existing fillers.  The RFI data base
+developed last quarter is now in use in Green Bank and we are
+responding to the initial user feedback.  We support GBT staff in
+on-going testing of GBT hardware and software.  We have begun
+development of the continuum analysis tools necessary for GBT
+commissioning.
+
+In {\bf Synthesis support}, we finalized the definition of the second
+version of the MeasurementSet format. This will be implemented following
+the third beta release. We developed a glish-based visibility
+plotter using the ms module and the pgplotter interactive plotter.
+We expect that this will meet visibility examination needs for the
+short term but will have to be revised or replaced when the display
+library is available for application programmers. Only about a weeks
+investment of time was needed for the development of a very functional
+initial version. The {\tt sky} synthesis imaging application was subject
+to testing by various testing and as a result a number of (mostly 
+subtle) bugs were fixed. The corresponding {\tt cal} synthesis 
+calibration application is still under development and has not
+been placed in the system. Wim Brouw developed a very promising
+approach to wide-field imaging in which some of the most time-consuming
+operations (the image coordinate system conversions) are no longer
+required. The Measures system now supports this via the UVWMachine
+class, and we expect to implement the full algorithm in the next
+quarter.
+
+In {\bf Glish}, a number of important modifications were made:
+
+\begin{itemize}
+
+\item Basic file I/O was completed; this allows Glish users to access
+        ASCII files line-by-line. The user can also get basic information
+        about files (similar to what is returned by the Unix stat() function).
+
+\item printf(), sprintf(), and fprintf() were added to Glish as built-in
+        functions. This addition was complicated by the fact that stdarg
+        argument lists cannot be created dynamically at runtime. As a
+        result, the (publicly available) source code for the shell
+        version of printf() had to be used.
+
+\item A TCL/Tk based client was developed. This client can be used instead
+        of the current version of the TCL/Tk widgets which is linked into
+        the Glish interpreter. This client replaces the current widgets
+        without any modification to existing scripts which the Tk widgets.
+        This required additional classes built upon the Client class
+        along with changes to the internals of the Glish interpreter.
+        These changes make it easy for those developing Glish clients
+        to have a client act as a repository for "proxy clients". These
+        proxy clients are similar in functionality to the AIPS++ distributed
+        objects (DOs).
+
+        There were several reasons for making this change:
+
+\begin{itemize}
+\item The library (Rivet) which Glish used for the linked-in
+                        version of the widgets is no longer supported.
+
+\item Because the Rivet library didn't include the TCL
+                        interpreter, access to all of the "mega-widgets"
+                        is impossible.
+
+\item Portability to other operating systems is limited
+                        because the Rivet library is built upon out-of-date
+                        versions of TCL and Tk.
+
+\end{itemize}
+
+This new client has been checked into the AIPS++ system, and after a
+long period of testing, the Tk widgets will no longer be linked into
+the Glish interpreter.
+
+\item Many bugs/minor improvements were fixed/made:
+
+\begin{itemize}
+\item TCL/Tk bugs with popup frames and deleting frames
+      within a canvas were fixed
+
+\item TCL/Tk additions for raising frames, controlling
+                        scales and disabled buttons, and setting title for
+                        toplevel frames were made
+
+\item Bugs with regular expressions, scope of missing(),
+                        loss of shape attribute with conj() and complex(),
+                        loss of non-shape attributes when slicing an
+                        array, and problems with request/reply were fixed
+
+\end{itemize}
+
+\item Analysis of Glish's memory usage and speed continued, but no major
+        improvements were made
+\end{itemize}
+
+In {\bf Measures}, after ample discussions about the proper
+inheritance structure and format, we wrote (and got code-reviewed)
+QuantumHolder and MeasureHolder classes, which are generic holders of
+any Measure or Quantum, and aimed at providing a general interface to
+the Tasking system. We included the VLBI reference source list in the
+'data' system, which is accessable from both the Glish (measures gui)
+and c++ code.  We wrote the MBaseline Measure (and its coordinating
+classes): no Earth tide or other secondary effects included as yet,
+Muvw Measure (and its coordinating classes), added an angular shift
+method (in both true and projected angles) to the MDirection Measure,
+added de-projection of an 'off-axis' field to UVWMachine, improved
+some of MDirections forward/backward conversion precisions, finished
+EarthMagnetic field Measure using the IGRF reference magnetic field,
+wrote a FieldMachine to easily calculate the magnetic field at a
+certain direction in e.g. the ionosphere, wrote a VelocityMachine to
+convert between velocities and frequencies in a simple manner, and
+added new ITRF and TOPO codes to MDirection.  We also wrote an article
+for newsletter on measures gui.
+ 
+In {\bf AIPS++ Infrastructure}, mostly minor changes were made, mostly
+in response to bugs. The tablebrowser was improved significantly,
+adding user-controlled formatting, smart formatting of special column
+types such as time and direction, {\em etc.}. The catalog browser was
+substantially re-written in response to comments and bug reports from
+the alpha testers. Finally, we developed a prototype of a command-line
+parameter-setting shell, similar in principle and details to various
+systems now in use in astronomy (Standard commands package, AIPS,
+MIRIAD).
+
+In {\bf FITS support}, Harro Verkouter of JIVE continued his work on
+re-implementation of some of the key FITS classes. This is needed
+prior to the writing of an improved UVFITS reader and writer.
+
+In {\bf Image Analysis}, work has largely revolved around regions of
+interest, masks, the classes which hide the details of optimal
+iteration through images, and the integration of these things with our
+high level applications. Neil Killeen and Ger van Diepen made good
+progress in these directions, and now have in place:
+
+\begin{itemize} 
+
+\item A wide range of C++ classes to handle lattice
+coordinate based regions and masks (for example, boxes, polygons,
+ellipsoids, extensions of these shapes along axes, unions of them,
+differences, intersections and so on)
+
+\item A much smaller set of C++ classes to handle world coordinate
+base regions. So far we just have a box and polygon.  These class
+objects know how to convert themeselves to the equivalent lattice
+coordinate based objects whereupon the union, complement, difference
+etc classes can be invoked 
+
+\item The first steps towards improving the user interface from the
+simple lattice coordinate blc/trc regions has been taken.  This was
+done by creating Glish functions which create GlishRecords defining
+the desired region definition.  The Glish record is then passed to the
+image DO via an application where it is reconstituted into the C++
+class object for use by the classes which access the lattice data in
+the image.
+
+\item The image analysis applications that we do have have been
+integrated with these new classes as much as is possible.
+
+\end{itemize}
+
+In {\bf Display} work, David Barnes has joined the ATNF aips++ team
+and reinvigorated the Display Library (DL) work following Tom
+Oosterloo's departure last year; he is working closely with John
+Pixton of NCSA. David spent time familiarizing himself with the DL 
+design and current implementation.  Then, he
+
+\begin{itemize}
+\item worked through the existing high-level display library classes
+   and identified capabilities that the library was lacking.
+\item Constructed a class design to encompass the many different 
+   possibilities for handling and display of astronomical data,
+   based on the existing single-purpose class already provided
+   in the DL.
+\item Commenced implementing parts of the above design.  At the time
+   of writing, the initial design is of order 30\% implemented.
+\item Learnt how to build a Tcl/Tk widget to contain a DL 
+   WorldCanvas.
+\end{itemize}
+
+In the {\bf System} area, the major change this quarter was the
+addition of a system to "bless" development updates as having met
+internally-defined criteria for stability and usability; this now
+enables AIPS++ sites that require stable installations to confidently
+track development progress between public releases.  Other system
+changes include: continued incremental improvements to the code
+management, distribution, compilation, testing, and documentation
+systems; improved support for providing some of the third-party
+software packages required by AIPS++ to end-users, particularly those
+running Linux; and an investigation into building AIPS++ with the free
+Lesstif library suite, attempting to eliminate its dependence on the
+commercial Motif library suite.
+
+Some future plans include: investigating replacing the current code
+management and distribution systems with a free, "off-the-shelf"
+alternative such as the widely-used CVS package; continued incremental
+improvements to project "infrastructure" components; elimination of
+AIPS++'s reliance on Motif; and simplified installation procedures for
+AIPS++ on the major supported architectures.
+
+In the area of {\bf Parallelization}, work proceeded on a number of
+fronts. In April, Wes Young completed the parallelization of the spectral
+line Clark CLEAN application in AIPS++.  Using the spectral line
+deconvolution Doug Roberts has spent much of April, benchmarking the
+task to measure the speedup across processors on the NCSA SGI Origin
+2000.  The speedup achieved is encouraging; the application executed
+22 times faster than uniprocessor speed on 32 processors.  An ideal
+speedup on 32 processors would be 32.  The results of the benchmarking
+were presented by Doug Roberts at the Alliance98 conference, held in
+Urbana at the end of April.  Brian Glendenning and Ruth Milner from
+NRAO along with Dan Briggs, Dick Crutcher, and Doug Roberts from NCSA
+attended the Alliance'98 conference.  The on-line version of the
+Alliance'98 presentation is available at:
+
+\htmladdnormallink{{\em http://pacont.ncsa.uiuc.edu/A98/poster/roberts/}}
+{http://pacont.ncsa.uiuc.edu/A98/poster/roberts/}.
+
+Several potential
+connections were initiated at the conference.  An NCSA team which has
+developed tools to analyze I/O usage is interested in helping to
+instrument our code.  NRAO is looking to hire someone for this in
+Socorro who would collaborate closely with the NCSA team to identify
+I/O problems.  The parallel-I/O component of the MPI-2 standard is
+available now and will be investigated by the new hire to determine if 
+it can help the I/O performance of AIPS++.
+
+In {\bf Documentation}, we continued with publication of the
+AIPS++ Newsletters:
+
+\htmladdnormallink{{\em http://aips2.nrao.edu/aips++/docs/html/navpages/learnmore/newsletters.html}}{http://aips2.nrao.edu/aips++/docs/html/navpages/learnmore/newsletters.html}. 
+
+Publication of a new edition of the newsletter is now announced via a
+mailing-list (aips2news@nrao.edu).  We have installed a new system of
+web pages that have improved layout and navigation aides. Our alpha
+testers (particularly Rupen and Anantharamaiah) have started
+re-writing the introductory documentation, with a view to making the
+concepts in the system comprehensible to astronomers, and to defining
+terminology to be used elsewhere in the documentation.
+
+In {\bf Management}, Brian Glendenning left his position as Deputy
+Project Manager to join the NRAO MMA project. Athol Kemball will
+replace Brian as Deputy Project Manager, effective July 1. Ger van
+Diepen will replace Brian as Acting Technical Leader, effective
+September 1.  Tim Cornwell and Brian Glendenning gave presentations at
+the NRAO Visiting and Users' Committee and Tim Cornwell gave a
+presentation to the AUI Board of Trustees. We also performed an
+analysis of the our success at keeping target dates. During the last
+three years, we have identified and met 433 targets. The quartiles are
+75\% are late by 1 week or less, 50\% are late by two weeks or less,
+and 25\% are late by 5 weeks or more. The tail of late dates ranges up
+to a few hundred days but these are mainly targets that have been
+deferred following a change of plans. There is no systematic trend in
+target date lateness with absolute time ({\em i.e.} we have not got
+worse at meeting targets).  Since the average target takes 4-6 weeks
+to finish, the fractional delay is about 33-50\%. This noise will
+clearly make planning on longer time scales problematical.  The cause
+of lateness is hard to identify but our belief is that much of the
+delays are due to time being taken up by other, unscheduled activities
+such as bug-fixing and making unforeseen changes to nominally
+completed parts of the system. One might then regard the lateness as
+the cost of complexity. As a result of this analysis, we are now
+tracking time spent on- and off-target, with a view to improving our
+overall performance in meeting targets, and thus easing planning
+within the project. In the future, we will collect statistics on times
+for fixing bug-reports, as this is more important as a quality measure
+from the point of view of users.
+
+\section{Beta Release}
+
+Preparation of the third beta release continues. The pacing items now
+are the release of the {\tt cal} synthsis calibration application, the
+continuing testing of all modules, and the documentation being written
+by our testers (particularly Michael Rupen and Anantharamaiah). The
+planned documentation consists of a rewrite of the introductory
+material and the establishment of astronomer-preferred
+nomenclature. Retrofitting of the new terminology to the existing
+extensive documentation will also be needed.
+
+Our expectation for the third beta release is that the vast
+improvements in functionality and interface over the previous (second)
+release will attract comments from both new users and our existing
+beta testers. We believe that continued tuning of the user interfaces
+will be the most important issue arising from the release, and with
+that in mind, we plan to re-allocate some fraction of Darrell
+Schiebel's time to replace Brian Glendenning as our key worker on user
+interfaces.
+
+We expect that at least one more beta release will required following
+this third release, putting the probable time for the first public
+release some time early in 1999. 
+
+\section{Thin path development in AIPS++}
+
+This section discusses the question of so-called "thin-path" development
+in AIPS++, and the implications for current priorities and resources.
+This topic was raised by the STAG in the recent meeting, and discussed
+extensively both within the project and with various advisory bodies
+such as the NRAO Visiting and Users' Committees. Here we give our
+final statement on our approach to thin-path development.
+
+\subsection{Current AIPS++ synthesis development priorities}
+
+At the current stage of development of the project, and for a
+planning interval of 6-12 months, the following key synthesis
+development priorities are identified:
+
+\begin{description}
+\item[Broader scientific use]
+
+Significant synthesis capabilities exist within the package at
+present, but are not sufficiently widely used in the scientific
+community. We identify the following reasons: 
+\begin{enumerate}
+\item[i] the system is
+inherently, but necessarily, complex, due to the sophisticated model
+adopted for both calibration and imaging; 
+\item[ii] the current user
+interface does not hide the details of this complexity sufficiently
+well from the user; 
+\item[iii] documentation in a form suitable for
+beginning scientific users is not in an accessible form, and iv) some
+capabilities are still missing which would allow greater integrated
+use of the package.
+\end{enumerate}
+
+We note that significant progress has been made on many of these
+items over the course of this year, and the primary focus of the
+project at this time is application development for scientific
+use. Thus the balance has been shifted away from infrastructure
+development, where prudent and possible.
+
+\item[Finalize interfaces]
+
+The internal synthesis interfaces, which form an important part of
+the synthesis design as a whole, need to be finalized for the core
+synthesis capabilities, so that more advanced applications can be
+developed by a broader range of developers. Such applications include
+three-dimensional imaging and mosaicing, as examples. The interfaces
+are more efficiently tested by developing advanced prototype
+applications of the type considered, by evaluating the interface
+design on this basis, and also by ongoing general design review and
+testing.
+
+\item[Time-critical local priorities]
+
+It is important that the project meet time-critical targets required
+for successful AIPS++ use at consortia sites, particularly where the
+use of AIPS++ is closely integrated into the critical path required
+for instrument use or operation.
+
+\end{description}
+
+\subsection{Development strategy}
+
+An overall synthesis development strategy has been adopted in which
+the key strengths of the AIPS++ system are used to achieve the
+priorities listed above. These strengths include the programmability
+and flexibility offered by the command line interpreter (Glish), and
+the system architecture overall, as well as the fully general
+calibration and imaging model. AIPS++ offers both improved user and
+system programming as the command line, and greater communication
+between the command line environment and applications.
+
+The facility for greater programmability can be used to package the
+existing synthesis capabilities in a manner which allows greater
+scientific use. This includes the production of scripts to automate
+basic calibration and imaging. Further user interface improvements can
+and have been achieved through a customized graphical user interface
+for important synthesis components (e.g. sky), and the implementation
+of a command line parameter-setting shell. A separate requirement for
+greater access to the package is that of targeted documentation for
+scientific users.
+
+The general calibration and imaging model allows new and unique
+scientific capabilities to be implemented as a result of the more
+sophisticated formalism. The strategy for adding new capabilities can
+take two directions, namely: 
+\begin{enumerate}
+\item[i] development of basic capabilities
+covering the entire reduction path as a priority (hereinafter the
+"thin-path" strategy); 
+\item[ii] the development of more sophisticated
+capabilities across a broader front, moving incrementally into areas
+already covered by existing packages. 
+\end{enumerate}
+
+In the second option, data are transferred to the new package at a
+well-defined point, for further reduction, with this point moving,
+over time, to cover a larger fraction of the existing packages. In
+this scheme, new scientific capabilities not already available in
+other systems appear earlier, and have higher precedence, than in
+option (i). Most data reduction packages for radio-interferometry
+developed to date have followed development path (ii), and this has
+been the general AIPS++ synthesis strategy.
+
+The question considered here is the change required to the overall
+synthesis development plan to accommodate a thin-path capability for
+connected-element data as a short-term priority. The components and
+resources required are summarized next.
+
+\subsection{Thin-path development}
+
+The primary changes in the current synthesis development plan to
+implement a thin-path capability lie in the following areas:
+
+\begin{enumerate}
+\item[1] Enhanced uv-data display 
+\item[2] Interactive editors
+\item[3] Data fillers for the VLA 
+\item[4] Associated utilities used in early processing
+\end{enumerate}
+
+Calibration and cross-calibration have been the subject of active
+AIPS++ development this year and are consequently not considered as
+part of the thin-path components. The core components of these
+capabilities form part of the planned beta-3 release. Imaging and
+self-calibration has been available for some time in AIPS++, and are
+similarly not included.
+
+Thus, the thin-path capability requires a change in the priority of
+the elements required in early data reduction. Primary amongst these
+would be the implementation of a VLA filler. Note that other
+connected-element instruments including WSRT and the ATCA already have
+preliminary fillers, written by local consortia members. In some cases
+these are simpler to implement, due to a smaller number of archive
+formats or related restrictions. Experience at NRAO has shown that
+data fillers in other packages supporting a full range of archive
+formats, and multi-volume input media have been a significant effort
+for the VLA and VLBA. This is mostly related to the evolution of the
+on-line output formats and the mismatch between the on-line and
+off-line data format requirements. In addition, concatenation of
+multiple tape volumes to existing files on disk adds further
+complexity, as information is revealed to the filler on a per-record
+basis and not for the dataset as a whole.
+
+Data display utilities include those required for all the customary
+graphical displays of uv-data (eg. visibility time series, spectra,
+closure data), and the capability to list data in tabular form.
+Interactive editors are those applications which allow uv-data to be
+edited in a fully-featured, interactive graphical environment
+including data edited per baseline in line-graphic form, or stacked in
+axes of time, frequency or baseline in a raster TV display.
+
+The associated utilities listed above, refer to those applications
+required in support of early calibration or editing. Examples include
+utilities to set and determine absolute flux density scales, or
+correct for antenna or source position errors.
+
+The definition of what constitutes a thin-path is problematic in
+practice. It is highly dependent of the nature of the observations
+being processed, and may differ significantly even within a single
+category of observations (eg. continuum). It requires the basic
+capabilities listed above. If the thin-path capabilities are
+inadequate there is the real risk of alienating users or pulling the
+project in directions away from fundamental work which needs to be
+completed in imaging and calibration. This would limit the overall use
+of the package if neither option received sufficient resources to
+achieve critical objectives as a result. The implementation of
+makeshift thin-path capabilities would ultimately prove expensive, as
+they would need to be rewritten in the future.
+
+A hybrid development plan to address the thin-path question is
+described next.
+
+\subsection{Development plan revision}
+
+The project is opposed to a full-scale diversion of effort into early
+processing capabilities at this stage, due to the risk this poses to
+fundamental work underway in calibration and imaging, and consequently
+the overall scientific use of the package. However, an approach has
+been adopted and is described here which meets key thin-path
+requirements without compromising broader development.
+
+The key elements of this strategy include: 
+\begin{enumerate}
+\item[i] immediate work on a
+basic VLA filler; 
+\item[ii] work on uv-data display and editing modules
+which can be used in automated data processing and by basic
+interactive editors and display applications; 
+\item[iii] simultaneous work
+on higher-level calibration and imaging currently underway within the
+project consistent with the original development plan.
+\end{enumerate}
+
+This plan can be achieved as a result of the recent expansion in the
+number of synthesis application programmers in the project, consistent
+with the increased emphasis of applications over infrastructure, and
+some diversion of effort from VLBI priorities. The new synthesis
+programmers are Mark Holdaway and Peter Barnes. It is unclear on
+what timescale Dan Briggs can be replaced.
+
+In this approach, Ralph Marson (25\%), assisted by Athol Kemball, will
+start immediate work on a basic VLA filler for the limited public
+release. The design will be approached such that components can be
+re-used for a VLBA filler at a later time. The development of basic
+data display modules consistent with the image display library
+requirements, allows work to proceed on automated data reduction
+scripts and simple interactive editors using the same display
+components. The interactive editors will not offer all features
+available in other packages but should meet the thin-path
+requirement. Most importantly this approach allows the goal of scripted
+processing to proceed unimpeded, and to offer a new, attractive
+scientific capabilities which are part of the current synthesis goals
+listed earlier. Peter Barnes will assist in the area of display
+utilities.
+
+Utilities associated with early processing, such as flux density
+scaling and baseline corrections, will be scheduled at a higher
+priority within calibration development.
+
+High level work in calibration (A. Kemball/M. Wieringa/W. Brouw) and
+imaging (3D-D.Briggs' replacement; Mosaicing-M.Holdaway/W.Brouw;
+General imaging and solvers-T.Cornwell) will proceed essentially as
+originally planned, thus preserving the original goals in synthesis
+development.
+
+The primary cost in this approach is the slower development of more
+advanced calibration capabilities, especially in VLBI. Note however,
+that VLBI development will not be terminated in its fundamental form
+(such as fringe-fitting). Work on more advanced capabilities such as
+phase-referencing or geodesy will have to be deferred however, as will
+more advanced calibration solvers in connected-element reduction.
+
+\section{Developments planned for 1998 Q3}
+
+In {\bf Single Dish}, the Dish program will be included in the next
+beta release.  This will fully support single dish FITS data into
+Dish.  Existing Dish operations will be made to work on
+multi-polarization data.  It is expected that both Parkes and Arecibo
+staff will being testing this version of Dish and providing the first
+real-user feedback of Dish.  An initial set of GBT commissioning tools
+for continuum data will be ready by the end of July.  The internals of
+Dish will be rewritten to make it easier to use Dish through the
+command line i nterface as well as to make it easier to add operations
+and site-specific features.  The existing gbt fillers will be reworked
+to improved their speed and usefulness with on-line data.  Work will
+start late in the quarter on Single Dish imaging using the same
+imaging scheme as used in Sky.
+
+In {\bf Synthesis}, we will continue development along the lines
+spelt out in the synthesis development plan, and described above
+in the section on  Thin Path development.
+
+In {\bf Glish} support, In the next quarter, we hope to perform the
+following, relatively straightforward modifications:
+
+\begin{itemize}
+
+\item prepare Glish for the next AIPS++ beta release and release another
+        public version of Glish
+
+\item switch over completely to the client based Tk widgets
+
+\item add dynamic loading of TCL scripts and shared libraries to the
+        TCL/Tk client
+
+\item add the option for "eval()able" strings to Glish's as\_string()
+        function
+\end{itemize}
+
+In {\bf Image Analysis}, the major task is to cement the region and
+mask handling infrastructure and propagate it to Glish with a good
+interface for users.  We plan to:
+
+\begin{itemize}
+\item Extend the C++ region classes to offer more world coordinate based
+    classes, in particular classes to handle the extension, union, 
+    difference, complement etc of any combination of lattice coordinate
+    and world coordinate region objects
+\item Implement the persistence of regions of interests and masks.  Currently
+    these are both ephemeral.
+\item Continue to develop the Glish-based user interface of region handling.
+    This means
+\begin{itemize}
+
+\item design a special syntax for the Lattice Expression Language classes
+     (these classes provide the support for the image calculator application)
+     so that they can flexibly handle regions.  This syntax might also
+     be generically available to other applications
+\item Develop a GUI application which "manages" regions of interest.  That
+      is, it keeps track of regions you create, allows you to manipulate
+      them, transfer them and save them.
+
+\end{itemize}
+\end{itemize}
+If there is time available, probably the next major application
+    to be written will be that of image component fitting.
+
+In the {\bf Display Library}, the next quarter should see the DL
+evolve into a "very-close-to-useable" aips++ module, with capabilities
+of displaying rasters and contours of 2-dimensional slices of
+n-dimensional Lattices taken along any of the pixel axes.  Support
+will be available with such displays for colour table manipulation,
+zooming, and cursor feedback. We will also develop a schedule for the
+generation of applications thereafter.
+
+David Barnes will visit John Pixton at NCSA during this quarter.
+Unfortunately, John leaves the NCSA to work in Norway in early August.
+David's visit is partly aimed at maximising their coordinated output,
+but also to maximize knowledge transferrence to David.  It is hoped
+that DL infrastructure will be largely in place by the time John
+leaves, but no doubt there will be some loose ends.  John's
+considerable talents will be missed.
+  
+In {\bf Infrastructure}, Darrell Schiebel will take over Brian
+Glendenning's work on the user interface, adding a number of
+facilities to the GUI and also developing special purpose widgets,
+{\em e.g} for inputting Measures such as Directions.
+
+In {\bf Measures}, we will continue to improve the implementation
+in various ways and add some new features as needed for applications:
+
+\begin{itemize} 
+\item unify some calculations (notably conversions in directions, 
+baselines, uvw, magnetic field)
+\item include some kind of Earth tide calculation in baselines and directions
+(also raises related questions about retarded baselines and the like)
+\item include an option to have tables of external position calculations
+(e.g. for solar system bodies) as a basis for direction conversions
+\item extend positions and directions to include derivatives (plate motion, 
+p.m., radial velocity, distance)
+\end{itemize}
+
+Wim (our sole contributor to Measures) will have to spend some time on
+SOFA work in the next quarter. Up till now it has mainly been limited
+to comments on work by others, but some coding and/or testing is
+imminent.
+
+\section{Appendix: ATNF contribution {\em  Neil Killeen}}
+
+\subsection{General}
+
+This quarter the ATNF had 4 people working in AIPS++.  These are Neil
+Killeen (25-75\%, also local manager), Wim Brouw (75\%), Mark Wieringa
+(30\%) and now David Barnes (75\%) as of April 6 1998.   
+
+We welcome David to the ATNF and aips++.  He is stepping admirably into
+the role of responsibility for the Display Library and its applications. 
+The DL has been largely dormant since Tom Oosterloo's departure last year.
+Note that Wim's nominal contribution of 90\% has been decreased to 75\%
+owing to growing 1KT committments. 
+
+
+\subsection{System}
+
+Our systems (Solaris/Gnu and Digital Unix/Gnu) were generally stable
+this quarter and required close to zero maintenance.  However, the
+documentation system became unstable towards the end of the quarter (for
+all consortium sites), and we have been several weeks missing the users
+reference manual, the glish manual and the notes and memos series.  The
+problems arose through the non-trivial interaction of TeX, LaTeX, dvips
+and latex2html. 
+
+NCSA now appears to be making regular native IRIX (SGI) inhales.
+We can probably now consider another attempt to build on
+our SGI machine.
+
+
+\subsection{Visits}
+
+Athol Kemball visited us for three weeks.  He spent two weeks in
+Narrabri working with Mark Wieringa, and one week in Epping mainly
+working with Wim, but also with David and Neil.  We all found Athol's
+visit very rewarding. 
+
+Neil Killeen spent two days in Dwingeloo working with Ger van Diepen
+on issues to do with regions of interest in lattices.
+
+
+\subsection{Testing}
+
+There has been no significant new system testing this quarter at the
+ATNF (of course the multibeam people still process their data with their
+Glish scripts built on aips++, and Glish/Tk forms the basis of the
+Parkes Telescope Control System user interface).  We do have three users
+who have expressed strong interest in using the single dish part of
+aips++ to analyse their data (ATNF single dish software is not overly
+impressive).  We are awaiting the final connections in "dish" to handle
+reading and writing Single Dish FITS files, and multiple polarization
+handling.  This work is expected complete by mid July 1998. 
+
+\subsection{Individuals}
+
+Wim Brouw has spent his time this quarter on:
+
+
+Measures:
+
+\begin{itemize}
+
+\item after ample discussions about the proper inheritance structure and format,
+    wrote (and got code copped) QuantumHolder and MeasureHolder classes, which are
+    generic holders of any Measure or Quantum, and aimed at providing a general
+    interface to the Tasking system. 
+\item included the VLBI reference source list in the 'data' system, which is
+    accessable from both the Glish (measures gui) and c++ code.
+\item wrote the MBaseline (for interferometer baselines on Earth) Measure and its 
+    coordinating classes: no Earth tide or other secondary effects included as yet.
+\item wrote the Muvw Measure (uvw calculations) and its coordinating classes
+\item added an angular shift method (in both true and projected angles) to the
+    MDirection Measure
+\item added de-projection of an 'off-axis' field to UVWMachine
+\item improved some of MDirections forward/backward conversion precisions
+\item finished EarthMagnetic field Measure using the IGRF reference magnetic
+    field
+\item wrote a FieldMachine to easily calculate the magnetic field at a certain
+    direction in e.g. the ionosphere
+\item wrote a VelocityMachine to convert between velocities and frequencies in a
+    simple manner
+\item added new ITRF and TOPO codes to MDirection
+\end{itemize}
+
+Various:
+
+\begin{itemize}
+\item wrote a scrollable 'menu' widget (listselector)
+\item made popuhelp more general and containing 'long' and 'short' help.
+\item discussions about calibration and synthesis with Athol Kemball
+\item code copped RecordTransformable
+\item some action (on behalf of QAG) on moving code from apps directories: more
+    action needed
+\item updated the IERS database in the system: should be done automatically
+\item wrote article for newsletter on measures gui
+\end{itemize}
+
+Bugs and problems:
+
+\begin{itemize}
+\item traced an inconsistency in some Linux calculations (hardware circular
+    functions near pi/2) and in Sun mathematical library (abs(+0)->-0).
+\item problems with Solaris 2.6: decision about the aips++ default compiler should
+    be made soon, with proper consultation about implementation
+\item network problems on tarzan meant large time losses
+\end{itemize}
+
+\subsection{David Barnes}
+
+David's time was spent on
+
+\begin{itemize}
+\item Working through existing high-level display library (DL) classes,
+  in order to appreciate the extent of the existing code, and to
+  identify capabilities that the library was lacking.
+\item Constructing a class design to encompass the many different 
+  possibilities for handling and display of astronomical data,
+  based on the existing single-purpose class already provided
+  in the DL.
+\item Commencing to implement parts of the above design.  At the time
+  of writing, the initial design is of order 30\% implemented.
+\item Learning how to build a Tcl/Tk widget to contain a DL 
+  WorldCanvas, and writing a very simple (and useless) widget
+  to show "proof of concept."
+\end{itemize}
+
+\subsection{Neil Killeen}
+
+Neil spent one month away in Bologna having some science time. Neil's
+aips++ time was spent on:
+
+\begin{itemize}
+\item Ger van Diepen produced some new classes handling image masks.
+He integrated these with the C++ image applications.
+This work is ongoing, mask handling is not yet complete (we
+can apply them, but not yet save them in an image)
+\item Ger also produced initial classes handling lattice coordinate based
+regions of interest for lattices.  Neil integrated these with the 
+C++ image applications (this work is ongoing,
+not all the required functionality  is there yet).
+\item Worked on implementing some simple region of interest C++ classes 
+which take their input as world coordinates rather than lattice coordinates.
+\item Worked on the handling of image regions of interest within Glish.
+This requires interfacing of the C++ classes to Glish, and providing 
+a mechanism for users to specify and handle them.  
+\item Did some designing on extra Coordinate class functionality that is required.
+
+\item Spent some time evaluating and commenting on the new aips++ web pages
+\item Evaluated Michael Rupen's document of suggestions for improvements to
+the user's reference manual and sent reply.  The changes to the
+documentation are what is delaying the beta release.  This is going
+slowly owing to a lot of meetings happening at NRAO this month.
+\item Constructed quarterly report
+\end{itemize}
+
+\subsection{Mark Wieringa}
+
+Mark had little time this quarter for aips++ as a result of Gamma ray
+bursters, work on local Year 2000 issues and other local work. He has
+spent his aips++ time on:
+
+\begin{itemize}
+\item Some work on the MeasurementSet Distributed Object
+\item The new ecgs compiler installation on Narrabri's Digital alpha
+\item A lot of discussions over two weeks with Athol about synthesis issues
+\end{itemize}
+
+\section{Appendix: BIMA/NCSA contribution {\em  Doug Roberts}}
+
+During the past quarter we had 5 people (2.8 FTE) working on AIPS++:
+Dick Crutcher (5\%), John Pixton (50\%), Harold Ravlin (50\%), Doug Roberts
+(75\%), and Dan Briggs (100\%). In addition, NCSA is funding the salary of
+Wes Young at NRAO-Socorro and will shortly fund the salary of a second
+NRAO person. Accomplishments during the past quarter are described below
+under each person.
+
+\subsection{Dick Crutcher}
+
+He served as local AIPS++ project manager and as BIMA
+director in charge of our participation in AIPS++.  The job of local
+AIPS++ project manager is largely being taken over by Doug Roberts.
+
+\subsection{John Pixton} 
+
+He has focused on the AIPS++ display library, under the direct
+supervision of Neil Killeen. He will be leaving NCSA and the AIPS++
+project this summer.
+
+\subsection{Harold Ravlin} 
+
+He administers our AIPS++ workstations and maintains and improves
+aipsview. His aipsview work included the following:
+\begin{itemize}
+\item Redid the way aipsview handles colormaps to allow it to run even if a
+program like Netscape or the CDE window manager grabs all the colors of
+the root colormap.
+\item Fixed a problem with aipsview that would occasionally cause a crash.
+\item Fixed a problem where the data set objects weren't being destroyed
+when the "Close Data" menu item was chosen. This resulted in file
+locking problems with AIPS++ data sets.
+\item Answered a number of email questions about aipsview.
+\item Several warnings generated by egcs and the new IRIX compilers were  
+removed, although many other warnings seem related to system or compiler
+files.
+\item Stand alone aipsview compiles and runs with egcs on our Solaris 2.5,
+IRIX 6.2 and Linux systems.
+\end{itemize}
+ 
+His system admin duties included the following:
+\begin{itemize}
+\item Installed the egcs compiler on Solaris, Irix, and Linux platforms.
+\item Installed a new Sun Ultra 30.
+\item Installed ZIP drives and a new VCR.
+\item Upgraded memory on several machines.
+\item Made a query on newsgroup about stuck pixels on Octanes. (Use gclear).
+This led to the discovery of a bad frame buffer on an Indy. Our SGI Onyx
+crashed on 5/22/98 with a bad power supply. A significant amount of time
+was spent dealing with its after effects. We may still be having disk
+troubles.
+\item Installed xemacs-20.4 and other software on SGI systems.
+\item Installed lots of security and general system patches.
+\item Discussed and set up disk drives for NRAO's new Octane.
+\item Made kernel changes on some of our IRIX machines to accommodate
+AIPS++. These changes open up potential security holes so, hopefully,
+the changes can be removed in the future.
+\item Began installation of new DLT tape drive.
+\end{itemize}
+
+He also attended the NCSA Alliance '98 conference.
+
+\subsection{Doug Roberts}
+
+Doug Roberts has been working on using the optimized FFT routines in
+the SGI/Cray Scientific Library (SCSL), available on the SGI Origin
+2000.  The SCSL may become available for other platforms in the next
+year or so.  The results of the FFT implementations is that on a single
+processor the the SCSL is faster than the FFTPACK version by an
+average of 50% over a variety of problem sizes.  The SCSL is available
+in a multiple processor version as well, which should show
+significantly more speedup on large problem sizes.  The SCSL has
+built-in multidimensional FFT's 2D, 3D, and N-dimension.  Transforming
+a 2-dimensional matrix using the built in 2D transform does not appear
+to be significantly faster (within 10-20%) than decomposing the matrix
+into 1D FFT's.  Doug is going to change the FFTServer code to use the
+SCSL on the SGI's.
+
+Doug Roberts has installed AIPS++ on the 4-processor SGI Onyx at the
+astronomy department and on his SGI Octane.  The SGI systems have
+built using the native SGI MIPSpro compilers.  On the Origin system, a 
+red/black system has been set up to allow parallel development on a
+stable system while code fixes are tested in a separate version.
+
+\subsection{Dan Briggs}
+
+As noted above Dan Briggs was killed in a sky-diving accident on July
+5, 1998. We decsribe here his work over the last quarter.  Dan Briggs
+continued to investigate parallel gridding.  Dan Briggs started design
+work on extending the aips++ task 'sky' to include full wide field
+imaging capability.  Dan rewrote chapters 6 and 8 of ``Synthesis
+Imaging in Radio Astronomy'', one of the fundamental references for
+new AIPS++ users.  Dan traveled to Socorro June 16 through June 23 to
+present imaging lecture at NRAO summer school and to work with Brian
+Glendenning and Tim Cornwell on wide field imaging design.  Dan
+installed Classic AIPS on NCSA SGI workstations for comparison use
+against AIPS++.  Dan made minor bug fixes involved with the port to
+the Origin 2000.  He took a more active role in assisting with AIPS++
+system administration, in support of getting a reliable port and
+installation on the Origin 2000.  Worked on Local Organizing Issues
+for the upcoming ADASS meeting.
+
+\section{Appendix: NFRA contribution {\em  Jan Noordam}}
+
+Local project members: Ger van Diepen (GVD), Michael Haller (MXH), Jan
+Noordam (JEN, local manager).
+
+
+\subsection{General}
+
+The elevation of Ger van Diepen to Interim Technical Leader from
+September will make things more difficult locally at NFRA. However,
+its is probably the most effective thing to do in the short term, and
+various Good Things may come from it.
+
+Athol Kemball has made a very fruitful visit to Dwingeloo in June. 
+All the more so since it coincided with the yearly visit of Wim Brouw.
+
+Bob Campbell (postdoc at NFRA) has made a large contribution to the
+definition of ionospheric calibration in AIPS++. He will remain
+involved in the near future.
+
+This quarter, the NFRA contribution in FTE's was as follows:
+\vskip 0.5in
+\begin{tabular}{|l|c|c|c|}
+\hline \
+&                     Global AIPS++ &     Local AIPS++ &   Other\\
+\hline \
+Ger van Diepen &     40\%    &             50\%        & 10\%    \\
+Michael Haller &     50\%    &             40\%        & 10\% \\
+Jan Noordam &        30\%    &             40\%        & 30\%\\
+\hline
+\end{tabular}
+\vskip 0.5in
+
+\subsection{WSRT upgrade}
+
+Commissioning of the new WSRT backend (DZB) and on-line software (TMS)
+is going more slowly than expected. This has made it easier for JEN to
+keep pace with developments in providing local AIPS++ applications.
+
+Actual data reduction still takes place in other packages (NEWSTAR,
+AIPS, DIFMAP). The various data conversion programs are sufficient for
+the moment, but would have to be upgraded for more advanced observing
+modes. Therefor, processing in AIPS++ itself remains a high priority.
+
+\subsection{Applications}
+
+In the context of writing local applications for the WSRT upgrade, JEN
+has created a number of Glish scripts that might be useful for other
+applications. They include a 'standard' application interface
+consisting of a menubar, a textwidget, a statusline and a dismiss
+button. This has proved a rather useful concept in practice,
+espacially because of the various parameter-input services of the
+menubar object. In addition, there is a general tool for inspecting
+Glish variables of any shape or type (including tables), and an
+on-line help summary of the Glish language.  
+
+MXH's work on DatalineTool (user of pgplotter for visualiser) will
+make use of the application interface sketched above. It will have
+many more possibilities for user-interaction with the plot than its
+gplotid-based predecessor xyftool. 
+
+The progress of the HOLOG (holography) program by GVD was hampered by
+the necessity to add support of system temperatures in the conversion
+programs.
+
+
+\subsection{Fillers and converters}
+
+The conversion program ms2scn has been extended by GVD to take the
+system temperatures into account.
+
+Class UVFITSWriter has been changed by GVD to optionally write the
+system temperatures and gain curves to a UVFITS file.  It makes it
+possible to import these aspects of a WSRT measurementset in classic
+AIPS.
+
+Harro Verkouter (JIVE) has taken on responisbility of a more permanent
+version of the UVFITS writer that will alos allow uv-data calibration
+in AIPS (rather than just imaging).
+
+\subsection{Infrastructure software}
+
+GVD has worked with Killeen to fully support regions/masks in the
+lattices and images. On 15-16 April Neil paid a very fruitful visit to
+Dwingeloo.  The amount of email messages exchanged must be
+enormous. It's a good thing Neil works late, so our working days
+overlap a great deal. A class MaskedImage has been introduced to make
+the inheritance tree for SubImage and ImageExpr better.  The LCRegion
+classes have been changed a bit (e.g. for better round-off)
+LatticeApply and associated classes have been changed to make use of
+regions/masks possible by operating on MaskedLattice instead of
+Lattice. Also a few other improvements have been made to these
+classes. Neil uses them in his Moments and Statistics classes.  The
+LatticeExpr classes have been changed similarly. They operate as best
+as possible by only taking a mask into account when present.
+
+Apart from a few small bug fixes and optimizations, not much has been
+done on the table system.  The most notable bug fix is the .nfsNNN
+problem. When a table was accessed on an NFS-mounted disk, sometimes a
+.nfsNNN file appeared which prevented the table from being
+deleted. Finally I learnt that NFS renames an open file to .nfsNNN
+when it is deleted before being closed. Indeed a file was not closed
+in special circumstances.  The table client got some new functionality
+to make it possible to handle table locking in glish scripts.  To
+improve the performance of access to reference tables several
+XXXColumnCells were added to the data managers. They greatly reduce
+the calling and sometimes locking overhead.  A class TableLocker has
+been introduced to make automatic release of locks possible,
+especially in the case of exceptions. For this purpose it has been
+derived from Cleanup.
+
+On 4-5 June GVD has attended a PAO-course on ODMG 2.0, the new
+standard for object databases. It was very interesting, especially the
+subject of OQL (its query language). Ger is planning to introduce some
+OQL concepts in the table query language.
+
+On 22 June GVD attended a day devoted to Corba.  It was rather
+interesting. It was good to hear that Corba will support DCOM.
+
+\subsection{AIPS++ Site in Dwingeloo/Westerbork}
+
+At least 20\% of Michael Haller's time was spent on either normal
+maintenance or a variety of problems.  One major problem here has been
+the aips++ documentation.  In almost all cases the source of
+documentation problems has been differences here in documentation
+package versions to those in Socorro.  Identifying these problems has
+been a rather long-winded process but the recent movement to
+latex2html version 98.1 inspired a focused effort to fix these
+problems and with the help of Henk Vosmeijer and Wes Young the we
+appear to have succeeded.
+
+MXH also set up binary distribution of AIPS++ on linux machines at
+Westerbork and JEN's laptop.
+
+\section{Appendix: NRAO contribution {\em  Tim Cornwell}}
+
+The core NRAO AIPS++ group is now Barnes (100\%), Cornwell (100\%),
+Garwood (100\%), Holdaway(100\%), Kemball(100\%), Marson (100\%),
+McMullin (100\%), Schiebel (100\%), Uphoff (100\%), Weatherall (50\%),
+and Young (100\%).
+
+\subsection{Tim Cornwell}
+
+Tim:
+\begin{itemize}
+\item Managed AIPS++.
+\item Conducted extensive discussions connected with Brian's departure from
+the Project.
+\item Directed the alpha testing at the AOC.
+\item Made presentations and demonstration concerning AIPS++ at the 
+AUI Board of Trustees and at the NRAO Visiting and Users' Committees.
+\item Continued testing and optimization of sky synthesis application.
+\item Made radical changes to the graphical catalog browser.
+\item Developed a new graphical visibility visualizer based on Glish/tk,
+the ms module, and the pgplotter interactive plotter. The development of
+this was seen as a critical priority by the alpha-testers at the AOC.
+\end{itemize}
+
+\subsection{Bob Garwood}
+
+Bob Garwood's primary responsibility is to oversee the single dish work which 
+currently is focussed on the DISH environment as well as supporting the GBT.
+
+Over the past 3 months (April through June) he has done the following work: 
+
+\begin{itemize}
+\item Enhanced fits2table (and the underlying classes) so that the full SDFITS
+        convention is now supported.
+\item Added a save operation to DISH so that individual results can be saved to
+        any opened data source.
+\item Enhanced the file open menu in DISH so that a new data file can be 
+        created  and files can be opened for reading and writing as well as 
+        just read-only.
+\item Made a number of changes to the file chooser GUI tool to support the 
+        new file open options in DISH.
+\item Started work on reorganizing the internals of DISH so that it will be 
+        easier to use it without the GUI and to make it easier for others to
+        add new features and site-specific features.
+\item Attend the regular GBT coordination meetings. 
+\item Visited Green Bank 2 times. 
+\item Supported the various data fillers used by the GBT staff through bug 
+        fixes and new support for the GBT Holography backend.
+\end{itemize}
+
+\subsection{Brian Glendenning}
+
+Brian Glendenning attended Alliance '98 at NCSA, and had many
+discussions about parallelizatin in AIPS++. It was decided to attempt
+a Windows NT port if a suitable candidate can be found, to enable
+AIPS++ to run in a parallel fashion on a Windows NT cluster. We also
+decided to hire a person to look into parallel I/O for AIPS++. Brian
+helped define an applicator/algorithm set of classes which should
+allow lattice based computations to parallelize very readily.
+
+Brian made a number of small fixes to the tasking system, and in general
+started winding down his AIPS++ activities.
+
+Brian gave presentations at the NRAO Visiting Committe, and at the Clark
+Symposium.
+
+\subsection{Athol Kemball}
+
+Time has been spent this quarter on synthesis planning and coordination.
+In particular Athol visited ATNF for three weeks and NFRA for 10 days
+in this regard. This has allowed detailed synthesis planning at all
+levels and coordination with the management at both consortium sites.
+A draft synthesis development plan incorporating these changes has
+been developed.
+
+Significant effort has continued in cross-calibration development, as
+part of the continuing implementation of this capability for the third
+beta release. Discussions of calibration questions have been held
+throughout the project.
+
+The MS v2.0 definition is essentially finalized and will be implemented
+soon after the third beta release. A convention for data selection in
+synthesis has been proposed and discussed.
+
+A command-line parameter-setting shell has been developed as a prototype,
+and will be made available in the next release. This user interface uses
+the same meta-information as the existing GUI components.
+
+\subsection{Ralph Marson}
+
+
+In the last quarter Ralph has spent most of my time in the cleaning up,
+inproving, and testing the code in the ComponentModels module. This
+module is used to represent components of the sky brightness using a
+functional form. Some of the things that have been done are:
+
+\begin{itemize}
+\item Implement a major structural change which allows a much more flexible 
+  mix of spectral ans spatial variation. As far as I know this module
+  is the first one that models both spectral as well as spatial structure.
+\item Implement a new structure for the way the component Tables are
+  written to disk. This new structure is incompatible with the older
+  one but future changes are expected to be compatible.
+\item Make much all of the new functionality avaliable to the user. This
+  includes the doubling of the number of methods in the componentlist
+  distributed object and documentation for every method.
+\item testing of the module at the user level and the use of components in 
+  the sky module (for moddelling of visibility data).
+\item The addition of a disk component. This was relatively simple given
+  the structural changes mentioned in point one.
+\end{itemize}
+
+He has also spent some time this quarter examining some speed issues in 
+the Clark clean and testing the egcs compiler as a alternative to the
+gnu compiler. Code cop duties typically take 10\% of Ralph's time.
+
+\subsection{Joseph McMullin}
+
+Joe's main responsibilities are managing the Green Bank
+installation of AIPS++ and supporting AIPS++-related GBT needs.
+ 
+\begin{itemize}
+
+\item Developed some basic functions required for commissioning of the GBT
+(scan info, Tsys, Power Spectra). Worked on compiling information
+on the DCR and writing a guide to taking and analyzing DCR data (in
+progress).
+ 
+\item Worked with the Monitor and Control group to define and add to the definition of the GBT FITS
+and Scan Log.
+ 
+\item Implemented a weather station monitoring system through AIPS++.
+ 
+\item Currently working on software for commissioning requirements and in
+support
+
+\end{itemize}
+
+\subsection{Darrell Schiebel}
+
+Darrell Schiebel implemented all of the Glish changes and additions
+described in the section on progress in the last quarter. He also
+worked on the GBT observer table parser client.
+
+\subsection{Jeff Uphoff}
+
+Jeff worked in a wide range of areas, from supporting dishplot to
+supporting the AIPS++ system.
+
+He looked into accuracy questions for cos() under Linux/Intel that Wim
+reported.  Answer: it's apparently a known problem.
+
+He continued work on Dish/Dishplot:
+\begin{itemize}
+\item         Bug-fixes as needed.
+\item         Range-setting tweaks.
+\item         Baseline statistics behavior.
+\item         Restrict which spectra can be un-overlaid.
+\item         Work toward better plot/menu color synchronization.
+\item         Changed to use pgplotwidget.g for PGPLOT interface.
+\item         Started adding state-saving to plotter.
+\item        Started on plot-surface tiling.
+\end{itemize}
+
+He continued work on AIPS++ infrastructure/system:
+\begin{itemize}
+\item         Makefile system, makedefs tweaks.
+\item         version.o dependency issue.
+\item         ai/ao/etc. replacement system for Linux and Digital Unix.
+\item         Tweaks to glish-mode.el; a Glish editing mode for Emacs.
+\item         latex2html debugging, upgrading, testing.
+\item         Testsuite issues.
+\item        Debugging, fixing, etc. of inhales/sneezes all over the place.
+\item        RCS system.
+\item         Linux RPM building for AIPS++-related packages: EGCS, binutils,
+latex2html, GDB, PGPLOT (for Lesstif).
+\item         Started investigating CVS client/server protocol.
+\item         Created and documented new "blessed" inhale system.
+\item         Hacks to exhale to make debugging easier.
+\item         exhale no longer expires old RCS information unless requested.
+\item        Tweaks to testdefs, avers scripts.
+\end{itemize}
+
+He also worked on other miscellaneous tasks:
+
+\begin{itemize}
+\item Fixed problem with ENOTEMPTY under Linux in tDirectory.
+
+\item Started code-copping Guiutils/progress.*...not done yet.
+
+\item Some minor fixes/enhancements to Brian's pgplotwidget.g for use by
+Dishplot, e.g. added button-specific callbacks.  Looking into postscript
+printing/file-saving problems, which haven't yet been resolved.
+
+\item Created a relatively simple state-saving mechanism for use by Glish
+scripts.
+
+\item Helped several people through (often problematic) AIPS++ installations
+\begin{itemize}
+\item         Stephen Myers, Caltech.
+\item         Tony Willis, DRAO.  (Raised issues such as Motif/Lesstif.)
+\item         Mark Holdaway, NRAO-TUC.  (Required some sysadminning too.)
+\end{itemize}
+
+\item Set up Usenet mail2news gateway for EGCS mailing lists, at Brian's
+request...required some local hacking of gateway software, etc.
+
+\item Worked on building AIPS++ against Lesstif (various versions).  Verdict:
+it builds, but doesn't yet run correctly.
+
+\item Updated FTP import area on Tarzan with new versions of AIPS++
+prerequisite packages.
+
+\item Investigating weird compilation problems at NFRA.
+
+\end{itemize}
+
+\subsection{Kate Weatherall}
+
+\begin{itemize}
+\item Writing documentation on Revision Control System.  Handed off to Peter
+Barnes to see if it is useful.
+
+\item Copyedited and produced  AIPS++ Online Newsletter 
+for April and June. 
+
+\item Restructured and changed web site as suggested by Killeen, Brouw, and 
+others.
+
+\end{itemize}
+
+\subsection{Wes Young}
+
+\begin{itemize}
+\item Conducted discussions and roughed out Applicator/Algorithm classes to integrate  parallelization work into the AIPS++ system.
+
+\item Provided support for SGI port of AIPS++.
+
+\item Made the aips++ on-line help AIPS++ table based.
+
+\item Worked on improvements to the "new table browser".  These include 
+enable field editing and improving the rendering speed.
+
+\item Modified runtests to produce summary results by package and send 
+aips test results to module bosses and trial results to aips2-inhale.
+ 
+\item Provided documentation support.  
+
+\item Ordered and installed an SGI Octane for AIPS++ development at the
+AOC.
+\end{itemize}
+
+\section{Appendix: Summary of AIPS++ Personnel Changes}
+
+In this section, we give the names of people in the various AIPS++
+groups and the nominal fraction of time allocated to AIPS++.
+These are as expected for the next quarter (and thus do not
+include the expected replacements for Briggs or Uphoff, or the
+new hires in Socorro).
+
+The ATNF group is: Neil Killeen (25-75\%, also local manager), Wim
+Brouw (75\%), Mark Wieringa (30\%) and now David Barnes (75\%) as of
+April 6 1998.
+
+The BIMA/NCSA group is: Dick Crutcher (5\%), 
+John Pixton (50\%), Harold Ravlin (50\%), Doug Roberts (75\%).
+
+The NFRA group is: Ger van Diepen, Michael Haller, and Jan Noordam.
+The allocations are:
+
+\vskip 0.5in
+\begin{tabular}{|l|c|c|c|}
+\hline \
+&                     Global AIPS++ &     Local AIPS++ &   Other\\
+\hline \
+Ger van Diepen &     40\%    &             50\%        & 10\%    \\
+Michael Haller &     50\%    &             40\%        & 10\% \\
+Jan Noordam &        30\%    &             40\%        & 30\%\\
+\hline
+\end{tabular}
+\vskip 0.5in
+The NRAO group is: Tim Cornwell (100\%), Bob Garwood (90\%), Mark
+Holdaway (100\%), Athol Kemball (100\%), Ralph Marson (100\%), Joe
+McMullin (100\%), Darrell Schiebel (100\%), Kate Weatherall (50\%) and
+Wes Young (100\%). We have one open position in Green Bank and two
+new positions in Socorro (funded by NRL and NCSA).
+
+Thus, in aggregate, we have 21 people contributing just over 17 FTEs
+to the AIPS++ Project. Of these, 9 are employed by NRAO, and contribute
+9.4 FTEs. The numbers for the other partners are: ATNF 4 and 2.80,
+BIMA/NCSA 4 and 1.8, NFRA 3 and 1.2.
+
+\end{document}
+

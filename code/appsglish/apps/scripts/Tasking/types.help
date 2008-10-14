@@ -1,0 +1,735 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: types.help,v 19.2 2004/08/25 02:06:45 cvsmgr Exp $
+\begin{ahobject}{types}{Tool for defining types known to the tasking system}
+\ahinclude{types.g}
+
+\begin{ahdescription} 
+
+{\tt types} is the means for defining the user interface (i.e., the functions
+and arguments) of other \aipspp tools.
+
+An \aipspp tool or function usually takes various types of
+arguments.  Glish itself is type-less and doesn't require that the type
+of a variable be defined explicitly or fixed, which has advantages and
+disadvantages.  In the \ahlink{tasking}{tasking} system, it is
+important to impose some typing of variables so that, for example, the
+\ahlink{toolmanager}{tasking:toolmanager} knows whether a particular
+argument is a scalar or a measure or a file name. The {\tt types} tool
+provides the mechanism for defining the type to be used in the {\tt
+toolmanager}'s user interface. 
+
+This works as follows:
+
+\begin{itemize}
+\item The developer specifies the interface in a meta information
+file.
+\item In the \aipspp startup, the {\tt types} tool reads these meta
+information files, and stores the results in a cached file.
+\item The functions of {\tt types} may be used to recall information
+on the interface.
+\item User interfaces for tools and functions are constructed
+by the \ahlink{toolmanager}{tasking:toolmanager} using the meta information
+and passed to the \ahlink{autogui}{widgets:autogui} or
+\ahlink{autocli}{widgets:autocli}.
+\item The user interface does parsing as appropiate.
+\item If the tool is linked to C++, arguments are passed
+appropriately.
+\end{itemize}
+
+The net result for the developer is that a user interface for any
+tool or function may be generated easily merely by provision of
+a meta information file. 
+
+An example of a meta information file follows. This defines the
+interface for a tool called imager and hence should be located in a
+file called imager\_meta.g.
+
+\begin{verbatim}
+pragma include once;			# Include once only
+
+include 'types.g';			# Required
+
+#
+# Name the include file that defines the tool
+types.class('imager').includefile('imager.g');
+#
+# Constructor names are preceeded by ctor_. Then follows the
+# list of arguments.  Each argument is defined with a 
+# function call of this form:
+#
+# type(arg, default=unset, dir='in', checkeval=T)
+#
+# where type is defined in type.g and is one of:
+#
+# file|table|string|integer|float|double|record|boolean|vector_string|complex
+#
+# arg is the name of the argument
+# default sets default values (may be an executable string)
+# dir sets the direction of the argument
+# checkeval=T means that a string value is eval'ed and checked,
+# otherwise no such check is done.
+#
+# The functions may be assigned to groups using the 
+# group('mygroup') function. A group() call resets the
+# group to the default, which is 'basic'.
+#
+# Define two constructors, one with just a table name, and the other
+# with more arguments
+types.method('ctor_imager').table('filename').
+    method('ctor_imagertester').string('filename', '3C273XC1.ms').
+    integer('size', 256).string('cell', '0.7arcsec').string('stokes', 'IV').
+    string('coordinates', 'b1950');
+
+# Methods
+# Open with just a table name
+types.group('basic').method('open').table('thems');
+
+# Plain close
+types.method('close');
+
+# Get the name back
+types.method('name').string('return');
+
+# Summary
+types.method('summary');
+
+# Set various image parameters. Note the use of the measures
+# tool to set the phasecenter.
+types.group('setup').method('setimage').integer('nx',128).integer('ny',128).
+    string('cellx','1arcsec').string('celly','1arcsec').
+    string('stokes', 'I').
+    boolean('doshift', F).
+    record('phasecenter', 'dm.direction(\'b1950\', \'0d\', \'0d\')',checkeval=F).
+    string('shiftx','0arcsec').string('shifty','0arcsec').
+    string('mode', 'mfs').integer('nchan', 1).integer('start', 1).
+    integer('step', 1).string('mstart', '0km/s').string('mstep', '0km/s').
+    integer('spwid', 1).integer('fieldid', 1);
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription} 
+
+\ahfuncs{}
+
+\begin{ahfunction}{exists}{Does the class, method, arg exist?}
+\begin{ahdescription}
+Does the class, method, arg exist? class may be composite.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{}{String}
+\ahaddarg{method}{Method}{unset}{String}
+\ahaddarg{arg}{Argument}{unset}{String}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- types.exists('imager','advise','cell')
+T
+- types.exists('imager.advise')
+T
+- types.exists('imager.integrate')
+F        
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{classes}{Return names of the classes}
+\end{ahfunction}
+
+\begin{ahfunction}{class}{Define a class or type of tool}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{group}{Define the group name for a function}
+\begin{ahdescription}
+Functions may be assigned to names groups in order to bring
+some structure to the user interface. The default name is 'basic'.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{group}{Group name}{basic}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{includefile}{Specify the include file for a class}
+\begin{ahargs}
+\ahaddarg{file}{File name}{}{String}
+\ahaddarg{class}{Class or type of tool}{unset}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{getincludefile}{Get the include file for a class}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{unset}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{method}{Define a method or function for a class}
+\begin{ahargs}
+\ahaddarg{method}{Name of method}{}{String}
+\ahaddarg{title}{Title}{unset}{String}
+\ahaddarg{label}{label}{unset}{String}
+\ahaddarg{category}{Category}{unset}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{list}{Define a list of other types}
+\begin{ahdescription}
+This widget allows the assembly of types containing zero or
+more composite types, where the composite type can be made
+of one or more other types. The user may then add or delete 
+these composite types.
+
+Any number of types may be included in a composite type.
+The corresponding arguments are given in either vector string
+or record form.
+
+The test function \ahlink{typestest}{tasking:typestest} demonstrates
+a list type.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{types}{List of types}{}{String}
+\ahaddarg{options}{Record of options}{}{Record}
+\ahaddarg{name}{Name of the composite type}{}{Vector String}
+\ahaddarg{names}{Names of individual types}{}{Vector String}
+\ahaddarg{default}{Default values}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+# The following defines a list containing two other types: string
+# and direction.
+    list('Sources', types=['string', 'direction'], names="Source Direction",
+	 name='Source', default=[Name='3C273', Direction=dm.direction()],
+	 help=['Source name', 'Source direction'],
+	 allowunset=T,
+	 options=unset);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{integer}{Define an integer}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{1}{Integer}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_integer}{Define a vector of integer}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[]}{Vector of Int}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{float}{Define a float}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{0.0}{Float}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_float}{Define a vector of floats}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[]}{Vector of floats}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{double}{Define a double}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{0.0}{Double}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_double}{Define a vector of doubles}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[]}{Vector of doubles}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{complex}{Define a complex}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{0+0i}{Complex}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_complex}{Define a vector of complexs}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[]}{Vector of complexs}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{string}{Define a string}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{F}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_string}{Define a vector of strings}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{['']}{Vector of strings}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{F}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{measure}{Define a measure}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}
+ {'dm.direction('b1950', '0deg', '0deg')'}{Measure}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{measurecodes}{Define the reference code for a measure}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}
+ {'dm.direction('b1950', '0deg', '0deg')'}{Measure}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{options}{List of options}{unset}{Vector of strings}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{epoch}{Define an epoch measure}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}
+{dm.epoch('utc', 'today')}{Measure}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{position}{Define a position measure}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{dm.observatory('vla')}{Measure}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{direction}{Define a direction measure}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}
+ {dm.direction('b1950', '0deg', '0deg')}{Measure}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{quantity}{Define a quantity}
+\begin{ahdescription}
+The type of the quantity is fixed on construction. It is
+determined by the type of the default, or if that is
+unset, from the options string. 
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{'0deg'}{Quantity}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{options}{Default type}{angle|time|flux|unnormalizedfluxdensity|vel|long|lat|len|temp|freq}{Vector of strings}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{choice}{Choose one from a list of strings}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{options}{List of options}{unset}{Vector of strings}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{check}{Choose one or more from a list of strings}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{options}{List of options}{unset}{Vector of strings}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{boolean}{Define a boolean}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{T}{Boolean}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{vector\_boolean}{Define a vector of booleans}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[]}{Vector of booleans}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{record}{Define a record}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{[=]}{Record}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{table}{Define a table}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{taql}{Define a Table Query Language string}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{msselect}{Define a taql string for a MeasurementSet}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{file}{Define a file}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{directory}{Define a directory}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{String}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{region}{Define a region}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{antennas}{Define a list of antennas}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{baselines}{Define a list of baselines}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{fields}{Define a list of field ids}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{spectralwindows}{Define a list of spectralwindows}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{unset}{Region}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{untyped}{Define an untyped variable}
+\begin{ahdescription}
+This is a catch-all for variables that may be of many different
+types (such as return from the \ahlink{table}{table} tool. Don't
+use it in place of defining the correct type.
+
+The behavior is that:
+\begin{itemize}
+\item In determining the type of a given input string or
+insert argument, various conversions are tried, and the first
+successful one retained.
+\item The search list of conversions can be set using the options
+string.
+\item The default search list is "measure array coordinates region record string untyped"
+
+\item Valid search list items are the entry types that the 
+
+\ahlink{Entryparser}{tasking:entryparser} \tool\ recognizes.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{arg}{List of arguments}{}{String}
+\ahaddarg{default}{Default value}{''}{Any type}
+\ahaddarg{dir}{Direction of variable}{'in'}{String: 'in'|'inout'|'out'}
+\ahaddarg{checkeval}{Check eval'ability}{T}{Boolean}
+\ahaddarg{help}{Help string: if unset, help file is used}{unset}{String}
+\ahaddarg{options}{Search order string}{unset}{Vector of strings}
+\ahaddarg{allowunset}{Allow unset values?}{F}{Boolean}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{meta}{Return meta information for a type of tool}
+\begin{ahdescription}
+The type information read from the meta-information file is
+returned in a record.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{}{String}
+\ahaddarg{ctors}{Show constructors}{F}{Boolean}
+\ahaddarg{addhelp}{Add the help information?}{T}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- types.meta('imager', T, F)
+[imager=[data=[toolname=[type=string, default=myimager,
+parameters=[ptype=string, allowunset=F, default=myimager,
+value=myimager, dir=in, dlformat=toolname, listname=toolname],
+help=[text=Glish name for the constructed tool]],
+filename=[type=table, default=, parameters=[ptype=table,
+popt=Measurement Set, allowunset=F, default=, value=, dir=in,
+dlformat=filename, listname=filename]]], gui=autogui, cli=autocli,
+group=basic, title=Construct an imager tool],
+imagertester=[data=[toolname=[type=string, default=myimager,
+parameters=[ptype=string, allowunset=F, default=myimager,
+value=myimager, dir=in, dlformat=toolname, listname=toolname],
+help=[text=Glish name for the constructed tool]],
+filename=[type=table, default=3C273XC1.ms, parameters=[ptype=table,
+popt=Measurement Set, allowunset=F, default=3C273XC1.ms,
+value=3C273XC1.ms, dir=in, dlformat=filename, listname=filename],
+help=[text=Name of MS to create]], size=[type=integer, default=256,
+parameters=[ptype=scalar, allowunset=F, default=256, value=256,
+dir=in, dlformat=size, listname=size], help=[text=Number of pixels on
+a side]], cell=[type=string, default=0.7arcsec,
+parameters=[ptype=quantity, popt=[i_am_unset=i_am_unset],
+allowunset=F, default=0.7arcsec, value=0.7arcsec, dir=in,
+dlformat=cell, listname=cell]], stokes=[type=string, default=IV,
+parameters=[ptype=choice, popt=I IV IQUV, allowunset=F, default=IV,
+value=IV, dir=in, dlformat=stokes, listname=stokes], help=[text=Stokes
+parameters to image (e.g. ' IQUV' )]], coordinates=[type=string,
+default=b1950, parameters=[ptype=choice, popt=b1950 gal, allowunset=F,
+default=b1950, value=b1950, dir=in, dlformat=coordinates,
+listname=coordinates], help=[text=Coordinate system to use e.g. '
+j2000,' gal' ]]], gui=autogui, cli=autocli, group=basic,
+title=Construct an imager tool for testing]]  
+- field_names(types.meta('imager', F, F).advise)
+data gui cli group title
+\end{verbatim}
+\end{ahexample}
+\ahreturns{Record}
+\end{ahfunction}
+
+\begin{ahfunction}{addmeta}{Copy meta information to a class}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{}{String}
+\ahaddarg{meta}{Meta-information}{}{Record}
+\end{ahargs}
+\ahreturns{Boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{all}{Show all classes}
+\begin{ahargs}
+\ahaddarg{class}{Class or type of tool}{}{String}
+\ahaddarg{meta}{Meta-information}{}{Record}
+\end{ahargs}
+\ahreturns{String}
+\end{ahfunction}
+
+\begin{ahfunction}{is\_tool}{Is this a tool?}
+\begin{ahdescription}
+Is this a tool? It must be a record of public functions only.
+If the type is specified, it will be tested. Then consistency
+with the meta-information is checked: all functions in the meta
+information must appear in the object (but not the other way
+around).
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{obj}{Possible object}{}{Variable}
+\ahaddarg{type}{Type of variable}{'unset'}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{attachhelp}{Attach help from the help system}
+\begin{ahdescription}
+Help information may be defined in the meta-information file
+or may be copied from that in the .help files.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{type}{Type of tool}{}{String}
+\end{ahargs}
+\end{ahfunction}
+
+\begin{ahfunction}{includemeta}{Include all meta information files}
+\begin{ahdescription}
+Force inclusion of the meta information files so that the global
+types function is up to date.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{includepath}{Path for include files}{unset}{String}
+\end{ahargs}
+\end{ahfunction}
+
+
+\end{ahobject}
+
+\begin{ahfunction}{typestest}{Test the types definition}
+\begin{ahdescription}
+This defines a class called typestest, a global function
+called typestester, and the arguments for typestester.
+The \ahlink{toolmanager}{tasking:toolmanager} is then called to
+display the interface for typestester, which may then be
+executed to see the arguments passed in.
+\end{ahdescription}
+\end{ahfunction}

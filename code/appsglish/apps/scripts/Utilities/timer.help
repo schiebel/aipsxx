@@ -1,0 +1,120 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: timer.help,v 19.2 2004/08/25 02:10:38 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{timer}{Execute functions periodically, wait for a specified time}
+
+\ahinclude{timer.g}
+
+\ahkeyword{time}{}
+\ahkeyword{timer}{}
+\ahkeyword{wait}{}
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+{\tt timer} is an tool which is used to execute a function
+periodically (or once after a timeout), or to wait for a specified
+period of time.
+
+{\tt timer} is a single tool, only one will be created in a given glish
+session. The timer is created the first time {\tt timer.g} is included in a 
+glish session.
+\end{ahdescription}
+
+\begin{ahexample}
+We can implement a simple ``reminder'' as follows:
+\begin{verbatim}
+- reminder := function(interval, name) { print 'Do not forget your meeting!'; }
+-                                                # Run reminder every 5 minutes
+- id := timer.execute(reminder, interval=300, oneshot=F)
+- ... time passes ... the following message comes up every 5 minutes
+Do not forget your meeting!
+- ...
+- timer.remove(id);   # Turn off reminder
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahfunction}{execute}{execute a function periodically}
+\begin{ahdescription}
+{\tt execute} takes a function which you supply (a ``callback''), and executes
+it one or more times after a time that you specify has passed. The function 
+returns a string, which you can use in the {\tt remove} function to deactivate 
+execution of the function.
+
+The callback function you supply must take two arguments, which will be passed
+to the function when it is called by {\tt timer}.
+\begin{description}
+    \item[interval] The time interval that was supplied to {\tt execute()}.
+    \item[name]     The name of the timing event, {\em i.e.}, the value 
+                    returned by {\tt execute()}.
+\end{description}
+Often the callback will just ignore these arguments
+
+You can specify that the function is to be executed only once (``oneshot''), or
+``forever'' (until deactivated with {\tt remove}).
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{callback}{function to be executed}{}{two-argument function}
+  \ahaddarg{interval}{how long to wait before executing function (seconds)}{60}{float}
+  \ahaddarg{oneshot}{execute function once only?}{T}{boolean}
+\end{ahargs}
+\ahreturns{string identifier, for remove, or fail}
+\end{ahfunction}
+
+
+\begin{ahfunction}{remove}{remove a callback function from the timer}
+\begin{ahdescription}
+{\tt remove} removes a callback function from {\tt timer}. You use the value
+which returned from the {\tt execute} function to determine which callback
+to remove. It returns {\tt T} on success, {\tt F} if there is no such callback
+(for example, it might have already been removed), or ``fail'' on error.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{name}{identifier returned from execute}{}{string}
+\end{ahargs}
+\ahreturns{T if callback removed, F if no callback, or fail on error}
+\end{ahfunction}
+
+\begin{ahfunction}{wait}{wait a specified amount of time}
+\begin{ahdescription}
+{\tt wait} merely waits the specified period of time, and then returns. C and
+C++ programmers might think of it as ``sleep.''
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{interval}{how long to wait (seconds)}{}{float}
+\end{ahargs}
+\ahreturns{T}
+\end{ahfunction}
+
+
+
+
+\end{ahobject}
+\end{document}

@@ -1,0 +1,226 @@
+%% Copyright (C) 1999,2000,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: 
+\begin{ahobject}{multiautogui}{Tool to manage a number of autoguis}
+
+\ahinclude{multiautogui.g}
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+\begin{ahdescription}
+
+This \tool\ is designed for use when context sensitive menus are
+required. For example, it was implemented for use with annotations,
+since clicking on a new shape should bring up options for that
+shape. This allows different ``types'' of autoguis to be built, one
+for each type of shape. The \ahlink{autoguis}{widgets:autogui} are
+built only once, since construction of them takes a significant amount
+of time. Once built they are mapped, and unmapped from the screen as
+needed. This widget also attempts to make accessing multiple autoguis
+simpler, by allowing ``nested'' options within the records passed to /
+from it. For example, you can construct a {\tt multiautogui}, and have
+it generate multiple autoguis, all with their parameters filled, by
+forming the {\tt fillgui} record correctly. Most of the work is still
+done by the underlying \ahlink{autoguis}{widgets:autogui}.
+\end{ahdescription}
+
+\bigskip \noindent {\bf Parameter description} \medskip
+In a similar manner to \ahlink{autoguis}{widgets:autogui}, most
+transactions occur via ``parameter records''. In addition to this are
+control functions, which control the mapping to and from the screen of
+the different autoguis. The actual records destined for the desired
+autogui are nested one level down. For example, if two autoguis are
+desired, ``someoptions'' and ``otheroptions'' and you wish them both
+to occupy the same spot on screen using a multiautogui, you would
+create a parameter record as follows, construct the widget, and then
+choose which one you wanted visible:
+
+
+\begin{itemize}
+\item{\tt myoptionrecord:}
+\begin{itemize}
+\item{\tt someoptions:} This is the name you will use to refer to
+operations on this autogui, and also the name which the multiautogui
+will return new options for this set under
+\begin{itemize}
+\item{\tt options:} A standard option set for an \ahlink{autogui}{widgets:autogui}
+\end{itemize}
+
+\item{\tt otheroptions:} This is just some other name.
+\begin{itemize}
+\item{\tt options:} Another different standard option set for an \ahlink{autogui}{widgets:autogui}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+
+\begin{verbatim}
+include 'multiautogui.g'
+
+mymulti := multiautogui(myoptionrecord, title = 'Test Multi');
+
+mymulti.show('otheroptions');
+\end{verbatim}
+
+For a complete example, see multiautoguitest in multiautogui.g . A
+similar technique is used to fill the GUIs, and also to receive
+options from them.
+\bigskip \noindent {\bf Event description} \medskip
+
+Basically, anytime one of the \ahlink{autoguis}{widgets:autogui} being
+maintained by multiautogui fires a {\tt setoptions} event, it is passed on by
+multiautogui. The difference is multiautogui stores the parameters
+returned by the autogui in a record which has the name of the
+parameter set. The example above, in which we created two autoguis
+called ``someoptions'' and ``otheroptions'' provides a good way to
+demostrate this. We imagine that ``someoptions'' was visible,
+and the user changed a parameter. Multiautogui would emit a {\tt
+setoptions} event, which contained a record with one field. The field
+name would be the originating autogui (in this case ``someoptions''),
+and contained within that subrecord would be the new options. 
+
+Similarly, when a {\tt newuserchoicelist} is emitted (in fact, all
+events (*) are forwaded on in this manner), the same
+``parameter encoding'' occurs, with the option record being stored in
+a subrecord, the name of which is determined by the originating
+autogui.
+
+\begin{ahexample}
+For a simple example, please refer to multiautogui.g. It contains a
+subsequence ``multiautoguitest'' which demonstrates multiautogui
+managing three autoguis.
+\end{ahexample}
+	
+\begin{ahconstructor}{multiautogui}{Create a multiautogui \tool}
+\begin{ahargs}
+  \ahaddarg{params}{Record to define multiple autoguis}{}{Record}
+  \ahaddarg{title}{title string if top-level frame constructed internally}{'autogui'}{String}
+  \ahaddarg{toplevel}{top-level parent frame}{F}{frame or boolean}
+%%  \ahaddarg{map}{map the GUI to the screen immediately?}{T}{boolean}
+  \ahaddarg{actionlabel}{label for action button (passed to each
+  autogui) TODO: It would be nice to have a common ``action'' button}{F}{string or boolean}
+  \ahaddarg{autoapply}{Show auto-apply buttons}{T}{boolean}
+  \ahaddarg{expand}{Expand policy}{'none'}{'x'|'y'|'both'|'none'}
+  \ahaddarg{widgetset}{widgetserver \tool\ to use to build the GUI}{dws}{widgetserver \tool}
+\end{ahargs}	
+
+\ahreturns{subsequence} 
+
+\begin{ahdescription} 
+
+This is the only constructor for the multiautogui \tool.  The first
+argument, {\tt params}, contains the various parameters which will be
+used to generate the multiple GUIs.  If a parent frame is not given in the
+{\tt toplevel} argument, a top-level frame will be created with title as
+given in the {\tt title} argument.  If the {\tt actionlabel} argument
+is given as a string, then a button will be placed at the bottom of
+each of the GUIs with that string as its label.  Pressing this button
+will cause the autogui \tool\ to emit all parameters and their values via a
+{\tt setoptions} event. The final two arguments just provide some
+future flexibility with respect to widgetserver and guientry \tools.
+
+\end{ahdescription}
+ 
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{shownone}{Show no autoguis in the frame (unmap all)}
+\ahreturns{T}
+
+\begin{ahdescription}
+This function unmaps all autoguis, so none are visible.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{show}{Read the GUI and return the current settings}
+\begin{ahargs}
+   \ahaddarg{which}{which autogui to show}{}{String - name of a created autogui}
+\end{ahargs}
+\ahreturns{T if gui name found, else F}
+
+\begin{ahdescription}
+
+This function allows one of the autoguis to be shown. The name
+supplied here should be the name of one of the created autoguis. 
+
+\end{ahdescription}
+\end{ahfunction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{fillgui}{Fill one or all of the autoguis}
+\begin{ahargs}
+\ahaddarg{options}{options to fill autgui(s)}{}{Record to use to fill
+autogui(s)}
+\end{ahargs}
+\ahreturns{T}
+
+\begin{ahdescription}
+This function is used to fill the autoguis. The parameter must be a
+record whose field names correspond to one or more autoguis. Within
+these fields should be the options with which to fill the respective
+autogui. If one of the field names does not exist as an autogui, its
+contents are used to create a new one.
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{addautogui}{Add another autogui to the widget}
+\begin{ahargs}
+\ahaddarg{name}{name of the new autogui}{}{String}
+\ahaddarg{params}{parameter to fill autogui}{}{Record with autogui information}
+\end{ahargs}
+\ahreturns{T if addition successful, else F}
+\begin{ahdescription}
+
+This function can be used to add a new autogui to the collection. It
+takes a name (which will from then on be used as an identifier in all
+option records) and a set of parameters which will be used to
+construct the new autogui.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{multiautoguitest}{Test the multiautogui}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function provides a simple test of the multiautogui.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject}
+
+
+
+
+
+
+

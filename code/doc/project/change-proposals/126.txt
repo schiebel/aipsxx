@@ -1,0 +1,147 @@
+Person responsible:       jmcmulli@nrao.edu
+Originator of proposal:   ddebonis@nrao.edu
+Exploders targeted:       aips2-developers
+Time table:
+Date of issues:           2004 Jun 12	Done
+Comments due:             2004 Jun 18	Done
+Revised proposal:         2004 Jun 21	Done
+Final comments due:       2004 Jun 28
+Decision date:            2004 Jul 1
+
+Statement of goals:
+----------------------------
+Adopt doxygen as the standard AIPS++ code documentation engine.
+
+Background:
+------------------
+Doxygen has become a widpread standard for documenting source code (for a
+partial list of projects using doxygen see
+http://www.stack.nl/~dimitri/doxygen/projects.html).  Doxygen supports a
+range of output formats (such as html, latex, man pages, rtf, xml, with ps
+and pdf being indirectly supported through latex "make ps / pdf") and is
+highly portable (Linux and Unix flavors, with executables for Windows, and
+Mac OS X also available).  The tag format is based on JavaDoc (a standard or
+Java code documentation) so the tags are comprehensive and easily understood.
+
+Given that we maintain (and are about the only users of) cxx2html it would
+be better to now switch to doxygen.
+
+As a prototype, I have doxygenated some the implement directory of aips
+(see http://www.aoc.nrao.edu/~ddebonis/doxygen with a script I made using
+Ger's
+script as a translator.  There is also a doxygen comment example that I
+created for the developer meeting on May 15th (look at Account_impl for a
+complete example):
+
+http://www.aoc.nrao.edu/~ddebonis/meeting/20040514/doxygen/html/classAccount__impl.html
+
+(Note: in this example I used the default javadoc style comment tags /*!
+... */ and \ rather than @).
+
+Most of the mappings between cxx2html tags and doxygen tags have been made
+through Ger's perl script which I have attached to this proposal.
+
+Here is a summary of the mappings (Note: I believe the @ sign to be easier
+to discern than a \, so I decided to use it for the tag indicator):
+
+cxx2html tag                        doxygen tag
+------------                        -----------
+//                                  //!
+
+<linkto class={classname}>          @sa {classname}
+<linkto group={groupname}>          @sa {groupname}
+<linkto file={filename}>            @sa {filename}
+<linkto module={modulename}>        @sa {modulename}
+
+<srcblock>                          @code
+</srcblock>                         @endcode
+<src>                               @code ... @endcode
+
+<summary>                           @brief
+<module>                            @package
+
+<group>                             @defgroup
+<group name={groupname}>            @defgroup {groupname}
+
+<note role=tip>                     @note
+<note role=caution>                 @attention
+<note role=warning>                 @warning
+
+<etymology>                         @protocol
+<prerequisite>                      @pre
+<reviewed>                          @remark
+<synopsis>                          n/a (no tag necessary)
+<templating>                        @property
+<thrown>                            @throw
+<todo>                              @todo
+
+<use visibility=export>             @interface
+<use visibility=local>              @internal
+
+Other tag extensions that will be useful that doxygen offers are:
+
+@namespace     describes a namespace
+@file          describes a file
+@version       gives a version
+@union         describes a union
+@struct        describes a struct
+@enum          describes an enum
+@typedef       describes a typedef
+@param         describes a method / function argument
+@return        describes a return value
+@author        name of author
+@date          date of creation
+@exception     describes an exception object
+@overload      uses a common description reference
+@copydoc       copy a block of documentation from another location
+@anchor        place anchor for use with ref
+@section       place section for use with ref
+@subsection    place sub-section for use with ref
+@page          place documentation page for use with ref
+@ref           reference to placed anchor / section / page
+@link          create a link to an object (file, class, or member)
+@mainpage      customize the index page
+
+A complete documentation of the expected use will be presented at the
+completion of the migration.
+
+Summary:
+---------------
+Switching to doxygen will remove an AIPS++ created tool (cxx2html) that we
+maintain and replace it with a more standard code documentation tool.
+
+Expected Impact:
+--------------------------
+Adoption of doxygen will require the translation of cxx2html tags to
+doxygen tags.  Ger has written a script to do most of this already (a few
+additional tags need to be added to the translator) and I have already
+created an upper level script to drive the translator.
+
+Changes will need to be put in place in the build system to replace
+cxx2html with doxygen, pointers to obtaining doxygen (and optionally
+graphviz) will need to be put in the documentation as well as how we
+expect to use doxygen.
+Also, a doxygen configuration file (which is attached to the end of this
+proposal) will be added that defines how doxygen parses and presents the
+documentation.  Note: the configuration file will be our distributed
+version but clients could change its parameters to better suite their
+needs (for instance, "dot" will be enabled but a client without Graphviz
+nstalled could disable it to avoid the generation of the more extensive
+graphical structure).  Both the header and source files will be parsed by
+doxygen so that a complete representation of the code base will be
+included in the documentation.
+
+Since this change will touch nearly every file, I believe that a code
+freeze (of less than half a day) should occur once the scripts have been
+refined and thoroughly tested.
+
+--------------------------------------------------------------------------
+
+(due to size limitations, I was unable to submit the attached script and
+configuration file... instead I will post them at
+http://www.aoc.nrao.edu/~ddebonis/proposal)
+
+_______________________________________________
+Aips2-developers mailing list
+Aips2-developers@listmgr.cv.nrao.edu
+http://listmgr.cv.nrao.edu/mailman/listinfo/aips2-developers

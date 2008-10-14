@@ -1,0 +1,3527 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/tkpgplot.tex,v 19.0 2003/07/16 04:19:08 aips2adm Exp $
+
+\chapter{Glish/PGPLOT}
+\label{pgplot}
+\index{tk!pgplot|(}
+
+\section{Introduction}
+
+\htmllink{PGPLOT}{\pgploturl}\footnote{Neither PGPLOT nor the code which
+binds PGPLOT to {\em Glish} are part of the standard {\em Glish}
+distribution. This chapter was created by Brian Glendenning 
+(bglenden@nrao.edu).} is a flexible and well known 2-dimensional 
+(line plots and rasters) {\sc Fortran} and C callable
+library. PGPLOT has been bound to {\em Glish} so that 
+{\em Glish} users can embed PGPLOT widgets into their {\em Glish}/Tk
+GUI windows.  While the PGPLOT library itself
+has a large number of device drivers, only the Tk and PostScript drivers are
+available from {\em Glish}. 
+PGPLOT was developed and is maintained by 
+\htmllink{Tim Pearson} {mailto:tjp@astro.caltech.edu}.
+PGPLOT is {\bf copyrighted} software; {\em not} public domain. For further information see the 
+\htmllink{PGPLOT home page}{http://astro.caltech.edu/~tjp/pgplot}. The AIPS++ PGPLOT widget is a variant of Martin Shepherd's
+\htmllink{Tcl/Tk PGPLOT widget}{http://astro.caltech.edu/~tjp/pgplot/tkdriv.html}.  It was adapted for use with Rivet and AIPS++
+through a collaboration between its author and Darrell Schiebel.
+
+Naturally, any limitations inherent in the PGPLOT package itself will be
+manifested in the Glish implementation of PGPLOT.  For example, PGPLOT may
+not display data and axis labels properly when 7 or more significant digits
+are required for axis labeling.
+
+Besides having PGPLOT functionality directly available to the {\em Glish}
+programmer and user, the primary advantage of having PGPLOT directly
+bound to {\em Glish} is that the PGPLOT widget can be embedded into larger
+control panels.  For example, you can use a glish widget as a ``chart
+recorder'' in some larger GUI device controller.
+
+\index{tk!pgplot!non-standard features|(}
+All PGPLOT functionality is available from the {\em Glish} command line.
+The functionality is generally invoked from {\em Glish} in much the same way
+as the subroutine libraries except:
+
+\begin{itemize}
+    \item The method names are in lower case.
+    \item The leading ``pg'' is dropped from the method names.  In
+          {\em Glish} the method names are bound to an agent, which means
+          they are not in the global namespace and thus do not need a
+          prefix to avoid name collisions.
+    \item Array lengths do not need to be passed in, since in {\em Glish}
+          the length of an array is known.  So, for example, the
+          arguments of {\tt line} are {\tt (xpts, ypts)} not {\tt (n,
+          xpts, ypts)} as it is in {\sc Fortran} or C
+    \item Similarly, the subregion (``{\tt I1, I2, J1, J2}'')
+          arguments have been removed from the ``2D'' methods.  {\em Glish}
+          has more flexible array subregioning abilities.
+    \item Output values are returned from the method, whereas in the  {\sc Fortran} and C versions the arguments are changed in place.
+    \item Cursor and keyboard handling is considerably different
+          (greatly improved!).
+\end{itemize}
+\index{tk!pgplot!non-standard features|)}
+
+\index{tk!pgplot!drivers|(}
+At present, the only PGPLOT device drivers which are bound to {\em Glish}
+are:
+
+\begin{description}
+\item[XRV]  This is the TkPGPLOT X widget.  It is always implicitly
+            opened when a PGPLOT widget is created.  It should not be
+            reopended ({\em e.g.}, with {\tt open()} or {\tt beg()}).
+\item[PS]   PostScript file, landscape orientation.
+\item[VPS]  PostScript file, portrait orientation.
+\item[CPS]  Colour PostScript file, landscape orientation.
+\item[VCPS] Colour PostScript file, portrait orientation.
+\end{description}
+
+If you forget the available PGPLOT drivers, you can find out which
+ones are available with {\tt pg->ldev ()}.
+\index{tk!pgplot!drivers|)}
+
+\section{Pgplot Agent Constructor}
+
+It is very easy to create a PGPLOT agent and plot to it. For example:
+
+\begin{verbatim}
+    f := frame ();
+    pg := pgplot (f);
+    pg->env (0, 2 * pi, -1, 1, 0, 0); # draw axes, etc.
+    # ... plot, etc ...
+\end{verbatim}
+
+As shown in the above example, the only required argument in the
+constructor is a frame.  The fact that the frame is
+required is a misfeature.  It should be optional in case you 
+only want to plot to a PostScript file.
+
+\index{tk!pgplot!construction parameters|(}
+\begin{table}[tbh]
+{\small
+\begin{center}
+\begin{tabular}{|c|c|p{1.7in}|p{1.8in}|}
+\hline
+Parameter & Default & Values & Description \\
+\hline
+\hline
+{\tt parent}      &                      & frame          & frame to embed the pgplot widget in  \\ \hline
+{\tt width}       & {\tt 200}            & integer        & width of the pgplot widget (pixels) \\ \hline
+{\tt height}      & {\tt 150}            & integer        & height of the pgplot widget \\ \hline
+{\tt region}      & {\tt [-100,100,-100,100]}  & float[4] & [xmin,xmax,ymin,ymax] (see {\tt env} \\ \hline
+{\tt axis}        & {\tt -2} ({\em i.e.}, none)            & integer  & axis types (see {\tt env}) \\ \hline
+{\tt nxsub}        & {\tt 1}    & integer  & Number of panels in x (see {\tt beg}) \\ \hline
+{\tt nysub}        & {\tt 1}    & integer  & Number of panels in x (see {\tt beg}) \\ \hline
+{\tt relief}      & {\tt 'sunken'}       & {\tt 'flat'} {\tt 'ridge'} {\tt 'raised'} {\tt 'sunken'} {\tt 'groove'} & border relief \\ \hline
+{\tt foreground}  & {\tt 'white'}& X color & the foreground color \\ \hline
+{\tt background}  & {\tt 'black'}& X color & the background color \\ \hline
+{\tt borderwidth} & {\tt 2}       & dimension & width of the border \\ \hline
+{\tt padx} & {\tt 2}       & pixels & internal PGPLOT padding in x \\ \hline
+{\tt pady} & {\tt 2}       & pixels & internal PGPLOT padding in y \\ \hline
+{\tt fill}        & {\tt 'both'}  & {\tt 'both'} {\tt 'none'} {\tt 'x'} {\tt 'y'} & how to expand when resized \\ \hline
+{\tt mincolors} & {\tt 2}       & integer & minimum number of colors to accept \\ \hline
+{\tt maxcolors} & {\tt 100}     & integer & maximum number of colors to take \\ \hline
+{\tt cmapfail}  & {\tt F}       & boolean & if T, fail if we cannot allocate mincolors \\ \hline
+\end{tabular}
+\end{center}
+}
+\end{table}
+\index{tk!pgplot!construction parameters|)}
+
+
+\subsection{Colormap considerations}
+
+This section is only relevant if you are operating under a pseudo-color
+(``8-bit'') graphics display. On a true-color (``24-bit'') display there should
+never be a problem with not having enough colors.
+
+By default, if {\tt cmapfail} is {\tt F}, if the minimum number of colors ({\tt
+mincolors}) cannot be allocated then the PGPLOT widget will operate in black and
+white no matter what the color parameters are. If {\tt cmapfail} is {\tt T},
+then the constructor will return a {\tt fail} if {\tt mincolors} cannot be
+satisfied. In any event, no more than {\tt maxcolors} colors will be taken.
+
+If you cannot allocate the desired minimum number of colors, you should consider
+installing a private colormap in an outer frame by providing a {\tt
+newcmap=T} constructor argument to that frame. Of course this cures the problem
+by introducing ``colormap-flashing''.
+
+\section{Pgplot and Window Resizing}
+
+\index{tk!pgplot!resizing|(}
+
+If you want your graphics to be redrawn at the right size when the
+window is resized you must follow these steps:
+
+\begin{enumerate}
+\item Capture the resize event from the outermost frame.  (Only the
+      outermost frame emits these events).
+\item Redraw your graphics.
+\end{enumerate}
+
+A simple example that demonstrates this is as follows:
+
+\begin{verbatim}
+    x := -pi + 2 * pi * [0:100] / 100; # -pi -> pi
+    y := sin (x);
+
+    f := frame ();
+    pg := pgplot (f);
+
+    draw := function() {
+        pg->env (-pi, pi, -1, 1, 0, 1);
+        pg->line (x, y);
+    }
+
+    draw(); # Initial plot
+
+    whenever f->resize do {
+        draw();  # Redraw at the current size
+    }
+\end{verbatim}
+
+Note that if you call the {\tt pap} function, the size in pixels of
+the plot surface will be fixed until you call {\tt pap} again. At
+present there is no way to entirely undo the {\tt pap} call, however
+you can get the current width and height of the plot surface with the
+nonstandard {\tt width()} and {\tt height()} methods of the pgplot
+agent, and use those in calls to {\tt pap} in your redraw
+logi. Generally, however,  it is best to avoid calling {\tt pap} at all.
+
+\index{tk!pgplot!resizing|)}
+
+\section{Hints}
+
+\begin{itemize}
+\item Buffer plot commands between {\tt bbuf/ebuf} pairs for
+      performance reasons, and to avoid excessive ``flicker.''
+\item Have your code work both in colour and in black in white by
+      using the {\tt qcol} routine to determine how many colours are
+      available (e.g., you can switch to a contour display from a
+      raster display if there aren't enough colours).
+\item When you set labelling sizes with {\tt sch}, the units are 1/40th
+      of the smaller x and y widths.  If you send to a
+      PostScript device the same commands that you send to a
+      smaller window, the plot will look bad because although the
+      characters are the same {\em relative} height, their absolute
+      height is much too large.  Conversely, line widths ({\tt slw})
+      often look too thin on the PostScript plots.
+\item Be careful if you put {\tt tk\_hold} and {\tt tk\_release} calls around 
+      PGPLOT calls. The PGPLOT calls will be processed immediately, whereas the
+      other Tk commands are held up, including resizes. This might cause
+      query commands to return shortly-to-be incorrect values.
+\end{itemize}
+
+\section{Non-Standard Methods}
+
+\index{tk!pgplot!non-standard features|(}
+The non-standard commands available from the pgplot agent are
+documented here to avoid ``contaminating'' your knowledge of standard
+PGPLOT.  Note also that these commands are only available when the
+device is the Tk device, not when it is the PostScript device.
+
+\begin{description}
+\item[bind] -- notice cursor, mouse button, and keyboard events
+\item[cursor] -- set the cursor in the pgplot window
+\item[height] -- height of the pgplot display widget in pixels
+\item[width] -- width of the pgplot display widget in pixels
+\end{description}
+
+\subsection*{bind -- notice cursor, mouse button, and keyboard events}
+\index{tk!pgplot!bind}
+
+\begin{verbatim}
+    pg->bind (EVENT, NAME)
+    String EVENT, NAME
+\end{verbatim}
+
+This method turns on a ``reception'' of X-events.  That is, whenever
+X-event EVENT is seen, glish event NAME is emitted.  For example, the
+following code puts up a grid and prints the world value of the
+current cursor position in a label below the plot widget:
+
+\begin{verbatim}
+    f := frame (side='top');
+    pg := pgplot (f, width=400, height=400);
+    pg->env (-100, 100, -100, 100, 0, 2);
+    xylabel := label (f, width=20);
+    pg->bind ('<Motion>', 'motion');
+    whenever pg->motion do
+        xylabel->text (paste (as_string ($value.world)));
+\end{verbatim}
+%$
+
+While there are a lot of possible X events, the ones that are most apt
+to be of interest are the following.  Note that in the {\tt bind}
+method you enclose the X event name in angle brackets ({\tt <>}).
+
+\begin{description}
+\item[Button] This event occurs whenever a mouse button is pressed.
+     If bound, the returned event has the form:
+
+\begin{verbatim}
+[world=[wx, wy], device=[dx, dy], button=bn, type='ButtonPress']
+\end{verbatim}
+
+where ``world'' is the floating point position in PGPLOT world
+coordinates, ``device'' is an integral pixel position, and ``button'' is
+the button number ({\em i.e.,} 1, 2, or 3 for a three-button mouse).
+If you are interested in only a particular mouse button, you can
+specify it by appending it with a dash, {\em e.g.,} {\tt
+pg->bind('<Button-1>', 'b1')}.  If you are interested in a double
+click, you can specify it as: {\tt pg->bind('<Double-1>', 'double')}.
+Binding any button other than the first to double-clicking is
+perverse.
+
+\item[ButtonRelease] This event is exactly like {\tt Button}, except
+     that it occurs when the button is released.  It also can be
+     specified as, {\em e.g.}, {\tt ButtonRelease-1}.  The returned
+     event has exactly the same format as for {\tt Button}, except
+     that {\tt type='ButtonRelease'}.
+\item[Motion] This event is generated whenever the cursor is moved
+     inside the PGPLOT widget.  If bound, the form of the returned
+     event is:
+
+\begin{verbatim}
+[world=[wx, wy], device=[dx, dy], type='MotionNotify']
+\end{verbatim}
+
+\item[Key] This event occurs whenever a key is pressed on the
+     keyboard.  This includes ``special'' keys.  The returned event
+     is:
+
+\begin{verbatim}
+[world=[wx, wy], device=[dx, dy], key=ch, type='KeyPress']
+\end{verbatim}
+
+where ``world'' is the floating point position in PGPLOT world
+coordinates, ``device'' is an integral pixel position, and ``ch'' is a
+string that contains the pressed key, or the string {\tt '<UNKNOWN>'}
+if the key does not have an ASCII representation.  If you are
+interested in only a particular key, you can specify it by appending
+it with a dash, {\em e.g.,} {\tt pg->bind ('<Key-a>, 'a')} causes
+events to be emitted only when the lower case {\tt a} is pressed.
+
+\item[KeyRelease] This event has the same relation to {\tt Key} that
+     {\tt ButtonRelease} has to {\tt Button}.
+\end{description}
+
+Note that there's no ``drag'' event, but you can have the same effect
+by keeping track of mouse-button presses and releases.  For example,
+the following example draws on the pgplot widget when the mouse is
+moved while a button is pressed (``scribble''):
+
+\begin{verbatim}
+    f := frame ();
+    pg := pgplot (f, width=400, height=400);
+    pg->env (-100, 100, -100, 100, 0, -1);
+    pg->bind ('<Motion>', 'motion');
+    pg->bind ('<Button>', 'button');
+    pg->bind ('<ButtonRelease>', 'button');
+
+    last := [0, 0];
+    pressed := F;
+
+    whenever pg->button do {
+        global pressed, last;
+        pressed := ($value.type == 'ButtonPress'); # T or F
+        last := $value.world;
+    }
+    whenever pg->motion do {
+        global last, pressed;
+        if (pressed)
+            pg->line ([last[1], $value.world[1]],  # x
+                      [last[2], $value.world[2]]); # y
+        last := $value.world;
+    }
+\end{verbatim}
+%$
+
+A very poor typewriter is implemented in the
+following example.  The example is poor because it doesn't handle
+special ``characters'' other than space, and it doesn't wrap in ``y''
+when it reaches the end of the screen.
+
+\begin{verbatim}
+    f := frame ();
+    pg := pgplot (f, width=400, height=400);
+    pg->env (0, 1, 1, 0, 0, -2);
+    pg->sch (3);           # set character height
+    ych := pg->qcs (4)[2]; # y character height
+    xch := 3 / 40;         # good enough for spaces
+    pg->bind ('<Key>', 'key');
+
+    pos := [0, 0 - ych];   # position to write next char
+
+    whenever pg->key do {
+        global pos;
+        if ($value.key == ' ') {
+            pos[1] +:= xch;
+        } else if ($value.key == '<UNKNOWN>' ) {
+            # Ignore
+        } else {
+            bounds := pg->qtxt (pos[1], pos[2], 0, 0, $value.key);
+            if (bounds[4] > 1) { # wrap?
+                pos[1] := 0;
+                pos[2] -:= ych;
+            }
+            bounds := pg->qtxt (pos[1], pos[2], 0, 0, $value.key);
+            pg->ptxt (pos[1], pos[2], 0, 0, spaste ($value.key));
+            pos[1] := bounds[4];
+        }
+    }
+\end{verbatim}
+%$
+
+Note that at present, there is no way to unbind an event once bound.
+You can, of course,  deactivate the {\tt whenever}'s that process the
+events, but the events are still being generated.
+
+\begin{verbatim}
+Arguments:
+ EVENT : the X-event you want to notice.
+ NAME  : the name of the glish event generated.
+\end{verbatim}
+
+\hrule
+
+\subsection*{cursor -- set the cursor in the pgplot window}
+\index{tk!pgplot!cursor}
+
+\begin{verbatim}
+    String mode := pg->cursor (mode='', x=0, y=0, color=1)
+    String mode
+    Integer color, x, y
+\end{verbatim}
+
+This function lets you set the reference position, cursor position,
+and color.  The reference position is, for example, the ``starting''
+position for a {\tt rect}angle (rubber band) cursor.  This is probably
+best illustrated with an example.  In the following, whenver a button
+down is detected, a {\tt rect}angle cursor is started with the
+reference position at the location where the button was pressed.  When
+the button is released, the cursor is returned to normal, and a
+permanent rectangle is drawn from the reference position to the
+cursors last position.
+
+\begin{verbatim}
+    f := frame ();
+    pg := pgplot (f, width=400, height=400);
+    pg->env (0, 100, 0, 100, 0, 0);
+    pg->bind ('<Button-1>', 'down');
+    pg->bind ('<ButtonRelease-1>', 'up');
+
+    start := [0, 0];
+
+    whenever pg->down do {
+        global start;
+        start := $value.world;
+        pg->cursor ('rect', x=$value.world[1], y=$value.world[2]);
+    }
+    whenever pg->up do {
+        global start;
+        pg->cursor ('norm');
+        pg->rect (start[1], $value.world[1], start[2], $value.world[2]);
+    }
+\end{verbatim}
+%$
+
+The available modes for the cursor are:
+
+\begin{description}
+\item[norm]  Un-augmented X cursor.
+\item[line]  Line cursor between ref and pointer.
+\item[rect]  Rectangle between ref and pointer.
+\item[yrng]  Horizontal lines at ref.x and pointer.x.
+\item[xrng]  Vertical lines at ref.y and pointer.y.
+\item[hline] Horizontal line cursor at y = ref.y.
+\item[vline] Vertical line cursor at x = ref.x.
+\item[cross] Pointer centered cross-hair.
+\end{description}
+
+\hrule
+
+\subsection*{height -- notice cursor, mouse button, and keyboard events}
+\index{tk!pgplot!height}
+\begin{verbatim}
+    HEIGHT := pg->height ();
+    Integer HEIGHT;
+\end{verbatim}
+Height of the PGPLOT widget.
+
+\subsection*{width -- notice cursor, mouse button, and keyboard events}
+\index{tk!pgplot!width}
+\begin{verbatim}
+    WIDTH := pg->width ();
+    Integer WIDTH;
+\end{verbatim}
+Width of the PGPLOT widget.
+
+
+
+\section{Unavailable Standard PGPLOT Methods}
+
+The following Standard PGPLOT methods are unavailable:
+
+\begin{description}
+\item[band] -- read cursor position, with anchor (standard cursor
+     methods replaced)
+\item[conx] -- contour map of a 2D data array (non rectangular) (can
+     only be used in a compiled language)
+\item[curs] -- read cursor position (standard cursor methods
+     replaced)
+\item[etxt] -- erase text from graphics display (The PGPLOT/Tk widget
+     is not a Tektronix-like graphics display)
+\item[funt] -- function defined by X = F(T), Y = G(T) (only callable
+     from compiled language, but easily emulated in {\em Glish})
+\item[funx] -- function defined by Y = F(X) (only callable from
+     compiled language, but easily emulated in {\em Glish})
+\item[funy] -- function defined by X = F(Y) (only callable from
+     compiled language, but easily emulated in {\em Glish})
+\item[lcur] -- draw a line using the cursor (standard cursor methods
+     replaced)
+\item[ncur] -- mark a set of points using the cursor (standard cursor
+     methods replaced)
+\item[olin] -- mark a set of points using the cursor (standard cursor
+     methods replaced)
+\end{description}
+\index{tk!pgplot!non-standard features|)}
+
+\section{Standard PGPLOT Methods}
+
+Much of this section is directly taken from the standard
+\htmllink{PGPLOT documentation}{\pgploturl}.
+The documentation here is the summary documentation.  Most of the
+PGPLOT User's Guide also applies to {\em Glish}/PGPLOT and is
+worthwhile reading for programmers who do not already know the PGPLOT
+subroutine library.
+
+\begin{description}
+\item[arro] -- draw an arrow
+\item[ask] -- control new page prompting
+\item[bbuf] -- begin batch of output (buffer)
+\item[beg] -- begin PGPLOT, open output device
+\item[bin] -- histogram of binned data
+\item[box] -- draw labeled frame around viewport
+\item[circ] -- draw a filled or outline circle
+\item[clos] -- close the selected graphics device
+\item[conb] -- contour map of a 2D data array, with blanking
+\item[conl] -- label contour map of a 2D data array
+\item[cons] -- contour map of a 2D data array (fast algorithm)
+\item[cont] -- contour map of a 2D data array (contour-following)
+\item[ctab] -- install the color table to be used by PGIMAG
+\item[draw] -- draw a line from the current pen position to a point
+\item[ebuf] -- end batch of output (buffer)
+\item[end] -- terminate PGPLOT
+\item[env] -- set window and viewport and draw labeled frame
+\item[eras] -- erase all graphics from current page
+\item[errb] -- horizontal or vertical error bar
+\item[errx] -- horizontal error bar
+\item[erry] -- vertical error bar
+\item[gray] -- gray-scale map of a 2D data array
+\item[hi2d] -- cross-sections through a 2D data array
+\item[hist] -- histogram of unbinned data
+\item[iden] -- write username, date, and time at bottom of plot
+\item[imag] -- color image from a 2D data array
+\item[lab] -- write labels for x-axis, y-axis, and top of plot
+\item[ldev] -- list available device types
+\item[len] -- find length of a string in a variety of units
+\item[line] -- draw a polyline (curve defined by line-segments)
+\item[move] -- move pen (change current pen position)
+\item[mtxt] -- write text at position relative to viewport
+\item[numb] -- convert a number into a plottable character string
+\item[open] -- open a graphics device
+\item[page] -- advance to new page
+\item[panl] -- switch to a different panel on the view surface
+\item[pap] -- change the size of the view surface
+\item[pixl] -- draw pixels
+\item[pnts] -- draw one or more graph markers, not all the same
+\item[poly] -- fill a polygonal area with shading
+\item[pt] -- draw one or more graph markers
+\item[ptxt] -- write text at arbitrary position and angle
+\item[qah] -- inquire arrow-head style
+\item[qcf] -- inquire character font
+\item[qch] -- inquire character height
+\item[qci] -- inquire color index
+\item[qcir] -- inquire color index range
+\item[qcol] -- inquire color capability
+\item[qcr] -- inquire color representation
+\item[qcs] -- inquire character height in a variety of units
+\item[qfs] -- inquire fill-area style
+\item[qhs] -- inquire hatching style
+\item[qid] -- inquire current device identifier
+\item[qinf] -- inquire PGPLOT general information
+\item[qitf] -- inquire image transfer function
+\item[qls] -- inquire line style
+\item[qlw] -- inquire line width
+\item[qpos] -- inquire current pen position
+\item[qtbg] -- inquire text background color index
+\item[qtxt] -- find bounding box of text string
+\item[qvp] -- inquire viewport size and position
+\item[qvsz] -- find the window defined by the full view surface
+\item[qwin] -- inquire window boundary coordinates
+\item[rect] -- draw a rectangle, using fill-area attributes
+\item[rnd] -- find the smallest `round' number greater than x
+\item[rnge] -- choose axis limits
+\item[sah] -- set arrow-head style
+\item[save] -- save PGPLOT attributes
+\item[unsa] -- restore PGPLOT attributes
+\item[scf] -- set character font
+\item[sch] -- set character height
+\item[sci] -- set color index
+\item[scir] -- set color index range
+\item[scr] -- set color representation
+\item[scrn] -- set color representation by name
+\item[sfs] -- set fill-area style
+\item[shls] -- set color representation using HLS system
+\item[shs] -- set hatching style
+\item[sitf] -- set image transfer function
+\item[slct] -- select an open graphics device
+\item[sls] -- set line style
+\item[slw] -- set line width
+\item[stbg] -- set text background color index
+\item[subp] -- subdivide view surface into panels
+\item[svp] -- set viewport (normalized device coordinates)
+\item[swin] -- set window
+\item[tbox] -- draw frame and write (DD) HH MM SS.S labelling
+\item[text] -- write text (horizontal, left-justified)
+\item[updt] -- update display
+\item[vect] -- vector map of a 2D data array, with blanking
+\item[vsiz] -- set viewport (inches)
+\item[vstd] -- set standard (default) viewport
+\item[wedg] -- annotate an image plot with a wedge
+\item[wnad] -- set window and adjust viewport to same aspect ratio
+\end{description}
+
+\hrule
+
+\subsection*{ARRO -- draw an arrow }
+\index{tk!pgplot!arro}
+
+\begin{verbatim}
+    pg->arro (X1, Y1, X2, Y2)
+    Float X1, Y1, X2, Y2
+\end{verbatim}
+
+Draw an arrow from the point with world-coordinates (X1, Y1) to (X2,
+Y2).  The size of the arrowhead at (X2, Y2) is determined by the
+current character size set by routine SCH.  The default size is 1/40th
+smaller than the width or height of the view surface.  The
+appearance of the arrowhead (shape and solid or open) is controlled by
+routine SAH.
+
+\begin{verbatim}
+Arguments:
+ X1, Y1 : world coordinates of the tail of the arrow.
+ X2, Y2 : world coordinates of the head of the arrow.
+\end{verbatim}
+
+\hrule
+
+\subsection*{ASK -- control new page prompting }
+\index{tk!pgplot!ask}
+
+\begin{verbatim}
+    pg->ask (FLAG)
+    Boolean FLAG
+\end{verbatim}
+
+Change the ``prompt state'' of PGPLOT.  If the prompt state is ON,
+PAGE types ``Type RETURN for next page:'' and waits for you
+to type a carriage-return before starting a new page.  The
+initial prompt state (after a call to BEG) is ON for interactive
+devices.  Prompt state is always OFF for non-interactive devices.
+
+Note: this command goes directly to the (pseudo) terminal, not through
+{\em Glish}.
+
+\begin{verbatim}
+Arguments:
+ FLAG : if T, and the device is an interactive device, the prompt
+        state is set to ON.  If F, the prompt state is set
+        to OFF.
+\end{verbatim}
+
+\hrule
+
+\subsection*{BBUF -- begin batch of output (buffer) }
+\index{tk!pgplot!bbuf}
+
+\begin{verbatim}
+    pg->bbuf ()
+\end{verbatim}
+
+Begin saving graphical output commands in an internal buffer; the
+commands are held until a matching EBUF call (or until the buffer is
+emptied by UPDT).  This can greatly improve the efficiency of PGPLOT.
+BBUF increments an internal counter, while EBUF decrements this
+counter and flushes the buffer to the output device when the counter
+drops to zero.  BBUF and EBUF calls should always be paired.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{BEG -- begin PGPLOT, open output device }
+\index{tk!pgplot!beg}
+
+\begin{verbatim}
+    Boolean OK := pg->beg (UNIT, FILE, NXSUB, NYSUB)
+    Integer UNIT, NXSUB, NYSUB
+    String  FILE
+\end{verbatim}
+
+Begin PGPLOT, open the plot file.  A call to BEG is required before
+any other calls to PGPLOT subroutines.  If a plot file is already open
+for PGPLOT output, it is closed before the new file is opened.
+
+\begin{verbatim}
+Returns:
+ OK    : a status return value.  A value of T indicates successful
+         completion, any other value indicates an error.  In the event
+         of an error a message is written on the standard error unit.
+Arguments:
+ UNIT  : this argument is ignored by BEG (use zero).
+ FILE  : the ``device specification'' for the plot device.  Device 
+         specifications are installation dependent, but usually have
+         the form ``device/type'' or ``file/type''.  If this argument
+         is a question mark ('?'), BEG prompts you to supply
+         a string.  If the argument is a blank string (' '), BEG 
+         uses the value of environment variable PGPLOT_DEV. 
+ NXSUB : the number of subdivisions of the view surface in X (>0 or
+         <0). 
+ NYSUB : the number of subdivisions of the view surface in Y (>0).
+         PGPLOT puts NXSUB x NYSUB graphs on each plot page or screen;
+         when the view surface is sub-divided in this way, PAGE moves
+         to the next panel, not the  next physical page.  If NXSUB >
+         0, PGPLOT uses the panels in row order; if <0, PGPLOT uses
+         them in column order.  
+\end{verbatim}
+
+\hrule
+
+\subsection*{BIN -- histogram of binned data }
+\index{tk!pgplot!bin}
+
+\begin{verbatim}
+    pg->bin (X, DATA, CENTER)
+    Float   X[], DATA[]
+    Boolean CENTER
+\end{verbatim}
+
+Plot a histogram of NBIN values with X(1..NBIN) values along the
+ordinate, and DATA(1...NBIN) along the abscissa.  Bin width is spacing
+between X values.
+
+NOTE: {\em {\tt bin} has a hard limit of 200 bins built into the
+underlying PGPLOT library}.
+
+\begin{verbatim}
+Arguments:
+ X      : abscissae of bins.
+ DATA   : data values of bins.
+ CENTER : if T, the X values denote the center of the bin; if F, the X
+          values denote the lower edge (in X) of the bin.
+\end{verbatim}
+
+\hrule
+
+\subsection*{BOX -- draw labeled frame around viewport }
+\index{tk!pgplot!box}
+
+\begin{verbatim}
+    pg->box (XOPT, XTICK, NXSUB, YOPT, YTICK, NYSUB)
+    String  XOPT, YOPT
+    Float   XTICK, YTICK
+    Integer NXSUB, NYSUB
+\end{verbatim}
+
+Annotate the viewport with frame, axes, numeric labels, etc.  You call
+BOX using ENV, but also may be called explicitly.
+
+\begin{verbatim}
+Arguments:
+ XOPT  : string of options for X (horizontal) axis of plot.  Options
+         are single letters, and may be in any order (see below). 
+ XTICK : world coordinate interval between major tick marks on X axis.
+         If XTICK = 0.0, the interval is chosen by BOX, so that there
+         are at least 3 major tick marks along the axis.
+ NXSUB : the number of subintervals to divide the major coordinate
+         interval into.  If XTICK = 0.0 or NXSUB = 0, the number is
+         chosen by BOX.  
+ YOPT  : string of options for Y (vertical) axis of plot.  Coding is
+         the same as for XOPT. 
+ YTICK : like XTICK for the Y axis.
+ NYSUB : like NXSUB for the Y axis.
+
+Options (for parameters XOPT and YOPT):
+ A : draw Axis (X axis is horizontal line Y = 0, Y axis is vertical
+     line X = 0).  
+ B : draw bottom (X) or left (Y) edge of frame.
+ C : draw top (X) or right (Y) edge of frame.
+ G : draw Grid of vertical (X) or horizontal (Y) lines.
+ I : invert the tick marks; i.e. draw them outside the viewport
+     instead of inside.  
+ L : label axis Logarithmically (see below).
+ N : write Numeric labels in the conventional location below the
+     viewport (X) or to the left of the viewport (Y). 
+ P : extend (``Project'') major tick marks outside the box (ignored if
+     option I is specified).  
+ M : write numeric labels in the unconventional location above the
+     viewport (X) or to the right of the viewport (Y). 
+ T : draw major Tick marks at the major coordinate interval.
+ S : draw minor tick marks (Subticks).
+ V : orient numeric labels Vertically.  This is only applicable to Y.
+     The default is to write Y-labels parallel to the axis.
+ 1 : force decimal labelling, instead of automatic choice (see NUMB).
+ 2 : force exponential labelling, instead of automatic.
+
+To get a complete frame, specify BC in both XOPT and YOPT.  Tick
+marks, if requested, are drawn on the axes or frame or both, depending
+upon which are requested.  If none of ABC is specified, tick marks are not
+drawn.  When ENV calls BOX, it sets both XOPT and YOPT according to
+the value of its parameter AXIS:
+-1: 'BC', 0: 'BCNST', 1: 'ABCNST', 2: 'ABCGNST'.
+
+For a logarithmic axis, the major tick interval is always 1.0.  The
+numeric label is 10**(x) where x is the world coordinate at the tick
+mark.  If subticks are requested, eight subticks are drawn between each
+major tick at equal logarithmic intervals.
+
+To label an axis with time (days, hours, minutes, seconds) or
+angle (degrees, arcmin, arcsec), use routine TBOX.
+\end{verbatim}
+
+\hrule
+
+\subsection*{CIRC -- draw a filled or outline circle }
+\index{tk!pgplot!circ}
+
+\begin{verbatim}
+    pg->circ (XCENT, YCENT, RADIUS)
+    Float XCENT, YCENT, RADIUS
+\end{verbatim}
+
+Draw a circle.  The action of this routine depends on the setting of
+the Fill-Area Style attribute.  If Fill-Area Style is SOLID (the
+default), the interior of the circle is solid-filled using the current
+Color Index.  If Fill-Area Style is HOLLOW, the outline of the circle
+is drawn using the current line attributes (color index, line-style,
+and line-width).
+
+\begin{verbatim}
+Arguments:
+ XCENT  : world x-coordinate of the center of the circle.
+ YCENT  : world y-coordinate of the center of the circle.
+ RADIUS : radius of circle (world coordinates).
+\end{verbatim}
+
+\hrule
+
+\subsection*{CLOS -- close the selected graphics device }
+\index{tk!pgplot!clos}
+
+\begin{verbatim}
+    pg->clos ()
+\end{verbatim}
+
+Close the currently selected graphics device.  After the device is
+closed, either another open device must be selected with SLCT or
+another device must be opened with OPEN before any further plotting
+can be done.  If the call to CLOS is omitted, some or all of the plot
+may be lost.
+
+[This routine was added to PGPLOT in Version 5.1.0.  Older programs
+use END instead.]
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{CONB -- contour map of a 2D data array, with blanking }
+\index{tk!pgplot!conb}
+
+\begin{verbatim}
+    pg->conb (A, C, TR,  BLANK)
+    Float A[*,*], C[], TR[6], BLANK
+\end{verbatim}
+
+Draw a contour map of an array.  This routine is the same as CONS,
+except that array elements that have the ``magic value'' defined by
+argument BLANK are ignored, making gaps in the contour map.  The
+routine may be useful for data measured on most but not all of the
+points of a grid.
+
+\begin{verbatim}
+Arguments:
+ A     : data array.
+ C     : array of contour levels (in the same units as the data in
+         array A). 
+ TR    : array defining a transformation between the I,J grid of the
+         array and the world coordinates.  The world coordinates of
+         the array point A(I, J) are given by:
+           X = TR(1) + TR(2)*I + TR(3)*J
+           Y = TR(4) + TR(5)*I + TR(6)*J
+         Usually TR(3) and TR(5) are zero - unless the coordinate
+         transformation involves a rotation or shear.
+ BLANK : elements of array A that are exactly equal to this value are
+         ignored (blanked). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{CONL -- label contour map of a 2D data array  }
+\index{tk!pgplot!conl}
+
+\begin{verbatim}
+    pg->conl (A, C, TR, LABEL, INTVAL, MININT)
+    Float   A[*,*], C, TR[6]
+    String  LABEL
+    Integer INTVAL, MININT
+\end{verbatim}
+
+Label a contour map drawn with routine CONT.  Routine CONT should be
+called first to draw the contour lines, then this routine 
+called to add the labels.  Labels are written at intervals along the
+contour lines, centered on the contour lines with lettering aligned in
+the up-hill direction.  Labels are opaque, so a part of the under-
+lying contour line is obscured by the label.  Labels use the current
+attributes (character height, line width, color index, character
+font).
+
+The first nine arguments are the same as those supplied to CONT, and
+normally should be identical to those used with CONT.  Note that only
+one contour level can be specified; to label more contours, call CONL
+for each level.
+
+The Label is supplied as a character string in argument LABEL.
+
+The spacing of labels along the contour is specified by parameters
+INTVAL and MININT.  The routine follows the contour through the array,
+counting the number of cells that the contour crosses.  The first
+label is written in the MININT'th cell, and additional labels
+written every INTVAL cells thereafter.  A contour that crosses
+less than MININT cells are not labelled.  Some experimentation may
+be needed to get satisfactory results; a good place to start is
+INTVAL = 20, MININT = 10.
+
+\begin{verbatim}
+Arguments:
+ A      : data array.
+ C      : the level of the contour to be labelled (one of the values
+          given to CONT). 
+ TR     : array defining a transformation between the I,J grid of the
+          array and the world coordinates.  The world coordinates of
+          the array point A(I, J) are given by:
+            X = TR(1) + TR(2)*I + TR(3)*J
+            Y = TR(4) + TR(5)*I + TR(6)*J
+          Usually TR(3) and TR(5) are zero - unless the coordinate
+          transformation involves a rotation or shear.
+ LABEL  : character strings to be used to label the specified contour.
+          Leading and trailing blank spaces are ignored.
+ INTVAL : spacing along the contour between labels, in grid cells. 
+ MININT : contours that cross less than MININT cells are not
+          labelled. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{CONS -- contour map of a 2D data array (fast algorithm) }
+\index{tk!pgplot!cons}
+
+\begin{verbatim}
+    pg->cons (A, C, TR)
+    Float A[*,*], C[], TR[6]
+\end{verbatim}
+
+Draw a contour map of an array.  The map is truncated if necessary at
+the boundaries of the viewport.  Each contour line is drawn with the
+current line attributes (color index, style, and width).  This
+routine, unlike CONT, does not draw each contour as a continuous line,
+but draws the straight line segments composing each contour in a
+random order.  It is thus not suitable for use on pen plotters, and it
+usually gives unsatisfactory results with dashed or dotted lines.  It
+is, however, faster than CONT, especially if several contour levels
+are drawn with one call of CONS.
+
+\begin{verbatim}
+Arguments:
+ A  : data array.
+ C  : array of contour levels (in the same units as the data in array
+      A). 
+ TR : array defining a transformation between the I,J grid of the
+      array and the world coordinates.  The world coordinates of the
+      array point A(I, J) are given by:
+        X = TR(1) + TR(2)*I + TR(3)*J
+        Y = TR(4) + TR(5)*I + TR(6)*J
+      Usually TR(3) and TR(5) are zero - unless the coordinate
+      transformation involves a rotation or shear.
+\end{verbatim}
+
+\hrule
+
+\subsection*{CONT -- contour map of a 2D data array (contour-following) }
+\index{tk!pgplot!cont}
+
+\begin{verbatim}
+    pg->cont (A, C, NC, TR)
+    Float   A[*,*], C[], TR[6]
+    Boolean NC
+\end{verbatim}
+
+Draw a contour map of an array.  The map is truncated if necessary at
+the boundaries of the viewport.  Each contour line is drawn with the
+current line attributes (color index, style, and width); except that
+if argument NC is T (see below), the line style is set by CONT to 1
+(solid) for positive contours or 2 (dashed) for negative contours.
+
+\begin{verbatim}
+Arguments:
+ A  : data array.
+ C  : array of contour levels.
+ NC : line-style for contour lines.  If NC is T, the line style is
+      chosen as described above.  If NC is F, the current setting of
+      line-style is used for all of the contours.
+ TR : array defining a transformation between the I,J grid of the
+      array and the world coordinates.  The world coordinates of the
+      array point A(I, J) are given by:
+        X = TR(1) + TR(2)*I + TR(3)*J
+        Y = TR(4) + TR(5)*I + TR(6)*J
+      Usually TR(3) and TR(5) are zero - unless the coordinate
+      transformation involves a rotation or shear.
+\end{verbatim}
+
+\hrule
+
+\subsection*{CTAB -- install the color table to be used by IMAG }
+\index{tk!pgplot!ctab}
+
+\begin{verbatim}
+    pg->ctab (L, R, G, B, CONTRA, BRIGHT)
+    Float L[], R[], G[], B[], CONTRA, BRIGHT
+\end{verbatim}
+
+Use the given color table to change the color representations of all
+color indexes marked for use by IMAG.  To change which color indexes
+are thus marked, call SCIR before calling CTAB or IMAG.  On devices
+that can change the color representations of previously plotted
+graphics, CTAB also changes the colors of existing graphics that
+were plotted with the marked color indexes.  This feature then can be
+combined with BAND to interactively manipulate the displayed colors of
+data previously plotted with IMAG.
+
+Limitations:
+
+\begin{enumerate}
+\item Some devices do not propagate color representation changes to
+      previously drawn graphics.  
+\item Some devices ignore requests to change color representations.  
+\item The appearance of specific color representations on grey-scale
+      devices is device-dependent.  
+\end{enumerate}
+
+\begin{verbatim}
+Arguments:
+ L      : an array of normalized ramp-intensity levels corresponding
+          to the RGB primary color intensities in R(), G(), B().
+          Colors on the ramp are linearly interpolated from
+          neighbouring levels.  Levels must be sorted in increasing
+          order.  0.0 places a color at the beginning of the ramp.
+          1.0 places a color at the end of the ramp.  Colors outside
+          these limits are legal, but are not visible if
+          CONTRA = 1.0 and BRIGHT = 0.5. 
+ R      : an array of normalized red intensities.
+ G      : an array of normalized green intensities.
+ B      : an array of normalized blue intensities.
+ CONTRA : the contrast of the color ramp (normally 1.0).
+ BRIGHT : brightness at the center colorindex (normally 0.5).
+\end{verbatim}
+
+\hrule
+
+\subsection*{DRAW -- draw a line from the current pen position to a point }
+\index{tk!pgplot!draw}
+
+\begin{verbatim}
+    pg->draw (X, Y)
+    Float X, Y
+\end{verbatim}
+
+Draw a line from the current pen position to the point with
+world-coordinates (X, Y).  The line is clipped at the edge of the
+current window.  The new pen position is (X, Y) in world coordinates.
+
+\begin{verbatim}
+Arguments:
+ X : world x-coordinate of the end point of the line.
+ Y : world y-coordinate of the end point of the line.
+\end{verbatim}
+
+\hrule
+
+\subsection*{EBUF -- end batch of output (buffer) }
+\index{tk!pgplot!ebuf}
+
+\begin{verbatim}
+    pg->ebuf ()
+\end{verbatim}
+
+A call to EBUF marks the end of a batch of graphical output begun with
+the last call of BBUF.  BBUF and EBUF calls should always be paired.
+Each call to BBUF increments a counter, while each call to EBUF
+decrements the counter.  When the counter reaches 0, the batch of
+output is written on the output device.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{END -- terminate PGPLOT }
+\index{tk!pgplot!end}
+
+\begin{verbatim}
+    pg->end ()
+\end{verbatim}
+
+Terminate PGPLOT, close and release any open graphics devices.  If the
+call to END is omitted, some or all of any open plots may be lost.
+
+NOTE: {\em At present, there is no way to reopen the PGPLOT widget
+once {\tt end} is called.  You can reopen PostScript devices.}
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{ENV -- set window and viewport and draw labeled frame }
+\index{tk!pgplot!env}
+
+\begin{verbatim}
+    pg->env (XMIN, XMAX, YMIN, YMAX, JUST, AXIS)
+    Float   XMIN, XMAX, YMIN, YMAX
+    Integer JUST, AXIS
+\end{verbatim}
+
+Set PGPLOT ``Plotter Environment.''  ENV establishes the scaling for
+subsequent calls to PT, LINE, etc.  The plotter is advanced to a new
+page or panel, clearing the screen if necessary.  If the ``prompt
+state'' is ON (see ASK), confirmation is requested from you
+before clearing the screen.  If requested, a box, axes, labels,
+etc. are drawn according to the setting of argument AXIS.
+
+A call to ENV can be replaced by successive calls to PAGE, SVP, SWIN and BOX.
+
+\begin{verbatim}
+Arguments:
+ XMIN : the world x-coordinate at the bottom left corner of the
+        viewport. 
+ XMAX : the world x-coordinate at the top right corner of the viewport
+        (note XMAX may be less than XMIN). 
+ YMIN : the world y-coordinate at the bottom left corner of the
+        viewport. 
+ YMAX : the world y-coordinate at the top right corner of the viewport
+        (note YMAX may be less than YMIN). 
+ JUST : if JUST = 1, the scales of the x and y axes (in world
+        coordinates per inch) will be equal, otherwise they will be
+        scaled independently.  
+ AXIS : controls the plotting of axes, tick marks, etc:
+     AXIS = -2 : draw no box, axes or labels;
+     AXIS = -1 : draw box only;
+     AXIS =  0 : draw box and label it with coordinates;
+     AXIS =  1 : same as AXIS = 0, but also draw the coordinate axes
+                 (X = 0, Y = 0); 
+     AXIS =  2 : same as AXIS = 1, but also draw grid lines at major
+                 increments of the coordinates; 
+     AXIS = 10 : draw box and label X-axis logarithmically;
+     AXIS = 20 : draw box and label Y-axis logarithmically;
+     AXIS = 30 : draw box and label both axes logarithmically. 
+
+For other axis options, use routine BOX.  ENV can be persuaded to call
+BOX with additional axis options by defining an environment parameter
+PGPLOT_ENVOPT containing the required option codes.
+Examples:
+ PGPLOT_ENVOPT=P  ! draw Projecting tick marks
+ PGPLOT_ENVOPT=I  ! Invert the tick marks
+ PGPLOT_ENVOPT=IV ! Invert tick marks and label y Vertically
+\end{verbatim}
+
+\hrule
+
+\subsection*{ERAS -- erase all graphics from current page }
+\index{tk!pgplot!eras}
+
+\begin{verbatim}
+    pg->eras ()
+\end{verbatim}
+
+Erase all graphics from the current page or panel.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{ERRB -- horizontal or vertical error bar }
+\index{tk!pgplot!errb}
+
+\begin{verbatim}
+    pg->errb (DIR, X, Y, E, T)
+    Integer DIR
+    Float   X[], Y[], E[], T
+\end{verbatim}
+
+Plot error bars in the direction specified by DIR.  This routine draws
+an error bar only; to mark the data point at the start of the error
+bar, an additional call to PT is required.
+
+\begin{verbatim}
+Arguments:
+ DIR : direction to plot the error bar relative to the data point.
+         One-sided error bar:
+           DIR is 1 for +X (X to X + E);
+                  2 for +Y (Y to Y + E);
+                  3 for -X (X to X - E);
+                  4 for -Y (Y to Y - E).
+         Two-sided error bar:
+           DIR is 5 for +/-X (X - E to X + E);
+                  6 for +/-Y (Y - E to Y + E).
+ X   : world x-coordinates of the data.
+ Y   : world y-coordinates of the data.
+ E   : value of error bar distance to be added to the data position in
+       world coordinates. 
+ T   : length of terminals to be drawn at the ends of the error bar,
+       as a multiple of the default length; if T = 0.0, no terminals
+       are drawn. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{ERRX -- horizontal error bar }
+\index{tk!pgplot!errx}
+
+\begin{verbatim}
+    pg->errx (X1, X2, Y, T)
+    Float X1[], X2[], Y[], T
+\end{verbatim}
+
+Plot horizontal error bars.  This routine draws an error bar only; to
+mark the data point in the middle of the error bar, an additional call
+to PT or ERRY is required.
+
+\begin{verbatim}
+Arguments:
+ X1 : world x-coordinates of lower end of the error bars.
+ X2 : world x-coordinates of upper end of the error bars.
+ Y  : world y-coordinates of the data.
+ T  : length of terminals to be drawn at the ends of the error bar, as
+      a multiple of the default length; if T = 0.0, no terminals are drawn. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{ERRY -- vertical error bar }
+\index{tk!pgplot!erry}
+
+\begin{verbatim}
+    pg->erry (X, Y1, Y2, T)
+    Float X[], Y1[], Y2[], T
+\end{verbatim}
+
+Plot vertical error bars.  This routine draws an error bar only; to
+mark the data point in the middle of the error bar, an additional call
+to PT or ERRX is required.
+
+\begin{verbatim}
+Arguments:
+ X  : world x-coordinates of the data.
+ Y1 : world y-coordinates of top end of the error bars.
+ Y2 : world y-coordinates of bottom end of the error bars. 
+ T  : length of terminals to be drawn at the ends of the error bar, as
+      a multiple of the default length; if T = 0.0, no terminals are drawn. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{GRAY -- gray-scale map of a 2D data array }
+\index{tk!pgplot!gray}
+
+\begin{verbatim}
+    pg->gray (A, FG, BG, TR)
+    Float A[*,*], FG, BG, TR[6]
+\end{verbatim}
+
+Draw gray-scale map of an array in current window.  The Array A is
+mapped onto the view surface world-coordinate system by the
+transformation matrix TR.  The resulting quadrilateral region is
+clipped at the edge of the window and shaded with the shade at each
+point determined by the corresponding array value.  The shade is a
+number in the range 0 to 1 obtained by linear interpolation between
+the background level (BG) and the foreground level (FG), i.e.,
+
+\begin{verbatim}
+    shade = (A[i, j] - BG) / (FG - BG)
+\end{verbatim}
+
+The background level BG can be either less than or greater than the
+foreground level FG.  Points in the array that are outside the range
+BG to FG are assigned shade 0 or 1, as appropriate.
+
+GRAY uses two different algorithms, depending upon how many color indices
+are available in the color index range specified for images.  (This
+range is set with routine SCIR, and the current or default range can
+be queried by calling routine QCIR.)
+
+If sixteen or more color indices are available, GRAY first assigns color
+representations to these color indices to give a linear ramp between
+the background color (color index 0) and the foreground color (color
+index 1), and then calls IMAG to draw the image using these color
+indices.  In this mode, the shaded region is ``opaque'': every pixel
+is assigned a color.
+
+If less than sixteen color indices are available, GRAY uses only color
+index 1, and uses a ``dithering'' algorithm to fill in pixels, with
+the shade (computed as above) determining the faction of pixels that
+are filled.  In this mode the shaded region is ``transparent'' and
+allows previously-drawn graphics to show through.
+
+The transformation matrix TR is used to calculate the world
+coordinates of the center of the ``cell'' that represents each array
+element.  The world coordinates of the center of the cell
+corresponding to array element A(I, J) are given by:
+
+\begin{verbatim}
+    X = TR(1) + TR(2)*I + TR(3)*J
+    Y = TR(4) + TR(5)*I + TR(6)*J
+\end{verbatim}
+
+Usually TR(3) and TR(5) are zero---unless the coordinate
+transformation involves a rotation or shear.  The corners of the
+quadrilateral region that is shaded by GRAY are given by applying this
+transformation to (I1 - 0.5, J1 - 0.5), (I2 + 0.5, J2 + 0.5).
+
+\begin{verbatim}
+Arguments:
+ A  : the array to be plotted.
+ FG : the array value which is to appear with the foreground color
+      (corresponding to color index 1). 
+ BG : the array value which is to appear with the background color
+      (corresponding to color index 0). 
+ TR : transformation matrix between array grid and world coordinates.
+\end{verbatim}
+
+\hrule
+
+\subsection*{HI2D -- cross-sections through a 2D data array }
+\index{tk!pgplot!hi2d}
+
+\begin{verbatim}
+    pg->hi2d (DATA, X, IOFF, BIAS, CENTER, YLIMS)
+    Float   DATA[*,*], X[], BIAS, YLIMS[]
+    Integer IOFF
+    Boolean CENTER
+\end{verbatim}
+
+Plot a series of cross-sections through a 2D data array.  Each
+cross-section is plotted as a hidden line histogram.  The plot can be
+slanted to give a pseudo-3D effect - if this is done, the call to ENV
+may have to be changed to allow for the increased X range that is
+needed.
+
+\begin{verbatim}
+Arguments:
+ DATA   : the data array to be plotted.
+ X      : the abscissae of the bins to be plotted.  That is, X(1)
+          should be the X value for DATA(IX1, IY1), and X should have 
+          (IX2 - IX1 + 1) elements.  The program has to assume that
+          the X value for DATA(x, y) is the same for all y.
+ IOFF   : an offset in array elements applied to successive
+          cross-sections to produce a slanted effect.  A plot with
+          IOFF > 0 slants to the right, one with IOFF < 0 slants
+          left. 
+ BIAS   : a bias value applied to each successive cross-section in
+          order to raise it above the previous cross-section.  This is
+          in the same units as the data.
+ CENTER : if T, the X values denote the center of the bins; if F, the X
+          values denote the lower edges (in X) of the bins. 
+ YLIMS  : workspace.  Should be an array of at least (IX2 - IX1 + 1)
+          elements. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{HIST -- histogram of unbinned data }
+\index{tk!pgplot!hist}
+
+\begin{verbatim}
+    pg->hist (DATA, DATMIN, DATMAX, NBIN, PGFLAG)
+    Float   DATA[], DATMIN, DATMAX
+    Integer NBIN, PGFLAG
+\end{verbatim}
+
+Draw a histogram of the values in array DATA in the range DATMIN to
+DATMAX using NBIN bins.  Note that array elements which fall exactly
+on the boundary between two bins are counted in the higher bin
+rather than the lower one; and array elements whose value is less than
+DATMIN or greater than or equal to DATMAX are not counted at all.
+
+\begin{verbatim}
+Arguments:
+ DATA   : the data values.
+ DATMIN : the minimum data value for the histogram. 
+ DATMAX : the maximum data value for the histogram.
+ NBIN   : the number of bins to use: the range DATMIN to DATMAX is
+          divided into NBIN equal bins and the number of DATA values
+          in each bin is determined by HIST.  NBIN may not exceed
+          200. 
+ PGFLAG : if PGFLAG = 1, the histogram is plotted in the current
+          window and viewport; if PGFLAG = 0, ENV is called
+          automatically by HIST to start a new plot (the x-limits of
+          the window are DATMIN and DATMAX; the y-limits are
+          chosen automatically.  IF PGFLAG = 2,3 the histogram is
+          in the same window and viewport but with a filled area
+          style.  If PGFLAG = 4,5 as for PGFLAG = 0,1, but simple line
+          drawn as for BIN.
+
+\end{verbatim}
+
+\hrule
+
+\subsection*{IDEN -- write username, date, and time at bottom of plot }
+\index{tk!pgplot!iden}
+
+\begin{verbatim}
+    pg->iden ()
+\end{verbatim}
+
+Write username, date, and time at bottom of plot.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{IMAG -- color image from a 2D data array }
+\index{tk!pgplot!imag}
+
+\begin{verbatim}
+    pg->imag (A, A1, A2, TR)
+    Float A[*,*], A1, A2, TR[6]
+\end{verbatim}
+
+Draw a color image of an array in current window.  The array A defined
+is mapped onto the view surface world-coordinate system by the
+transformation matrix TR.  The resulting quadrilateral region is
+clipped at the edge of the window.  Each element of the array is
+represented in the image by a small quadrilateral, which is filled
+with a color specified by the corresponding array value.
+
+The subroutine uses color indices in the range C1 to C2, which can be
+specified by calling SCIR before IMAG.  The default values for C1 and
+C2 are device-dependent; these values can be determined by calling
+QCIR.  Note that color representations should be assigned to color
+indices C1 to C2 by calling SCR before calling IMAG.  On some devices
+(but not all), the color representation can be changed after the call
+to IMAG by calling SCR again.
+
+Array values in the range A1 to A2 are mapped on to the range of color
+indices C1 to C2, with array values <= A1 being given color index C1
+and values >= A2 being given color index C2.  The mapping function for
+intermediate array values can be specified by calling routine SITF
+before IMAG; the default is linear.
+
+On devices which have no available color indices (C1 > C2), IMAG will
+return without doing anything.  On devices with only one color index
+(C1 = C2), all array values map to the same color which is rather
+uninteresting.  An image is always ``opaque,'' i.e., it obscures all
+graphical elements previously drawn in the region.
+
+The transformation matrix TR is used to calculate the world
+coordinates of the center of the ``cell'' that represents each array
+element.  The world coordinates of the center of the cell
+corresponding to array element A(I, J) are given by:
+
+\begin{verbatim}
+    X = TR(1) + TR(2)*I + TR(3)*J
+    Y = TR(4) + TR(5)*I + TR(6)*J
+\end{verbatim}
+
+Usually TR(3) and TR(5) are zero---unless the coordinate
+transformation involves a rotation or shear.  The corners of the
+quadrilateral region that is shaded by IMAG are given by applying this
+transformation to {\tt (-0.5, -0.5)}, {\tt (A::shape[1] + 0.5,
+A::shape[2] + 0.5)}.
+
+\begin{verbatim}
+Arguments:
+ A  : the array to be plotted.
+ A1 : the array value which is to appear with shade C1.
+ A2 : the array value which is to appear with shade C2.
+ TR : transformation matrix between array grid and world coordinates. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{LAB -- write labels for x-axis, y-axis, and top of plot }
+\index{tk!pgplot!lab}
+
+\begin{verbatim}
+    pg->lab (XLBL, YLBL, TOPLBL)
+    String XLBL, YLBL, TOPLBL
+\end{verbatim}
+
+Write labels outside the viewport.  This routine is a simple interface
+to MTXT, which should be used if LAB is inadequate.
+
+\begin{verbatim}
+Arguments:
+ XLBL   : a label for the x-axis (centered below the viewport). 
+ YLBL   : a label for the y-axis (centered to the left of the
+          viewport, drawn vertically). 
+ TOPLBL : a label for the entire plot (centered above the viewport). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{LDEV -- list available device types }
+\index{tk!pgplot!ldev}
+
+\begin{verbatim}
+    pg->ldev ()
+\end{verbatim}
+
+Writes a list to the terminal of all device types known to the current
+version of PGPLOT.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{LEN -- find length of a string in a variety of units }
+\index{tk!pgplot!len}
+
+\begin{verbatim}
+    Float [XL, YL] := pg->len (UNITS, STRING)
+    Integer UNITS
+    String  STRING
+\end{verbatim}
+
+Work out length of a string in x and y directions
+
+\begin{verbatim}
+Returns:
+ XL     : length of string in x direction.
+ YL     : length of string in y direction.
+Arguments:
+ UNITS  : 0 => answer in normalized device coordinates;
+          1 => answer in inches;
+          2 => answer in mm;
+          3 => answer in absolute device coordinates (dots);
+          4 => answer in world coordinates;
+          5 => answer as a fraction of the current viewport size.
+ STRING : string of interest.
+\end{verbatim}
+
+\hrule
+
+\subsection*{LINE -- draw a polyline (curve defined by line-segments) }
+\index{tk!pgplot!line}
+
+\begin{verbatim}
+    pg->line (XPTS, YPTS)
+    Float XPTS[], YPTS[]
+\end{verbatim}
+
+Primitive routine to draw a polyline.  A polyline is one or more
+connected straight-line segments.  The polyline is drawn using the
+current setting of attributes color-index, line-style, and line-width.
+The polyline is clipped at the edge of the window.
+
+\begin{verbatim}
+Arguments:
+ XPTS : world x-coordinates of the points.
+ YPTS : world y-coordinates of the points.
+Inferred:
+ N    : number of points defining the line; the line consists of (N -
+        1) straight-line segments.  
+
+The ``pen position'' is changed to (X(N), Y(N)) in world coordinates
+(if N > 1).
+\end{verbatim}
+
+\hrule
+
+\subsection*{MOVE -- move pen (change current pen position) }
+\index{tk!pgplot!move}
+
+\begin{verbatim}
+    pg->move (X, Y)
+    Float X, Y
+\end{verbatim}
+
+Primitive routine to move the ``pen'' to the point with world
+coordinates (X, Y).  No line is drawn.
+
+\begin{verbatim}
+Arguments:
+ X : world x-coordinate of the new pen position.
+ Y : world y-coordinate of the new pen position.
+\end{verbatim}
+
+\hrule
+
+\subsection*{MTXT -- write text at position relative to viewport }
+\index{tk!pgplot!mtxt}
+
+\begin{verbatim}
+    pg->mtxt (SIDE, DISP, COORD, FJUST, TEXT)
+    String SIDE, TEXT
+    Float  DISP, COORD, FJUST
+\end{verbatim}
+
+Write text at a position specified relative to the viewport (outside
+or inside).  This routine is useful for annotating graphs.  It is used
+by routine LAB.  The text is written using the current values of
+attributes color-index, line-width, character-height, and
+character-font.
+
+\begin{verbatim}
+Arguments:
+ SIDE  : must include one of the characters 'B', 'L', 'T', or 'R'
+         signifying the Bottom, Left, Top, or Right margin of the
+         viewport.  If it includes 'LV' or 'RV', the string is written
+         perpendicular to the frame rather than parallel to it. 
+ DISP  : the displacement of the character string from the specified
+         edge of the viewport, measured outwards from the viewport in
+         units of the character height.  Use a negative value to write
+         inside the viewport, a positive value to write outside. 
+ COORD : the location of the character string along the specified edge
+         of the viewport, as a fraction of the length of the edge. 
+ FJUST : controls justification of the string parallel to the
+         specified edge of the viewport.  If FJUST = 0.0, the
+         left-hand end of the string is placed at COORD; if JUST
+         = 0.5, the center of the string is placed at COORD; if
+         JUST = 1.0, the right-hand end of the string is placed
+         at COORD.  Other values between 0 and 1 give intermediate
+         placing, but they are not very useful. 
+ TEXT  : the text string to be plotted.  Trailing spaces are ignored
+         when justifying the string, but leading spaces are
+         significant. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{NUMB -- convert a number into a plottable character string }
+\index{tk!pgplot!numb}
+
+\begin{verbatim}
+    String STRING := pg->numb (MM, PP, FORM)
+    Integer MM, PP, FORM
+\end{verbatim}
+
+This routine converts a number into a decimal character
+representation.  To avoid problems of floating-point roundoff, the
+number must be provided as an integer (MM) multiplied by a power of 10
+(10 ** PP).  The output string retains only significant digits of MM,
+and are in either integer format (123), decimal format (0.0123),
+or exponential format {\tt (1.23x10**5)}.  Standard escape sequences
+{\tt $\backslash$u}, {\tt $\backslash$d} raise the exponent and {\tt
+$\backslash$x} is used for the multiplication sign.  This routine is
+used by BOX to create numeric labels for a plot.
+
+Formatting rules:
+
+\begin{description}
+\item[a] Decimal notation (FORM = 1):
+\begin{itemize}
+\item    Trailing zeros to the right of the decimal sign are omitted.
+\item    The decimal sign is omitted if there are no digits to the
+         right of it.
+\item    When the decimal sign is placed before the first digit of the
+         number, a zero is placed before the decimal sign.
+\item    The decimal sign is a period (.).
+\item    No spaces are placed between digits (i.e. digits are not
+         grouped in threes as they should be).
+\item    A leading minus (-) is added if the number is negative. 
+\end{itemize}
+\item[b] Exponential notation (FORM = 2):
+\begin{itemize}
+\item    The exponent is adjusted to put just one (non-zero) digit
+         before the decimal sign. 
+\item    The mantissa is formatted as in (a), unless its value is 1 in
+         which case it and the multiplication sign are omitted. 
+\item    If the power of 10 is not zero and the mantissa is not zero,
+         an exponent of the form {\tt
+         $\backslash$x10$\backslash$u[-]nnn} is appended, where {\tt
+         $\backslash$x} is a multiplication sign (cross), {\tt
+         $\backslash$u} is an escape sequence to raise the exponent,
+         and as many digits nnn are used as needed.
+\end{itemize}
+\item[c] Automatic choice (FORM = 0):
+\begin{itemize}
+\item    Decimal notation is used if the absolute value of the number
+         is less than 10000 or greater than or equal to 0.01.
+         Otherwise exponential notation is used. 
+\end{itemize}
+\end{description}
+
+\begin{verbatim}
+Returns:
+ STRING : the formatted character string, left justified.  If an
+          internal error occurs, a single asterisk is returned.
+Arguments:
+ MM
+ PP     : the value to be formatted is MM * 10 ** PP.
+ FORM   : controls how the number is formatted:
+            FORM = 0 -- use either decimal or exponential;
+            FORM = 1 -- use decimal notation;
+            FORM = 2 -- use exponential notation.
+\end{verbatim}
+
+\hrule
+
+\subsection*{OPEN -- open a graphics device }
+\index{tk!pgplot!open}
+
+\begin{verbatim}
+    Integer ISTAT := pg->open (DEVICE)
+    String DEVICE
+\end{verbatim}
+
+Open a graphics device for PGPLOT output.  If the device is opened
+successfully, it becomes the selected device to which graphics output
+is directed until another device is selected with SLCT or the device
+is closed with CLOS.
+
+The value returned by OPEN should be tested to ensure that the device
+was opened successfully, e.g.:
+
+\begin{verbatim}
+    istat := pg->open ('plot.ps/PS');
+    if (istat <= 0) fail;
+\end{verbatim}
+
+The DEVICE argument is a character constant or variable; its value
+should be one of the following:
+
+\begin{enumerate}
+\item A complete device specification of the form 'device/type' or
+      'file/type', where 'type' is one of the allowed PGPLOT device
+      types (installation-dependent) and 'device' or 'file' is the
+      name of a graphics device or disk file appropriate for this
+      type.  The 'device' or 'file' may contain '/' characters; the
+      final '/' delimits the 'type'.  If necessary to avoid ambiguity,
+      the 'device' part of the string may be enclosed in double
+      quotation marks.
+\item A device specification of the form '/type', where 'type' is one
+      of the allowed PGPLOT device types.  PGPLOT supplies a default
+      file or device name appropriate for this device type.
+\item A device specification with '/type' omitted; in this case the
+      type is taken from the environment variable {\tt PGPLOT\_TYPE},
+      if defined (e.g., setenv {\tt PGPLOT\_TYPE PS}).  Because of
+      possible confusion with '/' in file-names, omitting the device
+      type in this way is not recommended.
+\item A blank string (' '); in this case, OPEN uses the value
+      of environment variable {\tt PGPLOT\_DEV} as the device
+      specification, or '/NULL' if the environment variable is
+      undefined.
+\item A single question mark, with optional trailing spaces ('?'); in
+      this case, PGPLOT prompts you to supply the device
+      specification, with a prompt string of the form 'Graphics
+      device/type (? to see list, default XXX):' where 'XXX' is the
+      default (value of environment variable {\tt PGPLOT\_DEV}). 
+\item A non-blank string in which the first character is a question
+      mark (e.g., '?Device: '); in this case, PGPLOT prompts you
+      to supply the device specification, using the supplied
+      string as the prompt (without the leading question mark but
+      including any trailing spaces). 
+\end{enumerate}
+
+In cases (5) and (6), the device specification is read from the
+standard input.  You should respond to the prompt with a device
+specification of the form (1), (2), or (3).  If you type a
+question-mark in response to the prompt, a list of available device
+types is displayed and the prompt is re-issued.  If you supply
+an invalid device specification, the prompt is re-issued.  If you
+respond with an end-of-file character, e.g., ctrl-D in {\sc Unix}, program
+execution is aborted; this avoids the possibility of an infinite
+prompting loop.  You should avoid use of PGPLOT-prompting if
+this behavior is not desirable.
+
+The device type is case-insensitive (e.g., '/ps' and '/PS' are
+equivalent).  The device or file name may be case-sensitive in some
+operating systems.
+
+Examples of valid DEVICE arguments:
+
+\begin{verbatim}
+  'plot.ps/ps', 'dir/plot.ps/ps', 'dir/plot.ps/ps'
+  '/ps'      (PGPLOT interprets this as 'pgplot.ps/ps')
+  'plot.ps'  (if PGPLOT_TYPE is defined as 'ps', PGPLOT interprets
+              this as 'plot.ps/ps') 
+  '   '      (if PGPLOT_DEV is defined)
+  '?  '
+  '?Device specification for PGPLOT: '
+\end{verbatim}
+
+NOTE: {\em At present, there is no way to reopen the PGPLOT widget
+once {\tt end} is called.  You can reopen PostScript devices.}
+
+[This routine was added to PGPLOT in Version 5.1.0.  Older programs
+use BEG instead.]
+
+\begin{verbatim}
+Returns:
+ ISTAT  : returns either a positive value, the identifier of the
+          graphics device for use with SLCT, or a 0 or negative value
+          indicating an error.  In the event of error a message is
+          written on the standard error unit. 
+Arguments:
+ DEVICE : the 'device specification' for the plot device (see above). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{PAGE -- advance to new page }
+\index{tk!pgplot!page}
+
+\begin{verbatim}
+    pg->page ()
+\end{verbatim}
+
+Advance plotter to a new page or panel, clearing the screen if
+necessary.  If the ``prompt state'' is ON (see ASK), confirmation is
+requested from you before clearing the screen.  If the view
+surface has been subdivided into panels with BEG or SUBP, then PAGE
+advances to the next panel, and if the current panel is the last on
+the page, PAGE clears the screen or starts a new sheet of paper.  PAGE
+does not change the PGPLOT window or the viewport (in normalized
+device coordinates); but note that if the size of the view-surface is
+changed externally (e.g., by a workstation window manager) the size of
+the viewport is chnaged in proportion.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{PANL -- switch to a different panel on the view surface }
+\index{tk!pgplot!panl}
+
+\begin{verbatim}
+    pg->panl (IX, IY)
+    Integer IX, IY
+\end{verbatim}
+
+Start plotting in a different panel.  If the view surface has been
+divided into panels by BEG or SUBP, this routine can be used to move
+to a different panel.  Note that PGPLOT does not remember what
+viewport and window were used in each panel; these should be reset
+if necessary after calling PANL.  Nor does PGPLOT clear the panel:
+call ERAS after calling PANL to do this.
+
+\begin{verbatim}
+Arguments:
+ IX : the horizontal index of the panel (in the range 1 <= IX <=
+      number of panels in horizontal direction).
+ IY : the vertical index of the panel (in the range 1 <= IY <= number
+      of panels in horizontal direction).
+\end{verbatim}
+
+\hrule
+
+\subsection*{PAP -- change the size of the view surface  }
+\index{tk!pgplot!pap}
+
+\begin{verbatim}
+    pg->pap (WIDTH, ASPECT)
+    Float WIDTH, ASPECT
+\end{verbatim}
+
+This routine changes the size of the view surface (``paper size'') to
+a specified width and aspect ratio (height/width), in so far as this
+is possible on the specific device.  It is always possible to obtain a
+view surface smaller than the default size; on some devices (e.g.,
+printers that print on roll or fan-feed paper) it is possible to
+obtain a view surface larger than the default.
+
+This routine should be called either immediately after BEG or
+immediately before PAGE.  The new size applies to all subsequent
+images until the next call to PAP.
+
+\begin{verbatim}
+Arguments:
+ WIDTH  : the requested width of the view surface in inches; if WIDTH
+          = 0.0, PAP obtains the largest view surface available
+          consistent with argument ASPECT.  (1 inch = 25.4 mm.) 
+ ASPECT : the aspect ratio (height/width) of the view surface; e.g.,
+          ASPECT = 1.0 gives a square view surface, ASPECT = 0.618
+          gives a horizontal rectangle, ASPECT = 1.618 gives a
+          vertical rectangle. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{PIXL -- draw pixels }
+\index{tk!pgplot!pixl}
+
+\begin{verbatim}
+    pg->pixl (IA, X1, X2, Y1, Y2)
+    Integer IA[*,*]
+    Float   X1, X2, Y1, Y2
+\end{verbatim}
+
+Draw lots of solid-filled (tiny) rectangles aligned with the
+coordinate axes.  Best performance is achieved when output is directed
+to a pixel-oriented device and the rectangles coincide with the pixels
+on the device.  In other cases, pixel output is emulated.
+
+The array IA is mapped onto world-coordinate rectangle defined by X1,
+X2, Y1 and Y2.  This rectangle is divided into {\tt NX * NY} small
+rectangles.  Each of these small rectangles is solid-filled with the
+color index specified by the corresponding element of IA.
+
+On most devices, the output region is ``opaque,'' i.e., it obscures
+all graphical elements previously drawn in the region.  But on devices
+that do not have erase capability, the background shade is
+``transparent'' and allows previously-drawn graphics to show through.
+
+\begin{verbatim}
+Arguments:
+ IA     : the array to be plotted.
+ X1, Y1 : world coordinates of one corner of the output region.
+ X2, Y2 : world coordinates of the opposite corner of the output
+          region. 
+Inferred:
+ NX, NY : the first and second dimensions of array IA, respectively. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{PNTS -- draw one or more graph markers, not all the same }
+\index{tk!pgplot!pnts}
+
+\begin{verbatim}
+    pg->pnts (X, Y, SYMBOL)
+    Float   X[], Y[]
+    Integer SYMBOL[]
+\end{verbatim}
+
+Draw Graph Markers.  Unlike PT, this routine can draw a different
+symbol at each point.  The markers are drawn using the current values
+of attributes color-index, line-width, and character-height
+(character-font applies if the symbol number is >31).  If the point to
+be marked lies outside the window, no marker is drawn.  The ``pen
+position'' is changed to (XPTS[N], YPTS[N]) in world coordinates (if N
+> 0).
+
+\begin{verbatim}
+Arguments:
+ X      : world x-coordinate of the points.
+ Y      : world y-coordinate of the points.
+ SYMBOL : code number of the symbol to be plotted at each point (see
+          PT). 
+Inferred:
+ N      : number of points to mark.
+\end{verbatim}
+
+\hrule
+
+\subsection*{POLY -- fill a polygonal area with shading }
+\index{tk!pgplot!poly}
+
+\begin{verbatim}
+    pg->poly (XPTS, YPTS)
+    Float XPTS[], YPTS[]
+\end{verbatim}
+
+Fill-area primitive routine: shade the interior of a closed polygon in
+the current window.  The action of this routine depends on the setting
+of the Fill-Area Style attribute (see SFS).  The polygon is clipped at
+the edge of the window.  The pen position is changed to (XPTS(1),
+YPTS(1)) in world coordinates (if N > 1).  If the polygon is not
+convex, a point is assumed to lie inside the polygon if a straight
+line drawn to infinity intersects and odd number of the polygon's
+edges.
+
+\begin{verbatim}
+Arguments:
+ XPTS : world x-coordinates of the vertices.
+ YPTS : world y-coordinates of the vertices.
+Inferred:
+ N    : number of points defining the polygon; the line consists of N
+        straight-line segments, joining points 1 to 2, 2 to 3, ... N-1
+        to N, N to 1. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{PT -- draw one or more graph markers }
+\index{tk!pgplot!pt}
+
+\begin{verbatim}
+    pg->pt (XPTS, YPTS, SYMBOL)
+    Float   XPTS[], YPTS[]
+    Integer SYMBOL
+\end{verbatim}
+
+Primitive routine to draw Graph Markers (polymarker).  The markers are
+drawn using the current values of attributes color-index, line-width,
+and character-height (character-font applies if the symbol number is >
+31).  If the point to be marked lies outside the window, no marker is
+drawn.  The ``pen position'' is changed to (XPTS(N), YPTS(N)) in world
+coordinates (if N > 0).
+
+\begin{verbatim}
+Arguments:
+ XPTS   : world x-coordinates of the points.
+ YPTS   : world y-coordinates of the points.
+ SYMBOL : code number of the symbol to be drawn at each point:
+            -1, -2   : a single dot (diameter = current line width).
+            -3...-31 : a regular polygon with ABS(SYMBOL) edges (style
+                       set by current fill style). 
+             0...31  : standard marker symbols.
+            32...127 : ASCII characters (in current font); e.g. to use
+                       letter F as a marker, let SYMBOL = ICHAR('F'). 
+            > 127    : a Hershey symbol number.
+Inferred:
+ N      : number of points to mark.
+\end{verbatim}
+
+\hrule
+
+\subsection*{PTXT -- write text at arbitrary position and angle }
+\index{tk!pgplot!ptxt}
+
+\begin{verbatim}
+    pg->ptxt (X, Y, ANGLE, FJUST, TEXT)
+    Float  X, Y, ANGLE, FJUST
+    String TEXT
+\end{verbatim}
+
+Primitive routine for drawing text.  The text may be drawn at any
+angle with the horizontal, and may be centered or left- or right-
+justified at a specified position.  Routine TEXT provides a simple
+interface to PTXT for horizontal strings.  Text is drawn using the
+current values of attributes color-index, line-width,
+character-height, and character-font.  Text is NOT subject to clipping
+at the edge of the window.
+
+\begin{verbatim}
+Arguments:
+ X     : world x-coordinate.
+ Y     : world y-coordinate.  The string is drawn with the baseline of
+         all the characters passing through point (X, Y); the
+         positioning of the string along this line is controlled by
+         argument FJUST. 
+ ANGLE : angle, in degrees, that the baseline is to make with the
+         horizontal, increasing counter-clockwise (0.0 is
+         horizontal). 
+ FJUST : controls horizontal justification of the string.  If FJUST =
+         0.0, the string is left-justified at the point (X, Y);
+         if FJUST = 0.5, it is  centered, and if FJUST = 1.0, it
+         is right justified.  [Other values of FJUST give other
+         justifications.] 
+ TEXT  : the character string to be plotted.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QAH -- inquire arrow-head style }
+\index{tk!pgplot!qah}
+
+\begin{verbatim}
+    Float [FS, ANGLE, VENT] := pg->qah ()
+
+    Integer FS  (But returned in a float array.)
+    Float   ANGLE, VENT
+\end{verbatim}
+
+Query the style to be used for arrowheads drawn with routine ARRO.
+
+\begin{verbatim}
+Returns:
+ FS    : FS = 1 => filled; FS = 2 => outline.
+ ANGLE : the acute angle of the arrow point, in degrees.
+ VENT  : the fraction of the triangular arrow-head that is cut away
+         from the back. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCF -- inquire character font }
+\index{tk!pgplot!qcf}
+
+\begin{verbatim}
+    Integer FONT := pg->qcf ()
+\end{verbatim}
+
+Query the current Character Font (set by routine SCF).
+
+\begin{verbatim}
+Returns:
+ FONT : the current font number (in range 1-4).
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCH -- inquire character height }
+\index{tk!pgplot!qch}
+
+\begin{verbatim}
+    Float SIZE := pg->qch ()
+\end{verbatim}
+
+Query the Character Size attribute (set by routine SCH).
+
+\begin{verbatim}
+Returns:
+ SIZE : current character size (dimensionless multiple of the default
+        size). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCI -- inquire color index }
+\index{tk!pgplot!qci}
+
+\begin{verbatim}
+    Integer CI := pg->qci ()
+\end{verbatim}
+
+Query the Color Index attribute (set by routine SCI).
+
+\begin{verbatim}
+Returns:
+ CI : the current color index (in range 0-max).  This is the color
+      index actually in use, and may differ from the color index last
+      requested by SCI if that index is not available on the output
+      device. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCIR -- inquire color index range }
+\index{tk!pgplot!qcir}
+
+\begin{verbatim}
+    Integer [ICILO, ICIHI] := pg->qcir ()
+\end{verbatim}
+
+Query the color index range to be used for producing images with GRAY
+or IMAG, as set by routine SCIR or by device default.
+
+\begin{verbatim}
+Returns:
+ ICILO : the lowest color index to use for images.
+ ICIHI : the highest color index to use for images.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCOL -- inquire color capability }
+\index{tk!pgplot!qcol}
+
+\begin{verbatim}
+    Integer [CI1, CI2] := pg->qcol ()
+\end{verbatim}
+
+Query the range of color indices available on the current device.
+
+\begin{verbatim}
+Returns:
+ CI1 : the minimum available color index.  This is either 0 if
+       the device can write in the background color, or 1 if not. 
+ CI2 : the maximum available color index.  This is 1 if the
+       device has no color capability, or a larger number (e.g., 3, 7,
+       15, 255). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCR -- inquire color representation }
+\index{tk!pgplot!qcr}
+
+\begin{verbatim}
+    Float [CR, CG, CB] := pg->qcr (CI)
+    Integer CI
+\end{verbatim}
+
+Query the RGB colors associated with a color index.
+
+\begin{verbatim}
+Returns:
+ CR : red, green and blue intensities in the range 0.0 to 1.0. 
+ CG
+ CB
+Arguments:
+ CI : color index.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QCS -- inquire character height in a variety of units }
+\index{tk!pgplot!qcs}
+
+\begin{verbatim}
+    Float [XCH, YCH] := pg->qcs (UNITS)
+    Integer UNITS
+\end{verbatim}
+
+Return the current PGPLOT character height in a variety of units.
+This routine provides facilities that are not available via QCH.  Use
+QCS if the character height is required in units other than those used
+in SCH.
+
+The PGPLOT ``character height'' is a dimension that scales with the
+size of the view surface and with the scale-factor specified with
+routine SCH.  The default value is 1/40th of the height or width of
+the view surface (whichever is less); this value is then multiplied by
+the scale-factor supplied with SCH.  Note that it is a nominal height
+only; the actual character size depends on the font and is usually
+somewhat smaller.
+
+\begin{verbatim}
+Returns:
+ XCH   : the character height for text written with a vertical
+         baseline. 
+ YCH   : the character height for text written with a horizontal
+         baseline (the usual case). 
+Arguments:
+ UNITS : used to specify the units of the output value:
+           UNITS = 0 : normalized device coordinates;
+           UNITS = 1 : inches;
+           UNITS = 2 : millimeters;
+           UNITS = 3 : pixels;
+           UNITS = 4 : world coordinates;
+           Other values give an error message, and are treated as 0.
+\end{verbatim}
+
+The character height is returned in both XCH and YCH.
+
+If UNITS = 1 or UNITS = 2, XCH and YCH both receive the same value.
+
+If UNITS = 3, XCH receives the height in horizontal pixel units, and
+YCH receives the height in vertical pixel units; on devices for which
+the pixels are not square, XCH and YCH will be different.
+
+If UNITS = 4, XCH receives the height in horizontal world coordinates
+(as used for the x-axis), and YCH receives the height in vertical
+world coordinates (as used for the y-axis).  Unless special care has
+been taken to achive equal world-coordinate scales on both axes, the
+values of XCH and YCH will be different.
+
+If UNITS = 0, XCH receives the character height as a fraction of the
+horizontal dimension of the view surface, and YCH receives the
+character height as a fraction of the vertical dimension of the view
+surface.
+
+\hrule
+
+\subsection*{QFS -- inquire fill-area style }
+\index{tk!pgplot!qfs}
+
+\begin{verbatim}
+    Integer FS := pg->qfs ()
+\end{verbatim}
+
+Query the current Fill-Area Style attribute (set by routine SFS).
+
+\begin{verbatim}
+Returns:
+ FS : the current fill-area style:
+        FS = 1 => solid (default);
+        FS = 2 => outline;
+        FS = 3 => hatched;
+        FS = 4 => cross-hatched.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QHS -- inquire hatching style }
+\index{tk!pgplot!qhs}
+
+\begin{verbatim}
+      Float [ANGLE, SEPN, PHASE] := pg->qhs ()
+\end{verbatim}
+
+Query the style to be used hatching (fill area with fill-style 3).
+
+\begin{verbatim}
+Returns:
+ ANGLE : the angle the hatch lines make with the horizontal, in
+         degrees, increasing counterclockwise (this is an angle on the
+         view surface, not in world-coordinate space). 
+ SEPN  : the spacing of the hatch lines.  The unit spacing is 1
+         percent of the smaller of the height or width of the view
+         surface. 
+ PHASE : a float number between 0 and 1; the hatch lines are displaced
+         by this fraction of SEPN from a fixed reference.  Adjacent
+         regions hatched with the same PHASE have contiguous hatch
+         lines. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QID -- inquire current device identifier }
+\index{tk!pgplot!qid}
+
+\begin{verbatim}
+    Integer ID := pg->qid ()
+\end{verbatim}
+
+This subroutine returns the identifier of the currently selected
+device, or 0 if no device is selected.  The identifier is assigned
+when OPEN is called to open the device, and may be used as an argument
+to SLCT.  Each open device has a different identifier.
+
+[This routine was added to PGPLOT in Version 5.1.0.]
+
+\begin{verbatim}
+Returns:
+ ID : the identifier of the current device, or 0 if no device is
+      currently selected. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QINF -- inquire PGPLOT general information }
+\index{tk!pgplot!qinf}
+
+\begin{verbatim}
+    String VALUE := pg->qinf (ITEM)
+    String ITEM
+\end{verbatim}
+
+This routine is used to obtain miscellaneous information about the
+PGPLOT environment.  Input is a character string defining the
+information required, and output is a character string containing the
+requested information.
+
+The following item codes are accepted (note that the strings must
+match exactly, except for case, but only the first eight characters are
+significant).  For items marked *, PGPLOT must be in the OPEN state
+for the inquiry to succeed.  If the inquiry is unsuccessful, either
+because the item code is not recognized or because the information is
+not available, a question mark ('?') is returned.
+
+\begin{verbatim}
+  'VERSION'     - version of PGPLOT software in use.
+  'STATE'       - status of PGPLOT ('OPEN' if a graphics device is
+                  open for output, 'CLOSED' otherwise). 
+  'USER'        - the username associated with the calling program. 
+  'NOW'         - current date and time (e.g., '17-FEB-1986 10:04'). 
+  'DEVICE'    * - current PGPLOT device or file.
+  'FILE'      * - current PGPLOT device or file.
+  'TYPE'      * - device-type of the current PGPLOT device.
+  'DEV/TYPE'  * - current PGPLOT device and type, in a form which is
+                  acceptable as an argument for BEG. 
+  'HARDCOPY'  * - is the current device a hardcopy device? ('YES' or
+                  'NO'). 
+  'TERMINAL'  * - is the current device the user's interactive
+                  terminal? ('YES' or 'NO'). 
+  'CURSOR'    * - does the current device have a graphics cursor?
+                  ('YES' or 'NO'). 
+\end{verbatim}
+
+\begin{verbatim}
+Returns:
+ VALUE : returns a character-string containing the requested
+         information. 
+Arguments:
+ ITEM  : character string defining the information to be returned; see
+         above for a list of possible values. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QITF -- inquire image transfer function }
+\index{tk!pgplot!qitf}
+
+\begin{verbatim}
+    Integer ITF := pg->qitf ()
+\end{verbatim}
+
+Return the Image Transfer Function as set by default or by a previous
+call to SITF.  The Image Transfer Function is used by routines IMAG,
+GRAY, and WEDG.
+
+\begin{verbatim}
+Returns:
+ ITF : type of transfer function (see SITF).
+\end{verbatim}
+
+\hrule
+
+\subsection*{QLS -- inquire line style }
+\index{tk!pgplot!qls}
+
+\begin{verbatim}
+    Integer LS := pg->qls ()
+\end{verbatim}
+
+Query the current Line Style attribute (set by routine SLS).
+
+\begin{verbatim}
+Returns:
+ LS : the current line-style attribute (in range 1-5).
+\end{verbatim}
+
+\hrule
+
+\subsection*{QLW -- inquire line width }
+\index{tk!pgplot!qlw}
+
+\begin{verbatim}
+    Integer LW := pg->qlw ()
+\end{verbatim}
+
+Query the current Line-Width attribute (set by routine SLW).
+
+\begin{verbatim}
+Returns:
+ LW : the line-width (in range 1-201).
+\end{verbatim}
+
+\hrule
+
+\subsection*{QPOS -- inquire current pen position }
+\index{tk!pgplot!qpos}
+
+\begin{verbatim}
+    Float [X, Y] := pg->qpos ()
+\end{verbatim}
+
+Query the current ``pen'' position in world C coordinates (X, Y).
+
+\begin{verbatim}
+Returns:
+ X : world x-coordinate of the pen position.
+ Y : world y-coordinate of the pen position.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QTBG -- inquire text background color index }
+\index{tk!pgplot!qtbg}
+
+\begin{verbatim}
+    Integer TBCI := pg->qtbg ()
+\end{verbatim}
+
+Query the current Text Background Color Index (set by routine STBG).
+
+\begin{verbatim}
+Returns:
+ TBCI : receives the current text background color index.
+\end{verbatim}
+
+\hrule
+
+\subsection*{QTXT -- find bounding box of text string }
+\index{tk!pgplot!qtxt}
+
+\begin{verbatim}
+    Float [XBOX, YBOX] := pg->qtxt (X, Y, ANGLE, FJUST, TEXT)
+    Float  X, Y, ANGLE, FJUST
+    String TEXT
+
+    Float  XBOX[4], YBOX[4]
+\end{verbatim}
+
+This routine returns a bounding box for a text string.  Instead of
+drawing the string as routine PTXT does, it returns in XBOX and YBOX
+the coordinates of the corners of a rectangle parallel to the string
+baseline that just encloses the string.
+
+If the string is blank or contains no drwable characters, all four
+elements of XBOX and YBOX are assigned the starting point of the
+string, (X, Y).
+
+\begin{verbatim}
+Returns:
+ XBOX, YBOX               : arrays of dimension 4; on output, they
+                            contain the world coordinates of the
+                            bounding box in (XBOX(1), YBOX(1)), ...,
+                            (XBOX(4), YBOX(4)). 
+Arguments:
+ X, Y, ANGLE, FJUST, TEXT : these arguments are the same as the
+                            corrresponding arguments in PTXT. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QVP -- inquire viewport size and position }
+\index{tk!pgplot!qvp}
+
+\begin{verbatim}
+    Float [X1, X2, Y1, Y2] := pg->qvp (UNITS)
+    Integer UNITS
+\end{verbatim}
+
+Inquiry routine to determine the current viewport setting.  The values
+returned may be normalized device coordinates, inches, mm, or pixels,
+depending on the value of the input parameter UNITS.
+
+\begin{verbatim}
+Returns:
+ X1    : the x-coordinate of the bottom left corner of the viewport. 
+ X2    : the x-coordinate of the top right corner of the viewport. 
+ Y1    : the y-coordinate of the bottom left corner of the viewport. 
+ Y2    : the y-coordinate of the top right corner of the viewport. 
+Arguments:
+ UNITS : used to specify the units of the output parameters:
+           UNITS = 0 : normalized device coordinates;
+           UNITS = 1 : inches;
+           UNITS = 2 : millimeters;
+           UNITS = 3 : pixels;
+           Other values give an error message, and are treated as 0. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QVSZ -- find the window defined by the full view surface }
+\index{tk!pgplot!qvsz}
+
+\begin{verbatim}
+    Float [X1, X2, Y1, Y2] := pg->qvsz (UNITS)
+    Integer UNITS
+\end{verbatim}
+
+Return the window, in a variety of units, defined by the full device
+view surface (0 -> 1 in normalized device coordinates).
+
+\begin{verbatim}
+Returns:
+ X1, X2 : X window.
+ Y1, Y2 : Y window.
+Arguments:
+ UNITS  : 0, 1, 2, 3 for output in normalized device coords, inches,
+          mm, or absolute device units (dots). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{QWIN -- inquire window boundary coordinates }
+\index{tk!pgplot!qwin}
+
+\begin{verbatim}
+    Float [X1, X2, Y1, Y2] := pg->qwin ()
+\end{verbatim}
+
+Inquiry routine to determine the current window setting.  The values
+returned are world coordinates.
+
+\begin{verbatim}
+Returns:
+ X1 : the x-coordinate of the bottom left corner of the window. 
+ X2 : the x-coordinate of the top right corner of the window. 
+ Y1 : the y-coordinate of the bottom left corner of the window. 
+ Y2 : the y-coordinate of the top right corner of the window. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{RECT -- draw a rectangle, using fill-area attributes }
+\index{tk!pgplot!rect}
+
+\begin{verbatim}
+    pg->rect (X1, X2, Y1, Y2)
+    Float X1, X2, Y1, Y2
+\end{verbatim}
+
+This routine can be used instead of POLY for the special case of
+drawing a rectangle aligned with the coordinate axes; only two
+vertices need be specified instead of four.  On most devices, it is
+faster to use RECT than POLY for drawing rectangles.  The rectangle
+has vertices at (X1, Y1), (X1, Y2), (X2, Y2), and (X2, Y1).
+
+\begin{verbatim}
+Arguments:
+ X1, X2 : the horizontal range of the rectangle.
+ Y1, Y2 : the vertical range of the rectangle.
+\end{verbatim}
+
+\hrule
+
+\subsection*{RND -- find the smallest `round' number greater than x }
+\index{tk!pgplot!rnd}
+
+\begin{verbatim}
+    Float RND := pg->rnd (X, NSUB)
+    Float   X
+    Integer NSUB
+\end{verbatim}
+
+Routine to find the smallest ``round'' number larger than x, a
+``round'' number being 1, 2 or 5 times a power of 10.  If X is
+negative, RND(X) = -RND(ABS(X)), e.g. RND(8.7) = 10.0, RND(-0.4) =
+-0.5.  If X is zero, the value returned is zero.  This routine is used
+by BOX for choosing tick intervals.
+
+\begin{verbatim}
+Returns:
+ RND  : the ``round'' number.
+Arguments:
+ X    : the number to be rounded.
+ NSUB : a suitable number of subdivisions for subdividing the ``nice''
+        number: 2 or 5. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{RNGE -- choose axis limits }
+\index{tk!pgplot!rnge}
+
+\begin{verbatim}
+    Float [XLO, XHI] := pg->rnge (X1, X2)
+    Float X1, X2
+\end{verbatim}
+
+Choose plotting limits XLO and XHI which encompass the data range X1
+to X2.
+
+\begin{verbatim}
+Returns:
+ XLO, XHI : suitable values to use as the extremes of a graph axis
+            (XLO <= X1, XHI >= X2). 
+Arguments:
+ X1, X2   : the data range (X1 < X2), ie, the min and max values to be
+            plotted.  
+\end{verbatim}
+
+\hrule
+
+\subsection*{SAH -- set arrow-head style }
+\index{tk!pgplot!sah}
+
+\begin{verbatim}
+    pg->sah (FS, ANGLE, VENT)
+    Integer FS
+    Float   ANGLE, VENT
+\end{verbatim}
+
+Set the style to be used for arrowheads drawn with routine ARRO.
+
+\begin{verbatim}
+Arguments:
+ FS    : FS = 1 => filled; FS = 2 => outline.  Other values are
+         treated as 2.  Default 1. 
+ ANGLE : the acute angle of the arrow point, in degrees; angles in the
+         range 20.0 to 90.0 give reasonable results.  Default 45.0. 
+ VENT  : the fraction of the triangular arrow-head that is cut away
+         from the back.  0.0 gives a triangular wedge arrow-head; 1.0
+         gives an open >.  Values 0.3 to 0.7 give reasonable results.
+         Default 0.3. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SAVE -- save PGPLOT attributes }
+\index{tk!pgplot!save}
+
+\begin{verbatim}
+    pg->save ()
+\end{verbatim}
+
+This routine saves the current PGPLOT attributes in a private storage
+area.  They can be restored by calling UNSA (unsave).  Attributes
+saved are: character font, character height, color index, fill-area
+style, line style, line width, pen position, arrow-head style,
+hatching style.  Color representation is not saved.
+
+Calls to SAVE and UNSA should always be paired.  Up to 20 copies of
+the attributes may be saved.  UNSA always retrieves the last-saved
+values (last-in first-out stack).
+
+Note that when multiple devices are in use, UNSA retrieves the values
+saved by the last SAVE call, even if they were for a different device.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{UNSA -- restore PGPLOT attributes }
+\index{tk!pgplot!unsa}
+
+\begin{verbatim}
+    pg->unsa ()
+\end{verbatim}
+
+This routine restores the PGPLOT attributes saved in the last call to
+SAVE.  Usage: CALL UNSA (no arguments).  See SAVE.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCF -- set character font }
+\index{tk!pgplot!scf}
+
+\begin{verbatim}
+    pg->scf (FONT)
+    Integer FONT
+\end{verbatim}
+
+Set the Character Font for subsequent text plotting.  Four different
+fonts are available:
+
+\begin{enumerate}
+\item (default) a simple single-stroke font (``normal'' font)
+\item roman font
+\item italic font
+\item script font
+\end{enumerate}
+
+This call determines which font is in effect at the beginning of each
+text string.  The font can be changed (temporarily) within a text
+string by using the escape sequences $\backslash$fn, $\backslash$fr,
+$\backslash$fi, and $\backslash$fs for fonts 1, 2, 3, and 4,
+respectively.
+
+\begin{verbatim}
+Arguments:
+ FONT : the font number to be used for subsequent text plotting (in
+        range 1-4). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCH -- set character height }
+\index{tk!pgplot!sch}
+
+\begin{verbatim}
+    pg->sch (SIZE)
+    Float SIZE
+\end{verbatim}
+
+Set the character size attribute.  The size affects all text and graph
+markers drawn later in the program.  The default character size is
+1.0, corresponding to a character height about 1/40 the height of the
+view surface.  Changing the character size also scales the length of
+tick marks drawn by BOX and terminals drawn by ERRX and ERRY.
+
+\begin{verbatim}
+Arguments:
+ SIZE : new character size (dimensionless multiple of the default
+        size). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCI -- set color index }
+\index{tk!pgplot!sci}
+
+\begin{verbatim}
+    pg->sci (CI)
+    Integer CI
+\end{verbatim}
+
+Set the Color Index for subsequent plotting, if the output device
+permits this.  The default color index is 1, usually white on a black
+background for video displays or black on a white background for
+printer plots.  The color index is an integer in the range 0 to a
+device-dependent maximum.  Color index 0 corresponds to the background
+color; lines may be ``erased'' by overwriting them with color index 0
+(if the device permits this).
+
+If the requested color index is not available on the selected device,
+color index 1 will be substituted.
+
+The assignment of colors to color indices can be changed with
+subroutine SCR (set color representation).  Color indices 0-15 have
+predefined color representations (see the PGPLOT manual), but these
+may be changed with SCR.  Color indices above 15 have no predefined
+representations: if these indices are used, SCR must be called to
+define the representation.
+
+\begin{verbatim}
+Arguments:
+ CI : the color index to be used for subsequent plotting on the
+      current device (in range 0-max).  If the index exceeds the
+      device-dependent maximum, the default color index (1) is used. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCIR -- set color index range }
+\index{tk!pgplot!scir}
+
+\begin{verbatim}
+    pg->scir (ICILO, ICIHI)
+    Integer ICILO, ICIHI
+\end{verbatim}
+
+Set the color index range to be used for producing images with GRAY or
+IMAG.  If the range is not all within the range supported by the
+device, a smaller range is  used.  The number of different colors
+available for images is ICIHI-ICILO+1.
+
+\begin{verbatim}
+Arguments:
+ ICILO : the lowest color index to use for images.
+ ICIHI : the highest color index to use for images.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCR -- set color representation }
+\index{tk!pgplot!scr}
+
+\begin{verbatim}
+    pg->scr (CI, CR, CG, CB)
+    Integer CI
+    Float   CR, CG, CB
+\end{verbatim}
+
+Set color representation: i.e., define the color to be associated with
+a color index.  Ignored for devices which do not support variable
+color or intensity.  Color indices 0-15 have predefined color
+representations (see the PGPLOT manual), but these may be changed with
+SCR.  Color indices 16-maximum have no predefined representations: if
+these indices are used, SCR must be called to define the
+representation.  On monochrome output devices (e.g. VT125 terminals
+with monochrome monitors), the monochrome intensity is computed from
+the specified Red, Green, Blue intensities as 0.30 * R + 0.59 * G +
+0.11 * B, as in US color television systems, NTSC encoding.  Note that
+most devices do not have an infinite range of colors or monochrome
+intensities available; the nearest available color is used.  Examples:
+for black, set CR = CG = CB = 0.0; for white, set CR = CG = CB = 1.0;
+for medium gray, set CR = CG = CB = 0.5; for medium yellow, set CR =
+CG = 0.5, CB = 0.0.
+
+\begin{verbatim}
+Arguments:
+ CI : the color index to be defined, in the range 0-max.  If the color
+      index greater than the device maximum is specified, the call is
+      ignored.  Color index 0 applies to the background color. 
+ CR : red, green, and blue intensities, in range 0.0 to 1.0. 
+ CG   
+ CB
+\end{verbatim}
+
+\hrule
+
+\subsection*{SCRN -- set color representation by name }
+\index{tk!pgplot!scrn}
+
+\begin{verbatim}
+    Integer IER := pg->scrn (CI, NAME)
+    Integer CI
+    String  NAME
+\end{verbatim}
+
+Set color representation: i.e., define the color to be associated with
+a color index.  Ignored for devices which do not support variable
+color or intensity.  This is an alternative to routine SCR.  The color
+representation is defined by name instead of (R, G, B) components.
+
+Color names are defined in an external file which is read the first
+time that SCRN is called.  The name of the external file is found as
+follows:
+
+\begin{enumerate}
+\item if environment variable (boolean name) {\tt PGPLOT\_RGB} is
+      defined, its value is used as the file name; 
+\item otherwise, if environment variable {\tt PGPLOT\_DIR} is defined,
+      a file ``rgb.txt'' in the directory named by this environment
+      variable is used; 
+\item otherwise, file ``rgb.txt'' in the current directory is used. 
+\end{enumerate}
+
+If all of these fail to find a file, an error is reported and the
+routine does nothing.
+
+Each line of the file defines one color, with four blank- or
+tab-separated fields per line.  The first three fields are the R, G, B
+components, which are integers in the range 0 (zero intensity) to 255
+(maximum intensity).  The fourth field is the color name.  The color
+name may include embedded blanks.  Example:
+
+\begin{verbatim}
+255   0   0 red
+255 105 180 hot pink
+255 255 255 white
+  0   0   0 black
+\end{verbatim}
+
+\begin{verbatim}
+Returns:
+ IER  : returns 0 if the routine was successful, 1 if an error
+        occurred (either the external file could not be read, or the
+        requested color was not defined in the file). 
+Arguments:
+ CI   : the color index to be defined, in the range 0-max.  If the
+        color index greater than the device maximum is specified, the
+        call is ignored.  Color index 0 applies to the background
+        color. 
+ NAME : the name of the color to be associated with this color index.
+        This name must be in the external file.  The names are not
+        case-sensitive.  If the color is not listed in the file, the
+        color representation is not changed. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SFS -- set fill-area style }
+\index{tk!pgplot!sfs}
+
+\begin{verbatim}
+    pg->sfs (FS)
+    Integer FS
+\end{verbatim}
+
+Set the Fill-Area Style attribute for subsequent area-fill by POLY,
+RECT, or CIRC.  Four different styles are available: solid (fill
+polygon with solid color of the current color-index), outline (draw
+outline of polygon only, using current line attributes), hatched
+(shade interior of polygon with parallel lines, using current line
+attributes), or cross-hatched.  The orientation and spacing of hatch
+lines can be specified with routine SHS (set hatch style).
+
+\begin{verbatim}
+Arguments:
+ FS : the fill-area style to be used for subsequent plotting: 
+        FS = 1 => solid (default);
+        FS = 2 => outline;
+        FS = 3 => hatched;
+        FS = 4 => cross-hatched;
+        Other values give an error message and are treated as 2. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SHLS -- set color representation using HLS system }
+\index{tk!pgplot!shls}
+
+\begin{verbatim}
+    pg->shls (CI, CH, CL, CS)
+    Integer CI
+    Float   CH, CL, CS
+\end{verbatim}
+
+Set color representation: i.e., define the color to be associated with
+a color index.  This routine is equivalent to SCR, but the color is
+defined in the Hue-Lightness-Saturation model instead of the
+Red-Green-Blue model.  Hue is represented by an angle in degrees, with
+red at 120, green at 240, and blue at 0 (or 360).  Lightness ranges
+from 0.0 to 1.0, with black at lightness 0.0 and white at lightness
+1.0.  Saturation ranges from 0.0 (gray) to 1.0 (pure color).  Hue is
+irrelevant when saturation is 0.0.
+
+\begin{verbatim}
+Examples:           H     L     S        R     G     B
+    black          any   0.0   0.0      0.0   0.0   0.0
+    white          any   1.0   0.0      1.0   1.0   1.0
+    medium gray    any   0.5   0.0      0.5   0.5   0.5
+    red            120   0.5   1.0      1.0   0.0   0.0
+    yellow         180   0.5   1.0      1.0   1.0   0.0
+    pink           120   0.7   0.8      0.94  0.46  0.46
+\end{verbatim}
+
+Reference: SIGGRAPH Status Report of the Graphic Standards Planning
+Committee, Computer Graphics, Vol. 13, No. 3, Association for
+Computing Machinery, New York, NY, 1979.  See also: J. D. Foley et al,
+``Computer Graphics: Principles and Practice,'' second edition,
+Addison-Wesley, 1990, section 13.3.5.
+
+\begin{verbatim}
+Arguments:
+ CI : the color index to be defined, in the range 0-max.  If the color
+      index greater than the device maximum is specified, the call is
+      ignored.  Color index 0 applies to the background color. 
+ CH : hue, in range 0.0 to 360.0.
+ CL : lightness, in range 0.0 to 1.0.
+ CS : saturation, in range 0.0 to 1.0.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SHS -- set hatching style }
+\index{tk!pgplot!shs}
+
+\begin{verbatim}
+    pg->shs (ANGLE, SEPN, PHASE)
+    Float ANGLE, SEPN, PHASE
+\end{verbatim}
+
+Set the style to be used for hatching (fill area with fill-style 3).
+The default style is ANGLE = 45.0, SEPN = 1.0, PHASE = 0.0.
+
+\begin{verbatim}
+Arguments:
+ ANGLE : the angle the hatch lines make with the horizontal, in
+         degrees, increasing counterclockwise (this is an angle on the
+         view surface, not in world-coordinate space).  
+ SEPN  : the spacing of the hatch lines.  The unit spacing is 1
+         percent of the smaller of the height or width of the view
+         surface.  This should not be zero.
+ PHASE : a float number between 0 and 1; the hatch lines are displaced
+         by this fraction of SEPN from a fixed reference.  Adjacent
+         regions hatched with the same PHASE have contiguous hatch
+         lines.  To hatch a region with alternating lines of two
+         colors, fill the area twice, with PHASE = 0.0 for one color
+         and PHASE = 0.5 for the other color. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SITF -- set image transfer function }
+\index{tk!pgplot!sitf}
+
+\begin{verbatim}
+    pg->sitf (ITF)
+    Integer ITF
+\end{verbatim}
+
+Set the Image Transfer Function for subsequent images drawn by IMAG,
+GRAY, or WEDG.  The Image Transfer Function is used to map array
+values into the available range of color indices specified with
+routine SCIR or (for GRAY on some devices) into dot density.
+
+\begin{verbatim}
+Arguments:
+ ITF : type of transfer function:
+         ITF = 0 : linear;
+         ITF = 1 : logarithmic;
+         ITF = 2 : square-root.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SLCT -- select an open graphics device }
+\index{tk!pgplot!slct}
+
+\begin{verbatim}
+    pg->slct (ID)
+    Integer ID
+\end{verbatim}
+
+Select one of the open graphics devices and direct subsequent plotting
+to it.  The argument is the device identifier returned by OPEN when
+the device was opened.  If the supplied argument is not a valid
+identifier of on open graphics device, a warning message is issued and
+the current selection is unchanged.
+
+[This routine was added to PGPLOT in Version 5.1.0.]
+
+\begin{verbatim}
+Arguments:
+ ID : identifier of the device to be selected.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SLS -- set line style }
+\index{tk!pgplot!sls}
+
+\begin{verbatim}
+    pg->sls (LS)
+    Integer LS
+\end{verbatim}
+
+Set the line style attribute for subsequent plotting.  This attribute
+affects line primitives only; it does not affect graph markers, text,
+or area fill.
+
+Five different line styles are available, with the following codes: 
+1 (full line), 2 (dashed), 3 (dot-dash-dot-dash), 4 (dotted),
+5 (dash-dot-dot-dot).  The default is 1 (normal full line).
+
+\begin{verbatim}
+Arguments:
+ LS : the line-style code for subsequent plotting (in range 1-5). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SLW -- set line width }
+\index{tk!pgplot!slw}
+
+\begin{verbatim}
+    pg->slw (LW)
+    Integer LW
+\end{verbatim}
+
+Set the line-width attribute.  This attribute affects lines, graph
+markers, and text.  The line width is specified in units of 1/200
+(0.005) inch (about 0.13 mm) and must be an integer in the range
+1-201.  On some devices, thick lines are generated by tracing each
+line with multiple strokes offset in the direction perpendicular to
+the line.
+
+\begin{verbatim}
+Arguments:
+ LW : width of line, in units of 0.005 inch (0.13 mm) in range 1-201. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{STBG -- set text background color index }
+\index{tk!pgplot!stbg}
+
+\begin{verbatim}
+    pg->stbg (TBCI)
+    Integer TBCI
+\end{verbatim}
+
+Set the Text Background Color Index for subsequent text.  By default
+text does not obscure underlying graphics.  If the text background
+color index is positive, however, text is opaque: the bounding box of
+the text is filled with the color specified by STBG before drawing the
+text characters in the current color index set by SCI.  Use color
+index 0 to erase underlying graphics before drawing text.
+
+\begin{verbatim}
+Arguments:
+ TBCI : the color index to be used for the background for subsequent
+        text plotting: 
+          TBCI < 0  => transparent (default);
+          TBCI >= 0 => text will be drawn on an opaque background with
+                       color index TBCI. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SUBP -- subdivide view surface into panels }
+\index{tk!pgplot!subp}
+
+\begin{verbatim}
+    pg->subp (NXSUB, NYSUB)
+    Integer NXSUB, NYSUB
+\end{verbatim}
+
+PGPLOT divides the physical surface of the plotting device (screen,
+window, or sheet of paper) into NXSUB x NYSUB `panels'.  When the view
+surface is sub-divided in this way, PAGE moves to the next panel, not
+the next physical page.  The initial subdivision of the view surface
+is set in the call to BEG.  When SUBP is called, it forces the next
+call to PAGE to start a new physical page, subdivided in the manner
+indicated.  No plotting should be done between a call of SUBP and a
+call of PAGE (or ENV, which calls PAGE).
+
+If NXSUB > 0, PGPLOT uses the panels in row order; if < 0, PGPLOT uses
+them in column order, e.g.:
+
+\begin{verbatim}
+ NXSUB=3, NYSUB=2            NXSUB=-3, NYSUB=2
+
++-----+-----+-----+         +-----+-----+-----+
+|  1  |  2  |  3  |         |  1  |  3  |  5  |
++-----+-----+-----+         +-----+-----+-----+
+|  4  |  5  |  6  |         |  2  |  4  |  6  |
++-----+-----+-----+         +-----+-----+-----+
+\end{verbatim}
+
+PGPLOT advances from one panels to the next when PAGE is called,
+clearing the screen or starting a new page when the last panel has
+been used.  It is also possible to jump from one panel to another in
+random order by calling PANL.
+
+\begin{verbatim}
+Arguments:
+ NXSUB : the number of subdivisions of the view surface in X (> 0 or
+         < 0). 
+ NYSUB : the number of subdivisions of the view surface in Y (> 0). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{SVP -- set viewport (normalized device coordinates) }
+\index{tk!pgplot!svp}
+
+\begin{verbatim}
+    pg->svp (XLEFT, XRIGHT, YBOT, YTOP)
+    Float XLEFT, XRIGHT, YBOT, YTOP
+\end{verbatim}
+
+Change the size and position of the viewport, specifying the viewport
+in normalized device coordinates.  Normalized device coordinates run
+from 0 to 1 in each dimension.  The viewport is the rectangle on the
+view surface ``through'' which one views the graph.  All the routines
+which plot lines etc. plot them within the viewport, and lines are
+truncated at the edge of the viewport (except for axes, labels etc
+drawn with BOX or LAB).  The region of world space (the coordinate
+space of the graph) which is visible through the viewport is specified
+by a call to SWIN.  It is legal to request a viewport larger than the
+view surface; only the part which appears on the view surface is
+plotted.
+
+\begin{verbatim}
+Arguments:
+ XLEFT  : x-coordinate of left hand edge of viewport, in NDC. 
+ XRIGHT : x-coordinate of right hand edge of viewport, in NDC. 
+ YBOT   : y-coordinate of bottom edge of viewport, in NDC.
+ YTOP   : y-coordinate of top  edge of viewport, in NDC.
+\end{verbatim}
+
+\hrule
+
+\subsection*{SWIN -- set window }
+\index{tk!pgplot!swin}
+
+\begin{verbatim}
+    pg->swin (X1, X2, Y1, Y2)
+    Float X1, X2, Y1, Y2
+\end{verbatim}
+
+Change the window in world coordinate space that is to be mapped on to
+the viewport.  Usually SWIN is called automatically by ENV, but it may
+be called directly by the user.
+
+\begin{verbatim}
+Arguments:
+ X1 : the x-coordinate of the bottom left corner of the viewport. 
+ X2 : the x-coordinate of the top right corner of the viewport (note
+      X2 may be less than X1). 
+ Y1 : the y-coordinate of the bottom left corner of the viewport. 
+ Y2 : the y-coordinate of the top right corner of the viewport (note
+      Y2 may be less than Y1). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{TBOX -- draw frame and write (DD) HH MM SS.S labelling }
+\index{tk!pgplot!tbox}
+
+\begin{verbatim}
+    pg->tbox (XOPT, XTICK, NXSUB, YOPT, YTICK, NYSUB)
+    String  XOPT, YOPT
+    Float   XTICK, YTICK
+    Integer NXSUB, NYSUB
+\end{verbatim}
+
+Draw a box and optionally label one or both axes with (DD) HH MM SS
+style numeric labels (useful for time or RA - DEC plots).  If this
+style of labelling is desired, then SWIN should have been called
+previously with the extrema in SECONDS of time.
+
+In the seconds field, you can have at most 3 places after the decimal
+point, so that 1 ms is the smallest time interval you can time label.
+
+Large numbers are coped with by fields of 6 characters long.  Thus you
+could have times with days or hours as big as 999999.  However, in
+practice, you might have trouble with labels overwriting themselves
+with such large numbers unless you a) use a small time INTERVAL, b)
+use a small character size or c) choose your own sparse ticks in the
+call to TBOX.
+
+TBOX will attempt, when choosing its own ticks, not to overwrite the
+labels, but this algorithm is not very bright and may fail.
+
+Note that small intervals but large absolute times such as TMIN =
+200000.0s and TMAX = 200000.1s will cause the algorithm to fail.  This
+is inherent in PGPLOT's use of single precision and cannot be avoided.
+In such cases, you should use relative times if possible.
+
+TBOX's labelling philosophy is that the left-most or bottom tick of
+the axis contains a full label.  Thereafter, only changing fields are
+labelled.  Negative fields are given a '-' label, positive fields have
+none.  Axes that have the DD (or HH if the day field is not used)
+field on each major tick carry the sign on each field.  If the axis
+crosses zero, the zero tick will carry a full label and sign.
+
+This labelling style can cause a little confusion with some special
+cases, but as long as you know its philosophy, the truth can be
+divined.  Consider an axis with TMIN = 20s, TMAX = -20s.  The labels
+will look like:
+
+\begin{verbatim}
+       +----------+----------+----------+----------+
+    0h0m20s      10s      -0h0m0s      10s        20s
+\end{verbatim}
+
+Knowing that the left field always has a full label and that positive
+fields are unsigned, informs that time is decreasing from left to
+right, not vice versa.  This can become very unclear if you have used
+the 'F' option, but that is your problem!
+
+Exceptions to this labelling philosophy are when the finest time
+increment being displayed is hours (with option 'Y') or days.  Then
+all fields carry a label.  For example:
+
+\begin{verbatim}
+       +----------+----------+----------+----------+
+     -10h        -8h        -6h        -4h        -2h
+\end{verbatim}
+
+TBOX can be used in place of BOX; it calls BOX and only invokes time
+labelling if requested.  Other options are passed intact to BOX.
+
+\begin{verbatim}
+Arguments:
+ XOPT  : X-options for TBOX.  Same as for BOX plus: 
+           'Z' for (DD) HH MM SS.S time labelling.
+           'Y' means don't include the day field so that labels are
+               HH MM SS.S rather than DD HH MM SS.S   The hours will 
+               accumulate beyond 24 if necessary in this case.  
+           'X' label the HH field as modulo 24.  Thus, a label such as
+               25h 10m would come out as 1h 10m .
+           'H' means superscript numbers with d, h, m, & s  symbols. 
+           'D' means superscript numbers with    o, ', & '' symbols.
+           'F' causes the first label (left- or bottom-most) to be
+               omitted.  Useful for sub-panels that abut each other.
+               Care is needed because first label carries sign as
+               well.  
+           'O' means omit leading zeros in numbers < 10, e.g. 3h 3m
+               1.2s rather than 03h 03m 01.2s.  Useful to help save
+               space on X-axes.  The day field does not use this
+               facility. 
+ YOPT  : Y-options for TBOX.  See above.
+ XTICK : X-axis major tick increment.  0.0 for default.
+ YTICK : Y-axis major tick increment.  0.0 for default.  If the 'Z'
+         option is used then XTICK and/or YTICK must be in seconds. 
+ NXSUB : number of intervals for minor ticks on X-axis.  0 for
+         default. 
+ NYSUB : number of intervals for minor ticks on Y-axis.  0 for
+         default. 
+
+The regular XOPT and YOPT axis options for BOX are:
+
+ A : draw Axis (X axis is horizontal line Y = 0, Y axis is vertical
+     line X = 0). 
+ B : draw bottom (X) or left (Y) edge of frame.
+ C : draw top (X) or right (Y) edge of frame.
+ G : draw Grid of vertical (X) or horizontal (Y) lines.
+ I : Invert the tick marks; i.e. draw them outside the viewport
+     instead of inside.  
+ L : label axis Logarithmically (see below).
+ N : write Numeric labels in the conventional location below the
+     viewport (X) or to the left of the viewport (Y). 
+ P : extend (``Project'') major tick marks outside the box (ignored if
+     option I is specified). 
+ M : write numeric labels in the unconventional location above the
+     viewport (X) or to the right of the viewport (Y). 
+ T : draw major Tick marks at the major coordinate interval.
+ S : draw minor tick marks (Subticks).
+ V : orient numeric labels Vertically.  This is only applicable to Y.
+     The default is to write Y-labels parallel to the axis.
+ 1 : force decimal labelling, instead of automatic choice (see NUMB). 
+ 2 : force exponential labelling, instead of automatic.
+
+     The default is to write Y-labels parallel to the axis
+
+       ******************        EXCEPTIONS       *******************
+
+       Note that:
+         1) BOX option 'L' (log labels) is ignored with option 'Z' 
+         2) The 'O' option is  ignored for the 'V' option as it 
+            makes it impossible to align the labels nicely
+         3) Option 'Y' is forced with option 'D'
+
+       ***************************************************************
+
+\end{verbatim}
+
+\hrule
+
+\subsection*{TEXT -- write text (horizontal, left-justified) }
+\index{tk!pgplot!text}
+
+\begin{verbatim}
+    pg->text (X, Y, TEXT)
+    Float  X, Y
+    String TEXT
+\end{verbatim}
+
+Write text.  The bottom left corner of the first character is placed
+at the specified position, and the text is written horizontally.  This
+is a simplified interface to the primitive routine PTXT.  For
+non-horizontal text, use PTXT.
+
+\begin{verbatim}
+Arguments:
+ X    : world x-coordinate of start of string.
+ Y    : world y-coordinate of start of string.
+ TEXT : the character string to be plotted.
+\end{verbatim}
+
+\hrule
+
+\subsection*{UPDT -- update display }
+\index{tk!pgplot!updt}
+
+\begin{verbatim}
+    pg->updt ()
+\end{verbatim}
+
+Update the graphics display: flush any pending commands to the output
+device.  This routine empties the buffer created by BBUF, but it does
+not alter the BBUF/EBUF counter.  The routine should be called when it
+is essential that the display be completely up to date (before
+interaction with the user, for example) but it is not known if output
+is being buffered.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{VECT -- vector map of a 2D data array, with blanking }
+\index{tk!pgplot!vect}
+
+\begin{verbatim}
+    pg->vect (A, B, C, NC, TR, BLANK)
+    Float   A[*,*], B[*,*], C, TR[6], BLANK
+    Integer NC
+\end{verbatim}
+
+Draw a vector map of two arrays.  This routine is similar to CONB in
+that array elements that have the ``magic value'' defined by the
+argument BLANK are ignored, making gaps in the vector map.  The
+routine may be useful for data measured on most but not all of the
+points of a grid.  Vectors are displayed as arrows; the style of the
+arrowhead can be set with routine SAH, and the the size of the
+arrowhead is determined by the current character size, set by SCH.
+
+\begin{verbatim}
+Arguments:
+ A     : horizontal component data array.
+ B     : vertical component data array.
+ C     : scale factor for vector lengths, if 0.0, C will be set so
+         that the longest vector is equal to the smaller of TR(2) +
+         TR(3) and TR(5) + TR(6).  
+ NC    : vector positioning code:
+           < 0 vector head positioned on coordinates;
+           > 0 vector base positioned on coordinates;
+           = 0 vector centered on the coordinates.
+ TR    : array defining a transformation between the I,J grid of the
+         array and the world coordinates.  The world coordinates of
+         the array point A(I, J) are given by:
+           X = TR(1) + TR(2)*I + TR(3)*J
+           Y = TR(4) + TR(5)*I + TR(6)*J
+         Usually TR(3) and TR(5) are zero - unless the coordinate
+         transformation involves a rotation or shear.
+ BLANK : elements of arrays A or B that are exactly equal to this
+         value are ignored (blanked). 
+\end{verbatim}
+
+\hrule
+
+\subsection*{VSIZ -- set viewport (inches) }
+\index{tk!pgplot!vsiz}
+
+\begin{verbatim}
+    pg->vsiz (XLEFT, XRIGHT, YBOT, YTOP)
+    Float XLEFT, XRIGHT, YBOT, YTOP
+\end{verbatim}
+
+Change the size and position of the viewport, specifying the viewport
+in physical device coordinates (inches).  The viewport is the
+rectangle on the view surface ``through'' which you view the graph.
+All the routines which plot lines etc. plot them within the viewport,
+and lines are truncated at the edge of the viewport (except for axes,
+labels etc drawn with BOX or LAB).  The region of world space (the
+coordinate space of the graph) which is visible through the viewport
+is specified by a call to SWIN.  It is legal to request a viewport
+larger than the view surface; only the part which appears on the view
+surface is plotted.
+
+\begin{verbatim}
+Arguments:
+ XLEFT  : x-coordinate of left hand edge of viewport, in inches from
+          left edge of view surface. 
+ XRIGHT : x-coordinate of right hand edge of viewport, in inches from
+          left edge of view surface. 
+ YBOT   : y-coordinate of bottom edge of viewport, in inches from
+          bottom of view surface. 
+ YTOP   : y-coordinate of top edge of viewport, in inches from bottom
+          of view surface. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{VSTD -- set standard (default) viewport }
+\index{tk!pgplot!vstd}
+
+\begin{verbatim}
+    pg->vstd ()
+\end{verbatim}
+
+Define the viewport to be the standard viewport.  The standard
+viewport is the full area of the view surface (or panel), less a
+margin of 4 character heights all round for labelling.  It thus
+depends on the current character size, set by SCH.
+
+\begin{verbatim}
+Arguments: none.
+\end{verbatim}
+
+\hrule
+
+\subsection*{WEDG -- annotate an image plot with a wedge }
+\index{tk!pgplot!wedg}
+
+\begin{verbatim}
+    pg->wedg (SIDE, DISP, WIDTH, FG, BG, LABEL)
+    String SIDE, LABEL
+    Float  DISP, WIDTH, FG, BG
+\end{verbatim}
+
+Plot an annotated grey-scale or color wedge parallel to a given axis
+of the the current viewport.  This routine is designed to provide a
+brightness/color scale for an image drawn with IMAG or GRAY.  The
+wedge is  drawn with the transfer function set by SITF and using
+the color index range set by SCIR.
+
+\begin{verbatim}
+Arguments:
+ SIDE  : the first character must be one of the characters 'B', 'L',
+         'T', or 'R' signifying the Bottom, Left, Top, or Right edge
+         of the viewport.  The second character should be 'I' to use
+         IMAG to draw the wedge, or 'G' to use GRAY. 
+ DISP  : the displacement of the wedge from the specified edge of the
+         viewport, measured outwards from the viewport in units of the
+         character height.  Use a negative value to write inside the
+         viewport, a positive value to write outside. 
+ WIDTH : the total width of the wedge including annotation, in units
+         of the character height. 
+ FG    : the value which appears with shade 1 (``foreground'').
+         Use the values of FG and BG that were supplied to GRAY or
+         IMAG. 
+ BG    : the value which appears with shade 0 (``background''). 
+ LABEL : optional units label.  If no label is required use ' '. 
+\end{verbatim}
+
+\hrule
+
+\subsection*{WNAD -- set window and adjust viewport to same aspect ratio }
+\index{tk!pgplot!wnad}
+
+\begin{verbatim}
+    pg->wnad (X1, X2, Y1, Y2)
+    Float X1, X2, Y1, Y2
+\end{verbatim}
+
+Change the window in world coordinate space that is to be mapped on to
+the viewport, and simultaneously adjust the viewport so that the
+world-coordinate scales are equal in x and y.  The new viewport is the
+largest one that can fit within the previously set viewport while
+retaining the required aspect ratio.
+
+\begin{verbatim}
+Arguments:
+ X1 : the x-coordinate of the bottom left corner of the viewport. 
+ X2 : the x-coordinate of the top right corner of the viewport (note
+      X2 may be less than X1). 
+ Y1 : the y-coordinate of the bottom left corner of the viewport. 
+ Y2 : the y-coordinate of the top right corner of the viewport (note
+      Y2 may be less than Y1). 
+\end{verbatim}
+
+\hrule
+
+\index{tk!pgplot|)}

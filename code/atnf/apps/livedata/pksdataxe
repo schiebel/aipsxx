@@ -1,0 +1,65 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: pksdataxe <SDFITS files>
+#-----------------------------------------------------------------------------
+# Deletes the DATA column, and several ancillary columns (TAMBIENT, PRESSURE,
+# HUMIDITY, WINDSPEE, WINDDIRE for which the data are not recorded) from a
+# collection of Parkes Multibeam sdfits files.
+#
+# Dimensions of the deleted DATA array will be recorded in a new header
+# keyword, DATAXED.
+#
+# Uses utilities from the "ftools" package.
+#
+# Original: 2003/02/05 MRC
+#-----------------------------------------------------------------------------
+# Look for fdelcol.
+  (hash fdelcol > /dev/null 2>&1)
+  if [ $? = 1 ]
+  then
+    # Try adding this.
+    PATH=${PATH}:/nfs/atapplic/ftools/SunOS_5.6_sparc/bin
+    export PATH
+
+    (hash fdelcol > /dev/null 2>&1)
+    if [ $? = 1 ]
+    then
+      echo "fdelcol not found - add ftools to your path."
+      exit 1
+    fi
+  fi
+
+  for i in $*
+  do
+    if [ ! -w "$i" ]
+    then
+      echo "File $i does not exist or is not writable."
+      continue
+    fi
+
+    echo "Processing $i"
+
+    # Check that it has a DATA column.
+    DATA=`fstruct $i | sed -n -e '/ DATA /p'`
+    if [ "$DATA" = "" ]
+    then
+      echo "File $i does not contain a DATA column, skipping."
+      continue
+    fi
+
+    # Record the dimensions of the DATA column to be deleted.
+    DCOL=`echo $DATA | awk '{print $1}'`
+    TDIM=`echo $DATA | sed -e 's|.*\((.*)\).*|\1|'`
+
+    fparkey $TDIM $i[1] DATAXED \
+      comm='Dimensions of deleted DATA column' \
+      add=yes insert=TTYPE$DCOL
+
+    # Delete the columns.
+    for col in DATA TAMBIENT PRESSURE HUMIDITY WINDSPEE WINDDIRE
+    do
+      fdelcol $i+1 $col no yes
+    done
+  done
+
+  exit 0

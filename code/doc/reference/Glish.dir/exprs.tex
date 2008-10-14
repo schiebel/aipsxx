@@ -1,0 +1,1039 @@
+% $Header: /home/cvs/casa/code/doc/reference/Glish.dir/exprs.tex,v 19.0 2003/07/16 04:18:42 aips2adm Exp $
+
+\chapter{Expressions}
+\label{expressions}
+
+\index{expressions|(}
+As in many programming languages, you create values in {\em Glish} by
+combining variables and constants using operators to form {\em expressions}.
+In this section we discuss the kinds of expressions available in {\em Glish}
+and the precedence of the associated operators.
+
+\section{Atomic Expressions}
+
+\index{expressions!atomic}
+The simplest type of expression is a variable name or a constant.
+
+\index{variables!naming}
+\index{names!of variables}
+You name a variable \label{variables}
+using a letter or an underscore, followed by
+zero-or-more letters, digits, or underscores.  All names in {\em Glish}
+\index{names!case-sensitive}
+are case-sensitive, so ``{\tt foo\_123}" and ``{\tt Foo\_123}"
+are different names.  (See Appendix~\ref{grammar}, page~\pageref{grammar},
+for the {\em Glish} syntax and grammar.)
+
+Variable names simply evaluate to the present value (and type)
+of the variable; if the variable hasn't been previously set, {\em Glish}
+\index{variables!uninitialized}
+\index{errors!variable used before set (warning)}
+generates a warning and sets it to {\tt F}.
+
+(See \S~\ref{numeric-constants}, \S~\ref{string-constants},
+and \S~\ref{record-constants} for creating {\em numeric}, {\tt string}, and
+{\tt record} constants, and \xref{creating-vectors},
+for creating vector constants.)
+
+\section{Unary Operators}
+
+\index{expressions!unary}
+\index{operators!unary}
+{\em Glish} provides three basic unary operators:
+{\tt +}\indoponekey{+}{unary operator}{+1unary},
+{\tt -}\indoponekey{-}{unary operator}{+2unary},
+and {\tt !}\index{& z operator@{\tt "!} ``not'' operator}.
+The first simply yields the value of its operand; the second, its
+arithmetic negation; and the third, its logical negation.  All require
+{\em numeric} operands and yield a {\em numeric} or {\tt boolean}
+(for ``{\tt !}")
+result, and all work on vectors as well as scalars.
+
+In addition to these basic operators, all of the regular expression
+operators are also available: \verb+~+, \verb+=~+, \verb+!~+. These
+operators are used to apply regular expressions to strings, and they
+can be used as either binary or unary operators.
+
+(See \xref{arith-operators} for a description of {\tt +} and {\tt -},
+\xref{log-operators} for a description of {\tt !}, and \xref{regular-exprs}
+for a description of the regular expression operators.)
+
+\section{Arithmetic Expressions}
+
+\index{expressions!arithmetic}
+\index{operators!arithmetic}
+{\em Glish} supports the usual arithmetic operations: addition, subtraction,
+multiplication, division, modulus, and exponentiation.  The corresponding
+operators are {\tt +}, {\tt -}, {\tt *}, {\tt /}, {\tt \%}, and \verb+^+.
+All work element-by-element given two equal-sized vectors, or pair a
+scalar with every element in a vector in turn given one scalar and one vector.
+Arithmetic operators applied to arrays operate the same way as arithmetic
+operators applied to vectors, but the result is an array instead of a vector.
+All require {\em numeric} operands and yield a {\em numeric} result.
+(See \xref{arith-operators}, for details.)
+
+\section{Relational Expressions}
+\label{rel-exprs}
+
+\index{expressions!relational}
+\index{operators!comparison}
+You can compare values using \verb+==+, \verb+!=+, \verb+<+, \verb+<=+,
+\verb+>+, and \verb+<=+, which have their usual meanings.  For {\em numeric}
+and {\tt string} values, each operates element-by-element when given two
+equal-sized vectors, or pairs a scalar with every element of a vector
+in turn yielding a {\tt boolean} vector as the result.  Logical operators
+applied to arrays operate the same way but return an array rather than
+a vector. (See \xref{rel-operators}.)
+
+Other types ({\tt record}, {\tt function}, {\tt agent})
+\index{records!comparisons}
+\index{functions!comparisons}
+\index{agents!comparisons}
+\index{== equality operator@\verb+==+{\tt \ } equality operator}
+\index{== inequality operator@\verb+"!=+{\tt \ } inequality operator}
+can  compare values  for equality (\verb+==+) and inequality (\verb+!=+).
+The values are considered equal if they refer to exactly the same entity;
+the comparison yields a scalar {\tt boolean} value.  For example,
+\begin{verbatim}
+    a := [b=1, c=2]
+    d := [b=1, c=2]
+    e := ref a
+    print a == a, a == d, a == e
+\end{verbatim}
+prints {\tt T}, {\tt F}, {\tt T}.
+\index{records!comparisons (proposed)}
+In the future, {\em Glish} may support field-by-field comparison of {\tt record}
+values, in which case the second {\tt F} printed above would instead
+be  {\tt T}.
+
+\section{Logical Expressions}
+
+\index{expressions!logical}
+\index{operators!logical}
+The binary \verb+|+ and {\tt \&} perform boolean ``or" and ``and",
+respectively.  They require {\tt boolean} operands and yield {\tt boolean}
+results.  They work in the usual fashion with equal-sized vector
+operands or one vector and one scalar.  (See \xref{log-operators}.)
+
+\label{short-circuit}
+
+\index{expressions!short-circuit}
+\index{operators!short-circuit}
+In addition to \verb+|+ and {\tt \&}, {\em Glish} provides the related
+\verb+||+\index{& or short-circuit@\verb+"|"|+{\tt \ } short-circuit ``or''}
+and {\tt \&\&}\index{& and short-circuit@\verb+&&+{\tt \ } short-circuit ``and''}
+operators, taken from~C.  These are
+``{\em short-circuit}'' operators; they evaluate their right-hand operand
+only when needed.  Unlike most of the other operands, these do {\em not}
+\index{vectors!operations!{\em not} element-by-element}
+perform element-by-element vector operations.  Both operands should be
+{\em numeric} scalars, though presently vector values are allowed, in
+which case the first element of the vector is used.
+
+The \verb+||+ operator evaluates its first operand and returns the result
+if the result resolves to {\em true} when considered as a {\tt boolean}.
+Otherwise, it evaluates and returns its second operand.  The \verb+&&+ operator
+returns {\tt F} if its first operand evaluates to {\em false}, otherwise it
+evaluates and returns its second operand.
+
+\section{Assignment Expressions}
+\label{assignment}
+
+\indoptwo{:=}{assignment operator}
+An assignment expression assigns a value to a variable and also yields
+that value as the overall value of the expression.
+
+\index{assignment|(}
+\subsection{Assignment Syntax}
+
+\index{assignment!syntax}
+An assignment expression has the form:
+\begin{quote}
+    {\em expression} {\tt :=} {\em expression}
+\end{quote}
+\index{assignment!{\em lvalue}}
+The left-hand-side must be an {\em lvalue}; that is, something that
+can be assigned to:
+\begin{itemize}
+\item a variable name;
+\item an element or group of elements of a vector or array
+(See \xref{vector-mod}, \xref{multiple-assign}, and \xref{indexing-arrays});
+\item a field or group of fields of a record
+(See \xref{record-dot}, and \xref{multiple-record-fields});
+\item the {\tt val} operator followed by an {\em lvalue} (See \xref{references});
+\item or, the {\tt const} operator followed by an {\em lvalue} (See \xref{constant-values}).
+\end{itemize}
+
+If the left-hand-side is a variable name or a record field then
+the right-hand-side can be any valid {\em Glish} expression.  If
+left-hand-side is  a
+\index{assignment!length compatibility}
+vector element or group of elements then the right-hand-side must
+have a compatible type, and if the right-hand-side's type is higher
+then the vector is converted to that type.  (See \xref{vector-mod}.)
+
+\index{assignment!to multiple record fields}
+\index{records!fields!multiple}
+If the left-hand-side is a group of record fields then the right-hand-side
+must be a record, and the assignment is done field-by-field, left-to-right.
+(See \xref{multiple-record-fields}.)
+
+\subsection{Assigning {\tt reference} Values}
+
+\index{assignment!to references|(}
+If the left-hand-side is a {\tt val} expression then its {\em lvalue}
+is inspected to see whether its value is either a {\tt reference} or
+the target of {\tt reference}.  If it is either 
+then the underlying value of the resulting reference is modified.
+If it is not either of these, then the assignment is done as though 
+{\tt val} was not present.
+For example,
+\begin{verbatim}
+    a := 5
+    val a := 9
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    a := 5
+    a := 9
+\end{verbatim}
+and after executing
+\begin{verbatim}
+    a := 5
+    b := ref a
+    val a := 9
+\end{verbatim}
+both {\tt a} and {\tt b} are {\tt 9}.  Whereas,  after executing
+\begin{verbatim}
+    a := 5
+    b := ref a
+    a := 9
+\end{verbatim}
+{\tt a} is {\tt 9} but {\tt b} remains {\tt 5} (and the link between
+{\tt a} and {\tt b} is severed).  (See \xref{references}, for details.)
+\index{assignment!to references|)}
+
+\subsection{Cascaded Assignments}
+\label{assignment-cascading}
+
+\index{assignment!cascading|(}
+Because assignment expressions yield the assigned expression as their
+value, and because assignment is right-associative (see \xref{precedence}),
+assignments can be naturally ``cascaded'':
+\begin{verbatim}
+    a := b := 5
+\end{verbatim}
+first assigns {\tt 5} to {\tt b} and then also to {\tt a}.  More
+complicated expressions are possible, too:
+\begin{verbatim}
+    a := (b := 5) * 4
+\end{verbatim}
+assigns {\tt 5} to {\tt b} and {\tt 20} to {\tt a}.
+\index{assignment!cascading|)}
+
+\subsection{Compound Assignment}
+\index{assignment!compound|(}
+
+As in C, assignment expressions can include an operator immediately
+before the {\tt :=} token to indicate {\em compound} assignment.  The
+general form of a compound assignment is:
+\begin{quote}
+    {\em expr$_1$} {\tt{\em op}:=} {\em expr$_2$}
+\end{quote}
+where {\em op} is any of the following:
+\begin{verbatim}
+    + - * / % ^ | & || &&
+\end{verbatim}
+The assignment is identical to:
+\begin{quote}
+    {\em expr$_1$} {\tt :=} {\em expr$_1$} {\em op} {\em expr$_2$}
+\end{quote}
+except {\em expr$_1$} is evaluated only once (not presently
+guaranteed by the language).
+
+Thus, for example:
+\begin{verbatim}
+    x +:= 5
+\end{verbatim}
+adds {\tt 5} to {\tt x}, identically to:
+\begin{verbatim}
+    x := x + 5
+\end{verbatim}
+
+You can cascade compound assignments like ordinary assignments.  In the
+following assignment:
+\begin{verbatim}
+    a *:= b +:= 4
+\end{verbatim}
+first increments {\tt b} by {\tt 4}, and then multiplies {\tt a} by
+the new value of {\tt b}, storing the result back into {\tt a}.
+(See \xref{assignment-cascading}.)
+
+\index{assignment!compound|)}
+\index{assignment|)}
+
+\section{Indexing}
+
+\index{expressions!indexing}
+\index{vectors!indexing}
+The indexing operators are
+{\tt []}\indoptwo{[]}{indexing operator}
+and ``{\tt .}".\indopone{.}{record field access operator}
+The {\tt []} operator
+is used to index a vector or an 
+array with a {\em numeric} 
+subscript, or a {\tt record} with a {\em string} subscript.  The
+result of the indexing for a vector or
+array operand has the same type as the initial vector or array.
+A {\tt record} has a  type which is either that of the 
+specified field, or {\tt record}
+if more than one field is specified.
+(See \S~\ref{vector-access}, \S~\ref{records-as-vectors},
+\S~\ref{record-brackets}, \S~\ref{indexing}, 
+and \S~\ref{indexing-array-slices-subscript} for details.)
+
+The ``{\tt .}" operator retrieves a particular field from a {\tt record}.
+\begin{verbatim}
+    a.name
+\end{verbatim}
+is equivalent to
+\begin{verbatim}
+    a["name"]
+\end{verbatim}
+(See \xref{record-dot}.)
+
+\section{Integer Sequence Expressions}
+
+\index{expressions!integer sequence}
+The binary {\tt :} operator\indopone{:}{sequence operator}
+takes two {\em numeric} operands and returns
+an {\tt integer} vector consisting of those integers between the two
+operands, inclusive.  (See \xref{creating-vectors}.)
+
+\section{Regular Expressions}
+\label{regular-exprs}
+\index{expressions!regular}
+\index{regular expression|(}
+
+Regular expressions are the primary means of manipulating and matching strings
+in {\em Glish}. {\em Glish's} regular expressions are based on code from
+\htmllink{{\em Perl}}{\perlurl}
+(version 5.004\_04). If you are comfortable with {\em Perl}'s regular expressions, you
+should have little problem with regular expressions in {\em Glish}. The section will
+describe {\em Glish}'s regular expressions, and it will highlight the few differences
+between regular expressions in {\em Glish} and regular expressions in {\em Perl}.
+
+\subsection{Ranges}
+\index{regular expression!character range|(}
+\indoptwo{[]}{{\em RE} range}
+Regular expressions describe patterns of characters. The general form of a regular
+expression is:
+\begin{verbatim}
+    m/[_0-9a-zA-Z]+/
+\end{verbatim}
+The \verb+m+ indicates that this regular expression is intended for matching
+(\verb+s+ would indicate substitution, covered next). The characters between the
+slashes (\verb+/+) indicate the pattern of characters to match. This example matches
+an alpha-numeric collection of characters. The square brackets are
+used to describe ranges of characters. Often, more than one ranges is included within
+a pair of square brackets; in this case, four character ranges are included:
+\begin{verbatim}
+    _          0-9          a-z          A-Z
+\end{verbatim}
+The underscore is a degenerate range which includes only one character.
+The range \verb+0-9+ includes the characters which make up numbers, and the
+ranges \verb+a-z+ and \verb+A-Z+ include all of the lower and upper case letters.
+These are the characters which are permitted in the variable names in {\em Glish}.
+\verb+[_0-9a-zA-Z]+ only matches a single alpha-numeric character,\indopone{+}{{\em RE} repetition}
+though. \index{regular expression!repeat character} The plus sign following the
+range indicates 1 or more occurrences of the character or group preceding it, in
+this case our alpha-numeric range. So \verb|[_0-9a-zA-Z]+| will match one or more
+occurrences, but it will match these characters {\em anywhere} in the string. To
+indicate \index{+6regexpr@\verb+^+{\tt \ \ } {\em RE} match start}
+\index{+7regexpr@\verb+$+{\tt \ \ } {\em RE} match end}
+that the pattern should be matched at the start or the end of the string,
+\verb+^+ and \verb+$+ (respectively) are used:
+\begin{verbatim}
+    m/^[_0-9a-zA-Z]+$/
+\end{verbatim}
+This indicates that the string that is being matched should be alpha-numeric
+from start to end.
+
+Character ranges can also be used to specify {\em anything but} the characters
+in the range. This is done by putting a \verb+^+ as the first character in the
+range, e.g. 
+\begin{verbatim}
+    m/^[^_0-9a-zA-Z]+$/
+\end{verbatim}
+would match a string which contained no alpha-numeric or underscore characters.
+
+The most often used regular expression falls into the category of ranges. In
+a regular expression, the period matches any character except a newline. So:
+\indopone{.}{{\em RE} any character}
+\begin{verbatim}
+    m/./
+\end{verbatim}
+would match the same thing as:
+\begin{verbatim}
+    m/[^\n]/
+\end{verbatim}
+A period inside of a range is just a period, but elsewhere
+in a regular expression the period must be escaped, i.e. ``\verb+\.+'', to
+avoid matching any non-newline character. (See \xref{regex-escapes}, for other
+escape sequences.)
+\index{regular expression!character range|)}
+
+\subsection{Substitution}
+\index{regular expression!substitution|(}
+The portions of the string which match the regular expression can be
+substituted for a different string. The syntax is much the same as matching
+with a regular expression. For example:
+\begin{verbatim}
+    s/[_0-9a-zA-Z]+/ALNUM/
+\end{verbatim}
+would substitute {\tt ALNUM} for the first occurrence of an alpha-numeric
+substring. \index{regular expression!global flag}
+If you wished to substitute {\tt ALNUM} for {\em every} occurrence of an
+alpha-numeric, you would add the {\tt g} flag:
+\begin{verbatim}
+    s/[_0-9a-zA-Z]+/ALNUM/g
+\end{verbatim}
+\label{regex-global}
+This would cause each occurrence to be substituted. This flag is known
+as the {\em global} flag because it causes the regular expression to
+be applied everywhere in the string. The regular expression is applied
+as many times as possible.
+
+Along with the {\em global} flag there is one other flag
+\footnote{{\em Perl} has other flags which are not available in {\em Glish}.},
+{\tt i}. This flag causes case insensitive matching:
+\begin{verbatim}
+    m/foo/i
+\end{verbatim}
+\index{regular expression!case insensitive flag}
+The {\tt i} flag will cause this regular expression to match either
+upper or lower case letters, e.g. {\tt foo}, {\tt Foo} or {\tt FoO}.
+A regular expression can also be made case insensitive by adding
+``\verb+(?i)+'' to the beginning of it. This would be equivalent
+to the previous example:
+\begin{verbatim}
+    m/(?i)foo/
+\end{verbatim}
+\indopnkey{(?i)}{{\protect\em RE} case insensitive}{?2yinsensitive}
+\index{regular expression!substitution|)}
+
+\subsection{Grouping and Alternation}
+\index{regular expression!grouping|(}
+\index{regular expression!alternation|(}
+\index{regular expression!match variables|(}
+Parentheses are used to group a series of match alternatives, and the alternatives
+are separated by vertical bars:
+\begin{verbatim}
+    m/eat (green eggs|ham)/
+\end{verbatim}
+\indoptwokey{()}{{\em RE} group}{?1group}
+This regular expression would match either {\tt eat green eggs} or {\tt eat ham}. Another
+important quality of parentheses in regular expressions is that the portion of 
+the string which is matched by the regular expression inside of the parentheses
+is saved for later use. For example:
+\begin{verbatim}
+    s/eat (green eggs|ham)/I don't like $1/g
+\end{verbatim}
+\index{+8regexpr@\verb+$1+{\tt \ } {\em RE} substitution variables}
+would substitute each occurrence of {\tt eat green eggs} or {\tt eat ham} with {\tt I
+don't like green eggs} or {\tt I don't like ham}. The matched parentheses are bound to the
+substitution variables, i.e. \verb+$1+, \verb+$2+, \verb+$3+, etc., in the order that
+they occur. This allows portions of the matched string to be used in the substitution. 
+
+Parentheses are used wherever values must be preserved for later use.
+For example:
+\begin{verbatim}
+    s/^([0-9]+) ([a-z]+)/$2 $1/g
+\end{verbatim}
+\index{+9regexpr@\verb+$m+{\tt \ } {\em RE} match variable}
+would reverse the order of a number followed and a lower-case name occurring at
+the beginning of a string. These matched portions of the string are also available
+in the Glish script after the match is done using the match variable, \verb+$m+ (See
+\xref{match-variable}).
+
+If you need to group alternatives but do not need to use the matched
+portion later, you can use:
+\begin{verbatim}
+    s/eat (?:green eggs|ham)/yuck!/g
+\end{verbatim}
+\indopnkey{(?:\ )}{{\protect\em RE} no match var group}{?2nosubst}
+This example would substitute {\tt yuck!} for each occurrence of {\tt eat green eggs}
+or {\tt eat ham}. No strings are preserved when the opening parenthesis is
+``\verb+(?:+'' instead of just ``\verb+(+''. These {\em non-saving}
+parentheses are often useful in regular expressions where nested parentheses
+are involved because they can eliminate confusion of the reader about which
+of the nested parentheses are bound to which substitution variables.
+
+In the previous examples, grouping was only required because
+of the initial string ``\verb+eat +''. The last example could be rewritten
+equivalently as:
+\begin{verbatim}
+    s/eat green eggs|eat ham/yuck!/g
+\end{verbatim}
+
+\index{regular expression!match variables|)}
+\index{regular expression!alternation|)}
+\index{regular expression!grouping|)}
+
+\subsection{Repetition}
+\index{regular expression!repetition|(}
+In the examples above, you have already seen one example of repetition, i.e.
+the use of \verb-+- to indicate one or more occurrences. However, there are
+a few other possibilities; these are shown in Table~\ref{regex-greedy}.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+Operator & Occurrences \\
+\hline
+\hline
+\verb-+-      & one or more \\ \hline
+\verb-*-      & zero or more \\ \hline
+\verb-?-      & zero or one \\ \hline
+\verb-{x}-    & exactly {\tt x} \\ \hline
+\verb-{x,}-   & {\tt x} or more\\ \hline
+\verb-{x,y}-  & at least {\tt x} but no more than {\tt y}\\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ Repetition Operators }
+\label{regex-greedy}
+\index{regular expression!repetition operators}
+\indopone{+}{{\em RE} repetition}
+\indoponekey{*}{{\em RE} repetition}{+2x0regexpr}
+\indoponekey{?}{{\em RE} repetition}{?0regexpr}
+\indoptwokey{\{\}}{{\em RE} repetition}{?9regexpr}
+\end{table}
+Any of these repetition operators can be used with character ranges, as above, or
+with groups. For example, this:
+\begin{verbatim}
+    s/(?:eat green eggs|eat ham)+/yuck!/
+\end{verbatim}
+will replace a single sequence of one or more occurrences of {\tt eat green eggs}
+or {\tt eat ham} with {\tt yuck!}.
+\index{regular expression!repetition|)}
+
+\subsection{Escape Sequences}
+\index{regular expression!escape sequences|(}
+\label{regex-escapes}
+The backslash character (\verb+\+) can be used to escape any character. This
+means that the character stands for itself instead of it's special meaning,
+e.g. ``\verb+\.+'' is used to match a period in a regular expression instead
+of {\em any} character (the standard meaning of ``.''). There are, however, a
+number of escaped characters which have special meaning. Table~\ref{escape-std}
+lists the basic escape sequences\footnote{{\em Perl} has more of these standard
+escapes which may be added to {\em Glish} in the future.}
+which can be used in both strings and regular expressions.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+Character & Match \\
+\hline
+\hline
+\verb-\n-    & new line \\ \hline
+\verb-\t-    & tab \\ \hline
+\verb-\r-    & carriage return \\ \hline
+\verb-\f-    & form feed \\ \hline
+\verb-\v-    & vertical space \\ \hline
+\verb-\e-    & escape character \\ \hline
+\verb-\a-    & bell \\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ Standard Escapes }
+\label{escape-std}
+\index{regular expression!standard escape chars}
+\index{\\n newline escape@\verb+\n+{\tt \ \ } newline escape}
+\index{\t tab escape@\verb+\t+{\tt \ \ } tab escape}
+\index{\r carriage-return escape@\verb+\r+{\tt \ \ } carriage-return escape}
+\index{\\f formfeed escape@\verb+\f+{\tt \ \ } formfeed escape}
+\end{table}
+
+In addition to these standard escape characters, there is a set of escape sequences
+which can be used to simplify regular expressions. These escapes are equivalent to
+longer regular expressions (see Table~\ref{escape-regx}). These characters are
+available to make regular expressions easier to read.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Character & Match & Equivalent Form\\
+\hline
+\hline
+\verb-\w-    & word & \verb|[_a-zA-Z0-9]| \\ \hline
+\verb-\W-    & non-word & \verb|[^_a-zA-Z0-9]| \\ \hline
+\verb-\s-    & whitespace & \verb|[\ \t\n\r\f]| \\ \hline
+\verb-\S-    & non-whitespace & \verb|[^\ \t\n\r\f]| \\ \hline
+\verb-\d-    & digit & \verb|[0-9]| \\ \hline
+\verb-\D-    & non-digit & \verb|[^0-9]| \\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ Regular Expression Escapes }
+\label{escape-regx}
+\index{regular expression!extra escape chars}
+\end{table}
+
+
+\index{regular expression!escape sequences|)}
+
+\subsection{Greedy and Lazy Matching}
+\index{regular expression!lazy matching|(}
+Generally, regular expressions do {\em greedy matching}; they match as many characters
+as possible. All of the examples presented so far do greedy matching. The regular
+expressions in {\em Glish} (and of course {\em Perl}) can do {\em lazy matching} as well as
+greedy matching. With lazy matching, as few characters as possible are matched
+while still having the whole regular expression match. The lazy versions of the
+greedy operators are obtained by adding a question mark, see
+Table~\ref{regex-lazy}.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+Operator & Occurrences \\
+\hline
+\hline
+\verb-+?-     & one or more \\ \hline
+\verb-*?-     & zero or more \\ \hline
+\verb-??-     & zero or one \\ \hline
+\verb-{x}?-   & exactly {\tt x} \\ \hline
+\verb-{x,}?-  & {\tt x} or more\\ \hline
+\verb-{x,y}?- & at least {\tt x} but no more than {\tt y}\\ \hline
+\end{tabular}
+\end{center}
+
+\caption{ Lazy Repetition Operators }
+\label{regex-lazy}
+\index{regular expression!lazy repetition operators}
+\indoptwokey{+?}{{\em RE} repetition}{+0lazy}
+\indoptwokey{*?}{{\em RE} repetition}{+2x1lazy}
+\indoponekey{??}{{\em RE} repetition}{?10lazy}
+\indopnkey{\{\}?}{{\em RE} repetition}{?9xlazy}
+\end{table}
+
+Here is a lazy example to illustrate the difference:
+\begin{verbatim}
+    s/.*?enum\s+(\S+).*\n?$/$1/
+\end{verbatim}
+This example is attempting to match {\tt enum} followed by a name, i.e.
+``\verb-\S+-''; this might be done when scanning {\em C++} source code. The
+lazy match of any characters at the start of the regular expression means
+that all of those initial characters at the beginning of the string will be
+matched and discarded as part of the substitution. If a greedy match is
+used instead:
+\begin{verbatim}
+    s/.*enum\s+(\S+).*\n?$/$1/
+\end{verbatim}
+it will generally work, but if there is more than one {\tt enum} on the
+line, the {\tt enum}s at the beginning of the string would be stripped off
+as part of the initial ``\verb+.*+'' and lost with only the last {\tt enum}
+being matched. There are often times when several lines of greedy regular
+expressions can be replaced with a one line lazy regular expression.
+\index{regular expression!lazy matching|)}
+
+\subsection{Application}
+\index{regular expression!application|(}
+\label{match-variable}
+
+Thus far, all of the discussion has been in general terms. This section
+describes how regular expressions are treated inside of
+{\em Glish} and how to apply these regular expressions to strings.
+
+\subsubsection{{\large\tt \~{}} Operator}
+
+Regular expressions are treated as first class variables\footnote{In
+{\em Perl}, regular expressions are used in place; they can't be assigned
+or passed to functions.} in {\em Glish} this means that they can be
+created, assigned, and passed to functions; they are just like any other
+value. A regular expression is created like:
+\begin{verbatim}
+    x := s/.*?enum\s+(\S+).*\n?$/$1/
+\end{verbatim}
+After this, {\tt x} is a regular expression, and it has type {\tt regex}.
+\indfunc{is\_regex}\label{is_regex-func} The {\tt is\_regex()} function
+is used to check to see if a variable is a regular expression or not.
+Regular expressions are applied to strings using the regular expression
+application operator \verb+~+ as follows:
+\begin{verbatim}
+    '/* best */ enum foo { A=1, B, C };' ~ x
+\end{verbatim}
+The result of this application is {\tt foo}; \verb+$m+ also equals {\tt foo}
+because of the parentheses.
+
+The last example illustrated how regular expressions can be assigned to
+variables. Assignment isn't required, though; regular expressions can
+be used in place:
+\begin{verbatim}
+    'eat green eggs' ~ s/eat (green eggs|ham)/I don't like $1/g
+\end{verbatim}
+The result here is {\tt I don't like green eggs}.
+
+The \verb+~+ operator is also used to apply a regular expression which does
+a match. If the match has a global flag, an integer is returned indicating
+how many successful matches were made. With no global flag, a boolean is
+returned indicating if a match was made. So:
+\begin{verbatim}
+    x := 'green'
+    x ~ m/r/ 
+\end{verbatim}
+yields {\tt T} because \verb+'green'+ contains the letter \verb+r+,
+\begin{verbatim}
+    x ~ m/r/g
+\end{verbatim}
+yields {\tt 1} because the global flag is used, and
+\begin{verbatim}
+    x ~ m/e/g
+\end{verbatim}
+yields {\tt 2} because \verb+'green'+ contains two letter \verb+e+'s.
+Both of these types of results are useful. The boolean result can be
+useful for masking off strings which match a particular criteria, and
+the integer result is useful for counting the number of occurrences of
+a particular substring.
+
+This operator can also be used as a unary operator. In this case, the
+regular expression is applied to the variable ``{\tt \_}''. This example:
+\begin{verbatim}
+    _ := 'green eggs'
+    ~ s/e/x/g
+\end{verbatim}
+yields \verb+grxxn xggs+; each \verb+e+ in the underscore variable,
+\verb+_+, is replaced with \verb+x+. (See \S~\ref{io-and-regex} for more
+information and examples.)
+
+\subsubsection{Regular Expression Vectors}
+Regular expressions can also be put into a vector:
+\begin{verbatim}
+    y := [ s/^\s+//, s/\s+$//, s/\s{2,}/ /g ]
+\end{verbatim}
+and a vector of regular expressions can be applied to a string; the
+regular expressions are applied one after the other. In this example:
+\begin{verbatim}
+    '   this    string   ' ~ y
+\end{verbatim}
+when {\tt y} is applied to a string it will strip off leading and
+trailing whitespace, and it will replace multiple spaces in the middle of
+the string with a single space. When multiple regular expressions are
+applied, the match variable \verb+$m+ accumulates all of the matched
+parentheses values and stores them either as a vector or a two dimensional
+array.
+
+\subsubsection{{\large\tt =\~{}} and {\large\tt !\~{}} Operators}
+
+With the \verb+~+ operator, the string that is being operated on is not
+modified. The regular expression is applied, and a string is returned in
+the case of substitution while a boolean or integer is returned in the case
+of a match. The \verb+=~+ operator\footnote{{\em Perl} has only has the =\~{} and
+!\~{} operators.}, however, modifies the string in place.
+For example:
+\begin{verbatim}
+    x := 'green'
+    x =~ s/e/x/g
+\end{verbatim}
+yields {\tt 2}, the number of substitutions made. After the application of
+the regular expression, {\tt x} equals {\tt 'grxxn'}. The result of this
+substitution is the number of matches if the {\em global} flag is used or
+a boolean indicating if any matches were made if no {\em global} flag is
+used. When a match is done (instead of a substitution), \verb+=~+ behaves
+the same as \verb+~+.
+
+There is also a \verb+!~+ operator which is exactly the same as
+the logical negation of \verb+=~+, for example this
+\begin{verbatim}
+    x := 'blue'
+    print ! (x =~ m/r/), x !~ m/r/
+\end{verbatim}
+prints two {\tt T}s because the string {\tt x} doesn't have a {\tt r} in it.
+The two forms used in the {\tt print} statement are equivalent.
+Table~\ref{regex-appl-op} lists the results for each of the combinations of
+application operators and regular expression forms.
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c||c|c|c|c|}
+\hline
+Operator & \verb+m//+ & \verb+m//g+ & \verb+s//+ & \verb+s//g+ \\
+\hline
+\hline
+\verb-~-      & boolean & integer & string & string \\ \hline
+\verb-=~-     & boolean & integer & boolean & integer \\ \hline
+\verb-!~-     & boolean & boolean & boolean & boolean \\ \hline
+\end{tabular}
+\end{center}
+
+\caption{Regular Expression Application Operator Results}
+\label{regex-appl-op}
+\index{regular expression!application operators}
+\end{table}
+
+These operators can also be used as unary operators. In this case, the
+regular expression is applied to the variable ``{\tt \_}''. Here:
+\begin{verbatim}
+    _ := 'green eggs'
+    =~ s/e/x/g
+\end{verbatim}
+the result is {\tt 3} since three substitutions were made, and the
+underscore variable, \verb+_+, contains \verb+grxxn xggs+.
+(See \S~\ref{io-and-regex} for more information and examples.)
+\index{regular expression!application|)}
+
+\subsection{Splitting Strings}
+
+Regular expression substitution can be used to split strings. This is done
+using the special substitution variable {\tt \verb+$$+}. Wherever this substitution
+variable is inserted in the substitution string the string is split. Here's
+an example:
+\begin{verbatim}
+    x := 'little string'
+    x =~ s/\s+/$$/
+    x =~ s/i/X$$X/
+\end{verbatim}
+In this case, {\tt x} starts out as a string of length one, the first substitution
+changes it to a string of length two by splitting it at the space between the words,
+and finally the last substitution splits the string at each {\tt i}. So after this,
+{\tt x} has length four, and it contains the string ``\verb+lX Xttle strX Xng+''.
+As this example shows, a regular expression applied to an array of strings
+gets applied to each element of the array.
+
+\subsection{Lookahead}
+\index{regular expression!lookahead|(}
+It is possible to do {\em lookahead} in regular expressions. This is used
+to match a portion of a string based on what follows. This example:
+\begin{verbatim}
+    'foo bar\txyz' ~ s/.*?(\w+)(?=\t).*/$1/
+\end{verbatim}
+\indopnkey{(?= )}{{\protect\em RE} positive lookahead}{?2xposlook}
+yields {\tt bar}. The lookahead is introduced with ``\verb+(?=+''. This
+regular expression is looking for a word followed by a tab. The lookahead
+portion of the regular expression is {\em zero length}; it doesn't match
+any actual characters in the string but rather matches or not based on
+{\em future characters}.
+
+The last example illustrates {\em positive} lookahead since it is
+looking for the existance of certain characters. It is also possible to
+look for the absense of certain characters:
+\begin{verbatim}
+    'foo bar\txyz' ~ s/.*?(\w+)(?!\t).*/$1/
+\end{verbatim}
+\indopnkey{(?"!\ )}{{\protect\em RE} negative lookahead}{?2xneglook}
+This example is looking for a word followed by {\em anything but}
+a tab; the result in this case is {\tt foo}. Negative lookahead is
+introduced by ``\verb+(?!+''.
+\index{regular expression!lookahead|)}
+
+\subsection{Comments}
+\index{regular expression!comment|(}
+Finally, if your regular expressions are complicated enough, you may wish
+to add comments to them. This too is possible:
+\begin{verbatim}
+    'foo bar\txyz' ~ s/.*?(\w+)(?#neg lookahead)(?!\t).*/$1/
+\end{verbatim}
+\indopnkey{(?\# )}{{\protect\em RE} comment}{?2zcomment}
+As in the previous example, the result here is {\tt foo}. The comment is
+introduced with ``\verb+(?#+'', and it is ignored when the regular
+expression is evaluated.
+\index{regular expression!comment|)}
+\index{regular expression|)}
+
+\section{Functions and Function Calls}
+\label{func-exprs}
+
+\index{expressions!functions}
+\index{functions!as expressions|(}
+In {\em Glish} a function definition is an expression of type {\tt function}.
+\index{assignment!of functions}
+As such, it can be assigned to a variable (or {\tt record} field):
+\begin{verbatim}
+    bump := function(x) x + 1
+\end{verbatim}
+assigns to {\tt bump} a function that when calls applies the {\tt +}
+operator to its argument and the constant {\tt 1}.
+
+The precedence of a function definition's body is lower than that of
+any {\em Glish} operator.  The above example is interpreted as
+\begin{verbatim}
+    bump := (function(x) x + 1)
+\end{verbatim}
+and not
+\begin{verbatim}
+    bump := (function(x) x) + 1
+\end{verbatim}
+
+Calls to functions are also expressions; their type is determined
+by the value of the given function when evaluated with the given
+arguments. (See \cxref{functions}, for a full discussion.)
+
+{\em Glish} includes a number of predefined functions.  (See \cxref{predefineds},
+for a discussion of each.)  A particularly useful predefined function
+\indfunc{shell}
+is {\tt shell}, which 
+\index{Bourne shell}
+interprets its arguments as a Bourne shell command line and returns
+the output from running the command (optionally on a remote host)
+as a string value.  For example,
+\index{example!{\tt shell()} function}
+\begin{verbatim}
+    csh_man := shell( "man csh" )
+\end{verbatim}
+assigns to the variable \verb+csh_man+ a string vector, each element
+corresponding to one line of the ``csh" manual page, and
+\begin{verbatim}
+    function lower(x)
+        shell("tr A-Z a-z", input=x, host="cruncher")
+\end{verbatim}
+returns its argument converted to lower-case, doing the work
+on the remote host ``cruncher".  (See \xref{clients}, for both
+a discussion of the different options you can use with {\tt shell}
+and how to use {\tt shell} to turn an ordinary UNIX program into
+a {\em Glish} client.)
+\index{functions!as expressions|)}
+
+\section{Reference Expressions}
+
+\index{expressions!references}
+A {\tt reference} to a variable or a {\tt record} field is created
+using the unary prefix operators {\tt ref} or {\tt val}
+(the last does not actually create a {\tt reference} type but
+instead copies its operand).  Such references then can be used in
+an expression anywhere the operand could appear.  (See \xref{references}.)
+
+\section{Request Expressions}
+\label{send-event-expr}
+
+\indtt{request}{expression}
+\index{events!sending|(}
+\index{events!receiving|(}
+\index{events!request/reply|(}
+Results from clients can be used as part of an expression. The syntax for
+retrieving a result from a client is exactly the same as sending an event
+to a client (See \xref{send-event-stmt}):
+\index{assignment!syntax}
+\begin{quote}
+    {\tt {\em expression} -> {\em name} ( {\em arg$_1$}, {\em arg$_2$}, $\ldots$ )}
+
+    {\tt {\em expr$_1$} -> [ {\em expr$_2$ } ] ( {\em arg$_1$}, {\em arg$_2$}, $\ldots$ )}
+\end{quote}
+If the event is sent to a client as part of an expression, 
+the {\em Glish} 
+interpreter waits for the result. When the result is received, 
+it is used in the evaluation of
+the expression. If no result is needed, the event is simply sent to the client and
+the interpreter continues.
+\index{events!request/reply|)}
+\index{events!receiving|)}
+\index{events!sending|)}
+
+\section{Event Expressions}
+
+\index{expressions!event}
+Three special values are available for the most recently received event:
+{\tt \$agent},\index{agent@{\tt \$agent}}
+{\tt \$name},\index{name@{\tt \$name}}
+and {\tt \$value}\index{value@{\tt \$value}}.
+These correspond to the {\tt agent} that generated the {\em last} event, the event's
+name, and the event's value.  (See \xref{event-vars}.)
+
+\section{Precedence}
+\label{precedence}
+
+\index{expressions!precedence|(}
+\index{operators!precedence|(}
+{\em Glish} operators for the most part take their precedence from~C,
+with a few additions.  Table~\ref{precedence-table} summarizes the
+precedence and associativity; entries at the top have highest precedence,
+those at the bottom lowest.  Parentheses can always be used to override
+precedence and associativity.
+
+\begin{table}[tbh]
+\begin{center}
+\begin{tabular}{|c|l|}
+\hline
+Operators & Associativity   \\
+\hline
+\hline
+{\tt .}, {\tt []}, {\tt ()},{\tt ::}	& left \\
+{\tt !}, unary {\tt +} and {\tt -}	& none \\
+{\tt :}	& none \\
+{\tt ref}, {\tt const}, {\tt val}	& none \\
+\verb+^+	& right \\
+{\tt *}, {\tt /}, {\tt \%}	& left \\
+{\tt +}, {\tt -}	& left \\
+\verb+==+, \verb+!=+, \verb+<+, \verb+<=+, \verb+>+, \verb+<=+ & none \\
+{\tt \&}	& left \\
+\verb+|+	& left \\
+{\tt \&\&}	& left \\
+\verb+||+	& left \\
+{\tt function}	& none \\
+{\tt :=}	& right \\
+\hline
+\end{tabular}
+\end{center}
+\caption{ Operator Precedence and Associativity, Highest to Lowest }
+\label{precedence-table}
+\end{table}
+\index{operators!precedence|)}
+\index{expressions!precedence|)}
+
+\section{{\tt include} Expression}
+\label{include-directive}
+\indtt{include}{expression}
+
+You can include the contents of a {\em Glish} source file using the {\tt include}
+expression:
+\begin{quote}
+    {\tt include "{\em file}"}
+\end{quote}
+where {\em file} is the name of the file to include. Typically {\tt include}
+expressions appear near the beginning of a source file, and include other
+source files as a simple ``library'' mechanism. You can check the success of the 
+inclusion  using the {\tt include}
+expression as follows:
+\begin{verbatim}
+    if ( ! include "my-first-file.g" )
+        include "my-fall-back-file.g"
+\end{verbatim}
+Here the file \verb+my-fallback-file.g+ is only included if the inclusion of
+\verb+my-first-file.g+ fails. If parsing any portion of the file being included
+fails, no part of the file is executed.
+
+\index{{\tt system} global variable!{\tt path.include}|(}
+\index{include!path|(}
+\label{system-path-include}
+The {\tt include} expressions  may be nested arbitrarily deep, 
+and the path {\em  Glish} searches
+when trying to include a file can be set as follows:
+\begin{verbatim}
+	system.path.include := ". /home/me/scripts /usr/local/share/glish"
+\end{verbatim}
+Multiple directories can be specified with this variable and then 
+searched in the order specified.
+If this variable is not set, only the current directory is
+searched for files which do not begin a ``\verb+/+''. Note the leading dot
+(``\verb+.+'') in the string above; if this isn't included the current
+directory will not be searched.
+A good place to set this variable is in the \verb+.+glishrc file(s)
+(See \xref{glishrc}).
+\index{include!path|)}
+\index{{\tt system} global variable!{\tt path.include}|)}
+
+\index{pragma!include once|(}
+While a {\em Glish} variable along with the {\tt is\_defined()} function (see
+\xref{is_defined-func}) can be used to prevent multiple inclusions of a
+file, a better way to handle this with the {\tt include once} {\em pragma}.
+When  this pragma is inserted into a file, it indicates that the interpreter
+should only include it once. The pragma is used as follows:
+\begin{verbatim}
+    pragma include once
+    print "file test_pragma.g included" 
+\end{verbatim}
+It forces the file to be included only once. Currently, to re-include the
+file you must exit and then re-enter {\em Glish}. The advantage is that on successive includes
+of the file {\em Glish} can return without parsing or opening the
+file.  This saves time and the makes include file simpler.
+\index{pragma!include once|)}
+
+\index{expressions|)}

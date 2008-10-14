@@ -1,0 +1,867 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: optionmenu.help,v 19.2 2004/08/25 02:17:19 cvsmgr Exp $
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{optionmenu}{Tk widget where the menu label changes with selection}
+
+\ahinclude{optionmenu.g}
+
+\ahcategory{widgets}
+
+   %
+   %ahkeyword registers module keywords
+   %
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This Tk widget enables you to create a flat (i.e.  no submenus) menu in
+a specified frame.  You can associate a label (that which appears on the
+top menu button), a name (that which appears in the menu list) and a
+value (whatever you like, it may be different from the label) for each
+menu item.  When you select one of the items in the menu, the label of
+the menu button changes to reflect the label of the selected item.  
+
+If your list of items is very long, a menu may be too long to sensibly
+manage. Therefore, you can optionally choose (see constructor) to use a popup
+scrolling listbox rather than a menu (it's really implemented with a
+\ahlink{selectabelist}{widgets:selectablelist} widget). 
+
+This widget can be treated like any of the built in Tk widgets, and has almost all of
+the same construction arguments as the button Tk widget. 
+
+Note that the {\tt width} argument can be used in three ways.
+If {\tt width=-1} (the default), the menu button will be wide enough
+(and of fixed width) to accomodate all of the item labels in the menu.  
+This means that the GUI won't jitter when you write different
+length labels into it.   If {\tt width=0}, then the menu button 
+will change its width to accomodate whatever label is written
+into it.  If {\tt width > 0}, then the button is again of fixed
+width, with the width that you specify.
+
+Whenever a selection is made, this widget emits an event called {\tt
+select}.  In the \$value of this event, you can find a record with
+fields {\tt label}, {\tt name}, {\tt value}, and {\tt index}
+(index of item in menu) containing that information for the selected
+item.  The event generation can be disabled if you desire with the
+\ahlink{seteventmask}{widgets:optionmenu.seteventmask} tool function. 
+
+Whenever the menu is replaced with the
+\ahlink{replace}{widgets:optionmenu.replace} tool function, this
+widget emits an event called {\tt replaced} (it has no value).  Note
+that the tool function \ahlink{extend}{widgets:optionmenu.extend}
+invokes the {\tt replace} function, so a {\tt replaced} event is
+generated then as well. 
+
+The widget accepts an event called {\tt setwidth}.  It is the same as
+calling the \ahlink{setwidth}{widgets:optionmenu.setwidth} tool
+function. 
+
+\end{ahdescription}
+
+
+
+\begin{ahconstructor}{optionmenu}{Construct an optionmenu}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Widget}
+  \ahaddarg{labels}{The menu item labels}{Empty menu}{Vector of strings}
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+  \ahaddarg{hlp}{Short popuphelp text}{No help}{String}
+  \ahaddarg{hlp2}{Long popuphelp text}{No help}{String}
+  \ahaddarg{nbreak}{The break point for menu or listbox usage}{20}{Integer}
+  \ahaddarg{padx}{Horizontal padding around text}{7}{Integer}
+  \ahaddarg{pady}{Vertical padding around text}{3}{Integer}
+  \ahaddarg{width}{Width in character units}{Auto-scale}{Integer}
+  \ahaddarg{updatelabel}{Update menu label with selected item}{T}{T or F}
+  \ahaddarg{height}{Height in character units}{1}{Integer}
+  \ahaddarg{justify}{Justification of text}{`center'}{String from `center', 'left', 'right'}
+  \ahaddarg{font}{Font of text }{}{X font}
+  \ahaddarg{relief}{Edge relief}{`groove'}{String from `flat', `ridge', 
+                                           `raised', `sunken', `groove'}
+  \ahaddarg{borderwidth}{Border width}{2}{Integer}
+  \ahaddarg{foreground}{Color of text}{`black'}{X color}
+  \ahaddarg{background}{Background color}{`lightgrey'}{X color}
+  \ahaddarg{disabled}{Is inactivated ?}{F}{Boolean}
+  \ahaddarg{anchor}{Location of text}{`c'}{String  from 'c', 'n', 's', 'e', 'w', 'ne',
+                                           'nw', 'se', 'sw'}
+  \ahaddarg{fill}{How to expand when resized}{'none'}{String from `x', `y', `both', `none'}
+  \ahaddarg{widgetset}{The widget server to use}{dws}{widgetserver tool}
+\end{ahargs}
+\ahreturns{Agent}
+
+\begin{ahdescription}
+This is the constructor.   Note that if you give just the  {\stfaf labels} argument,
+then {\stfaf names} and  {\stfaf values} are set equal to {\stfaf labels}.
+If you give either of {\stfaf names} or {\stfaf values}, you must
+also give {\stfaf labels} (it is the primary).
+
+\end{ahdescription}
+
+
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'optionmenu.g'   
+- labels := "Absolute RelRef RelCen";
+- names := ['Absolute', 'Relative to ref. pixel', 'Relative to center'];
+- values := [1,2,3];
+- f := frame();
+- hlp := 'Select type of coordinate';
+- m := optionmenu(f, labels, names, values, hlp);
+\end{verbatim}
+Creates an optionmenu with a popup menu.
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'optionmenu.g'   
+- labels := "Absolute RelRef RelCen";
+- names := ['Absolute', 'Relative to ref. pixel', 'Relative to center'];
+- values := [1,2,3];
+- f := frame();
+- hlp := 'Select type of coordinate';
+- m := optionmenu(f, labels, names, values, hlp, nbreak=1)
+\end{verbatim}
+Creates an optionmenu with a popup listbox.
+\end{ahexample}
+
+\end{ahconstructor}
+ 
+
+\begin{ahfunction}{extend}{Extend the menu with more items}
+\begin{ahargs}  
+  \ahaddarg{labels}{The menu item labels}{Empty menu}{Vector of strings}
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+  \ahaddarg{width}{Width in character units}{Auto-scale}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function extends the menu with the supplied items.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels);
+- m.extend(labels="RelDir");
+- m.getlabels();
+Absolute RelRef RelCen RelDir
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{replace}{Replace the menu with the provided items}
+\begin{ahargs}  
+  \ahaddarg{labels}{The menu item labels}{Empty menu}{Vector of strings}
+  \ahaddarg{names}{The menu item names}{Empty menu}{Vector of strings}
+  \ahaddarg{values}{The menu item values}{Empty menu}{Vector of anything}
+  \ahaddarg{width}{Width in character units}{Auto-scale}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function replaces the menu with the supplied items.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels);
+m.getlabels();
+Absolute RelRef RelCen
+- m.replace("a b c", "A B C", [10,20,40]);
+- m.getlabels();
+a b c
+- m.getnames();
+A B C
+- m.getvalues();
+[10 20 40]
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{selectindex}{Select an item in the menu by index}
+\begin{ahargs}  
+  \ahaddarg{idx}{The menu item index}{}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function selects a menu item by its index. It is equivalent
+to selecting the item with the GUI interface.  If the index is
+invalid, it returns {\tt F}.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels);
+- m.selectindex(3);
+- m.getname();
+RelCen
+-
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{selectlabel}{Select an item in the menu by label}
+\begin{ahargs}  
+  \ahaddarg{label}{The menu item label}{}{Same type as the array ``labels'' used in construction}
+\end{ahargs}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This tool function selects a menu item by its label.  It is equivalent
+to selecting the item with the GUI interface.  If the label is invalid,
+it returns {\tt F}. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [10, 20, 30];
+- f := frame();
+- m := optionmenu(f, labels, values=values);
+- m.selectlabel('RelRef');
+- m.getlabel(); 
+RelRef
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectname}{Select an item in the menu by name}
+\begin{ahargs}  
+  \ahaddarg{name}{The menu item name}{}{Same type as the array ``names'' used in construction}
+\end{ahargs}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This tool function selects a menu item by its name.  It is equivalent
+to selecting the item with the GUI interface.  If the name is invalid,
+it returns {\tt F}. 
+
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- names := "A B C";
+- f := frame();
+- m := optionmenu(f, labels, names);
+- m.selectname("C");
+- m.getindex(); 
+3
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{selectvalue}{Select an item in the menu by value}
+\begin{ahargs}  
+  \ahaddarg{value}{The menu item value}{}{Same type as the array ``values'' used in construction}
+\end{ahargs}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This tool function selects a menu item by its value.  It is equivalent
+to selecting the item with the GUI interface.  If the value is invalid,
+it returns {\tt F}. 
+
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [10, 20, 30];
+- f := frame();
+- m := optionmenu(f, labels, values=values);
+- m.selectvalue(20);
+- m.getname(); 
+RelRef
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{getindex}{Get the index of the current selection}
+\ahreturns{Integer or F}
+
+\begin{ahdescription}
+
+This tool function recovers the index of the currently selected item
+in the menu.  If the menu is empty, it returns {\tt F}.  If no menu item
+has been selected by the user, it returns unity.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels=labels);
+- m.selectindex(2);
+- m.getindex();
+2
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{getpreviousindex}{Get the index previous to the current selection}
+\ahreturns{Integer or F}
+
+\begin{ahdescription}
+
+This tool function recovers the index that you selected previous to
+the current selection.  If the menu is empty, it returns {\tt F}.  If no
+menu item has been selected by the user, it returns unity. 
+
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels=labels);
+- m.selectindex(2);
+- m.selectindex(3);
+- m.getpreviousindex();
+2
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getlabel}{Get the label of the current selection}
+\ahreturns{String or F}
+
+\begin{ahdescription}
+
+This tool function recovers the label of the currently selected item
+in the menu.  If the menu is empty, it returns {\tt F}.  If no menu item
+has been selected by the user, it returns the first item. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels=labels);
+- m.selectindex(2);
+- m.getlabel();
+RelRef
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getlabels}{Gets all of the labels associated with the menu}
+\ahreturns{Vector of String}
+
+\begin{ahdescription}
+
+This tool function recovers the labels associated with each item in 
+the menu.  If the menu is empty, it returns an empty array.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- f := frame();
+- m := optionmenu(f, labels);
+- m.getlabels();
+Absolute RelRef RelCen
+
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getname}{Get the name of the current selection}
+\ahreturns{String or F}
+
+\begin{ahdescription}
+
+This tool function recovers the name of the currently selected item
+in the menu.  If the menu is empty, it returns {\tt F}.  If no menu item
+has been selected by the user, it returns the first item. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- names := ['Absolute', 'Relative to ref. pix', 'Relative to center'];
+- f := frame();
+- m := optionmenu(f, labels=labels, names=names);
+- m.selectindex(2);
+- m.getname();
+Relative to ref. pix
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getnames}{Gets all of the names associated with the menu}
+\ahreturns{Vector of String}
+
+\begin{ahdescription}
+
+This tool function recovers the names associated with each item in 
+the menu.  If the menu is empty, it returns an empty array.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- names := ['Absolute', 'Relative to ref. pix', 'Relative to center'];
+- f := frame(); 
+- m := optionmenu(f, labels=labels, names=names);
+- m.selectindex(2);
+- m.getnames();
+Absolute Relative to ref. pix Relative to center'
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getvalue}{Get the value of the current selection}
+\ahreturns{Same type as ``values'' array in constructor or Fail}
+
+\begin{ahdescription}
+
+This tool function recovers the value of the currently selected item
+in the menu.  If the menu is empty, it returns a {\tt Fail}.  If no menu
+item has been selected by the user, it returns the first item. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [1,2,3];
+- f := frame();
+- m := optionmenu(f, labels=labels, values=values);
+- m.selectindex(2);
+- m.getvalue();
+2
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{getvalues}{Gets all of the values associated with the menu}
+\ahreturns{The  ``values'' array given (explicitly or implicitly) in the constructor}
+
+\begin{ahdescription}
+
+This tool function recovers the values associated with each item in 
+the menu.  If the menu is empty, it returns an empty array.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [1,2,3]
+- f := frame();
+- m := optionmenu(f, labels, values=values);
+- m.getvalues();
+[1 2 3]
+\end{verbatim}
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{findlabel}{Find the index of the item with the given label}
+\begin{ahargs}  
+  \ahaddarg{label}{The menu item label}{}{Same type as the array ``labels'' used in construction}
+\end{ahargs}
+\ahreturns{Integer or F}
+ 
+\begin{ahdescription}
+ 
+This tool function find the index in the menu of the item specified by
+its label.  If you give an invalid label, {\tt F} is returned. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [10, 20, 30];
+- f := frame();
+- m := optionmenu(f, labels, values=values);
+- m.findlabel('Absolute');
+1
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{findname}{Find the index of the item with the given name}
+\begin{ahargs}  
+  \ahaddarg{name}{The menu item name}{}{Same type as the array ``names'' used in construction}
+\end{ahargs}
+\ahreturns{Integer or F}
+ 
+\begin{ahdescription}
+ 
+This tool function find the index in the menu of the item specified by
+its name.  If you give an invalid name, {\tt F} is returned. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Abs RelRef RelCen";
+- names := ['Absolute', 'Relative to ref. pixel', 'Relative to center'];
+- values := [10, 20, 30];
+- f := frame();
+- m := optionmenu(f, labels, names, values);
+- m.findname('Relative to ref. pixel');
+2
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{findvalue}{Find the index of the item with the given value}
+\begin{ahargs}  
+  \ahaddarg{value}{The menu item value}{}{Same type as the array ``value'' used in 
+construction}
+\end{ahargs}
+\ahreturns{Integer or F}
+ 
+\begin{ahdescription}
+ 
+This tool function find the index in the menu of the item specified by
+its value.  If you give an invalid value, {\tt F} is returned. 
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [10, 20, 30];
+- f := frame();
+- m := optionmenu(f, labels, values=values);
+- m.findvalue(20);
+2
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{geteventmask}{Get the event mask}
+\ahreturns{Vector of Bool}
+
+\begin{ahdescription}
+
+This tool function recovers the event mask.  This mask indicates
+whether the {\tt select} event will be emitted or not when you select a
+menu item.  By default the mask is all T.  You can modify it with the
+\ahlink{seteventmask}{widgets:optionmenu.seteventmask} tool function. 
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [1,2,3];
+- f := frame();
+- m := optionmenu(f, labels=labels, values=values);
+- m.geteventmask();
+[T T T]
+- m.seteventmask([T,F,T]);
+- m.geteventmask();
+[T F T]
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{seteventmask}{Set the event mask}
+\begin{ahargs}  
+  \ahaddarg{mask}{The event mask}{}{Vector of Bool}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the event mask.  This mask indicates whether
+the {\tt select} event will be emitted or not when you select a menu
+item.  By default the mask is all T.  You can get the current mask with
+the \ahlink{geteventmask}{widgets:optionmenu.geteventmask} tool
+function.  If the mask is invalid, it returns {\tt F}. 
+
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := "Absolute RelRef RelCen";
+- values := [1,2,3];
+- f := frame();
+- m := optionmenu(f, labels=labels, values=values);
+- m.seteventmask([T,F,T]);
+- m.geteventmask();
+[T F T]
+- whenever m->select do {print $value;};
+\end{verbatim}
+
+In this example, when you selected the second item, no
+event would be emitted.
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setlabel}{Set the label of the optionmenu}
+\begin{ahargs}  
+  \ahaddarg{label}{The label}{}{String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the label of the optionmenu.  This label 
+can be anything, it does not have to be in the optionmenu list
+of labels.
+
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- labels := 
+- values := [1,2,3];
+- f := frame();
+- m := optionmenu(f, labels=labels, values=values);
+- m.setlabel('fish');
+- m.getlabel()
+fish
+- m.getlabels()
+Absolute RelRef RelCen
+\end{verbatim}
+
+Although the label of the menu is now ``fish'',
+the labels of the items in the menu are unchanged.
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setforeground}{Set the color of the foreground of the optionmenu button}
+\begin{ahargs}  
+  \ahaddarg{color}{The color}{}{Any X color encoded as a String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the color of the foreground of the optionmenu
+button.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setbackground}{Set the color of the background of the optionmenu button}
+\begin{ahargs}  
+  \ahaddarg{color}{The color}{}{Any X color encoded as a String}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the color of the background of the optionmenu
+button.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setwidth}{Set the width of the optionmenu button}
+\begin{ahargs}  
+  \ahaddarg{width}{The width in character units}{}{Integer}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function sets the width of the optionmenu button  in character
+units.
+
+\end{ahdescription}
+\end{ahfunction}
+ 
+
+
+
+\begin{ahfunction}{disabled}{Disable or enable the optionmenu widget}
+\begin{ahargs}  
+  \ahaddarg{disable}{disable the widget}{T}{T or F}
+\end{ahargs}
+\ahreturns{Bool}
+
+\begin{ahdescription}
+
+This tool function disables or enables the optionmenu.  
+
+\end{ahdescription}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{isenabled}{Is the optionmenu widget enabled ?}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+  
+This tool function indicated whether the optionmenu has been disabled or
+not.
+ 
+\end{ahdescription}
+ 
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := optionmenu(f, "dog cat");
+- m.disable();
+- m.isenabled()
+F
+-
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{done}{Destroy ourselves}
+\ahreturns{Bool}
+ 
+\begin{ahdescription}
+ 
+This tool function destroys the widget.
+ 
+\end{ahdescription}
+ 
+\begin{ahexample}
+\begin{verbatim}
+- f := frame();
+- m := optionmenu(f, "dog cat");
+- m.done();
+T
+- m
+F  
+-  
+\end{verbatim}
+ 
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahobject}

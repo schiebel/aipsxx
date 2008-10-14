@@ -1,0 +1,581 @@
+\documentclass{article}
+\usepackage{html}
+\pagestyle{empty}
+
+\externallabels{../../../user/Utility}{../../../user/Utility/labels.pl}
+\externallabels{../../../user/General}{../../../user/General/labels.pl}
+\externallabels{../../../user/Display}{../../../user/Display/labels.pl}
+\externallabels{../../../user/Dish}{../../../user/Dish/labels.pl}
+\externallabels{../../../user/SynthesisRef}{../../../user/SynthesisRef/labels.pl}
+\externallabels{../../../user/ATNF}{../../../user/ATNF/labels.pl}
+\externallabels{../../../user/NFRA}{../../../user/NFRA/labels.pl}
+\externallabels{../../../user/NRAO}{../../../user/NRAO/labels.pl}
+\externallabels{../../../reference/Glish}{../../../reference/Glish/labels.pl}
+\begin{document}
+\begin{rawhtml}
+
+
+<html>
+<head>
+<title>AIPS++ April Newsletter</title>
+</head>
+
+<body background="../backdrop2.gif"  text="#000000" link="#008c66" vlink="#00009c" alink="#ff0000">
+
+
+
+<p>
+<table cellpadding=4 cellspacing=4 width="100%">
+<tr><td></td><td><img src="../timemast3.gif"><BR>
+</tr></td> 
+<tr><td></td><td><img src="../aprilmast01.gif"></tr></td>
+
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+<td valign=top>
+<center><font face=helvetica><b>AIPS++  is a project of the 
+<font face=helvetica><a href="http://aips2.nrao.edu/aips++/docs/project/consortium.html">AIPS++ Consortium</a></b></font></font></center><p>
+<p><br><p>
+
+<a name="jive"><FONT FACE=helvetica size="+3"><b>JIVE Use of AIPS++</b></FONT></a><br>
+<font size="3"><i>Huib Jan van Langevelde, 
+Chris Phillips, Harro Verkouter</i> - 
+JIVE, Dwingeloo<p>
+
+
+
+<P>One of the main efforts at the Joint Institute for VLBI in Europe (JIVE) at Dwingeloo in the Netherlands is the construction of a 16 station MkIV data processor for the European VLBI Network (EVN). This correlator will process both European and global VLBI projects recorded in VLBA and MkIV format - with data-rates up to 1024 Mbit/s per station and 4096 spectral channels per baseline. The project is currently in a transition phase between construction and testing; first fringes were obtained in the Summer of 1997 and currently we are integrating hardware prototypes and software. A first imaging test, using the final hardware, is planned for the Summer of 1998.
+
+
+<P>It was decided to use <font face=helvetica>AIPS++</font> as the platform for developing all post-processing software. This includes (pseudo) real-time display of results, data quality control, feedback to VLBI telescopes, preparation of calibration data, and formatting the product for the end user. For the latter it is assumed that most astronomical VLBI calibration initially will be carried out in "Classic" AIPS, and therefore users will need their data in <FONT FACE=courier>UVFITS</FONT> format.
+
+<P>One of the considerations in the decision to develop this "off-line" part of the software in <font face=helvetica>AIPS++</font> is that we recognize it as the data reduction tool of the future. In particular, the idea that staff astronomers can work and program for the correlator with the same software they use for their scientific research is attractive, but the main consideration in streamlining the correlator output is speed. The expected data-rates are in the range of 50 kB/s to 3 MB/s.  We decided to minimize any formatting or sorting operations in the output stage. We also wanted to avoid having to copy the raw data to another format for inspection. This seemed to rule out direct conversion to a standard format, or re-sorting the data for a specific package. <font face=helvetica>AIPS++</font>, on the other hand, offers an interesting capability  by creating a special Storage Manager for the correlator output in its raw form.
+
+<P>At the moment we are still defining the correlator output format, ensuring that its content allows a direct mapping to an <font face=helvetica>AIPS++</font> Measurement Set. This explains our interest in the current effort to come to an MS definition that is capable of completely describing VLBI measurements. As an important step in this project a "JIVE filler" was created that writes the current output data into an MS. This has proven a useful exercise not only to learn how to work in the <font face=helvetica>AIPS++</font> software environment, but also to discover what data structures are required to create a proper data set.
+
+<P>Furthermore, it has given us a nice tool to inspect the data produced by the correlator prototype. We have had the capability to study the data with the standard <font face=helvetica>AIPS++</font> tools from the day after first fringes on 22 July 1997. Using mainly <I>Glish</I> scripts for mathematical operations, and plotting, it is possible to analyze the correlator output in the testing stage.
+
+
+<P><center><a href="../jive.gif"><IMG SRC="../jive03.gif"></a><br>
+(please click on image to obtain larger view)</center>
+<p>
+
+A typical example of such an exercise is displayed in the above figure. Data from a recent test using two separate tapes, played back synchronously for the first time (the first fringes were obtained with two MERLIN stations recorded on a single tape), is displayed as a time series of correlation functions. The absolute value of the correlator response over 64 lags is given, with every two second integration slightly offset in amplitude from the previous one. The data were recorded (with the new MkIV formatters) in November 1997 and the baseline is between Effelsberg and Medicina. The bandwidth was 2 MHz, the observing band 5 GHz and the source 0016+731.<P>
+
+
+The data were filled into an <font face=helvetica>AIPS++</font> Measurement Set which contained the output of 128 correlator chips (one eighth of the final capacity), each with 64 complex lags, integrated over 2 seconds. <I>Glish</I> scripts were used to select and display the data. The figure shows that with the dynamic control of the correlator implemented in the control software, we get a nice stable residual delay, which is only 250 nanoseconds from where it was expected. Another important measure in this figure is that the average correlation amplitude is approximately 0.002, which again is as expected.<P>
+
+Other simple diagnostics that are accessible with the standard <font face=helvetica>AIPS++</font> tools are plots of the residual rate and comparison of the phase response of separate frequency bands. We have been able to quickly produce simple routines that, for example, compensate for the residual rate, average the data in time and Fourier transform to inspect the spectral response. The results can be compared with the autocorrelation spectra, which were also obtained by Fourier transforming the data.
+
+<p>
+</tr></td>
+
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+<td valign=top>
+<a name="new"><font face=helvetica size="+3"><b>What's New in AIPS++</b></font></a><br>
+<font size="3"><i>Tim Cornwell &amp; Brian Glendenning </i>- NRAO, AOC<p>
+
+
+
+<P>The following changes have been made to the development version of 
+<font face=helvetica>AIPS++</font> over the last month:</P>
+
+<UL>
+<LI>The single dish analysis program, \end{rawhtml} \htmlref{\tt Dish}{Dish}
+\begin{rawhtml}, 
+can now do regridding (via several different algorithms), and multiple 
+operations can now be sequenced. 
+
+<LI>A <I>Glish</I>-based visibility visualizer, 
+<FONT FACE=courier>mans</FONT>, is available. This is currently 
+most useful for WSRT data, but is being extended to work for 
+MeasurementSets from other telescopes. 
+
+<LI> \end{rawhtml} \htmlref{\tt sky}{sky} \begin{rawhtml} 
+received a number of new additions: 
+deconvolution speed has been improved by using convolutions wherever 
+possible; complex images (e.g. RR, RL, LR, LL) can now be made; a 
+state window has been added to the GUI; and the documentation has 
+been reworked. 
+
+<LI>Component models of the sky brightness can vary in spectral 
+index and frequency. 
+
+<LI>The \end{rawhtml} \htmlref{\tt image}{image} \begin{rawhtml} object can now work with 
+transient image expressions. 
+
+<LI>To improve on-line help for GUIs, a popup (transient) help 
+mechanism has been defined and is now available from some GUI's, 
+such as the <FONT FACE=courier>pgplotter</FONT>. 
+
+<LI>The preferred plotting tool, \end{rawhtml} \htmlref{\tt pgplotter}{plotter.pgplotter} \begin{rawhtml}, 
+acquired simple zoom and color map manipulation tools, and the general 
+ability for users to customize a "Tools" menu. In addition, users can 
+specify the minimum number of colors that are needed, and a private 
+color map will be installed if necessary. 
+
+<LI>The \end{rawhtml} \htmlref{\tt measures}{measures} \begin{rawhtml} GUI has been much improved 
+by a number of additions, including more on-line help (both pop-up and 
+transient); and some new applications such as Doppler-related conversions. 
+
+<LI><a href="http://aips2.nrao.edu/aips++/docs/user/Aipsview/Aipsview.html"><i>Aipsview</i></a> has had a number of improvements: vector overlays 
+are now available, the GUI has been improved; and 'Transient" image 
+expressions can now be viewed. 
+
+<LI>Some <I>Glish</I>-based least-squares fitting 
+(<FONT FACE=courier>ls.g</FONT>) and general matrix routines  
+(<FONT FACE=courier>matrix.g</FONT>) 
+ are available. <I>Glish</I>/<FONT FACE=courier>Tk</FONT> 
+buttons can now have icons (visible in the 
+<FONT FACE=courier>Dish</FONT> GUI). 
+<LI>A flexible mechanism for executing functions periodically 
+in <i>Glish</i> is now available  
+(<FONT FACE=courier>timer.g</FONT>)</UL>
+</tr></td>
+
+
+
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+<td valign=top>
+<a name="measures"><FONT FACE=helvetica size="+3"><b>The Measures System - Part 1</b></font></a><br>
+<font size="3"><i>Wim Brouw</i> - ATNF, Epping<p>
+
+<P>
+<B>Background</B></FONT><P>
+The <font face=helvetica>AIPS++</font> \end{rawhtml} \htmlref{\tt measures}{measures.measures} \begin{rawhtml} module contains two large groups:
+<p>
+<UL>
+<LI><font face=courier>Quantities</font>, i.e. values with units attached 
+(10km/s)<p>
+<LI><font face=courier>measures</font>, i.e. astronomical entities (one or more <FONT FACE=courier>Quantities</FONT>) with a description of the reference frame they belong to (e.g. an epoch with a reference code 'LAST', an environment frame with the position on Earth, and an offset of the current sidereal date)
+</UL>
+
+<P>
+Both of these basic container groups can be manipulated and converted to other units and/or another reference environment (e.g. 10km/s to pc/a; the 'LAST' to a 'UTC'). This installment  mainly discusses them as used in C++ programs.
+<P>
+
+<b>Quantity</b><p>
+
+A <FONT FACE=courier>Quantity</FONT> originates from a <FONT FACE=courier>String</FONT> (e.g. <FONT FACE=courier>Quantity("10.5km/s"))</FONT> or from a value and a <FONT FACE=courier>String</FONT> (e.g. <FONT FACE=courier>Quantity(10.5, "km/s")).</FONT>The basic structure of the <FONT FACE=courier>quantity String</FONT> is:<P>
+
+
+<B><FONT FACE=courier>value[[ |.|/][unit[signed integer exponent]]]...</B>
+</FONT><P>
+
+
+A space or "." denotes multiplication, a "/" division. The following would all
+indicate the same acceleration:<p>
+ 
+<B><FONT FACE=courier>
+5km/s2<br> 
+5km/s/s<br> 
+5km.s-2<br> 
+.005Mm2/Mm.s-2</FONT></B><P>
+
+Each unit is composed of an optional SI prefix (from Y (yotta) to y (yocto), and u for micro) and a named unit. The basic unit is one of the defining SI units (m, kg, s, A, K, cd, mol, rad, sr) (note that kg is defined, but multiples are expressed in g, e.g. mg) or one of a set of SI and astronomical SI units (like Jy, AU, h), while some special units are available as well (including non-SI ones used in <FONT FACE=courier>FITS</FONT>). User specified units can be added to the known units as well. All known units can be viewed with <FONT FACE=courier>UnitMap::list().</FONT>Some special formats can be used for dates (e.g. 1998/3/2), times (12:13), and angles (2:0:0, 30.0.0, 2h0m, 30d0m).<P>
+
+<FONT FACE=courier>Quantities</FONT> can be added and subtracted (if their units conform, no adding of apples and pears like s and m), multiplied and divided, and converted to other units with the convert (<FONT FACE=courier>to_unit</FONT>) member operation.  Examples:<P>
+
+<B><FONT FACE=courier>a = Quantity("10km/s")<BR>
+      cout &lt;&lt; a.convert("AU/a") &lt;&lt; endl<BR>
+      cout &lt;&lt; a.convert("uJy") &lt;&lt; endl</P>
+</B></FONT>
+
+<P>will result in:<P>
+
+<B><FONT FACE=courier>2.10949527 AU/a <BR>
+      1e+36 uJy.m.kg-1.s</P>
+</B></FONT>
+
+<P>The full range of possibilities can be viewed using the <font face=courier>measures</font> module help in the <a href="http://aips2.nrao.edu/aips++/docs/aips/aips.html"><i>aips package</i></a>.<P>
+
+A more general, templated <FONT FACE=courier>Quantity</FONT> (<FONT FACE=courier>Quantum</FONT>) is available, allowing such constructs as <FONT FACE=courier>Quantum&lt;Int&gt;,</FONT><FONT FACE=courier>Quantum&lt;Vector&lt;Float&gt; &gt;</FONT> and also <FONT FACE=courier>Vector&lt;Quantum&lt;Double&gt; &gt;.
+</FONT>
+
+<p>
+
+<b>Measure</b><p>
+A <FONT FACE=courier>Measure</FONT> is an astronomical entity consisting of: a <U><FONT FACE=courier>value</FONT></U> (a <FONT FACE=courier>MeasValue</FONT> in <font face=helvetica>AIPS++</font> jargon, e.g. an <FONT FACE=courier>MVDirection</FONT> containing  direction-cosines derived from a right ascension and a declination); <U>a reference environment</U>, representing the <FONT FACE=courier>MeasValue</FONT>, and, <U>if relevant, in which frame</U> (when, where, in which direction, and at what velocity) <U>it belongs</U>. The environment can also contain an optional offset (the ability to specify only the time part of a full epoch, e.g. midnight today).<P>
+
+
+The following <FONT FACE=courier>Measures</FONT> are available at the moment or are being planned:<P>
+
+<dl>
+<dt><FONT FACE=courier><P>- MEpoch</FONT>-- an instant in time <dd>(UTC, TAI, TDB, ...)<BR>
+<dt>- <FONT FACE=courier>MPosition</FONT>-- a position on Earth <dd>(ITRF, WGS84, shortly more)<BR>
+<dt>- <FONT FACE=courier>MDirection</FONT>-- a direction in space <dd>(J2000, B1950, HADEC, APP, AZEL, SUN, GALACTIC, JUPITER, ...)<BR>
+<dt>- <FONT FACE=courier>MRadialVelocity</FONT> -- a radial velocity <dd>(LSR, GALACTO, GEO, TOPO, ...)<BR>
+<dt>- <FONT FACE=courier>MFrequency </FONT>-- electromagnetic wave characteristics <dd>(LSR, ...)<br>
+<dt>- <FONT FACE=courier>MDoppler</FONT> -- radial velocity in special units 
+<dd>(RADIO, OPTICAL, ...)<BR>
+<dt>- <FONT FACE=courier>MUVW </FONT>-- under trial at the moment <dd>(J2000, ...) <BR>
+<dt>- <FONT FACE=courier>MEarthMagnetic</FONT> -- Earth magnetic field (partly available) <dd>(IGRF, DIPOLE, MXDIPOLE, ...) <br>
+</dl>
+<p>
+
+The reference codes are enumerated (e.g. <FONT FACE=courer>MDirection::VENUS</FONT>). The reference frame is created from <FONT FACE=courier>Measures</FONT>:
+<p>
+
+
+<B><FONT FACE=courier>MeasFrame frame(MDirection(ra,dec), MEpoch(54321,92))
+</B></FONT>
+<p>
+
+
+The full environment is specified using constructs like: <P>
+<B><FONT FACE=courier>MDirection::Ref ref(MDirection::GALACTIC, frame)
+</B></FONT></P>
+
+<P>resulting in a direction:<P>
+<B><FONT FACE=courier><P>MDirection dir(long,lat,ref);</B></FONT><P>
+
+<FONT FACE=courier>Measures</FONT> as described above are basically containers: they can be used to describe the values used in an observation (they can also be stored in Tables for persistence with e.g. a <FONT FACE=courier>MeasurementSet</FONT>).
+
+<P>Since a <FONT FACE=courier>measure</FONT> contains all the information to describe it fully (including the, possibly global, frame ('when', 'where', ...)), it can be converted to any other reference code of the same type; e.g., if you know the UTC epoch, and the frame has an observatory position ('where') in it, this UTC can be converted to a LAST with a simple conversion engine:<P>
+
+
+<B><FONT FACE=courier><P>Quantity tim<BR>
+Quantity::read(tim, "today")<BR>
+MPosition tel = MeasTable::Observatory("ATCA")<br>
+MEpoch epo(tim, MEpoch::UTC)<BR>
+MEpoch::Convert engine(epo, MEpoch::Ref(MEpoch::LAST, MeasFrame(tel)))<BR>
+cout &lt;&lt; MVTime(engine().getValue()) &lt;&lt; endl<BR>
+// MVTime </b></FONT>for formatting<BR>
+
+<p>
+The <FONT FACE=courier>MEpoch::Convert</FONT> creates a conversion engine to convert from the input type to the output type (UTC to LAST). Once set-up it can be reused for similar calculations for speed reasons. Actual conversion is done with the <FONT FACE=courier>()</FONT> operator (empty argument indicates the input argument) as is shown in the output statement. The <FONT FACE=courier>MVTime</FONT>(and <FONT FACE=courier>MVAngle</FONT>) are special formatting (with specifiable format and precision) classes.
+
+<P>
+
+
+<font face=courier>Measure</font> conversions use the data (e.g. JPL tables, magnetic field components, dUT and polar motion) available from international organizations (e.g. IAU, IERS, IGRF).  Standard conversions use  the IAU nutation model with interpolation over an interval that can be specified to speed-up processing by default. However, the full JPL DE200 and DE405 tables can be used if higher precision needed.  If lower precision suffices, the linear interpolation interval can be changed; IERS tables (with dUT and polar motion) can be bypassed if their precision is not warranted etc. All these selections are steered by the standard <font face=helvetica>AIPS++</font> \end{rawhtml} \htmlref{\tt aipsrc}{aipsrc} \begin{rawhtml} mechanism (see the Reference manual).
+<P>
+
+To aid the user, an <FONT FACE=courier>Observatory</FONT> table is available on-line (add your observatory, or improve its coordinates),  a source list (with the VLBI reference frame sources) and spectral line list (which at the moment contains only one element): send me your favourite spectral lines. The full capabilities are described in the <font face=courier>measures</font> module.
+<P>
+
+Apart from the C++ classes described above, the full capabilities of both the <FONT FACE=courier>Quantity </FONT>and <FONT FACE=courier>Measure</FONT> classes can be used from a <FONT FACE=courier>measures</FONT> GUI (invoked by <FONT FACE=courier>dm.gui()</FONT>on the <I>Glish</I> command line). A description of this GUI will appear in the next Newsletter.
+
+<p>
+</tr></td>
+<tr><td valign=top>
+
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+
+
+<td valign=top>
+
+<a name="plot"><FONT FACE=helvetica size="+3"><b>PGPlotter</b></font></a><BR>
+<I>Brian Glendenning</I> - NRAO, AOC</P></FONT>
+
+
+<P>A new plot GUI has appeared in the last couple of months - \end{rawhtml} \htmlref{\tt pgplotter.pgplotter}{pgplotter.pgplotter} \begin{rawhtml} is essentially a replacement for <font face=courier>plotter</font>. In it's simplest modes it is very easy to operate:
+<p>
+
+<table cellpadding=2 cellspacing=2 border=0 width="80%" align=center>
+<tr><td>
+<FONT FACE=courier><B>include 'pgplotter.g'</B></FONT></td><td></tr></td>
+<tr><td>
+<font face=courier><b>pg := pgplotter()</B></FONT></td><td># Make the plot surface</tr></td>
+<tr><td>
+<B><FONT FACE=courier>x := 2*pi*1:1000/1000</B></FONT></td><td># 0-&gt;2*pi</tr></td>
+<tr><td>
+<FONT FACE=courier><B>pg.plotxy(x, sin(x))</B><td></tr></td>
+<tr><td>
+<font face=courier><b>pg.plotxy(x, cos(x), newplot=F</b></FONT>)</td><td>  # Plot on the same graph</tr></td></table>
+
+<P>
+
+
+<P>This creates a GUI window, and plots sine and cosine curves on the same plot. Besides this simple interface to plotting, complete access to <FONT FACE=courier>PGPLOT</FONT>* style plotting is available. For those of you unfamiliar with <FONT FACE=courier>PGPLOT</FONT>, it allows you to:</P></FONT>
+<OL>
+
+<LI>plot lines, errors, and points in a variety of styles and colors;
+<LI>display 2D ("image") data as color rasters or contours;
+<LI>perform flexible annotation of axes or arbitrary plot locations;
+<LI>obtain cursor feedback for creating interactive applications;
+<LI>create multiple plots on a single page; and
+<LI>many, many other displays with options.</OL>
+
+<P>
+
+
+</FONT><P>The <FONT FACE=courier>pgplotter</FONT> adds a number of capabilities on top of "native" <FONT FACE=courier>pgplot</FONT> capabilities.<P>
+
+<UL>
+<LI>Plot commands can be added or changed through a GUI. For example, if you want to change a line's color, or want to add an annotation, you can do this through the GUI. You can do this with plots that you create, or which are created for you by some application such <FONT FACE=courier>sky</FONT>. 
+
+<LI>You can save the plot as a "plot" file, and come back to it in a later session and extend or change the plot. You can have multiple pages in a single plot file. 
+
+<LI>You can preview a PostScript version of your plot, and send it directly to the printer from the GUI. The GUI displays the <FONT FACE=courier>x,y </FONT>value of the plot that the cursor is over, 
+
+<LI>You can interactively zoom the plot, and change the color map of a raster display. 
+
+<LI>When the <font face=courier>pgplotter</font>  window resizes, the plot is redrawn to fit the new window size.</UL>
+
+<P>
+<P>For <I>Glish</I> programmers, the "Tools" menu (which by default has the <FONT FACE=courier>zoomer</FONT> and <FONT FACE=courier>colormap</FONT> editor) can be extended. So, for example, it would be straightforward to add a Tool which read some data from a table, fit a line to it, and displayed the fit and the residuals. Also, there is a lower level <FONT FACE=courier>pgplotwidget</FONT> which has all the capabilities of <FONT FACE=courier>pgplotter</FONT>, but which can be embedded within a larger control panel.<P>
+
+The main deficiency of <FONT FACE=courier>pgplotter</FONT> is that we should offer more "high-level" commands, like <FONT FACE=courier>plotxy</FONT> shown above. I am interested in receiving any suggestions. However, <FONT FACE=courier>pgplotter</FONT> even now is powerful and straightforward to use. Try it, I think you'll like it.
+
+<p>
+_______________<br>
+*<font face=courier>PGPLOT</font> was developed and is maintained by 
+Tim Pearson at tjp@astro.caltech.edu.
+<font face=courier>PGPLOT</font> is <b>copyrighted</b> software; <b><i>not</i>
+</b>public domain.  For further information see the 
+PGPLOT home page at http://astro.caltech.edu/~tjp/pgpl.  The <font face=helvetica>AIPS++</font> <font face=courier>PGPLOT</font> widget is a variant of Martin Shepherd's <i>Tcl</i>/<font face=courier>Tk PGPLOT</font> widget at <a href="http://astro.caltech.edu/~tjp/pgplot/tkdriv.html">http://astro.caltech.edu/~tjp/pgplot/tkdriv.html</a>. It was adapted for use with Rivet and <font face=helvetica>AIPS++</font> through a collaboration between its author and Darrell Schiebel.
+
+<p>
+</tr></td>
+<tr><td valign=top>
+
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+
+<td valign=top>
+<a name="cal"><font face=helvetica size="+3"><b>Developments in Calibration in AIPS++</b></font></a><BR>
+<i>Athol Kemball</i> - NRAO, AOC<p>
+
+
+<P>As part of the development plan, calibration facilities have been consolidated in a new distributed object (<FONT FACE=courier>DO</FONT>) called <FONT FACE=courier>cal</FONT>. This <FONT FACE=courier>DO</FONT> complements the new imaging capabilities available in <FONT FACE=courier>sky</FONT>. 
+
+<P>Previously the <FONT FACE=courier>imager</FONT> module contained both imaging and calibration functions. The calibration features have been separated partly due to the development of new capabilities in this area, particularly concerning cross-calibration. The term is used here to imply the availability of methods to derive calibration information from a selected subset of u-v data, which can be transferred, interpolated and applied to another selected subset of u-v data. This work involves several steps, including the formalization of calibration table formats, access routines to the new calibration tables, and interpolation methods to be used as these calibration data are applied. These features are being released incrementally at the moment, but all will be available in the next beta release to allow basic cross-calibration.<p>
+
+The design of the calibration system rests on several objectives and principles. It is based on the measurement equation, which has been adopted in the <font face=helvetica>AIPS++</font> project to model instrumental calibration errors in a general framework. The current design allows both initial and incremental calibration. In addition, a significant effort has gone into general interpolation methods to allow full user control of this important aspect of calibration. Support for different parametrization of the calibration matrices is allowed, as well as specialized solvers (such as for VLBI fringe-fitting). User programmability of the calibration system as a whole is a priority, and has been approached by modular decomposition of the system into structured units. A key problem that has been considered is maintaining history information regarding the origin of calibration tables, their associated initial calibration, and any further history notes recorded by the user.<P>
+
+
+Work in this area is very active at the moment. Further updates will be provided as these features are released for testing.
+</tr></td>
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+
+<td valign=top>
+<p>
+
+<a name="glish"><font face=helvetica size="+3"><b>The Story of <i>Glish</i>  - Part 2</b></font></a><br>
+
+<font size="3"><i>Darrell Schiebel</I> - NRAO, CV<p>
+
+<P>For the most part, <A HREF="http://www.cv.nrao.edu/glish/"><I>Glish</I></A> itself, is the work of a very small group of people, two in fact, but it is an amalgamation both in design and in implementation. <I>Glish</I> is the <I>glue</I> which binds most of <font face=helvetica>AIPS++</font> together, and it is also an amalgamation of code from several different places. In this installment we emphasize a key feature of <I>Glish</I>: the control of processes.<P>
+
+
+<I>Glish</I> is designed to allow users to tie many processes, called clients, together. Clients are the basis for extending and customizing <I>Glish</I>. They allow the <font face=helvetica>AIPS++</font> group to take the basic generic <I>Glish </I>interpreter and create a data analysis system. Many people have worked on developing the clients which make <I>Glish </I>useful to astronomers. This flexibility makes <I>Glish</I> suitable for many different tasks, from telescope control to data analysis. <I>Glish</I>'s ability to act as a <I>glue</I> language is one of its key features.
+
+
+<P>
+<font face=helvetica>AIPS++</font> developers use <I>Glish</I> to seamlessly integrate the clients they develop into the system. <I>Glish</I> is used to start these clients and to orchestrate the flow of information between the clients. 
+The <FONT FACE=courier>sditerator</FONT> client is
+an example of how clients are used to extend and specialize <I>Glish</I>. This client forms the basis of the single dish package, <FONT FACE=courier>dish</FONT>, being developed in Charlottesville. The bulk of this application is developed in <I>Glish</I>, but much for this <I>Glish</I> code in <FONT FACE=courier>dish</FONT> is based on this <FONT FACE=courier>sditerator</FONT> client.</P>
+
+<P>Here is an example of how this client is used to step through a data set:<p>
+
+
+<b><FONT FACE=courier>iter := sditerator("harv")<BR>
+while ( iter.more() ) {<BR>
+record := iter.get()<BR>
+iter.next()<BR>
+}</font></b><p>
+
+
+<P>The first function called, <FONT FACE=courier>sditerator()</FONT>, starts the client and defines the interface for the user to communicate with the client. In this case, the data is contained in the <FONT FACE=courier>harv</FONT> data set stored on disk. The subsequent function calls access information from the client one record at a time.
+
+<P>
+
+The <I>Glish</I> interpreter and the clients communicate by sending events back and forth. Events are key/value pairs; the key is a string and the value is any <I>Glish</I> value, e.g. <FONT FACE=courier>float</FONT>, <FONT FACE=courier>array</FONT>, <FONT FACE=courier>string</FONT>, etc. The interpreter can deal with either synchronous or asynchronous events. Often, however, this event dialog is hidden beneath a function interface, as is the case above. <I>Glish</I> is the <I>glue</I> which ties all of the miscellaneous clients together.
+
+<P>
+
+
+<I>Glish</I> has benefited greatly from freely available source code. In particular, the regular expressions which were recently added are based upon code taken from <A HREF="http://www.perl.com/"><FONT FACE=courier>Perl</FONT></A>, the GUI elements which are part of <I>Glish</I> are from <A HREF="http://www.tcltk.com/"><FONT FACE=courier>TCL/Tk</FONT></A>, and the command line editing is based on a modified version of a publicly available library, <I>editline</I>. The wide availability of source code is simply a tremendous aid in developing systems such as <I>Glish</I>.</P>
+
+<P>If you would like more specific information about how <I>Glish</I> is used, the <A HREF="http://aips2.nrao.edu/aips++/docs/reference/Glish/Glish.html"><I>Glish manual</I></A> is available on-line, and there is also a <A HREF="http://aips2.nrao.edu/aips++/docs/notes/195/195.html">tutorial</A>.
+<p>
+</tr></td>
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+<td valign=top>
+
+<a name="program"><font face=helvetica size="+3"><b>Programmer's Corner - Episode 2</b></font></a><br>
+<font size="3"><i>Brian Glendenning</I> - NRAO, AOC<p>
+
+
+
+<P>In our last installment you learned how to convolve two arrays. In this installment you will learn how to step through an image of any dimensionality "plane by plane", where the planes can be orthogonal to any cube face (e.g. XY planes, or YZ planes, or ...).<P>
+
+In <I>Glish</I>, a <font face=courier>for</font> loop merely picks one element at a time out of an array. For example:
+<P>
+<table cellpadding=2 cellspacing=2 border=0>
+<tr><td>
+<B><FONT FACE=courier><P>for (i in 1:5) print i</FONT></B></td><td>#Prints 1-5</tr></td>
+<tr><td>
+<B><FONT FACE=courier>for (i in (1:5)*2) print i</FONT></B></td><td> #Prints 2,4,6,8,10</tr></td>
+<tr><td>
+<B><FONT FACE=courier>for (prime in [2,3,5,7]) print prime</FONT></B></td><td># Prints the first 4 primes</tr></td>
+<tr><td>
+<B><FONT FACE=courier>for (word in ['hello', 'world']) print word</FONT></B> </td><td># Prints hello and world</tr></td></table></P>
+
+<P>A very useful function is <FONT FACE=courier>ind(x) </FONT>- it returns an array of indices that match <FONT FACE=courier>x</FONT>. This is very nearly the same as <FONT FACE=courier>1:length(x),</FONT>except if <FONT FACE=courier>length(x)</FONT>is zero, <FONT FACE=courier>1:0</FONT> returns <FONT FACE=courier>[1,0]</FONT> whereas <FONT FACE=courier>ind(x)</FONT>returns <FONT FACE=courier>[]</FONT>, the empty array. For example:<P>
+
+<table cellpadding=2 cellspacing=2 border=0>
+<tr><td>
+<b><FONT FACE=courier><P>x := []</b></font></td><td> # Empty array</tr></td>
+<tr><td>
+<b><font face=courier>for (i in ind(x)) print i</b></font></td><td># Does nothing</tr></td>
+<tr><td>
+<b><font face=courier>for (i in 1:length(x)) print i</b></font></td><td> # prints 1,0
+</b></tr></td></table><P>
+
+Now then, how do you get all the planes out of an image?  Getting a single plane is easy - you can use the <FONT FACE=courier>getchunk</FONT> method of the <FONT FACE=courier>image</FONT> object. <FONT FACE=courier>getchunk</FONT> allows you to specify the <FONT FACE=courier>blc</FONT> (bottom-left corner) and <FONT FACE=courier>trc</FONT> (top-right corner) of the pixels you  are interested in from an image. You merely have to set <FONT FACE=courier>blc,trc</FONT> to  get the plane you  are interested in.
+
+
+<P>
+For example, given a <FONT FACE=courier>256(RA)*256(DEC)*11(FREQ)*1(STOKES) </FONT>image cube, you can get individual RA/DEC or DEC/FREQ planes as follows:<P>
+
+
+<table cellpadding=2 cellspacing=2 border=0>
+<tr><td>
+<FONT FACE=courier><b>myimage := image('myimage')</b></td><td></tr></td>
+<tr><td>
+<font face=courier><b>myimage.shape()</b></font></td><td> # Length of each axis in image</tr></td>
+<tr><td>
+<font face=courier><b>[256 256 11 1]</b></font></td><td></tr></td>
+<tr><td>
+<font face=courier><b>pixels := myimage.getchunk<br>(blc=[1,1,5],trc=[256,256,5])</font></b></td><td> # XY plane 5</tr></td>
+<tr><td>
+<font face=courier><b>shape(pixels)</b></font></td><td> # Length of each axis in array pixels</tr></td>
+<tr><td>
+<font face-courier><b>[256 256 1 1]</b></td><td></tr></td>
+<tr><td>
+<font face=courier><b>pixels := myimage.getchunk<br>(blc=[128, 1, 1],
++ trc=[128, 256, 11])</b></font> </td><td># YZ plane 128</td></tr>
+<tr><td>
+<font face=courier><b>shape(pixels)
+[1 256 11 1]</b></font></td><td></tr></td>
+</table>
+<P>
+
+Note that in <FONT FACE=courier>getchunk</FONT> (and <FONT FACE=courier>putchunk</FONT>) unspecified values of <FONT FACE=courier>blc</FONT> default to the beginning of the axis (1), and unspecified values of <FONT FACE=courier>trc </FONT>default to last position of the axis. So, we could get all the XY planes in this image as follows:
+
+<p>
+<b><font face=courier>for (plane in 1:11) {<BR>
+    pixels :=<BR>
+    myimage.getchunk([1,1,plane],[256,256,plane]);<BR>
+... operate on pixels ...<BR>
+}</font></b><p>
+
+While this is fine for stepping through a particular cube, suppose we want to be able to step through a cube of any dimensionality and shape? This is somewhat trickier, and moves us from the "advanced user" realm to the programmer realm. But since this is the "Programmer's Corner" let's press on!<P>
+
+
+First let us set up some general variables:<P>
+
+<table cellpadding=2 cellspacing=2 border=0>
+<tr><td>
+<b><FONT FACE=courier><b>axis1 := 1; axis2 := 2</b></FONT></td><td># YZ planes<BR></tr><td>
+<tr><td>
+<FONT FACE=courier><b>shape := myimage.shape()</b></FONT></td><td># Extract the shape from the image</tr></td>
+<tr><td>
+<FONT FACE=courier><b>numplanes := prod(shape)/(shape[axis1]*shape[axis2])</b></FONT></b></tr></td></table><p>
+
+The last statement probably requires a bit of explanation. It takes the product of the elements of the shape, in our example <FONT FACE=courier>256*256*11*1</FONT>, in other words the number of pixels, and divides it by the number of pixels in an XY plane, here <FONT FACE=courier>256*256</FONT>. This yields the number of planes in the image no matter what the dimensionality is (as long as t is greater than or equal to 2).<P>
+
+So far so good, it seems like we should now be able to iterate through our image plane by plane:<P>
+
+<B><FONT FACE=courier><P>blc := array(1, length(shape)); # [1,1,...,1]<BR>
+trc := shape;<BR>
+for (plane in 1:numplanes) {<BR>
+  blc := ????; trc := ????;<BR>
+  }</font></B><p>
+
+Of course in 3D cases such as we have been using in our examples we have no problem, we merely would have to set the missing axis in <FONT FACE=courier>blc/trc </FONT> to "plane". However in 4 or more dimensions (e.g., spectral-line ppolarimetry) we need to turn the plane number ("plane") into two or more numbers in <FONT FACE=courier>blc/trc</FONT>. We will see how we can do this in our next installment.
+
+<p>
+</tr></td>
+
+<tr><td valign=top>
+<a href="#jive">JIVE Use of <font face=helvetica>AIPS++</font></a><p>
+<a href="#new">What's New in <font face=helvetica>AIPS++</font></a><p>
+<a href="#measures">The Measure System</a><p>
+<a href="#plot">PGPlotter</a><p>
+<a href="#cal">Calibration Developments</a><p>
+<a href="#glish">The Story of <i>Glish</i></a><p>
+<a href="#program">Programmer's Corner</a><p>
+<a href="#summary">Project News Summary</a><p>
+
+<td valign=top>
+
+
+
+<a name="summary"><font face=helvetica size="+3"><b>Project News Summary</b></font></a><br>
+<font size="3"><i>Tim Cornwell, <font face=helvetica>AIPS++</font> Project Manager</i> - NRAO, AOC</FONT><p>
+
+
+<P>We are busy preparing the next, third, beta release of <font face=helvetica>AIPS++</font>.  Current activities focus around internal testing of the system and writing documentation for users. In both these endeavors, we are aided by our group of hardy testers at the AOC and elsewhere. Our current estimate is that the release will be made in late May. The release will contain a large number of improvements and new capabilities, most of which have been described in the editions of this newsletter.<P>
+
+In other project news, our Scientific and Technical Advisory Group (STAG) met in Socorro on February 9 and 10. This was the second meeting of the group, the first being back in November 1996. The group represents the various organizations comprising the <font face=helvetica>AIPS++</font> Consortium and is chaired by Robert Braun of NFRA. The report of this meeting and the Project response are to be found as <font face=helvetica>AIPS++</font> Notes <A HREF="http://aips2.nrao.edu/aips++/docs/notes/217/217.html">217</A> and <A HREF="http://aips2.nrao.edu/aips++/docs/notes/218/218.html">218</A>.
+<p>
+<hr noshade><p>
+<center><font face=helvetica><b>AIPS++  is a project of the 
+<font face=helvetica><a href="http://aips2.nrao.edu/aips++/docs/project/consortium.html">AIPS+ Consortium</a></b></font></font></center><p>
+</tr></td>
+</table>
+</body>
+</html> 
+\end{rawhtml}
+\end{document}

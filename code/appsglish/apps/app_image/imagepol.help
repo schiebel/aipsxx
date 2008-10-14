@@ -1,0 +1,1509 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: imagepol.help,v 19.3 2004/08/25 00:58:32 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{imagepol}{Polarimetric analysis of images}
+
+\ahinclude{imagepol.g}
+\ahcategory{image}
+
+   %
+   %ahkeyword registers module keywords
+   %
+\ahkeyword{image}{}
+\ahkeyword{polarimetry}{}
+
+\ahmethods{}
+
+
+
+\medskip
+\noindent{\bf Summary}
+
+An Imagepol \tool\ provides specialized polarimetric analysis of images.  
+Some of these things could be done with the Lattice Expression Language
+(LEL; see \htmladdnormallink{note223}{../../notes/223/223.html})
+but are more conveniently offered separately.
+
+
+\bigskip
+{\bf General}
+
+You construct an Imagepol tool from an image (\aipspp, \fits, and Miriad
+formats are supported) with a Stokes coordinate axis.  What you can do
+with your Imagepol \tool\ depends on exactly which Stokes parameters you
+have in the image.  You must have some combination of Stokes I, Q, U and
+V on the Stokes axis.  These refer to total intensity, two components of
+linear polarization, and circular polarization, respectively. 
+Therefore, if you ask for linear polarization and the image only has
+Stokes I and V, you will get an error. 
+
+The Imagepol \tool\ functions generally return, by default, an
+\ahlink{Image}{images:image} \tool\ as their output.  In most cases,
+this is a ``virtual'' image.  There are a range of different sorts of
+``virtual'' images in \aipspp\ (see \ahlink{Image}{images:image}).  But
+the Imagepol \toolfunctions\ generally return reference Image \tools. 
+That is, these reference different pieces of the original image that was
+used to construct the Imagepol \tool, either directly, or as
+mathematical expressions (e.g.  the polarized intensity).  If you delete
+the construction image, you render your Imagepol \tool\ and its outputs
+useless.  If you wish, rather than return a virtual image \tool, you can
+fill in the {\stfaf outfile} argument of most Imagepol \tool\ functions
+and write the image out to disk, associating the Image \tool\ with the
+disk file. 
+
+In some of the functions, the standard deviation of the thermal noise is
+needed.  This is for debiasing polarized intensity images or working out
+statistical error images.  By default it is worked out for you from the
+construction image with outliers from the mean discarded.  Since it is
+the thermal noise it is trying to find, it is worked out from the V, Q
+\& U, and finally I data in that order of precedence.  This is because Stokes V
+is much less likely to contain source signal than Stokes I.   You can supply
+the noise level if you know it better.  For example, for small images or
+images with few signal-free pixels, the theoretical estimate may
+be better.
+
+
+
+\bigskip
+{\bf Analysis and Display}
+
+Traditionally, when generating secondary and tertiary images (e.g. 
+position angle, fractional polarization, rotation measure etc), one
+masks the putput image according to some statistical test.  For example,
+if the error in the output image is greater than some value, or the
+errors in the input images are greater than some value.  Imagepol
+\tools\ do not offer this kind of masking.  It does provide you with the
+error images for the derived images.  By using LEL when you analyze your
+images, you can mask the images however you want when you use them. 
+That is, we defer the error interpretation as long as possible.  Here is
+an example. 
+
+\begin{ahexample}
+\begin{verbatim}
+include 'imagepol.g'
+ip := imagepol('stokes.image')       # Construct Imagepol tool from image
+lpa := ip.linpolposang()             # Linearly polarized position angle image
+lpaerr := ip.sigmalinpolposang()     # Error in linearly polarized position angle image
+lpa.view(mask='$lpaerr<5')           # Display when p.a. error < 5 degrees
+\end{verbatim}
+\end{ahexample}
+
+
+\bigskip
+
+Display is handled via the  \ahlink{Viewer}{display:viewer} \tool. It
+can display and overlay combinations of raster, contour and vector
+representations of your data.  Please see the \ahlink{view}{images:image.view}
+function of the Image \tool\ and the document 
+\htmlref{Getting Results}{GRimageanalysis}) for high-level
+information on how to display images in general.
+
+It is common to display linear polarization data via vectors where the
+position angle of the vector is the position angle of the linear
+polarized radiation, and the amplitude of the vector is proportional to
+either the total polarized intensity or fractional polarized intensity. 
+
+The data source of a vector display is either a Complex or a Float
+image.  If it is a Complex image (e.g.  the complex linear polarization
+$Q + iU$) then both the amplitude and the phase (position angle) are
+available.  If it is just a Float image, then it is assumed to be the
+position angle and an amplitude of unity will be provided.  The angular
+units are given by image brightness units which you can set with
+function \ahlink{setbrightnessunits}{images:image.setbrightnessunits}. 
+If the units are not recognized as angular, degrees are assumed. 
+
+The position angle is measured positive North through East when you display a
+plane holding a celestial coordinate (the usual astronomical
+convention).  For other  axis/coordinate combinations, a positive
+position angle is measured  from +x to +y in the
+absolute world coordinate frame.
+
+The Imagepol \tool\ can create Complex disk images for you via
+functions  
+\ahlink{complexlinpol}{images:imagepol.complexlinpol} (complex linear polarization),
+\ahlink{complexfraclinpol}{images:imagepol.complexfraclinpol} (complex fractional linear polarization)
+and \ahlink{makecomplex}{images:imagepol.makecomplex} (takes amp/phase or real/imag).
+As well as these Complex images,  you can also make Float images of the
+linearly polarized intensity, linearly polarized position angle, and the
+fractional linearly polarized intensity (see below).
+
+Now, the Image \tool\ cannot yet deal with Complex images (it will
+in the future).    This means that you cannot currently do
+
+\begin{verbatim}
+include 'imagepol.g'
+p := imagepol('iquv.im')  # Make Imagepol tool
+p.complexlinpol('clp')    # Make complex image of linear polarization disk file 
+clp := image('clp')       # Error
+\end{verbatim}
+
+\medskip 
+\noindent
+which is a bit annoying presently.  However, the 
+\ahlink{Viewer}{display:viewer} \tool\ is able to read Complex images
+so that you are able to display them ok.
+
+\begin{verbatim}
+include 'imagepol.g'
+include 'viewer.g'
+p := imagepol('iquv.im')  # Make Imagepol tool
+p.complexlinpol('clp')    # Make complex image of linear polarization disk file 
+dv.gui()                  # Start data manager to give access to Complex image
+\end{verbatim}
+
+If you wanted to make a vector map display you would select
+the appropriate image in the Viewer's data manager GUI,
+click 'Vector Map' on the right hand side and
+it would appear in the display.   Note that the Viewer's
+Vector map display capability also offers you amplitude
+noise debiasing and the On-The-Fly mask.
+
+
+
+\bigskip
+{\bf Overview of Imagepol \tool\ functions}
+
+\begin{itemize}
+
+\item Access to the different Stokes subimages is via functions
+\ahlink{stokes}{images:imagepol.stokes}, 
+\ahlink{stokesi}{images:imagepol.stokesi}, 
+\ahlink{stokesq}{images:imagepol.stokesq}, 
+\ahlink{stokesu}{images:imagepol.stokesu},  and
+\ahlink{stokesv}{images:imagepol.stokesv}.
+
+\item Create the standard secondary and tertiary polarization images with
+
+\begin{itemize}
+
+\item \ahlink{complexfraclinpol}{images:imagepol.complexfraclinpol} - complex fractional linear polarization 
+
+\item \ahlink{complexlinpol}{images:imagepol.complexlinpol} - complex linear polarization 
+
+\item \ahlink{makecomplex}{images:imagepol.makecomplex} - make complex image from amp/phase or real/imag
+
+\item \ahlink{pol}{images:imagepol.pol} - polarized quantities as specified
+
+\item \ahlink{linpolint}{images:imagepol.linpolint} - linearly polarized intensity
+
+\item \ahlink{linpolposang}{images:imagepol.linpolposang} - linearly polarized position angle
+
+\item \ahlink{totpolint}{images:imagepol.totpolint} - total polarized intensity
+
+\item \ahlink{fraclinpol}{images:imagepol.fraclinpol} - fractional linear polarization
+
+\item \ahlink{fractotpol}{images:imagepol.fractotpol} - fractional total polarization
+
+\item \ahlink{depolratio}{images:imagepol.depolratio} - linear depolarization ratio
+
+\end{itemize}
+
+
+
+\item Create the standard secondary and tertiary polarization error
+images (simple propagation of Gaussian errors) with
+
+\begin{itemize}
+
+\item \ahlink{sigma}{images:imagepol.sigma} - best guess at thermal noise
+
+\item \ahlink{sigmastokes}{images:imagepol.sigmastokes} - specified Stokes parameter
+
+\item \ahlink{sigmastokesi}{images:imagepol.sigmastokesi} - Stokes I
+
+\item \ahlink{sigmastokesq}{images:imagepol.sigmastokesi} - Stokes Q
+
+\item \ahlink{sigmastokesu}{images:imagepol.sigmastokesi} - Stokes U
+
+\item \ahlink{sigmastokesv}{images:imagepol.sigmastokesi} - Stokes V
+
+\item \ahlink{sigmalinpolint}{images:imagepol.sigmalinpolint} - linearly polarized intensity
+
+\item \ahlink{sigmalinpolposang}{images:imagepol.sigmalinposang} - linearly polarized position angle
+
+\item \ahlink{sigmatotpolint}{images:imagepol.sigmatotpolint} - total polarized intensity
+
+\item \ahlink{sigmafraclinpol}{images:imagepol.sigmafraclinpol} - fractional linear polarization
+
+\item \ahlink{sigmafractotpol}{images:imagepol.sigmafractotpol} - fractional total polarization
+
+\item \ahlink{sigmadepolratio}{images:imagepol.sigmadepolratio} - linear depolarization ratio
+
+\end{itemize}
+
+
+\item You can compute Rotation Measure images via either the traditional
+techniques involving a number of different frequencies (regularly or
+irregularly spaced) with function
+
+\ahlink{rotationmeasure}{images:imagepol.rotationmeasure} or via a new
+Fourier Technique for many regularly-spaced frequencies with function
+\ahlink{fourierrotationmeasure}{images:imagepol.fourierrotationmeasure}. 
+
+\end{itemize}
+
+
+\begin{ahconstructor}{imagepol}{Create an Imagepol tool from an \aipspp\ image file}
+\begin{ahargs}
+  \ahaddarg[in]{infile}{Input image (file name or tool)}{}{String or Image tool}
+\end{ahargs}
+\ahreturns{Imagepol \tool\ or fail}
+\begin{ahdescription}
+
+The constructor takes an image as its input.  This can be specified as
+either the name of a disk file, or you can give a pre-existing Image
+\tool.   If you give a disk file name, the disk image file may
+be in \aipspp, \fits\ or Miriad format.  
+
+The input image must have a Stokes axis.  The exact collection of Stokes
+that the image has, determines what the Imagepol \tool\ can compute. 
+Stokes I, Q, U, and V refer to total intensity, two components of linear
+polarization, and circular polatization, respectively.  Therefore, if
+you ask for linear polarization and the image only has Stokes I and V,
+you will get an error. 
+
+The input image may contain data at many frequencies.  For example, the
+image may be a 4D image with axes RA, DEC, Stokes and Frequency (order
+not important) where the Frequency axis is regularly sampled.  However,
+the image may also contain many frequencies at irregular intervals. 
+Such an image may be created with the Image \tool\ constructor called
+\ahlink{imageconcat}{images:image.imageconcat}.  It enables you to concatenate
+images along an axis, and it allows irregular coordinate values along that
+axis. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := image('$AD/myimage')
+- p1 := imagepol(im)
+- p2 := imagepol('$AD/myimage')
+\end{verbatim}
+
+We create two Imagepol \tools, one from an Image
+\tool\ and one directly from the disk file.
+
+\end{ahexample}
+
+
+\begin{ahexample}
+\begin{verbatim}
+- im := imageconcat(infiles="im.f1 im.f2 im.f3 im.f4 im.f5", axis=4)
+- p := imagepol(im)
+- p.rotationmeasure(rm='rm', rmerr='rmerr', rmmax=500, maxpaerr=10)
+\end{verbatim}
+
+Say we have 5 images, each with axes RA, DEC, Stokes, and Frequency in
+that order.  We make an Image \tool\ which concatenates these images
+along the frequency axis - you have ordered them in increasing or
+decreasing frequency order.  Note that the Image \tool\ is virtual - it
+is not written to an output file.  This just means that the data are
+read from the input images as needed.  The Imagepol \tool\ is then made
+from this virtual Image \tool.   We then compute the Rotation Measure
+and Rotation Measure error images with the traditional method and
+write them out to disk.
+
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+
+\begin{ahconstructor}{imagepoltestimage}{Create an Imagepol tool and a test image file}
+\begin{ahargs}
+  \ahaddarg[in]{outfile}{Output image file name}{imagepol.iquv}{String}
+  \ahaddarg[in]{rm}{Rotation Measure (rad/m/m)}{Auto no-ambiguity determine}{Vector of float}
+  \ahaddarg[in]{pa0}{Position angle (degrees) at zero wavelength}{0}{Float}
+  \ahaddarg[in]{sigma}{Fractional noise level}{0.001}{Float}
+  \ahaddarg[in]{nx}{Shape of image in x direction}{32}{Integer}
+  \ahaddarg[in]{ny}{Shape of image in y direction}{32}{Integer}
+  \ahaddarg[in]{nf}{Shape of image in frequency direction}{32}{Integer}
+  \ahaddarg[in]{f0}{Reference frequency (Hz)}{1.4e9}{Float}
+  \ahaddarg[in]{bw}{Bandwidth (Hz)}{128e6}{Float}
+\end{ahargs}
+\ahreturns{Imagepol \tool\ or fail}
+
+\begin{ahdescription}
+
+The constructor can be used to generate a test image and then
+create an Imagepol \tool\ from it.
+
+The test image is 4-dimensional (RA, DEC, Stokes and Frequency).  The
+Stokes axis holds I,Q,U and V.  The source is just a constant I (if you
+don't add noise all spatial pixels will be identical) and V.  Q and U
+vary with frequency according to the specified Rotation Measure
+components (no attempt to handle bandwidth smearing within channels is
+made).  The actual values of I,Q,U, and V are chosen arbitrarily
+otherwise (could be added as arguments if desired). 
+
+You can use this image, in particular, to explore the Rotation Measure
+algorithms in functions \ahlink{rotationmeasure}{images:imagepol.rotationmeasure} and
+\ahlink{fourierrotationmeasure}{images:imagepol.fourierrotationmeasure}. 
+
+If you don't specify the Rotation Measure, then it is chosen for you so
+that there is no position angle ambiguity between adjacent channels
+(the value will be sent to the Logger).
+
+The noise added to the image is specified as a fraction of the total
+intensity (constant).  Gaussian noise with a standard deviation of
+{\stfaf sigma * $I_max$} is then added to the image. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p1 := imagepoltestimage(rm=200)
+- p1.rotationmeasure(rm='rm.out', rmmax=250)
+- rm := image('rm.out')
+- rm.view()
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+ 
+
+
+\begin{ahfunction}{complexlinpol}{Complex linear polarization}
+\begin{ahargs}
+  \ahaddarg[in]{outfile}{Output image file name}{}{String}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff clp}) produces
+the complex linear polarization; $Q+iU$ and writes
+it to a disk image file.
+
+The \ahlink{Image}{images:image} \tool\ cannot yet handle Complex
+images.  You must therefore write the Complex image to disk.  The 
+\ahlink{Viewer}{display:viewer} can display Complex images. Also the
+\ahlink{Table}{tables:table} tool can access Complex images.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagepol.g'
+- include 'table.g'
+- p := imagepol('stokes.cube')
+- p.complexlinpol('cplx')
+- t := table('cplx')
+- t.browse()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{complexfraclinpol}{Complex fractional linear polarization}
+\begin{ahargs}
+  \ahaddarg[in]{outfile}{Output image file name}{}{String}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff clp}) produces
+the complex fractional linear polarization; $(Q+iU)/I$ and writes
+it to a disk image file.
+
+The \ahlink{Image}{images:image} \tool\ cannot yet handle Complex
+images.  You must therefore write the Complex image to disk.  The 
+\ahlink{Viewer}{display:viewer} can display Complex images. Also the
+\ahlink{Table}{tables:table} tool can access Complex images.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include 'imagepol.g'
+- include 'table.g'
+- p := imagepol('stokes.cube')
+- p.complexfraclinpol('cplx')
+- t := table('cplx')
+- t.browse()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{depolratio}{Linear depolarization ratio}
+\begin{ahargs}
+  \ahaddarg[in]{infile}{Other image}{}{String or Image tool}
+  \ahaddarg[in]{debias}{Debias the linearly polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff dr}) returns the linear
+depolarization ratio computed from two frequencies; this is the ratio of
+the fractional linear polarization at the two frequencies.  Generally
+this is done when you have generated two images, each at a different frequency
+(continuum work). Thus if the fractional linear polarization images are
+$m_{\nu 1}$ and $m_{\nu 2}$ then the depolarization ratio is 
+$m_{\nu 1}/ m_{\nu 2}$.
+
+This function operates with two images; the first (at frequency $\nu 1$)
+is that with which you constructed your Imagepol \tool.  The second (at
+frequency $\nu 2$) is supplied via the argument {\stfaf infile}, which
+can be an Image \tool, or a String holding the name of the \imagefile.
+
+In generating the depolarization ratio, you may optionally debias the 
+linearly polarized intensity.  This requires the standard deviation of
+the thermal noise.  You can either supply it if you know it, or it will
+be worked out for you with outliers from the mean clipped at the
+specified level. 
+
+You can get the depolarization ratio error image with function
+\ahlink{sigmadepolratio}{images:imagepol.sigmadepolratio}.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im1 := image('stokes.4800')
+- im2 := image('stokes.8300')
+- p := imagepol(im1)
+- dpr := p.depolratio(im2);           # m_4800 / m_8300
+- edpr := p.sigmadepolratio(im2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{done}{Destroy this Imagepol tool}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+If you no longer need to use an Imagepol \tool, calling this function
+will free up its resources.  That is, it destroys the \tool.  You can no
+longer call any functions on the \tool\ after it has been {\stff done}. 
+Note that the underlying \imagefile\ with which the \tool\ was
+constructed is not deleted.  In addition, any images that you created
+with the Imagepol \toolfunctions\ will also still be viable. 
+
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- p.done()
+- p
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fourierrotationmeasure}{Find Rotation Measure (Fourier approach)}
+\begin{ahargs}
+  \ahaddarg[in]{complex}{Output complex linear polarization image file name}{Unset}{String}
+  \ahaddarg[in]{amp}{Output linear polarization amplitude image file name}{Unset}{String}
+  \ahaddarg[in]{pa}{Output linear polarization position angle (degrees) image file name}{Unset}{String}
+  \ahaddarg[in]{real}{Output linear polarization real image file name}{Unset}{String}
+  \ahaddarg[in]{imag}{Output linear polarization imaginary angle image file name}{Unset}{String}
+  \ahaddarg[in]{zerolag0}{Force zero lag to 0 ?}{F}{T or F}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff frm}) will only work if you
+constructed the Imagepol \tool\ from an image containing Stokes Q and U,
+and a regular frequency axis.  It Fourier transforms the complex linear
+polarization (Q+iU) over the spectral axis to the rotation measure axis. 
+Thus, if your input image contained  RA/DEC/Stokes/Frequency, the
+output image would be RA/DEC/RotationMeasure.  The Rotation Measure axis
+has as many pixels as the spectral axis.  
+
+This method enables you to see the polarization as a function of
+Rotation Meausure.  Its main use is when searching for large RMs.  See
+Killeen, Fluke, Zhao and Ekers (1999, preprint) for a description of
+this method (or http://www.atnf.csiro.au/\verb+~+nkilleen/rm.ps) and its
+advantages over the traditional method
+(\ahlink{rotationmeasure}{images:imagepol.rotationmeasure}) of
+extracting the Rotation Measure. 
+
+Although you can write out the complex polarization image with the
+argument {\stfaf complex}, you can't do much with it because Image
+\tools\ cannot yet be constructed from complex images.  Hence you can
+also write out the complex linear polarization image in any or all of
+the other forms. 
+
+The argument {\stfaf zerolag0} allows you to force the zero lag (or
+central bin) of the Rotation Measure spectrum to zero (effectively by
+subtracting the mean of Q and U from the Q and U images).  This may
+avoid Gibbs phenomena from any strong low Rotation Measure signal which
+would normally fall into the central bin. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepoltestimage(outfile='iquv.im', rm=[5.0e5,1e6], nx=8, ny=8, nf=512, 
+                         f0=1.4e9, bw=8e6)
+- p.frm(amp='amp')
+- amp := image('amp')
+- amp.view()                     # And reorder to put RM along X-axis 
+\end{verbatim}
+\end{ahexample}
+In this example we give two RM components and recover them.
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{fraclinpol}{Fractional linear polarization}
+\begin{ahargs}
+  \ahaddarg[in]{debias}{Debias the linearly polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} This function (short-hand name {\stff flp})
+returns the fractional linear polarization; $\sqrt{(Q^2+U^2)}/I$.
+
+You may optionally debias the polarized intensity.  This requires the
+standard deviation of the thermal noise.  You can either supply it if
+you know it, or it will be worked out for you with outliers from the
+mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- flp := p.fraclinpol()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{fractotpol}{Fractional total polarization}
+\begin{ahargs}
+  \ahaddarg[in]{debias}{Debias the total polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} This function (short-hand name {\stff ftp})
+returns the fractional linear polarization; $\sqrt{(Q^2+U^2+V^2)}/I$.
+
+You may optionally debias the polarized intensity.  This requires the
+standard deviation of the thermal noise.  You can either supply it if
+you know it, or it will be worked out for you with outliers from the
+mean clipped at the specified level. 
+
+If your image contains only Q and U, or only V, then just
+those components contribute to the total polarized intensity.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- ftp := p.fractotpol()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{id}{Return the fundamental identifier of this tool}
+\begin{ahdescription}
+
+This function should be of little interest to users. It returns the
+fundamental identifier of the tool.
+
+\end{ahdescription}
+
+\ahreturns{ToolID - a record}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- p.id()
+[sequence=15, pid=20665, time=941768782, host=elara, agentid=3] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{linpolint}{Linearly polarized intensity}
+\begin{ahargs}
+  \ahaddarg[in]{debias}{Debias the linearly polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} This function (short-hand name {\stff lpi})
+returns the linearly polarized intensity; $\sqrt{(Q^2+U^2)}$. 
+
+You may optionally debias the polarized intensity.  This requires the
+standard deviation of the thermal noise.  You can either supply it if
+you know it, or it will be worked out for you with outliers from the
+mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- lpi := p.linpolint()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{linpolposang}{Linearly polarized position angle}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff lppa}) returns the linearly
+polarized position angle image ($0.5 \tan^{-1}(U/Q)$) in degrees. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- lppa := p.linpolposang()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{makecomplex}{Make a Complex image}
+\begin{ahargs}
+  \ahaddarg[in]{complex}{Output complex image file name}{}{String}
+  \ahaddarg[in]{real}{Input real image file name}{Unset}{String}
+  \ahaddarg[in]{imag}{Input imaginary image file name}{Unset}{String}
+  \ahaddarg[in]{amp}{Input amplitude image file name}{Unset}{String}
+  \ahaddarg[in]{phase}{Input phase image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription} 
+
+This function generates a Complex \imagefile\ from either
+a real and imaginary, or an amplitude and phase pair of images.
+If you give a linear position angle image for the phase, 
+it will be multipled by two before the real and imaginary
+parts are formed.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('iquv')
+- p.complexlinpol('qu.cplx1')        
+-
+- q := p.stokesq()
+- u := p.stokesu()
+- q2 := q.subimage('q')
+- u2 := u.subimage('u')
+- p.makecomplex('qu.cplx2', real='q', image='u')
+\end{verbatim}
+In this example we make two complex linear polarization
+images which should be identical.   
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{pol}{Polarized quantities}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Specify operation}{}
+     {String: One of 'lpi', 'tpi', 'lppa', 'flp', 'ftp' (case insensitive)}
+  \ahaddarg[in]{debias}{Debias the polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+
+This function just packages the other specific polarization
+functions into one where you specify an operation with the
+argument {\stfaf which} (can be useful for scripts).  
+This argument can take the values:
+
+\begin{itemize}
+\item 'lpi' - linearly polarized intensity (function 
+  \ahlink{linpolint}{images:imagepol.linpolint})
+
+\item 'tpi' - total polarized intensity (function 
+   \ahlink{totpolint}{images:imagepol.totpolint})
+
+\item 'lppa' linearly polarized position angle (function 
+    \ahlink{linpolposang}{images:imagepol.linpolposang})
+
+\item 'flp' - fractional linear polarization (function 
+   \ahlink{fraclinpol}{images:imagepol.fraclinpol})
+
+\item 'ftp' - fractional total polarized intensity (function 
+   \ahlink{fractotpol}{images:imagepol.fractotpol})
+
+\end{itemize}
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- lpi := p.pol('lpi')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{rotationmeasure}{Find Rotation Measure (traditional approach)}
+\begin{ahargs}
+  \ahaddarg[in]{rm}{Output Rotation Measure image file name}{Unset}{String}
+  \ahaddarg[in]{rmerr}{Output Rotation Measure error image file name}{Unset}{String}
+  \ahaddarg[in]{pa0}{Output position angle (degrees) at zero wavelength image file name}{Unset}{String}
+  \ahaddarg[in]{pa0err}{Output position angle (degrees) at zero wavelength error image file name}{Unset}{String}
+  \ahaddarg[in]{nturns}{Output number of turns image file name}{Unset}{String}
+  \ahaddarg[in]{chisq}{Output reduced chi squared image file name}{Unset}{String}
+  \ahaddarg[in]{sigma}{Estimate of the thermal noise}{Auto}{Float}
+  \ahaddarg[in]{rmfg}{Foreground Rotation Measure (rad/m/m) to subtract}{0}{Float}
+  \ahaddarg[in]{rmmax}{Maximum Rotation Measure (rad/m/m) to solve for}{0}{Float}
+  \ahaddarg[in]{maxpaerr}{Maximum input position angle error (degrees) to allow}{None}{Float}
+  \ahaddarg[in]{plotter}{Name of plotter}{None}{String}
+  \ahaddarg[in]{nx}{Number of plots in x direction}{5}{Integer}
+  \ahaddarg[in]{ny}{Number of plots in y direction}{5}{Integer}
+\end{ahargs}
+\ahreturns{T or fail}
+
+\begin{ahdescription}
+
+This function (short-hand name {\stff rm}) generates the Rotation
+Measure image from a collection of different frequencies.  It will only
+work if the Imagepol \tool\ was constructed from an image containing
+Stokes $Q$ and $U$, and a frequency axis (regular or irregular) with at
+least 2 pixels.  It will work out the position angle images for you.
+
+See also the \ahlink{fourierrotationmeasure}{images:imagepol.fourierrotationmeasure} 
+function for a new Fourier-based approach.
+
+Rotation Measure algorithms that work robustly are not common.  The main
+problem is in trying to account for the $n- \pi$ ambiguity (see Leahy et
+al, Astronomy \& Astrophysics, 156, 234 or Killeen et al;
+http://www.atnf.csiro.au/\verb+~+nkilleen/rm.ps). 
+
+The algorithm that this function uses is that of Leahy et al.  Please
+refer to their paper for details (their Appendix A.1).  But as in all
+these algorithms, the basic process is that for each spatial pixel, a
+vector of position angles (i.e.  at the different frequencies) is fit to
+determine the Rotation Measure and the position angle at zero wavelength
+(and their errors).   You can write out an image containing
+the number of $n-- \pi$ turns that were added to the data
+at each spatial pixel and for which the best fit was found.
+You can also write out the reduced chi-squared image for the
+fits.
+
+Note that as yet no assessment of curvature (i.e. deviation
+from the simple linear position angle - $\lambda^2$ functional form)
+is made.  
+
+You can write out any or all of the output images.   
+
+The argument {\stfaf sigma} gives the themal noise in Stokes Q and U.
+By default it is worked out for you from the image data.  But if it proves 
+to be inaccurate (maybe not many signal-free pixels), then you can
+input it here.  This is used for working out the error in the
+position angles (propagation of Gaussian errors).
+
+The argument {\stfaf maxpaerr} specifies the maximum allowable error in
+the position angle that is acceptable.  The default is an infinite
+value.  From the standard propagation of errors, the error in the
+linearly polarized position angle is determined from the Stokes $Q$ and
+$U$ images (at each spatial pixel for each frequency).  At each spatial
+pixel we do a fit to the position angle vector (i.e.  at the different
+frequencies) to determine the Rotation Measure.  If the position angle
+error for any pixel in the vector exceeds the specified value, it is
+dropped from the fit.     The process generates an error for the
+fit and this is used to compute the errors in the output
+images.  
+
+Note that {\stfaf maxpaerr} is {\it not} used to specify that any pixel
+for which the output position angle error exceeds this value
+should be masked out.
+
+
+The argument {\stfaf rmfg} is used to specify a foreground RM value.  For
+example, you may know the mean RM in some direction out of the Galaxy,
+then including this can aid the algorithm (reduces ambiguity).
+
+The argument {\stfaf rmmax} specifies the maximum absolute RM that
+should be solved for.  This quite an important parameter.  If you leave
+it at the default, zero, basically, no ambiguity handling will be
+invoked.  So you must have some idea of what you are looking for - this
+is the basic problem with Rotation Measure algorithms. 
+
+Plotting can be done with a PGPLOT device via argument {\stfaf plotter}.
+The syntax is {\stfaf plotter=name/type}.  For example {\stfaf
+plotter='plot1.ps/ps'} (disk postscript file) or {\stfaf plotter='1/xs'}
+(X-windows device) or {\stfaf plotter='plot/glish'} (\glish\ PGplotter).
+The plots show the used position angle data (after ambiguity
+adjustments), position angle errors, and fit for each profile. 
+The pixel location of each profile and reduced chi-square of
+the fit are written in the title.
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im := imageconcat(infiles="im.f1 im.f2 im.f3 im.f4 im.f5", axis=4)
+- p := imagepol(im)
+- ok := p.rm(rm='rm', rmerr='rmerr', rmmax=800, maxpaerr=10)
+\end{verbatim}
+
+Say we have 5 images, each with axes RA, DEC, Stokes, and Frequency in
+that order.  We make an Image \tool\ which concatenates these images
+along the frequency axis - you have ordered them in increasing or
+decreasing frequency order.  Note that the Image \tool\ is virtual - it
+is not written to an output file.  This just means that the data are
+read from the input images as needed.  The Imagepol \tool\ is then made
+from this virtual Image \tool.   We then compute the Rotation Measure
+and Rotation Measure error images with the traditional method and
+write them out to disk.
+
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{sigma}{Find best guess at thermal noise}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function returns the standard deviation from V, Q\&U or I in that
+order of precedence.  It is attempting to give you the best estimate of
+the thermal noise it can from the data.  Outliers from the mean are
+clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigma := p.sigma()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmadepolratio}{Error in linear depolarization ratio}
+\begin{ahargs}
+  \ahaddarg[in]{infile}{Other image}{}{String or Image tool}
+  \ahaddarg[in]{debias}{Debias the linearly polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff edr}) returns the error in the linear
+depolarization ratio computed from two frequencies; this is the ratio of
+the fractional linear polarization at the two frequencies.  Generally
+this is done when you have generated two images, each at a different frequency
+(continuum work). Thus if the fractional linear polarzation images are
+$m1$ and $m2$ then the depolarization ratio is $m1/m2$.
+
+This function operates with two images; the first is that with which you
+constructed your Imagepol \tool.  The second is supplied via the
+argument {\stfaf infile}, which can be an Image \tool, or a String
+holding the name of the \imagefile.
+
+In generating the depolarization ratio, and hence its error, you may
+optionally debias the  linearly polarized intensity.  This requires the
+standard deviation of the thermal noise.  You can either supply it if
+you know it, or it will be worked out for you with outliers from the
+mean clipped at the specified level. 
+
+You can get the depolarization ratio image with function
+\ahlink{depolratio}{images:imagepol.depolratio}.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- im1 := image('stokes.4800')
+- im2 := image('stokes.8300')
+- p := imagepol(im1)
+- dpr := p.depolratio(im2);
+- edpr := p.sigmadepolratio(im2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{sigmafraclinpol}{Error in fractional linear polarization}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff sflp}) returns the error (standard
+deviation) of the fractional linear polarization.
+This result comes from standard propagation of errors.
+The result is an Image tool as the error is signal-to-noise ratio dependent.
+
+This function requires the standard deviation of the thermal noise.  You
+can either supply it if you know it, or it will be worked out for you
+with outliers from the mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigflp := p.sigmafraclinpol()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmafractotpol}{Error in fractional total polarization}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff sftp}) returns the error (standard
+deviation) of the fractional total polarization.
+This result comes from standard propagation of errors.
+The result is an Image tool as the error is signal-to-noise ratio dependent.
+
+This function requires the standard deviation of the thermal noise.  You
+can either supply it if you know it, or it will be worked out for you
+with outliers from the mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigftp := p.sigmafractotpol()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{sigmalinpolint}{Error in linearly polarized intensity}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff slpi}) returns the error (standard
+deviation) of the linearly polarized intensity; $\sqrt{(Q^2+U^2)}$. 
+This result comes from standard propagation of statistical errors.
+The result is a float as the error is not signal-to-noise
+ratio dependent
+
+This function requires the standard deviation of the thermal noise.  You
+can either supply it if you know it, or it will be worked out for you
+with outliers from the mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- siglpi := p.sigmalinpolint()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmalinpolposang}{Error in linearly polarized position angle}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff slppa}) returns the error (standard
+deviation) of the linearly polarized position angle ($0.5
+\tan^{-1}(U/Q)$$\sqrt{(Q^2+U^2)}$) in degrees.
+This result comes from standard propagation of errors.
+The result is an Image tool as the error is signal-to-noise ratio dependent.
+
+This function requires the standard deviation of the thermal noise.  You
+can either supply it if you know it, or it will be worked out for you
+with outliers from the mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- siglppa := p.sigmalinpolposang()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmastokes}{Find standard deviation of specified Stokes data}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Specify Stokes}{}{String: One of 'I', 'Q', 'U', 'V' (case insensitive)}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff ss}) returns the standard
+deviation of the noise for the specified Stokes.  Outliers from the mean
+are clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigq := p.sigmastokes('q', 10.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmastokesi}{Find standard deviation of Stokes I data}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff ssi}) returns the standard deviation of the noise for the
+Stokes I data.  Outliers from the mean are clipped at the specified
+level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigi := p.sigmastokesi(10.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmastokesq}{Find standard deviation of Stokes Q data}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff ssq}) returns the standard deviation of the noise for the
+Stokes Q data.  Outliers from the mean are clipped at the specified
+level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigq := p.sigmastokesq(10.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmastokesu}{Find standard deviation of Stokes U data}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff ssu}) returns the standard
+deviation of the noise for the Stokes U data.  Outliers from the mean
+are clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigu := p.sigmastokesu(10.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{sigmastokesv}{Find standard deviation of Stokes V data}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff ssv}) returns the standard
+deviation of the noise for the Stokes V data.  Outliers from the mean
+are clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigv := p.sigmastokesv(10.0)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{sigmatotpolint}{Error in total polarized intensity}
+\begin{ahargs}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noise}{Auto determined}{Float}
+\end{ahargs}
+\ahreturns{Float or fail}
+
+\begin{ahdescription} 
+
+This function (short-hand name {\stff stpi}) returns the error (standard
+deviation) of the total polarized intensity; $\sqrt{(Q^2+U^2+V^2)}$. 
+This result comes from standard propagation of statistical errors.
+The result is a float as the error is not signal-to-noise
+ratio dependent
+
+This function requires the standard deviation of the thermal noise.  You
+can either supply it if you know it, or it will be worked out for you
+with outliers from the mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- sigtpi := p.sigmatotpolint()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{stokes}{Stokes}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Specify Stokes}{}{String: One of 'I', 'Q', 'U', 'V' (case insensitive)}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+
+This function returns an image containing the specified Stokes only.
+This interface can be useful for scripts.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- q := p.stokes('q')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stokesi}{Stokes I}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+This function returns an image containing Stokes I only.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- i := p.stokesi()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stokesq}{Stokes Q}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+This function returns an image containing Stokes Q only.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- q := p.stokesq()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stokesu}{Stokes U}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+This function returns an image containing Stokes U only.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- u := p.stokesu()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{stokesv}{Stokes V}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+This function returns an image containing Stokes V only.
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- v := p.stokesv()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{summary}{Summarise Imagepol tool}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription}
+
+This function just lists a summary of the Imagepol \tool\ to the logger. 
+Currently it just summarizes the image with which it was constructed. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- p.summary()
+Image name       : Concatenation :
+Telescope        : ATCA
+Observer         : Fluke
+Date observation : 1998/05/18/09:35:54
+Image mask       : None
+Image units      : Jy/beam
+
+Direction system : J2000
+Frequency system : LSR
+Velocity  system : RADIO
+
+Name             Proj Shape Tile   Coord value at pixel    Coord incr Units
+--------------------------------------------------------------------------- 
+Right Ascension   SIN   201   67  11:40:48.400   101.00 -2.000000e+00 arcsec
+Declination       SIN   201   67 -26.29.30.000   101.00  2.000000e+00 arcsec
+Frequency                13    7  1.432000e+09     1.00 -8.000000e+06 Hz
+Velocity                                  Fail     1.00          Fail km/s
+Stokes                    4    1          IQUV
+
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{totpolint}{Total polarized intensity}
+\begin{ahargs}
+  \ahaddarg[in]{debias}{Debias the total polarized intensity ?}{F}{T or F}
+  \ahaddarg[in]{clip}{Clip level for auto-sigma determination}{10}{Float}
+  \ahaddarg[in]{sigma}{Standard deviation of thermal noised}{Auto determined}{Float}
+  \ahaddarg[in]{outfile}{Output image file name}{Unset}{String}
+\end{ahargs}
+\ahreturns{Image tool or fail}
+
+\begin{ahdescription} This function (short-hand name {\stff tpi})
+returns the total polarized intensity; $\sqrt{(Q^2+U^2+V^2)}$. 
+If your image contains only Q and U, or only V, then just
+those components contribute to the total polarized intensity.
+
+You may optionally debias the polarized intensity.  This requires the
+standard deviation of the thermal noise.  You can either supply it if
+you know it, or it will be worked out for you with outliers from the
+mean clipped at the specified level. 
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- p := imagepol('stokes.cube')
+- tpi := p.totpolint()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\end{ahobject}
+
+
+
+%% Global functions
+
+\begin{ahfunction}{is\_imagepol}{Is this variable an imagepol tool ?}
+\begin{ahargs}
+  \ahaddarg[in]{thing}{Variable to test}{None}{Glish variable}
+\end{ahargs}   
+
+
+\ahreturns{T or F}
+\begin{ahdescription}
+
+Determine if this variable is an Imagepol \tool.  This is very useful in
+scripts; for robustness, you check that the tool is an Imagepol \tool\
+before you start applying Imagepol \toolfunctions.
+
+\end{ahdescription}  
+
+\begin{ahexample}
+\begin{verbatim}
+- p:=imagepol('myimage')
+- is_imagepol(p)
+T 
+- p2 := [10,20]   
+- is_imagepol(p2)   
+F
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{imagepoltest}{Run test suite for Imagepol tool}
+\begin{ahargs}
+  \ahaddarg[in]{which}{Which test to run}{All tests}{Integer or vector of integers}
+\end{ahargs}
+\ahreturns{T or Fail}
+
+\begin{ahdescription}
+
+Self-test of the Imagepol \tool.  This function includes forced errors. 
+As long as the function finally returns with a {\cf T}, it has succeeded
+(regardless of what error messages you might see). 
+
+The function invokes many tests.  The first one is a general test of
+everything at a basic level.  The succeeding tests work on individual
+areas of the image module. 
+
+Since the number of tests keeps growing, we don't tell you how many
+there are here or exactly what they do ! If you give too large a value,
+nothing will happen.  {\stfaf which} can be an integer or a vector of
+integers. 
+
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- imagepoltest()
+\end{verbatim}
+
+Runs all tests.
+\end{ahexample}
+
+\begin{ahexample}
+\begin{verbatim}
+- imagepoltest(2)
+\end{verbatim}
+
+Runs test 2.
+\end{ahexample}
+
+\end{ahfunction}
+
+
+\end{document}

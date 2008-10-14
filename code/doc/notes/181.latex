@@ -1,0 +1,598 @@
+\documentstyle[11pt,epsf]{article}
+\begin{document}
+
+\title{The Dwingeloo `UVCI' Design \\ AIPS++ Implementation Note 181}
+\author{
+	B.E. Glendenning \\ {\em bglenden@nrao.edu} \and
+        M.H. Wieringa \\ {\em mwiering@atnf.csiro.au}  \and
+        J.E. Noordam \\ {\em jnoordam@nfra.nl} \and
+}
+
+\date{April 13, 1995}
+\maketitle
+\tableofcontents
+\listoffigures
+
+\section{Introduction}
+
+An effort to advance the UV-plane Calibration and Imaging (UVCI) design and
+implementation for {\sc aips++} has taken place in the period January--April
+1995, hosted by the Netherlands Foundation for Research in Astronomy (NFRA) in
+Dwingeloo, the Netherlands.
+
+This design and implementation effort was focussed exclusively on classes
+required for syntheses radiotelescopes. The plan was to do this work in a
+number of phases:
+\begin{enumerate}
+    \item Take the previous design, described in \cite{glendenning:design},
+          and solve known problems, and attempt to anticipate gross problems.
+    \item Take this design and implement classes required to implement the
+          self-calibration loop for both real and simulated data.
+    \item Choose a hard(er) problem (Mosaicing, for example), and attempt
+          to correct the design for any difficulties which arise.
+    \item Implement that design.
+\end{enumerate}
+
+
+In general, we felt that the {\sc aips++} project has spent too much time
+trying to solve every conceivable problem, leading to stagnation. Our strategy
+was to flesh out the design framework by concentrating on specific problems. Of
+course we avoided design decisions which were certain to cause later
+difficulties.
+
+Events have overtaken this process. The {\sc aips++} project underwent
+a significant reorganization on April~1, 1995. The `UVCI' effort was
+terminated after its second phase, and the continuation of the {\sc
+aips++} synthesis radiotelescopes design and implementation shall take
+place under different circumstances.
+
+This document describes our design as it existed at the end of Phase~2.  The
+reader should understand that while we are generally satisfied with what we
+have produced, we have not subjected it to the rigors of more difficult
+problems as we had intended.
+
+The code for the classes described herein has been checked into the system
+(initially into the {\em trial} package). Subsequent design discussions should
+possibly be written in a hypertext form to take advantage of the detailed
+information which is documented in the interface sections of the source code.
+
+As this is a report on a work-in-progress, readers of this document are
+expected to be generally familiar with the previous design.
+
+\section{The Design in Brief}
+
+All the telescope data is stored in a {\em MeasurementSet}, which is a class
+derived from {\em Table}\footnote{The Table classes are not described in this
+paper; the general description in \cite{glendenning:design} still suffices,
+moreover the class documentation is generally excellent. See {\em
+http://www.cv.nrao.edu/aips++/docs/aips/implement/Tables.html}.}. The
+MeasurementSet classes differ from the Table class only in that:
+\begin{enumerate}
+
+\item Methods are available to maintain a default correction (calibration)
+``attached to'' the MeasurementSet.
+
+\item Some keywords and columns, if they exist in the MeasurementSet, must have
+predefined meanings. Moreover a MeasurementSet for a synthesis radiotelescopes is required to have
+some columns and keywords. Likewise, a Single Dish is required to have some
+columns and keywords, some of which are in common with the synthesis radiotelescopes.
+
+\end{enumerate}
+The data in the MeasurementSet might be uncorrected (``raw'') data, or
+it might be (partially) corrected.
+
+Such corrections (or corruptions) are applied to the MeasurementSet through the
+apply member of a {\em Corrector} object. Such corrections will typically not
+result in a physical copy of the data, rather they take place ``on demand.''
+
+The machinery to perform this calibration on demand fundamentally uses the
+``virtual column'' machinery available through the Table classes. When
+correction can be applied solely through the members available through a {\em
+Visibility} object, and the private state of the Corrector, even those details
+are largely hidden.
+
+A Corrector may save and restore itself into any MeasurementSet keyword. The
+MeasurementSet has a keyword which is used to store a default calibration.
+
+Image-plane data are handled either by the {\em Image} class, which contains
+regularly sampled data in a Lattice with associated coordinates, or a {\em
+SkyModel}, which represents a continuously sampled (in both the Image and
+Fourier planes) model of the sky brightness as a function of position,
+frequency, time and polarization. For now, a {\em Beam/PSF} is merely stored as
+an Image.
+
+The {\em MeasurementModel} class models the processes by which a
+telescope samples the sky. Its {\em invert} method produces an Image
+and a Beam from a MeasurementSet, and its {\em predict} method
+produces a MeasurementSet from a SkyModel. The latter requires a
+MeasurementSet as input, to specify for which uvw-points the
+visibilities must be predicted.
+
+\section{MeasurementSet Classes}
+
+The {\em MeasurementSet} is the primary repository of instrumental data inside
+of {\sc aips++}. The MeasurementSet is organized as a {\em big Table}, with all
+data appearing in columns of the table, and meta-information ({\em e.g.},
+units) attached as keywords to the table.
+
+\subsection{Data Organization} 
+
+No organization of the data can be optimal for all circumstances. The
+major principle we adopted for organizing the MeasurementSet is to
+keep all the data which is {\em most} apt to be required to be
+aggregated together to apply common corrections together on one row of
+the table. The principle result of this is that the fundamental data
+array of shape $n_{Stokes} \times n_{channels}$. That is, each row
+contains the correlations for all polarisations and channels for a
+given integration for a single combination of antenna-pair, feed-pair,
+and spectral window.
+
+It is important to note that the MeasurementSet is a {\em single}
+table, not a collection of tables. Other software systems have tended
+to separate things which vary at different rates (per observation, per
+source, per integration {\em etc.}) into different tables to prevent data
+bloat (caused by repeating constant values for several or many
+rows). Besides the navigational difficulties in finding the value that
+corresponds to the current row in another table, a more fundamental
+problem is that values can vary at different rates for different
+instruments (and observing modes), and hence finding a particular
+value might require a moderately complicated runtime lookup.
+
+
+The columns which are common among astronomical instruments, 
+or unique to synthesis radiotelescopes
+are listed in the file MeasurementSet.h (currently to be found in the AIPS++
+system as \hfill\break /aips++/code/trial/implement/MeasurementSet/MeasurementSet.h)
+These columns include items like the data matrix, `coordinates' (time,
+uvw, spectral window, field, etc.), data quality measures (flags and
+noise estimates) and telescope specific items (system temperatures, 
+weather data, etc.).
+
+Any column name or keyword which is not otherwise reserved, may be used by a
+telescope as it wishes (e.g. to record monitor data).\footnote{Probably we
+should introduce the notion of reserved namespaces to prevent clashes with
+(future) standard columns.}
+
+Many of the above are either constant, or at least slowly varying if the
+MeasurementSet is stored in its ``natural'' order (increasing time, baselines
+on consecutive rows, {\em etc.}). This could cause tremendous data bloat if the
+constant values were repeated. A Table optimization, the Miriad storage
+manager, has been implemented to prevent this. (Likewise in FITS, the Single
+Dish convention allows a keyword to masquerade as a constant column). If we
+wish to preserve the ``Big Table'' view of data, an approach such as this is
+necessary.
+
+One modest problem with the ``Big Table'' view of data is that miscellaneous
+monitor ({\em e.g.}, wind speed) data might not be emitted when the instrument
+is producing data, i.e. it might not be sampled at times when a row would be
+emitted by the instrument. To date we just ``grid'' it on to the nearest
+row. This solution seems adequate so long as we are not interested in
+miscellaneous data that varies more rapidly than rows are produced and which
+cannot be averaged.
+
+Concatenating two synthesis radiotelescopes MeasurementSets together should be
+as simple as taking the columns which are in common between them, and appending
+one onto the other (every MeasurementSet for a synthesis telescope is
+required to have the minimal set of aperture synthesis columns). 
+This concatenation could be done via a virtual table, or it
+could be done by physically appending the data. Concatenating a synthesis
+radiotelescope MS and a Single Dish MS would be a more complicated operation
+requiring addition of (virtual) columns.
+
+The lack of adequate coordinate (``Measure'') classes is clearly sorely missed,
+and would greatly clean up many of the current column definitions. 
+Likewise, the Unit (Quantum) class should be integrated.
+
+\subsection{Iteration and Aggregation}
+
+As we have seen, the MeasurementSet is organized at a moderate level of
+granularity. While a row isn't ``atomic'' --- each row contains a data matrix
+(channels and polarizations) --- it also only contains a single time,
+antenna-pair, feed-pair, spectral-window, etc.
+
+Often it is useful to aggregate data together in a larger chunk. The
+SynthesisMSIterator was created for this purpose. This class basically fulfills
+the mandate of the ``VisSet'' in \cite{glendenning:design}.
+
+This class is used to iterate through a MeasurementSet in two main orders:
+\begin{enumerate}
+\item Iterate through all spectral windows before advancing to the next
+      {\tt FIELD\_ID}.
+\item Iterate through all the fields before going to the next spectral
+      window.
+\end{enumerate}
+
+Usually a MeasurementSet will be filled in time order, but at present
+this is not required. The iterator does not enforce time order.
+Besides presentation of selected data that results from the present iteration
+and aggregation, this class has convenience functions for, e.g. setting the
+desired Stokes type, and returning UVW in wavelengths.
+
+It seems to one of us (BEG) that the SynMSIterator might be a natural abstract
+base class, as it might be a natural point to, {\em e.g.}, inject simulated
+data into an imaging algorithm. That is, we could create an abstract base
+class, derive SynMSIterator from it, and recast arguments from the
+MeasurementSet to this new class where possible. This base class would be one
+very much like the VisSet. 
+
+The reason the VisSet has disappeared is
+that in the previous implementation it turned out to be an `empty
+shell' with the VisSetIterator doing all the work and accessing the
+VisSet internals. To allow simulation of both calibration and imaging 
+we will need to produce at least the full set of required columns for 
+synthesis arrays. The present MSSimulator class produces a filled 
+MeasurementSet Table on disk from a number of parameter files.
+
+\subsection{Visibility}
+
+A ``Visibility'' object has been defined which consists of the complex data
+matrix, time, antenna numbers, feed numbers, spectral window, calibration
+group, Stokes type, feed type, polarization response, and the
+parallactic angle of the antenna (the polarization response is the
+'fixed' response for pa=0).
+
+This is a convenient aggregation of values found on each row of a synthesis
+radiotelescope MeasurementSet.\footnote{In C++ it should now be possible to
+implement a virtual {\tt ScalarColumn<Visibility>}, although we haven't done so
+yet. This would be quite convenient. } It will also play an important role in
+correction of synthesis MeasurementSet's, described later.
+
+\subsection{Default Corrector}
+
+Every MeasurementSet may have a default corrector associated with it
+(this corrector may be a corrector-sequence). When
+instantiated every MeasurementSet always presents its raw values, however the
+default correction, if any, may readily be applied.
+
+Presently the MeasurementSet only has a single default corrector. It is
+anticipated that this will be extended to allow for versioning.
+
+This functionality is not fundamental --- it is a convenience built on top of
+the save and restore methods of the Corrector class.  Details on the operation
+of Correctors are supplied later in this paper.
+
+\section{Image-Plane Representations}
+
+The design of the Image is unchanged from \cite{glendenning:design}. It
+consists of a data hyper-rectangle with associated coordinate information, and
+methods for iterating through it.
+
+Besides an Image it is often required to have a, possibly non-gridded,
+estimate or model of a sky brightness distribution, for example in the
+predict method of the MeasurementModel (described later). In
+particular, we want to be able to sample the brightness in both the
+Image and Fourier planes, and for the latter we want to admit the
+possibility of a DFT, which in some circumstances allows for higher
+precision than gridding the model and performing an FFT.
+
+The class that provides this modeling capability is known as the 
+{\em SkyModel}. It was formerly known as the SourceModel. 
+We decided to change its name to indicate that we are not (yet)
+solving the problem of projecting an astrophysical simulation onto the
+celestial sphere. Thus our SkyModel is a function of {\em Sky position},
+{\em frequency}, {\em time}, and {\em polarization}.
+
+Such estimates have traditionally come from a variety of different sources:
+\begin{enumerate}
+    \item A Clean Component list.
+    \item Parameterized source components (elliptical Gaussians, {\em etc.})
+    \item An actual image (possibly observed at another frequency, or from
+          a previous iterate of a deconvolution).
+    \item A simulation.
+\end{enumerate}
+
+Of course one might also want to apply variations to a basic SkyModel ---
+spectral index effects, faraday rotation, and time-dependent positions (to
+simulate non-isoplanatic effects).
+
+We break these classes down in two levels, one level for pure computation, and
+another which handles ``book-keeping'' or policy. Such decompositions are often
+fruitful.
+
+In particular, we have base class functions which model multi-dimensional
+mathematical functions, with and without Fourier transforms. These classes are
+used by the SkyModel classes, which add coordinates, polarization, and a
+default grid.
+
+\subsection{Functional classes}
+
+The major function-like base classes classes\footnote{These classes are an
+improvement of the ``MathFunc'' classes which have existed in the {\sc aips++}
+system for quite some time. They were, no doubt, influenced by the discussion
+in \cite{bn:scientific}.} are:
+\begin{description}
+    \item[\verb=Functional<Domain,Range>=] This class maps Domain objects into
+    Range objects (neither of which are necessarily numeric). It also has a
+    member for evaluating itself over every element of an \verb=Array<Domain>=,
+    placing the results into an \verb=Array<Range>=\footnote{The Arrays should
+    likely be replaced with lattices.}.
+
+    \item[\verb=FunctionND<Domain,Range>=] This class represents a
+    multi-dimensional function, and is derived from
+    \verb=Functional<Vector<Domain>, Range>=. It adds members to evaluate
+    itself on a grid, to smooth itself onto a grid, and also to get and
+    set internal parameters (defaults to no modifyable parameters).
+
+    Real and Complex specializations of this class are provided. The Real
+    specialization has a member function to (Direct) Fourier transform itself,
+    yielding a complex function. Besides this DFT member, a FFT global function
+    is available which will FFT a FunctionND onto a grid.
+
+\end{description}
+
+While we anticipate that a great many classes derived from the above may
+eventually be required, the ones immediately required are:
+
+\begin{description}
+    \item[\verb=DeltaFunctions=] A set of (ungridded) point components.
+
+    \item[\verb=GridFunction=] A grid masquerading as a continuously sampled
+    function (e.g. through interpolation). Presently the Fourier transformed
+    real grid results in a full complex plane. We should probably take
+    advantage of our knowledge that it is Hermitian.
+\end{description}
+
+Other classes we anticipate needing in the relatively short term include
+classes to augment the dimensionality of a Functional (assume it's constant,
+apply a bandpass/spectral index, move it), as well as classes related to
+parameterized mathematical functions (Gaussians and the like). Functional
+expressions would of course be extremely expressive and convenient.
+
+\subsection{SkyModel}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfxsize=6in
+\epsfbox{uvci-2.ps}
+\caption{SkyModel and Functional classes}
+\end{figure}
+
+
+The {\em SkyModel} class is an abstract base class which returns real valued
+FunctionND objects to represent sky brightness as a function of position,
+frequency, and time for a given polarization. It also has a Fourier method
+which returns a complex valued FunctionND.
+
+This Fourier method might use a DFT (if available, and the user has chosen
+accuracy over speed), otherwise it performs an FFT and returns complex valued
+GridFunction. Partly for this reason, and partly because gridding a SkyModel to
+an Image is expected to be a common operation, a default grid is defined for
+the SkyModel. The SkyModel is only assured of being defined within the confines
+of the grid. (SkyModels containing very widely separated components will need
+to have a DFT method implemented).
+
+Since many SkyModels will be constant in time, and possibly frequency, methods
+are provided for inquiring along which axes a SkyModel is constant.
+
+Presently, the only concrete SkyModel is a very simple one which varies only on
+the sky, and is instantiated with an abstract base class which returns a
+FunctionND as a function of polarization (for example, through a matrix
+multiplication). 
+
+\subsubsection{SkyView as a Generalized Image}
+
+While the SkyModel was created for the express purpose of predicting
+visibilities, we were struck that this class, or one very much like it, might
+be suitable for use as a generalized image. For example, it appears that a
+SkyModel which is in turn made up of SkyModels is capable of storing 
+a mosaiced ``image.''
+
+If this view ultimately prevails, a class very much like this one (tentatively
+named ``SkyView'') would also be a base class for all Image-like classes.
+In the design process for the SkyModel we played with the idea of a
+SkyView that has associated information describing its limitations in
+terms of the multiplicative and convolution `filters' that have been
+applied in all dimensions. Such a SkyView would be able to handle
+overlapping 'subViews' and present a combined View.
+
+
+
+\subsection{Beam (PSF)}
+
+Presently we are just using an Image to hold the synthesized beams we
+produce. In the future we will need to allow for beams which are functions of
+position, time, \ldots.
+
+It seems to one of us (BEG) that a reasonable solution to this problem is to
+produce a PSF base class whose major method produces an Image\footnote{Or
+SkyView if we create more generalized ``Images''.} as a function of position,
+time, \ldots. That is, it is very much like a SkyModel, only instead of
+producing a single number at one ``point,'' it produces an entire response
+function.
+
+\subsection{Image Plane Corrections}
+
+Presently we apply no image-plane corrections (e.g., primary beam
+correction, off-axis polarization, pointing errors,
+non-isoplanaticity, etc.) These corrections will need to be
+implemented at some stage, and we need to keep them in mind as the
+design proceeds as they are often `scheme-breakers'.
+
+There are a number of approaches which are possible:
+\begin{enumerate}
+    \item Write functions which perform the operations on the images.
+    \item Create FunctionND expression objects (these will be convenient in
+          any event).
+    \item Create image plane Corrector objects, analagous to MeasurementSet
+          Corrector objects.
+\end{enumerate}
+
+The last solution is pleasingly symmetric, however at this time we have no
+other reason to choose one solution over another. For the most
+advanced corrections we may be forced into a Corrector-like
+approach. Some effects (like time variable pointing errors) cannot
+really be corrected for, but models can be corrupted with them,
+allowing an iterative solution scheme.
+
+\section{MeasurementSet Correction (Calibration) and Corruption}
+
+A Corrector is an abstract base class for objects which create a new
+MeasurementSet from an existing one, correcting (or
+corrupting\footnote{Corruption is of use in data simulation.}) the data in the
+process. This correction will typically be applied ``on-demand'', but a
+physical copy may be made instead if desired. In the case where correction is
+being applied on-demand, the Corrector needs to inject the necessary machinery
+into the MeasurementSet to do this\footnote{Typically, the Corrector will be
+multiply inherited from a VirtualColumnEngine, and will merely attach a copy of
+itself to the MeasurementSet.}.
+
+The Corrector will normally modify values in existing columns. However it could
+also add or delete new columns, or add and delete rows\footnote{It cannot
+however modify keywords on demand.}. Columns which are unaffected by a
+particular correction are generally just forwarded to the underlying Table,
+however this policy is up to the particular Corrector.
+
+Corrections may be nested arbitrarily. That is, a correction may be applied to
+a MeasurementSet which is itself a corrected MeasurementSet and so
+on. As shown in the next section though, typically a ``multi''-corrector
+object will be used instead.
+
+We believe that with our Corrector classes, we have achieved our fundamental
+goal of being able to create and insert new calibrations without having to
+perturb the rest of the system.
+ 
+\subsection{Visibility Correctors}
+
+\begin{figure}
+\epsfverbosetrue
+\epsfxsize=6.0in
+\epsfbox{uvci-1.ps}
+\caption{Correctors and MeasurementSet.}
+\label{fig:corr}
+\end{figure}
+
+The great generality of the Corrector base class also implies that it cannot
+provide much support. The on-demand calibration must thus be implemented by the
+programmer directly using the Table classes. While this is not particularly
+difficult, it can be simplified even further by limiting the possible
+corrections which can be applied.
+
+Thus we introduce a new abstract base class, the {\em
+VisibilityCorrector}. To create a new type of Visibility Correction,
+the programmer merely needs to define two abstract member functions:
+\begin{description}
+    \item[\verb=applyVis(Visibility \&data)=] This member function corrects
+       (corrupts) the Visibility object "data". Typically it uses the state in
+       the Visibility object ({\em e.g.}, time) to look-up some correction
+       parameters, then it modifies the Visibility in some Corrector-dependent
+       fashion.
+
+  \item[\verb=Vector<Bool> correctedFields()=] Returns a \verb=Vector<Bool>=,
+      with positions which correspond to the columns that are actually
+      corrected set to True. While a member such as this isn't strictly
+      necessary, it is used to optimize access to columns which aren't actually
+      corrected.
+\end{description}
+
+We have implemented two concrete classes derived from VisibilityCorrector.
+\begin{description}
+    \item[ReceptorGains] 
+    The current version of this corrector supposes that all feeds and 
+    receptors on an antenna share
+    a single complex gain, which varies with time. A simple linear
+    interpolation is performed.
+
+    \item[VisibilityCorrectorSequence] For efficiency, and simplicity, this
+    multi-corrector class was created. It contains a series of (any type of)
+    VisibilityCorrectors within itself, and its applyVis() function merely
+    passes the incoming Visibility object through all the applyVis() members of
+    its contained correctors. Its correctedFields() member of course OR's all
+    its contained correctors results together.
+\end{description}
+
+\subsection{Solvers}
+
+A Corrector is a class which applies some correction to a MeasurementSet. A
+``solver'' is a generic name for an entity (class, function, or program) that
+creates a particular Corrector, {\em i.e.}, sets its state.
+
+These ``solvers'' are not a software class. They cannot be meaningfully
+polymorphic (you cannot solve for a calibration without knowing what it is).
+
+It may still prove useful to create a polymophic interface to Solvers
+for which the detailed parameters can be set up in advance, e.g., to
+allow them to be used in general selfcal loops.
+
+\subsection{Corrector Persistence}
+
+We have chosen a simple scheme for Corrector persistence. Every Corrector has a
+member function to {\em save} its state into a Table keyword. Similarly there
+is a function to restore a Corrector from a Table keyword.
+
+Thus the Corrector only knows how to save and restore itself. The {\em policy}
+of where this should be done is left to another entity. At present, the only
+such policy is the {\em default} MeasurementSet corrector described above.
+
+\subsection{Whence the Telescope Model?}
+
+The reader may be wondering about the difference between the Corrector class
+described here, and the ``TelescopeModel'' class which had previously fulfilled
+many of the same functions. In brief:
+\begin{enumerate}
+\item The Correctors do not have a polymorphics {\em solve} method, for reasons
+      described previously.
+\item The Correctors are not an alternative store for information available in
+      the MeasurementSet. 
+\end{enumerate}
+
+Thus the present Corrector object corresponds to the ``apply'' part of the
+previously envisaged TelescopeModel.
+
+It seems to us that a TelescopeModel class might still be useful for simulating
+a telescope, however we have not pursued this.
+
+\section{MeasurementModel}
+
+A {\em MeasurementModel} is an abstract base class which encapsulates (an
+approximation to) the process by which a telescope samples the sky. The
+fundamental members of the MeasurementModel class are:
+\begin{description}
+    \item[invert] The invert() method creates an Image and Beam (presently
+    also an Image) from a MeasurementSet. The present strategy is that the
+    MeasurementSet must have previously had any desired selections applied to
+    it ({\em e.g.}, for field, or frequencies). An alternative strategy would
+    be to put these filters into the MeasurementModel.
+
+    \item[predict] The predict() method returns a MeasurementSet, given a
+    SkyModel and a template MeasurementSet. Predict uses the template
+   ``coordinates'' ({\em e.g}., UVW) to determine where to sample the model.
+\end{description}
+
+A class derived from MeasurementModel that implements the usual aperture
+synthesis image formation has been implemented. It handles spectral
+line and continuum data and is also capable of performing
+multi-frequency synthesis. It has options for 3D imaging,
+tangent-point shifts and emitting double-sized beams (which
+are often useful for image-plane deconvolutions).
+
+Without a more generalized image structure, we are unsure whether or not the
+MeasurementModel can be truly polymorphic. For example, a mosaicing
+MeasurementModel would certainly need to produce a class more complicated than
+an Image.
+
+
+\section{Simulation}
+
+Tools for the simulation of corrupted data should be implemented in an
+early stage (and not as an afterthought as is often the case). 
+
+\section{Glossary}
+
+Definitions for the terms:
+Antenna, Baseline, Calibration, Correction, Feed, Interferometer,
+MeasurementSet, Raw data, Receptor, SkyModel, Spectral Window, SynMSIterator,
+Table, UVCI and Visibility can be found in the AIPS++ Glossary.
+
+\section{References}
+\bibliography{181}
+\bibliographystyle{alpha}
+
+\section{Acknowledgements}
+
+The authors gratefully acknowledge the many useful discussion with Bob
+Sault. Ger van Diepen and Friso Olnon also gave useful input during
+the ``Dwingeloo UVCI Design Period''.
+
+
+
+\end{document}

@@ -1,0 +1,91 @@
+\documentclass[11pt]{article}
+\usepackage{html}
+\include{ahrecipe}
+\begin{document}
+\begin{ahrecipe}
+
+\begin{rawhtml}
+<body bgcolor="#ffffff">
+\end{rawhtml}
+
+%\argoals
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Goals:</font>
+\end{rawhtml}
+{Make cleaned images starting from a UVFITS file}
+
+%\arusing
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Using:</font>
+\end{rawhtml}
+{imager, ms, display}
+
+%\arassume
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Assume:</font>
+\end{rawhtml}
+{You have a UVFITS file 
+\begin{rawhtml}
+<a href="../../../../code/doc/recipes/recipe3/ss433u0383.uvfits">ss433u0383.uvfits</a>
+\end{rawhtml}
+containing VLA synthesis data on SS433 for which you wish to make visibility
+plots and cleaned images of each spectral window separately. You also
+wish to know what the beam size actually is.}
+
+%\arscript
+\begin{rawhtml}
+<font face=helvetica size="+2" color="#cc0000">
+Script:</font>
+\end{rawhtml}
+{\htmladdnormallink{imager-ss433.g}{../imager-ss433.g.text}}
+
+\begin{arexample}
+\arline{include~'imager.g';
+include 'general.g';}{Include the imager and general scripts.}
+\arline{dowait:=T}{Tell the Object system to wait for a method to finish.}
+\arline{m:=fitstoms('ss433.ms', 'ss433u0383.uvfits'); m.close()}{Make a
+MeasurementSet from a UVFITS file using the \emph{fitstoms} constructor.
+Remember to close the tool \texttt{m}.}
+\arline{imgr:=imager('ss433.ms')}{Make an imager tool from the MeasurementSet.}
+\arline{for (i in [1,2]) \{}{Loop over both Spectral windows.}
+\arline{
+imgr.setimage(cellx='0.05arcsec', celly='0.05arcsec', nx=128, ny=128, 
+stokes='I', spwid=i, fieldid=1)}{Set 
+the image properties. The frequency axis is determined from Spectral
+Window \emph{i}.}
+\arline{  imgr.setdata(spwid=i)}{Select the data for Spectral Window
+\emph{i}.}
+\arline{  imgr.summary()}{Show state of \texttt{imgr}.}
+\arline{  imgr.plotvis()}{Plot the visibility data.}
+\arline{  model:=spaste('ss433.clean',i)}{\texttt{model} is the label for the
+image.}
+\arline{  restored:=spaste('ss433.clean', i, '.restored')}{\texttt{restored} is
+the name of the restored image.}
+\arline{  residual:=spaste('ss433.clean', i, '.residual')}{\texttt{residual} is
+the name of the residuals image.}
+\arline{  bmaj:=F; bmin:=F; bpa:=F;}{Set up some return variables.}
+\arline{  imgr.image('psf', spaste('ss433.psf', i))}{Make the PSF.}
+\arline{  imgr.fitpsf(spaste('ss433.psf', i), bmaj, bmin, bpa);}{Fit
+the beam size.}
+\arline{  print~bmaj,~bmin,~bpa;}{Print out the beam size.}
+\arline{  imgr.clean(algorithm='hogbom', model=model, mask='',
+niter=1000, threshold='0.2mJy'), image=restored, residual=residual}{Do 1000 Clean iterations of the Hogbom 
+algorithm, stopping at the 0.2mJy level. Note that if the model image does not exist an empty one is automatically created}
+\arline{ myim:=image(restored)}{ Creating an imagetool for restored image}
+\arline{  myim.view()}{Display the restored image using the default viewer}
+\arline{  timer.wait(20)}{Wait for 20 seconds}
+\arline{  myim.done()}{Closing image tool and hence display}
+\arline{\}}{End the loop over spectral windows}
+\arline{imgr.close()}{Close the imager object}
+\arline{imgr.done()}{}
+\arline{dowait:=F}{Tell the Object system not to wait for a method to finish}
+\end{arexample}
+
+\arconclusion{For further information on imaging, see the
+imager module.}
+\end{ahrecipe}
+
+\end{document}

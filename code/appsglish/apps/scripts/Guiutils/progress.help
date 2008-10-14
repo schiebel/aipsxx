@@ -1,0 +1,127 @@
+%% Copyright (C) 1999
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: progress.help,v 19.2 2004/08/25 02:01:37 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{progress}{Display visually the progress of some task}
+
+\ahinclude{progress.g}
+
+\ahkeyword{gui}
+
+\begin{ahdescription}
+
+A progress bar is used to track the progress of some task. It has a
+``meter'' with a sliding line that advances across the window as the
+task executes. The progress bar will normally disappear when the task
+has reached its maximum value. The progress bar can optionally
+estimate the time remaining in the task by assuming that the remaining
+portion will complete at the same rate as the portion completed to
+date.
+
+If X windows is not available ({\tt have\_gui() == F}) then this
+tool just does no-op's.
+
+\end{ahdescription}
+
+\begin{ahexample}
+\begin{verbatim}
+- include "progress.g"
+- bar := progress(-100, 100, 'main title', 'subtitle')
+- bar.update(-75)
+- bar.update(-50) 
+- ...
+- bar.update(100)      # GUI window is removed
+\end{verbatim}
+\end{ahexample}
+
+
+\begin{ahconstructor}{progress}{Create a progress meter}
+\begin{ahdescription}
+Create a progress meter. If {\tt have\_gui()} is false (for example,
+no DISPLAY environment variable is set) this results in a no-op
+tool. You generally do not need to set {\tt minlabel} and {\tt
+maxlabel}, since the defaults are generally what you want.
+
+Note that {\tt min} may in fact be greater than {\tt max}. If so, the
+progress meter will ``count down'' correctly.
+
+The {\tt startopen} parameter is a little unusual. If it is a boolean
+({tt T} or {\tt F}) then, if true, the progress meter starts with the
+GUI ``on''. If a number, the progress meter's GUI turns on after the
+supplied number of seconds has elapsed. The reason this has been
+implemented is that it is distracting to see very short-lived progress
+meters popping up and disappearing very quickly.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{min}{minimum value}{}{Numeric}
+\ahaddarg{max}{maximum value}{}{Numeric}
+\ahaddarg{title}{window title}{""}{String}
+\ahaddarg{subtitle}{bar title}{""}{String}
+\ahaddarg{minlabel}{left label}{"" (minimum value)}{String}
+\ahaddarg{maxlabel}{right label}{"" (maximum value)}{String}
+\ahaddarg{estimate\_time}{estimate time remaining?}{T}{Boolean}
+\ahaddarg{barwidth}{width of bar in pixels}{200}{Integer}
+\ahaddarg{barheight}{height of bar in pixels}{20}{Integer}
+\ahaddarg{startopen}{start with the window displayed? Or, how long to wait before displaying?}{5}{Boolean or Integer}
+\end{ahargs}
+\ahreturns{progress tool}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{update}{Update a progress meter}
+\begin{ahdescription}
+Updates the position of the bar on the progress meter. If {\tt
+autodisable} is true, it will remove the window if it reaches the
+maximum value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{value}{New value of the progress meter}{}{Numeric}
+\ahaddarg{autodisable}{Remove the window when ``max'' is reached?}{T}{Boolean}
+\end{ahargs}
+\ahreturns{Real - the fraction of the bar that is complete, 0.0-1.0.}
+\end{ahfunction}
+
+\begin{ahfunction}{activate}{Remove the window from the screen}
+\begin{ahdescription}
+Remove the progress meter window from the screen. If the window is
+already inactive, the function is a no-op.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{deactivate}{Return the window to the screen}
+\begin{ahdescription}
+If the window is not currently active on the screen, this function
+returns it, even if the window has previously hit its maximum. If the
+window is already active, this function is a no-op.
+\end{ahdescription}
+\end{ahfunction}
+
+
+\end{ahobject}
+\end{document}

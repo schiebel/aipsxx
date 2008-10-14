@@ -1,0 +1,479 @@
+\begin{verbatim}
+These files are designed for the import and calibration of
+data taken at Arecibo Observatory.  
+
+A typical session for this may go something like:
+
+% aips++ -l naic_start.g
+- ao.import('U3564.sdfits')
+- aoname:='U3564_ms1'
+- ao.gaincorr()
+- ao.plot('average1')
+
+After the above commands, the calibrated data is shown in the dish pgplotter
+screen.  Note that the variable "aoname" is assumed to be the name of a measurement
+set as it appear in the dish results manager (i.e. aoname:='U3564_ms1' and NOT
+aoname:='U3564_ms')
+
+KNOWN PROBLEMS:
+
+(1) The use of a hybrid to convert a receiver from linear <-> circular has not been
+	dealt with (in a large part due to a lack of knowledge of what happens to
+	the cal values).
+(2) The baseline routines need to be updated to allow baseline fitting to the cals.
+	Plus, the "gaincorr" routine needs baseline fitting.
+(3) The baseline routines do not yet allow for the user to interactively
+	select (i.e. with a mouse) their ranges
+(4) The user cannot yet calibrate their data into units of T_main_beam
+    	(and probably never will be allowed to....)
+
+PLANNED UPGRADES:
+
+- Make routines more generic.  This means having the  routines automatically
+	recognize the ON, OFF, CAL_ON, CAL_OFF
+- No calibration for mapping data is in place yet
+- Others?
+______________________________________________
+
+The primary files are:
+
+(1) ao.import
+
+Description:  This program imports sdfits data and converts it into 
+	a measurement set.  In the process, the program adds
+	a couple 'missing' columns to the data.
+
+Syntax: ao.import(sdfitsname)
+	Where sdfitsname is the full name of the sdfits file,
+	and which is assumed to be of the form <name>.<ending>.
+	The output measurement set will have the name
+	<name>_ms
+
+Subroutines called: ao.fixpnt
+
+(2) ao.gaincorr
+
+Description:
+	This routine reads in data from a measurement set, 
+	does (ON - OFF)/OFF for the individual data dumps,
+	and then applies the gain/temp correction to the
+	individual (ON - OFF)/OFF data dumps.  The output
+	is a measurement set whose data column contains the
+	calibrated data.  The measurement set will be named
+	msname_on_off.  Additionally, the calibrated data will
+	be averaged and the average will be written to the
+	dish results manager as X records, where X is the
+	number of boards x the number of polarizations of the scan.
+
+	Note that the data is currently assumed to be in the
+	form of ON, OFF, CAL_ON, CAL_OFF.  The temperature
+	is determined from the CAL measurements, and the
+	gain correction is obtained from the 'standard' AO
+	gain curves, as described in the subroutines below.
+	After the routine is run, the tys and tcal calculated from
+	the noise diode data is placed into the data headers.
+
+Syntax: ao.gaincorr([name=aoname,onscan=0,calscan=0,tsys=0,gainval=0,offscan=0,weight='none',convert='T'])
+	Here name is the name of the measurement set which contains 
+	the data of interest.  As with all these routines, it defaults to th
+	definition of the aoname variable.  The other options are:
+	  onscan = Scan number of the ON source observation
+		   Default is the first scan of the data set
+	  calscan = First scan number of affiliated noise diode observation
+		   Default is onscan+2
+	  tsys = array of tsys values.  This must be a X by 6 array, where X
+		   is the number of (polarizations)x(boards).
+		   Default is to calculate this value from the cals.
+		   Note entering a value here will override any entry for the
+		  "calscan"
+	  gainval = array of gain values.  This must be a X by 4 array, where X
+                   is the number of (polarizations)x(boards).
+                   Default is to calculate this value from the gain curve.
+	  offscan = Scan number of the OFF source observation
+                   Default is onscan+1
+	  weight = weighting scheme for the averaging of the scans.  The
+		  options are "none" (the default), "rms" (rms across each spectra
+		  is used for weighting), and "tsys" (the weight for all channels in
+		  each spectra is the same value).
+	  convert = convert the data to Janskies (value of 'T', the default),
+		  System temperature (value of 'Tsys') or leave as raw data (value of 'F')
+Subroutines Called:
+	ao.tsys, ao.gain, ao.onoff, ao.avg, get_scan
+	
+(3) ao.gaincorr2
+
+Description:
+	This routine will read in data, average the on and off scans,
+	do (on - off)/off, apply the gain curve, and then multiply
+	the result by the tsys (obtained from the associated CAL
+	observations.  The output is sent to the dish results
+	manager as X records, where X is the number of boards x the
+	number of polarizations of the scan.
+	
+	Note that the data is currently assumed to be in the
+	form of ON, OFF, CAL_ON, CAL_OFF.  The temperature
+	is determined from the CAL measurements, and the
+	gain correction is obtained from the 'standard' AO
+	gain curves, as described in the subroutines below.
+	After the routine is run, the tys and tcal calculated from
+	the noise diode data is placed into the data headers.
+
+	This routine allows the user to fit a baseline to the 
+	data in place of using an off scan.  Note that for the moment
+	the system temperature is always found via (CAL_ON-CAL_OFF(/CAL_OFF).
+
+Syntax: ao.gaincorr2([name=aoname,onscan=0,calscan=0,tsys=0,gainval=0,offscan=0,fitbase='F',weight='none',convert='T',order=2,range='F'])
+	Here name is the name of the measurement set which contains 
+	the data of interest.  As with all these routines, it defaults to th
+	definition of the aoname variable.  The other options are:
+	  onscan = Scan number of the ON source observation
+		   Default is the first scan of the data set
+	  calscan = First scan number of affiliated noise diode observation
+		   Default is onscan+2
+	  tsys = array of tsys values.  This must be a X by 6 array, where X
+		   is the number of (polarizations)x(boards).
+		   Default is to calculate this value from the cals.
+		   Note entering a value here will override any entry for the
+		  "calscan"
+	  gainval = array of gain values.  This must be a X by 4 array, where X
+                   is the number of (polarizations)x(boards).
+                   Default is to calculate this value from the gain curve.
+	  offscan = Scan number of the OFF source observation
+                   Default is onscan+1
+	  fitbase = if set to true (T, t, or 1), the routines will fit a baseline
+		   to the averaged on scan, and use that baseline in place of an
+		   'off' spectra.  The fitted baseline will be a polynomial, of 
+		   the order, and across the range, set with the "order" and "range
+		   keywords.
+	  weight = weighting scheme for the averaging of the scans.  The
+		  options are "none" (the default), "rms" (rms across each spectra
+		  is used for weighting), and "tsys" (the weight for all channels in
+		  each spectra is the same value).
+	  convert = convert the data to Janskies (value of 'T', the default),
+		  System temperature (value of 'Tsys') or leave as raw data (value of 'F')
+	  order   = this is the order of the polynomial used for fitting a baseline to 
+		  the data.  This option is used only with the baseline fitting option.
+	  range   = the range of data (in channel numbers) to which a baseline is fit,
+		  when using the baseline fitting option (otherwise, this keyword is
+		  ignored).  If, for example, you wish to fit a base line to channels
+		  500 through 1500, you would type: range='[500:1500]'
+Subroutines Called:
+	ao.tsys, ao.gain, ao.onoff, ao.avg, get_scan
+	
+(4) ao.calmany
+
+Description:
+        This routine allows the user to run the above ao.gaincorr function
+	on a list of objects (scans), provided the scans all lie within
+	the same measurement set.  For a more complete description of the 
+	routine, see the ao.gaincorr description.
+
+Syntax: ao.calmany([name=aoname,numpairs=1,pattern=4,onscan=0,calscan=0,tsys=0,gainval=0,offscan=0, 
+		weight='none', convert='T'])
+	The entries are identical to those of the ao.gaincorr routine, bar:
+	  numpair = number of dataset (objects) to reduce
+	  pattern = the number of scans in a given pattern (i.e. a set which
+		consists of an ON, OFF, CAL_ON, CAL_OFF would have pattern=4).
+	
+Subroutines Called: ao.gaincorr,ao.tsys, ao.gain, ao.onoff, ao.avg, get_scan
+
+
+(5) ao.calmany2
+
+Description:
+        This routine allows the user to run the above ao.gaincorr2 function
+	on a list of objects (scans), provided the scans all lie within
+	the same measurement set.  For a more complete description of the 
+	routine, see the ao.gaincorr2 description.
+
+Syntax: ao.calmany([name=aoname,numpairs=1,pattern=4,onscan=0,calscan=0,tsys=0,gainval=0,offscan=0, 
+		fitbase='F', weight='none', convert='T',order=2, range='F'])
+	The entries are identical to those of the ao.gaincorr routine, bar:
+	  numpair = number of dataset (objects) to reduce
+	  pattern = the number of scans in a given pattern (i.e. a set which
+		consists of an ON, OFF, CAL_ON, CAL_OFF would have pattern=4).
+	
+Subroutines Called: ao.gaincorr,ao.tsys, ao.gain, ao.onoff, ao.avg, get_scan
+
+
+______________________________________________
+
+The subroutines (all of which can be called separately) are:
+
+(1) ao.avg
+
+Description:
+	This routine takes in a typical AO measurement set,
+	determines the total number of boards, polarizations,
+	and dumps, and then averages all the dumps for
+	each board/polarization.
+
+	The output will be X records which are placed in the 
+	dish results manager, where X is the number of
+	scans X the number of polarizations
+
+Syntax:
+	ao.avg([name=aoname,scan=0,weight="none"])
+	If no scan number is given, the average is done on the
+	first scan in the given measurement set.  The weight
+	keyword describes the  weighting scheme for the averaging of
+	the scans.  The options are "none" (the default), "rms" (rms
+	across each spectra is used for weighting), and "tsys" (the
+	weight for all channels in each spectra is the same value).
+
+Subroutines called: ao.numdumps, ao.getscan
+
+(2) ao.gain
+
+Description:
+	This routine determines the gain correction for the 
+	individual dumps of the entered scan number/measurement
+	set.  The coefficients for the gain curves are taken from the
+	gain.datRX files in the AOgains directory (X is the AO receiver 
+	number).  If no gain.dat file is available, the program provides
+	an error message and returns a gain value of 1.
+
+	The result is output as an X by 4 array, where X is the
+	(number of boards) x (number of polarizations).  The
+	columns of the output array are:
+		column 1: The unique number to describe the board/pol
+		column 2: The center freq. of the board, used for the gain corr.
+		column 3: The polarization i.d.
+		column 4: The gain correction (in K/Jy)
+
+Syntax:
+	ao.gain([name=aoname,scan=0])
+        If no scan number is given, the gain is determined from the
+        first scan in the given measurement set.  Note that if you
+	enter this command as, say, "gain:=ao.gain([,scan])",
+	The resultant gain will be placed into the "gain" variable.
+
+Subroutines called: ao.getgainval,ao.convertdate,ao.convertmjd,ao.numscans,ao.getscan
+
+(3) ao.onoff
+
+Description:
+	This routine will calculate the (ON-OFF)/OFF for all the dumps, 
+	boards, and polarizations in the measurement set.  Additionally,
+	if desired, the routine will convert the data from raw counts
+	to Jy using the entered gain and Tsys values.  The output of
+	the routine is a table.
+
+Syntax: 
+	ao.onoff([name=aoname,onscan=0,convert='T',temp=0,gainval=0,offscan=0])
+	As with all the routines, if no name is given, this function defaults
+	to the name given to the aoname variable, while the default for the "onscan"
+	id simply the first scan in the measurement set.  Additionally, if the "convert" 
+	variable is set to "T" or "Tsys" (or "t", "1", or "tsys"), the
+	program will quit unless a nonzero value of the temperature and gain
+	is entered.  Additionally, the user may enter a scan number to be used for the 
+	OFF source scan.  If no value is entered, the routines will default
+	to offscan=onscan+1
+
+Subroutines called: ao.numscans
+
+(4) ao.tsys
+
+Description: 
+	This routine will calculate the system temperature from a pair of
+	ON+OFF noise diode observations.  The system temperature is calculated
+	per channel and then the mean value is returned.  The temperatures
+	of the noise diodes are found in the cal.datRX files in the AOgains
+	directory (X is the number of the AO receiver).  
+
+	The result is output as an X by 6 array, where X is the
+        (number of boards) x (number of polarizations).  The
+        columns of the output array are:
+                column 1: The unique number to describe the board/pol
+                column 2: The center freq. of the board, used for the gain corr.
+                column 3: The polarization i.d.
+		column 4: The noise diode temperature used in the calculations
+		column 5: The (mean) temperature of the given board/polarization
+                column 6: The standard deviation for the temperature measurement
+
+Syntax:
+	ao.tsys([name=aoname,calscan=0])
+	Here the calscan number should be the scan of the CAL_ON observation.
+	Again, if no scan number is given the routine assumes the first scan
+	in the measurement set is the CAL_ON.
+
+Subroutines called: ao.getcalval,ao.convertdate,ao.convertmjd,ao.numscans,ao.getscan
+
+(5) ao.convertdate
+
+Description:
+	This routine determines the number of days which have passed in a year based
+	off the entered date.  That is, if the entered date is 01 January, 2001, the
+	returned day would be 1 (as January 01 is the first day of the year), while 
+	if the entered date is 29 January, 2001, the returned day would be 29.
+
+Syntax:
+	ao.convertdate(day,month,year)
+	The day, month, and year should be entered as whole numbers.  The year
+	should be given completely (i.e. 2002 and not 02).
+
+Subroutines called: none 
+	
+(6) ao.convertmjd
+
+Description:
+	This routine converts the mean Julian date into the month, day, and year.
+	The result is returned as a 3 component array with:
+		column 1: day
+		column 2: month
+		column 3: year
+
+Syntax:
+        ao.convertmjd(mjd)
+
+Subroutines called: none
+
+(7) ao.converttime
+
+Description:
+        This routine converts the number of seconds since 1970.0 into
+	a day and year.  
+
+Syntax:
+	ao.converttime(tnow)
+	Typically, tnow:=time()
+
+Subroutines called: none
+
+(8) ao.getscan
+
+Description:
+	This routine determines the scan number of the first scan in a measurement
+	set, and returns it.
+
+Syntax:
+	ao.getscan([name=aoname])
+
+Subroutines called: none
+
+(9) ao.getcalval
+
+Description:
+        This routine returns the temperature of a given noise diode with a given
+	configuration.  The temperatures of the noise diodes are found in the
+	cal.datRX files in the AOgains directory (X is the number of the AO receiver).
+
+Syntax:
+	ao.getcalval(rcvnum, freqin, calnum[, day=-1, year=-1, pol=0])
+	rcvnum = AO receiver numbers (1-12)
+	freqin = the frequency of interest for the diode temperature
+	calnum = configuration number for the noise diode
+	day, year = the day (1-366) and year for which you want the cal values. 
+		    (these default to the present date if no value is entered)
+	pol = polarization of interest for the diode temperature
+		    (this defaults to pol=0 of no value is entered)
+
+Subroutines called: ao.converttime
+
+(10) ao.getgainval
+
+Description:
+        This routine returns the gain correction for a given receiver at a given
+	azimuth, zenith angle, and date.  The coefficients for the correction
+	are found in the gain.datRX files in the AOgains directory (X is the number of
+	the AO receiver).  If no gain.datRX file is found, an error message is printed
+	and the program returns a value of 1.
+
+Syntax:
+	ao.getgainval(rcvnum,freqin[,az=90,za=12,day=-1,year=-1,pol=0])
+	rcvnum = AO receiver number
+	freqin = the frequency of interest for the diode temperature
+	az = azimuth angle of interest (equal to 90 deg. if not entered)
+	za = zenith angle of interest (equal to 12 deg. if not entered)
+	day, year = the day (1-366) and year for which you want the cal values. 
+	     if not entered, this defaults to the current date
+	pol = polarization of interest for the diode temperature.  Default is 0.
+
+Subroutines called: ao.converttime
+
+(10) ao.numdumps
+
+Description:
+	This routine determines the number of data dumps within a given scan number,
+	and returns this value.
+
+Syntax:
+	ao.numdumps([name=aoname,scan=0])
+	Here name is the name of the measurement set of interest, and scan is
+	the scan number of the scan of interest. 
+
+Subroutines called: none
+
+(12) ao.numscans
+
+Description:
+        This routine determines the (number of boards) x (number of polarizations)
+	within a given measurement set, and returns this value.
+
+Syntax:
+        ao.numscans([name=aoname,scan=0])
+        Here name is the name of the measurement set of interest, and scan is
+        the scan number of the scan of interest. 
+
+Subroutines called: none
+
+(11) ao.base
+
+Description:
+	This function will calculate (On-OFF)/OFF using an input baseline as the OFF.
+	It can also convert the data into Tsys, or Jy if desired.
+	This will be expanded in the near future to accommodate
+	a much wider variety of baseline fitting options.
+
+Syntax:
+        ao.base(basel,[name=aoname, onscan=0, convert='T', temp=0, gainval=0)
+	Here, basel is the name of the baseline (in the dish results manager).
+	This variable MUST be given.  Name is the name of the measurement set
+	of interest. onscan is the scan number of the scan of interest. Convert
+	can be set to 'T' (convert to Janskies, the default), 'Tsys' (convert to system
+	temperature, or 'F' (leave as raw data), and temp and gain are the temperature and
+	gain arrays, usually obtained from the ao.tsys and ao.gain routines.
+
+Subroutines called: ao.numscans
+
+(12) ao.gainone, ao.gaintwo, ao.gainthree
+
+Description:
+        These functions obtain the gain for the variety of possible
+	equations
+
+Syntax:
+        ao.gainone(az,za,coef,zac)
+        ao.gaintwo(az,za,coef,zac)
+        ao.gainthree(az,za,coef,zac)
+	Here az, za are the azimuth and zenith angle (in degrees)
+	coef is the array of coefficients for the equation, and
+	zac is the zenith angle at which the gain curve turns over.
+	All the entries are usually supplies by the ao.gain routine.
+
+Subroutines called: none
+
+(12) ao.plot
+
+Description
+	This routine just calls the d.plotscan() routine.
+
+Syntax:
+	ao.plot(name)
+	Here name is the name of an sdrecord (i.e. ao.plot('average1')).
+
+Subroutines called: none
+
+(13) ao.fixpnt
+
+Description:
+	This routine corrects for the absence of a REF_FREQ, which enables viewing in msplot.
+	It also adds a column entitled "NRAO_GBT_STATE_ID" which is required by the uni2.g
+	routines.  Note that this column (NRAO_GBT_STATE_ID) is simply a mirror of the DATA_DESC
+	column.  This routine is called by the import command.
+
+Syntax:
+	ao.fixpnt([name=aoname])
+
+Subroutines called: none
+\end{verbatim}

@@ -1,0 +1,1734 @@
+% hds.help is part of the HDS server
+% Copyright (C) 1999,2000
+% United States Naval Observatory; Washington, DC; USA.
+%
+% This library is free software; you can redistribute it and/or modify it
+% under the terms of the GNU Library General Public License as published by
+% the Free Software Foundation; either version 2 of the License, or (at your
+% option) any later version.
+%
+% This library is designed for use only in AIPS++ (National Radio Astronomy
+% Observatory; Charlottesville, VA; USA) in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU Library General Public License for more details.
+%
+% You should have received a copy of the GNU Library General Public License
+% along with this library; if not, write to the Free Software Foundation,
+% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%
+% Correspondence concerning the HDS server should be addressed as follows:
+%        Internet email: nme@nofs.navy.mil
+%        Postal address: Dr. Nicholas Elias
+%                        United States Naval Observatory
+%                        Navy Prototype Optical Interferometer
+%                        P.O. Box 1149
+%                        Flagstaff, AZ 86002-1149 USA
+%
+% Correspondence concerning AIPS++ should be addressed as follows:
+%        Internet email: aips2-request@nrao.edu.
+%        Postal address: AIPS++ Project Office
+%                        National Radio Astronomy Observatory
+%                        520 Edgemont Road
+%                        Charlottesville, VA 22903-2475 USA
+%
+% $Id: hdsdoc.help,v 19.1 2005/06/08 04:37:11 dschieb Exp $
+% ------------------------------------------------------------------------------
+
+\begin{ahobject}{HDS}{A tool for the manipulation of HDS files}
+
+\ahinclude{hds.g}
+
+\begin{ahdescription}
+
+  HDS (Hierarchical Database System) is a library of FORTRAN functions used to
+  manipulate files in HDS binary format.  The library is available free of
+  charge from \htmladdnormallink{Starlink}{http://star-www.rl.ac.uk/>Starlink}.
+  \newline
+  
+  An HDS file consists of a hierarchy of \textbf{objects}, each with an
+  associated \textbf{locator}.  Each object has a \textbf{name}, up to 15
+  characters in length.  There are two classes of objects, \textbf{structures}
+  and \textbf{primitives}.  A structure points to a lower-level object and a
+  primitive points to data, analogous to a file system and files.
+  \newline
+  
+  Each object has a \textbf{type}.  Primitive types must be one of the
+  following:
+  \begin{verbatim}
+    _UBYTE   - unsigned byte.
+    _BYTE    - signed byte.
+    _UWORD   - unsigned word.
+    _WORD    - signed word.
+    _INTEGER - signed integer.
+    _REAL    - single precision.
+    _DOUBLE  - double precision.
+    _LOGICAL - logical/boolean.
+    _CHAR*N  - character string, where N=integer.
+  \end{verbatim}
+  \textbf{The initial underscore is NOT optional for primitive types.} 
+  Structure types can be anything up to 15 characters in length, but in most
+  cases they are just '' (null strings).  HDS itself does not treat non-null
+  structure types differently than null structures, but software using the HDS
+  library may do so.
+  \newline
+  
+  Objects are also assigned a \textbf{shape}, or dimensionality.  A scalar
+  object has a shape of 0.  The HDS library is written in FORTRAN 77, so the
+  maximum number of dimensions is 7, e.g., [4,5,2,6,4,3,2].
+  \newline
+  
+  This HDS tool is designed to be both functional \textit{and} ergonomic.  It
+  has the standard glish command-line interface as well as a read-only browser
+  (the HDS.gui() function).  The command-line interface and browser are updated
+  when the state of the HDS tool is changed.
+  \newline
+
+  When an HDS tool is created, it starts at the top-level HDS object.  The user
+  may proceed up and down the hierarchy (along structure objects) using member
+  functions HDS.annul(), HDS.find(), HDS.goto(), HDS.index(), and HDS.top(),
+  which manipulate locators on a FILO stack.  When a primitive object is
+  reached, it is not possible to go down the hierarchy any further at that
+  point, except to view selected parts of the primitive with the HDS.cell() and
+  HDS.slice() member functions.  At any structure object, new objects may be
+  created beneath it.  Objects may also be erased, modified in shape, modified
+  in content (for primitives), etc.
+
+\end{ahdescription}
+
+\ahfuncs{}
+
+%%%
+
+\begin{ahconstructor}{hdsnew}{Create a new HDS file}
+
+\begin{ahdescription}
+This constructor is used to create a new HDS file.  When created, the file
+contains only one object (i.e., the top-level object) and the tool places you
+there. \textbf{NB: In the vast majority of cases, top-level object will be a
+structure.  If the object is a primitive, data can be put into it, but no new
+objects may be created.}
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{file}{File name}{}{string}
+  \ahaddarg{name}{Top-level object name}{}{string}
+  \ahaddarg{type}{Top-level object type}{''}{string}
+  \ahaddarg{dims}{Top-level object dimensions}{0}{integer}
+  \ahaddarg{host}{Host name}{''}{string}
+  \ahaddarg{forcenewserver}{Force-new-server flag}{F}{boolean}
+\end{ahargs}
+
+\ahreturns{HDS tool or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsnew( 'gronk.sdf', 'blurp', '', 0 );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahconstructor}
+
+%%%
+
+\begin{ahconstructor}{hdsopen}{Open an HDS file for read/update}
+
+\begin{ahdescription}
+This constructor is used to read/update an HDS file.  The tool places you at
+the top-level object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{file}{File name}{}{string}
+  \ahaddarg{readonly}{Read-only flag}{T}{boolean}
+  \ahaddarg{host}{Host name}{''}{string}
+  \ahaddarg{forcenewserver}{Force-new-server flag}{F}{boolean}
+\end{ahargs}
+
+\ahreturns{HDS tool or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahconstructor}
+
+%%%
+
+\begin{ahfunction}{done}{Closes an HDS file}
+
+\ahkeyword{done}{done}
+  
+\begin{ahdescription}
+This function closes an HDS file and deletes the tool from glish.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{T}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.done();
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+  \textbf{NB: All modified HDS files must be closed before exiting glish,
+  otherwise the files may become corrupted.}
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{gui}{Creates a read-only browser for generic HDS files}
+
+\ahkeyword{gui}{gui}
+  
+\begin{ahdescription}
+This function creates a read-only browser for generic HDS files.  Although it
+has a multitude of possible uses, its primary purpose is a diagnostic tool.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{T if newly created or previously killed, F if previously dismissed}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf' );
+hds.gui();
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+
+Like the command-line interface, this browser was designed to be both
+functional \textit{and} ergonomic.  Although it is simple to use, I will give a
+brief description here.
+\newline
+
+The title bar provides vital information.  It consists of the file name, the
+present HDS object name (including slice indices), the locator number, the
+dimensionality, the type, and the structure/primitive label.
+\newline
+
+The most important widget in the browser is the listbox, containing either 1)
+structures/primitives beneath the present structure; or 2) primitive data. 
+Entries that end with a "*" are structures.  The listbox is somewhat
+recursive.  When the user clicks on a structure, the tool goes to that HDS
+object and shows the HDS objects beneath it.  When the user clicks on a
+primitive, the data are displayed (unless the HDS object has more than 5000
+elements, see the ``slicer'' below). If a primitive is a single character
+string with carriage returns, it is viewed as an ASCII file (useful for viewing
+logs).
+\newline
+
+The "Annul" button goes back to the previous locator, and the "Top" button goes
+back to the top HDS object.  The "Help" menubutton allows the user to view the
+``Aips++ Reference Manual'' and send questions/bug-reports.
+\newline
+
+When a multi-element primitive is selected, its elements are loaded into the
+listbox.  If there are too many elements, an out-of-memory error will occur and
+crash aips++.  To avoid this problem, I have imposed a viewing limit of 5000
+elements (a message appears in the listbox if this limit is exceeded).  To view
+data in these large primitives, I have included a ``slicer'', consisting of a
+``Low'' entry widget, a ``High'' entry widget, and a ``Slice'' button.  The
+entry widgets contain the dimension limits (up to seven numbers each), which
+may be modified to become a slice of less than 5000 elements.  The slice will
+be executed only when the ``Slice'' button is pressed.  The numbers in each
+entry widget may be delimited by spaces or commas.  After a slice is executed,
+the title bar is updated: the HDS object name includes the \textit{absolute}
+slice indices and locator number is incremented.  The ``Annul'' button undoes
+the slice.  Multiple slices are allowed, but note that the indices in the entry
+widgets displayed after each slice are \textit{relative} indices, which are
+required by the HDS.slice() member function.
+\newline
+
+The browser and command-line interface ``talk to each other'', i.e., what the
+browser does is reflected at the command-line interface (and vice versa) so
+that they are consistent.
+
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{alter}{Alters the shape of an HDS object}
+
+\ahkeyword{alter}{alter}
+  
+\begin{ahdescription}
+This function alters the shape of an HDS object, specifically, the size of the
+last dimension.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{lastdim}{Size of last dimension}{}{integer $>$ 1}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.new( 'blorp', '', [5,1] );
+hds.find( 'blorp' );
+hds.alter( 2 );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+  This function may be used for structure and primitive HDS objects.  For
+  primitive objects, if the new final dimension is larger than before, the new
+  cells are uninitialized, otherwise the extra cells are truncated.  This
+  function will return a FAIL event if the file is opened only for reading.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{annul}{Annuls locator(s)}
+
+\ahkeyword{annul}{annul}
+  
+\begin{ahdescription}
+This function pops (annuls) locator(s) off the FILO stack, i.e., the tool goes
+back to a higher level HDS object.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{locatorannul}{Number of locators to annul}{1}{integer $>$ 1}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.new( 'blorp', '', [5,1] );
+hds.find( 'blorp' );
+hds.annul( );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function may not be used to close an HDS file (locatorannul must be less
+than the number of locators presently on the FILO stack).
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{cell}{Goes to a single cell of a multidimensional HDS object}
+
+\ahkeyword{cell}{cell}
+  
+\begin{ahdescription}
+This function goes to a single cell of a multidimensional HDS object and pops
+its locator on the FILO stack.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{dims}{Cell dimension of the HDS object}{}{1-dimensional integer}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.new( 'blorp', '', [5,1] );
+hds.find( 'blorp' );
+hds.cell( [3,1] );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{clen}{Returns the number of characters need to represent an
+HDS primitive object}
+
+\ahkeyword{clen}{clen}
+  
+\begin{ahdescription}
+This function returns the number of characters need to represent an HDS
+primitive object.
+\end{ahdescription}
+
+\ahreturns{Number of characters (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.screate( 'blorp', '_INTEGER', 1 );
+hds.find( 'blorp' );
+x := hds.clen();
+print x;
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{copy}{Recursively copy the present HDS object}
+
+\ahkeyword{copy}{copy}
+  
+\begin{ahdescription}
+This function recursively copies the present HDS object (and all objects
+beneath it in the hierarchy) to a saved locator in the same tool or in another
+tool.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{Name of new object}{}{string}
+\ahaddarg{other}{Name of other tool}{'' (the present tool)}{Another tool}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F ); 
+hds.find( 'blorp' );
+hds.save();
+hds2 := hdsopen( 'gronk2.sdf' );
+hds2.copy( 'bleep', hds );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+If the other tool name is '', then the present locator is recursively copied to
+a saved locator in the present tool.  See HDS.save() for further information.
+This function will return a FAIL event if the file in tool ``hds'' is opened
+only for reading.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{copy2file}{Recursively copy an HDS object to a new HDS file}
+
+\ahkeyword{copy2file}{copy2file}
+  
+\begin{ahdescription}
+This function recursively copies an HDS object to a new HDS file.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{file}{File name}{}{string}
+  \ahaddarg{name}{Top-level object name in new file}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf' );
+hds.copy2file( 'blurp', 'gronk2.sdf' );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+In the example above, an entire HDS file is copied.  This may seem unusual,
+since the UNIX command 'mv' supposedly does the same thing.  However,
+HDS.copy2file() has the added feature of pruning erased HDS objects.  Erased
+objects are not removed from the file, they are just flagged.  Therefore, an
+extensively modified file may be reduced significantly in size.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{create}{Puts data into a new non-scalar HDS primitive}
+
+\ahkeyword{create}{create}
+  
+\begin{ahdescription}
+This function puts data into a new non-scalar HDS primitive beneath the present
+HDS structure object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+  \ahaddarg{type}{Object type}{''}{string}
+  \ahaddarg{data}{Glish variable containing data}{}{numeric,boolean,string}
+  \ahaddarg{replace}{Replace flag}{F}{boolean}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.create( 'blurp', '_integer', [1, 2, 3] );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function takes the place of the sequence HDS.new(), HDS.find(), HDS.put(),
+and HDS.annul().  If an object with the desired name already exists and the
+replace flag is T, that object is recursively erased and a new object with the
+same name is created.  This function will return a FAIL event if the file is
+opened only for reading.  \textbf{To create scalar objects, HDS.screate() must
+be used.}
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{erase}{Recursively erase an HDS object}
+
+\ahkeyword{erase}{erase}
+  
+\begin{ahdescription}
+This function recursively erases an HDS object beneath the present HDS
+structure object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.erase( 'blorp' );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function will return a FAIL event if the file is opened only for reading.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{file}{Returns the HDS file name}
+
+\ahkeyword{file}{file}
+  
+\begin{ahdescription}
+This function returns the HDS file name.
+\end{ahdescription}
+
+\ahreturns{HDS file name (string)}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+file := hds.file();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{filetail}{Returns the HDS file name without the directory}
+
+\ahkeyword{filetail}{filetail}
+  
+\begin{ahdescription}
+This function returns the HDS file name without the directory
+\end{ahdescription}
+
+\ahreturns{HDS file name (string)}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+file := hds.filetail();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{find}{Goes to an HDS object}
+
+\ahkeyword{find}{find}
+  
+\begin{ahdescription}
+This function goes to an HDS object beneath the present object and pops its
+locator on the FILO stack.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{forcenewserver}{Returns the force-new-server flag}
+
+\ahkeyword{forcenewserver}{forcenewserver}
+  
+\begin{ahdescription}
+This function returns the force-new-server flag.
+\end{ahdescription}
+
+\ahreturns{Force-new-server flag (boolean)}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.forcenewserver();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{get}{Gets data from an HDS primitive object}
+
+\ahkeyword{get}{get}
+  
+\begin{ahdescription}
+This function gets data from an HDS primitive object.  The type and shape of
+the glish data are the same as the HDS object.
+\end{ahdescription}
+
+\ahreturns{Alphanumeric data or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+b := hds.get();
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function may be called after an HDS.cell(), HDS.find(), HDS.goto(),
+HDS.index(), or HDS.slice() function call.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{goto}{Goes to an HDS object using the fully resolved path}
+
+\ahkeyword{goto}{goto}
+  
+\begin{ahdescription}
+This function goes to an HDS object using the fully resolved path.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{path}{Path}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.goto( 'blorp.gronque(3,1).blorp' );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{host}{Returns the host name}
+
+\ahkeyword{host}{host}
+  
+\begin{ahdescription}
+This function returns the host name.
+\end{ahdescription}
+
+\ahreturns{Host name (string)}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.host();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{id}{Returns the glish/aips++ object ID}
+
+\ahkeyword{id}{id}
+  
+\begin{ahdescription}
+This function returns the glish/aips++ object ID.  It is typically used only by
+member functions HDS.copy() and HDS.move().
+\end{ahdescription}
+
+\ahreturns{Object ID (record) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.id();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{index}{Indexes into an HDS object}
+
+\ahkeyword{index}{index}
+  
+\begin{ahdescription}
+This function goes to an HDS object beneath the present object using the index
+number.  The index number runs between 1 and the number of objects beneath the
+present HDS object.  The index number of an object may be determined with the
+HDS.list() member function (it returns a list of objects in order).
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{index}{Index number}{}{integer}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.index( 3 );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{len}{Returns the length of the present HDS primitive object}
+
+\ahkeyword{len}{len}
+  
+\begin{ahdescription}
+This function returns the length (in bytes) for each element of the present HDS
+primitive object.
+\end{ahdescription}
+
+\ahreturns{Length (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.find( 'blurp' );
+l := hds.len();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+\newpage
+
+%%%
+
+\begin{ahfunction}{list}{Returns the list of HDS objects beneath the present
+one}
+
+\ahkeyword{list}{list}
+  
+\begin{ahdescription}
+This function returns the list of HDS objects beneath the present one.
+\end{ahdescription}
+
+\ahreturns{List of HDS objects (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.find( 'blurp' );
+l := hds.list();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{locator}{Returns the present locator number}
+
+\ahkeyword{locator}{locator}
+  
+\begin{ahdescription}
+This function returns the present locator number.
+\end{ahdescription}
+
+\ahreturns{Number of locators (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.find( 'blurp' );
+l := hds.locator();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+%\begin{ahfunction}{mode}{Returns the HDS access mode}
+
+\ahkeyword{mode}{mode}
+  
+\begin{ahdescription}
+This function returns the HDS access mode ('NEW', 'READ', 'UPDATE', 'WRITE') of
+the tool.
+\end{ahdescription}
+
+\ahreturns{HDS access mode (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+m := hds.mode();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{move}{Recursively move the present HDS object}
+
+\ahkeyword{move}{move}
+  
+\begin{ahdescription}
+This function recursively moves the present HDS object (and all objects
+beneath it in the hierarchy) to a saved locator in the same tool or in another
+tool.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{name}{Name of new object}{}{string}
+\ahaddarg{other}{Name of other tool}{'' (the present tool)}{Another HDS tool}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.save();
+hds2 := hdsopen( 'gronk2.sdf' );
+hds2.move( 'bleep', hds );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+If the other tool name is '', then the present locator is recursively moved to
+a saved locator in the present tool.  See HDS.save() for further information.
+This function will return a FAIL event if the file in tool ``hds'' is opened
+only for reading.
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{name}{Returns the name of the present HDS object}
+
+\ahkeyword{name}{name}
+  
+\begin{ahdescription}
+This function returns the name of the present HDS object.
+\end{ahdescription}
+
+\ahreturns{HDS object name (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+m := hds.name();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{ncomp}{Returns the number of HDS objects beneath the present
+one}
+
+\ahkeyword{ncomp}{ncomp}
+  
+\begin{ahdescription}
+This function returns the number of HDS objects beneath the present one.
+\end{ahdescription}
+
+\ahreturns{Number of HDS objects (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+m := hds.ncomp();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{new}{Makes space for a new HDS object}
+
+\ahkeyword{new}{new}
+  
+\begin{ahdescription}
+This function makes space for a new HDS object beneath the present structure
+object.  After the space is allocated, the object is uninitialized.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+  \ahaddarg{type}{Object type}{}{string}
+  \ahaddarg{dims}{Object dimensions}{}{integer}
+  \ahaddarg{replace}{Replace flag}{F}{boolean}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.new( 'blurp', '_integer', [2,5] );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{numdim}{Returns the number of dimensions}
+
+\ahkeyword{numdim}{numdim}
+  
+\begin{ahdescription}
+This function returns the number of dimensions for the present HDS object.  If
+scalar, 0 is returned.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Number of dimensions (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+numdim := hds.numdim();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{obtain}{Gets data from an HDS primitive}
+
+\ahkeyword{obtain}{obtain}
+  
+\begin{ahdescription}
+This function gets data from an HDS primitive beneath the present HDS structure
+object.  The type and shape of the glish data are the same as the HDS object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{Alphanumeric data or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+x := hds.obtain( 'blurp' );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function takes the place of the sequence HDS.find(), HDS.get(), and
+HDS.annul().
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{path}{Returns the present HDS fully resolved path name}
+
+\ahkeyword{path}{path}
+  
+\begin{ahdescription}
+This function returns present HDS fully resolved path name.  Each object in the
+path is delimited by '.', e.g., 'BLURP.GRONK.BLEEP'.  Cells/slices are also
+allowed, e.g., 'GRONK.BLURP(1).BRONK.BLEEP(1:10,3).
+\end{ahdescription}
+
+\ahreturns{HDS path name (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+m := hds.path();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{prec}{Returns the machine precision for the present HDS
+object}
+
+\ahkeyword{prec}{prec}
+  
+\begin{ahdescription}
+This function returns the machine precision (in bytes) for the present HDS
+object. The machine precision corresponding to '\_INTEGER' is 4, etc.
+\end{ahdescription}
+
+\ahreturns{HDS object precision (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+m := hds.prec();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{prim}{Returns the primitive flag for the present HDS object}
+
+\ahkeyword{prim}{prim}
+  
+\begin{ahdescription}
+This function returns the primitive flag for the present HDS object.
+\end{ahdescription}
+
+\ahreturns{HDS object primitive flag (boolean) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blurp' );
+m := hds.prim();
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function returns the opposite of HDS.struc().
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{put}{Puts data into an HDS primitive object}
+
+\ahkeyword{put}{put}
+  
+\begin{ahdescription}
+This function puts data into an HDS primitive object.  The type and shape of
+the glish data must be the same as the HDS object.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+x := [1,2,3];
+b := hds.put( x );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{recover}{Recovers errors}
+
+\ahkeyword{recover}{recover}
+  
+\begin{ahdescription}
+This function recovers from HDS error(s).  The tool goes up the FILO stack
+until a valid locator is found.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+... HDS tool commands ...
+hds.recover();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{renam}{Renames the present HDS object}
+
+\ahkeyword{renam}{renam}
+  
+\begin{ahdescription}
+This function renames the present HDS object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.renam( 'gronque' );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{reset}{Uninitialize the present HDS primitive object}
+
+\ahkeyword{reset}{reset}
+  
+\begin{ahdescription}
+This function uninitializes the present HDS primitive object.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.reset();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{retyp}{Retypes the present HDS object}
+
+\ahkeyword{retyp}{retyp}
+  
+\begin{ahdescription}
+This function retypes the present HDS object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{type}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.retyp( 'gronque' );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{save}{Saves the present locator}
+
+\ahkeyword{save}{save}
+  
+\begin{ahdescription}
+This function saves the present locator.  It is used in conjunction with
+HDS.copy() and HDS.move().  If HDS.save() is called multiple times, previously
+saved locators are lost.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.save();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{screate}{Puts a datum into a new scalar HDS primitive}
+
+\ahkeyword{screate}{screate}
+  
+\begin{ahdescription}
+This function puts a datum into a new scalar HDS primitive beneath the present
+HDS structure object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+  \ahaddarg{type}{Object type}{''}{string}
+  \ahaddarg{datum}{Glish scalar variable containing the datum}{}{numeric,boolean,string}
+  \ahaddarg{replace}{Replace flag}{F}{boolean}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.screate( 'blurp', '_integer', 27 );
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function takes the place of the sequence HDS.new() (scalar), HDS.find(),
+HDS.put(), and HDS.annul().  If an object with the desired name already exists
+and the replace flag is T, that object is recursively erased and a new object
+with the same name is created.  This function will return a FAIL event if the
+file is opened only for reading.  To create multi-dimensional objects, see
+HDS.create().
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{shape}{Returns the shape of the present HDS object}
+
+\ahkeyword{shape}{shape}
+  
+\begin{ahdescription}
+This function returns the shape of the present HDS object.
+\end{ahdescription}
+
+\ahreturns{Shape (integer vector) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.find( 'blurp' );
+l := hds.shape();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{size}{Returns the size of the present HDS object}
+
+\ahkeyword{size}{size}
+  
+\begin{ahdescription}
+This function returns the size of the present HDS object, i.e., the product of
+the dimensions (scalar = 1).
+\end{ahdescription}
+
+\ahreturns{Size (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+f := hds.find( 'blurp' );
+l := hds.size();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{slice}{Goes to a slice of a multidimensional HDS object}
+
+\ahkeyword{slice}{slice}
+  
+\begin{ahdescription}
+This function goes to a slice of a multidimensional HDS object and pops its
+locator on the FILO stack.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg{dims1}{Low dimension limits of the HDS object}{}{1-dimensional integer}
+\ahaddarg{dims2}{High dimension limits of the HDS object}{}{1-dimensional integer}
+\end{ahargs}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.new( 'blorp', '', [5,4] );
+hds.find( 'blorp' );
+hds.slice( [2,2], [3,4]] );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{state}{Return the state of the present HDS primitive object}
+
+\ahkeyword{state}{state}
+  
+\begin{ahdescription}
+This function returns the state of the present HDS primitive object.
+\end{ahdescription}
+
+\ahreturns{T=initialized, F=uninitialized, or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+s := hds.state();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{struc}{Returns the structure flag for the present HDS object}
+
+\ahkeyword{struc}{struc}
+  
+\begin{ahdescription}
+This function returns the structure flag for the present HDS object.
+\end{ahdescription}
+
+\ahreturns{HDS object structure flag (boolean) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blurp' );
+m := hds.struc();
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahcomments}
+This function returns the opposite of HDS.prim().
+\end{ahcomments}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{there}{Checks for the existence of an HDS object}
+
+\ahkeyword{there}{there}
+  
+\begin{ahdescription}
+This function checks for the existence of an HDS object beneath the present HDS
+object.
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{name}{Object name}{}{string}
+\end{ahargs}
+
+\ahreturns{T=exists, F=doesn't exist, or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+e := hds.there( 'blorp' );
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{top}{Returns HDS tool to the top HDS object}
+
+\ahkeyword{top}{top}
+  
+\begin{ahdescription}
+This function returns the HDS tool to the top HDS object.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+hds.find( 'bleep' );
+hds.top();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{type}{Returns the type of the present HDS object}
+
+\ahkeyword{type}{type}
+  
+\begin{ahdescription}
+This function returns the type of the present HDS object.
+\end{ahdescription}
+
+\ahreturns{HDS object type (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blurp' );
+m := hds.type();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{valid}{Return the locator validity flag}
+
+\ahkeyword{valid}{valid}
+  
+\begin{ahdescription}
+This function returns the locator validity flag.
+\end{ahdescription}
+
+\ahreturns{T=valid, F=invalid, or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+hds.find( 'blorp' );
+s := hds.valid();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{version}{Return HDS tool version}
+
+\ahkeyword{version}{version}
+  
+\begin{ahdescription}
+This function returns the HDS tool version.
+\end{ahdescription}
+
+\ahreturns{HDS tool version (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+v := hds.version();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{web}{View the ``Aips++ Reference Manual''}
+
+\ahkeyword{web}{web}
+  
+\begin{ahdescription}
+This function launches the ``Aips++ Reference Manual'' in the browser.
+\end{ahdescription}
+
+\ahreturns{T or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+v := hds.web();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{dimmax}{Returns the maximum number of dimensions}
+
+\ahkeyword{dimmax}{dimmax}
+  
+\begin{ahdescription}
+This function returns the maximum number of dimensions.  If scalar, 0 is
+returned.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Maximum number of dimensions (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+dimmax := hds.dimmax();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{locatormax}{Returns the maximum number of locators}
+
+\ahkeyword{locatormax}{locatormax}
+  
+\begin{ahdescription}
+This function returns the maximum number of locators.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Maximum number of locators (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+locatormax := hds.locatormax();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{nolocator}{Returns the ``no-locator'' string}
+
+\ahkeyword{nolocator}{nolocator}
+  
+\begin{ahdescription}
+This function returns the ``no-locator'' string.  It is included for diagnostic
+purposes.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{``No-locator'' string (string) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+nolocator := hds.nolocator();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{sizelocator}{Returns the locator size}
+
+\ahkeyword{sizelocator}{sizelocator}
+  
+\begin{ahdescription}
+This function returns the locator size.  It is included for diagnostic purposes.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Locator size (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+sizelocator := hds.sizelocator();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{sizemode}{Returns the mode size}
+
+\ahkeyword{sizemode}{sizemode}
+  
+\begin{ahdescription}
+This function returns the mode size.  It is included for diagnostic purposes.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Mode size (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+sizemode := hds.sizemode();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{sizename}{Returns the name size}
+
+\ahkeyword{sizename}{sizename}
+  
+\begin{ahdescription}
+This function returns the name size.  It is included for diagnostic purposes.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Name size (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+sizename := hds.sizename();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+%%%
+
+\begin{ahfunction}{sizetype}{Returns the type size}
+
+\ahkeyword{sizetype}{sizetype}
+  
+\begin{ahdescription}
+This function returns the type size.  It is included for diagnostic purposes.
+\end{ahdescription}
+
+%\begin{ahargs}
+%\end{ahargs}
+
+\ahreturns{Type size (integer) or FAIL event}
+
+\begin{ahexample}
+\begin{verbatim}
+include 'hds.g';
+hds := hdsopen( 'gronk.sdf', F );
+sizetype := hds.sizetype();
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}

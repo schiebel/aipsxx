@@ -1,0 +1,340 @@
+
+\documentstyle[11pt,aspconf,html]{article}
+%\documentstyle[11pt,aspconf]{article}
+
+
+\begin{document}
+
+\title{The AIPSview Astronomy Visualization Tools}
+
+\author{Richard M.\ Crutcher\altaffilmark{1,2}, M.\ Pauline Baker\altaffilmark{1}, 
+George Baxter\altaffilmark{1}, John Pixton\altaffilmark{1} and Harold 
+Ravlin\altaffilmark{1,2}}
+
+\altaffiltext{1}{National Center for Supercomputing Applications, University of 
+Illinois, Urbana, IL  61801}
+\altaffiltext{2}{Astronomy Department, University of Illinois, Urbana, IL  61801} 
+
+
+\begin{abstract}
+AIPSview is a set of two new software tools for visual data analysis being developed by the 
+radio astronomy group at the University of Illinois as part of the AIPS++ project.  
+The tools provide a wide range of functionality 
+for the display and analysis of 2D and 3D astronomical data sets.  In this 
+paper we describe how to obtain further information about AIPSview on the WWW including
+how to obtain executable and source code, and discuss the current functionality of AIPSview 
+and future development plans.
+\end{abstract}
+
+% Up to 6 keywords should be included, but they are not printed in the 
+% hardcopy.  There is no "standard" list.
+
+\keywords{visualization, AIPS++, C++}
+
+\section{Introduction}
+
+	AIPSview is a set of two visualization tools built in C++ at the National 
+Center for Supercomputing Applications, with support from the University 
+of Illinois Astronomy Department and the 
+NSF/ARPA Grand Challenge project in Radio Astronomy Imaging.  It will be the
+principal visualization and analysis system for the AIPS++ software system 
+which is now under development.  Other partners in the AIPS++ project, including 
+especially the group at the Australia Telescope, will begin contributing to AIPSview 
+in the near future.  
+
+	Our goal in producing AIPSview is to improve the ability of 
+astronomers to visualize and analyze image data, particularly three dimensional 
+(spectroscopic) images.  AIPSview includes a number of techniques for the visualization
+of 3D data sets, including slicing and dicing along any of the three axes, sweeping 
+through the third dimension of a data set as a movie, isosurface rendering, and volume 
+rendering.  A unique feature of AIPSview is the ability to present 
+synchronized visualization of multiple images of the same area of sky (obtained 
+for example at different wavelengths or in multiple spectral lines).  It is possible to blink
+any frame from two (or more) image cubes, to run a synchronized sweep or movie through the
+third dimension of two (or more) data cubes with the same world coordinate frame of each of
+the data cubes displayed simultaneously, to read out world coordinates, intensity values, and
+line profile plots for multiple data cubes simultaneously, and to display multiple data
+sets simultaneously in the same visualization as slices, contours, isosurfaces, and/or volumes.  
+
+	Our AIPSview development work is really on two tools, one (hereinafter called AIPSview)
+that runs on Unix workstations without special graphics library support and 
+one (hereinafter called Inventor AIPSview) that requires OpenGL and OpenInventor.  AIPSview itself
+is a tool for two-dimensional visualization and relies on Motif and Xlib for its user interface 
+and drawing capabilities; it has been released to the astronomy community.  Inventor AIPSview 
+allows us to take advantage of the powerful features in the OpenGL and OpenInventor libraries
+in order to support full three-dimensional visualization 
+of data, including multiple slice display, isosurface representation, block and 
+brick excavation, and direct volume rendering.  Inventor AIPSview is both a development tool for
+techniques which might migrate later into AIPSview and a system for three dimensional 
+visualization using the highest end graphics workstations, including virtual reality systems.  
+
+	In this paper we describe how to obtain the AIPSview code and discuss its features.
+We then describe Inventor AIPSview, and our plans for the future.
+
+\section{WWW information about AIPSview}
+
+	The AIPSview WWW home page is http://monet.ncsa.uiuc.edu/Aipsview.  
+The page contains contains an html version of the AIPSview UserGuide, an 
+interactive tour of many of AIPSview's features and functions, and 
+instructions for downloading the AIPSview C++ source code and 
+the AIPSview executables for each of the six Unix workstation 
+architectures available to us: Sun under SunOS4.1.3, Sun under Solaris 2.4, 
+IBM RS/6000 under AIX 3.2.5, DEC Alpha under OSF/1 V2.0, HP under HP-UX A.09.05, 
+and SGI under IRIX 5.3.
+
+\section{Description of AIPSview features}
+
+\subsection{File formats and user interface}
+	AIPSview can read image files in a wide variety of FITS formats (both
+scaled integer and floating point data formats are supported).  Floating point numbers
+blanked with NaN (not a number) or integer values equal to the value of the ``BLANK'' 
+keyword in the FITS header are treated as blanked values.  To the extent possible, FITS 
+image files are not read into main memory (i.e., such files are memory-mapped), 
+enabling large files to be displayed and explored.  However, AIPSview's operations 
+and graphics do require a reasonably sized machine, with ``reasonable'' amounts of memory 
+and swap space.  AIPSview can also read single-SDS files written in the HDF format.
+
+	The AIPSview user interface is designed to be easy to use and intuitive.  It is a
+Motif based graphical user interface, so users familiar with the Motif GUI will be familiar
+with interface operations.  Files are loaded into AIPSview with the standard Motif 
+file selection window.
+Figure~\ref{fig-1} 
+\begin{figure}
+\epsscale{0.80}
+\plotone{crutcherr1.eps}
+\caption{AIPSview window with information about the FITS file IRC10216.CN.} \label{fig-1}
+\end{figure}
+shows the resulting AIPS View display window after the FITS file IRC10216.CN
+has been loaded.  Information about the data set, such as axis labels, number of dimensions and
+length of each dimension, is read from the FITS header and is used to define what appears in
+this display.  For example, for a 2D data set the ``Slice along'' part of this window would
+not appear since there is no option to be selected.  In figure~\ref{fig-1} the slice along 
+VELO button has been pressed, which results (by default) in 
+a raster image display of the middle velocity plane of the data cube, scaled to a 
+256 x 256 screen display.  This 64 x 64 image has been expanded to 256 x 256 by pixel replication.
+Images larger than 256 x 256 are subsampled.  At the bottom of the window the minimum and
+maximum of the intensity values in the full data cube are shown at the ends of the slider;
+one may limit the range that is displayed with this slider.  If multiple data sets have been
+loaded into AIPSview, each is listed under the ``Session'' menu.  Selecting a particular data set
+from this menu will display  information about that data set (figure~\ref{fig-1}).  Data sets 
+may be deleted from a session.
+
+\subsection{Display of 2D images}
+
+	AIPSview can display as a raster image a 2D image or any orthogonal 2D slice from 
+a 3D image cube (e.g., display of RA vs. Dec for a given Velocity, display of RA vs. Velocity 
+for a fixed Dec, etc.).  To produce a RA vs. Velocity slice, one would push the Slice along DEC 
+button (see figure~\ref{fig-1}).  Multiple representations (both an RA-DEC and an RA-VELO) 
+may be displayed simultaneously, as shown in figure~\ref{fig-2}.  
+\begin{figure}
+\epsscale{1.0}
+\plotone{crutcherr2.eps}
+\caption{AIPSview raster display windows showing the middle velocity plane (left) and middle
+RA plane (right) of the IRC10216.CN data set.} \label{fig-2}
+\end{figure}
+Pixel values corresponding to blanked values are displayed as black.  With the default 
+colormap and the initial data range, any black in the image will be blanked data.  The scaling
+of the image display may be changed with the ``Scale'' menu; the images in figure~\ref{fig-2}
+have been rescaled from the default 400\% (the 64 x 64 data set displayed in 256 x 256 screen
+pixels) to 500\%.
+
+
+\subsection{Data set information}
+
+	  The area above the raster images in figure~\ref{fig-2} shows information about the
+data set.  The Value, Region (not shown here, see figure~\ref{fig-3}), and Profile display 
+options are each turned on and off from the Options menu item.  The Value button has been 
+turned on, so the pixel coordinates, world coordinates, 
+and  data value are displayed when the mouse pointer is in the image display window and the 
+left button is clicked.  When the value button is on, there is a box drawn around the selected 
+pixel in the image window to indicate the current position.  The value information is continually 
+updated as the mouse pointer roams the display window with the left button held down.  A blanked 
+pixel will cause the word ``Blanked'' to appear rather than an intensity number.
+
+	Region information shows the region which has been selected, which by default 
+is the entire region.  Region was not turned on in figure~\ref{fig-2}, but was in 
+figure~\ref{fig-3} (discussed more fully below).  Pressing the left mouse button at a pixel 
+in the image display, 
+dragging to another pixel, and releasing the mouse button defines a new region, which is 
+displayed as a rectangle in the display window.  The pixel and world values of the subregion 
+will be displayed in this area of the window.  By pushing the Display Region button, one can 
+get a new Display window showing only the selected region.
+\begin{figure}
+\epsscale{1.0}
+\plotone{crutcherr3.eps}
+\caption{Display window with two IRC10216 files (CN left and HCN right) displayed.} \label{fig-3}
+\end{figure}
+
+	For 3D data sets, there is a Profile area of the window. By clicking on the Profile 
+button, you get a profile plot when the mouse pointer is in the Display window and the left 
+button is clicked.  A vertical line marks the plane currently being displayed; this line will 
+move through the profile if a movie (see below) is being run.  This profile is continually 
+updated as the mouse pointer roams the display window with the left button held down.  If the 
+display is of a VELO plane of a 3D data set, the profile is the usual spectral line plot.  
+If an RA-VELO slice is being displayed, the profile display would be a data value versus DEC 
+profile (as shown in figure~\ref{fig-2}).  The intensity range displayed is by default the 
+entire range present in the data; this may be changed by use of the slider at the bottom of 
+the AIPS View window (figure~\ref{fig-1}).  If some spectral channels are blanked, the 
+blanked channels will be ``shown'' as gaps in the displayed spectrum.
+
+\subsection{Animation (movie and blink) display}
+
+	In order to examine the images in the third dimension of a data cube, there 
+are movie display capabilities, which sweep through the planes along the third dimension, 
+displaying each in sequence.  There is a speed control slider to control the rate of sweeping.  
+It is possible to animate once through and stop, animate continuously from front to back to 
+front, et cetera, or to animate continuously from front to back.   A frame number control slider 
+changes automatically during the sweeping.  An animation may be stopped at any point, and 
+the movie controlled manually with the frame number slide control.   If there is sufficient 
+RAM available, animations are loaded into pixmap RAM memory of the display computer in order 
+to maximize the speed of animation.
+
+	There is also a blink function which will open a new window and run an animation through 
+all of the selected display frames; more than two images may be
+blinked.  Any plane from a 3D data cube may be blinked with the single plane of a 2D data set, 
+or any plane of a different 3D data set.  
+
+\subsection{Synchronized display of multiple data sets}
+
+	Multiple data sets may be displayed simultaneously in AIPSview, whether or not 
+they are related to one another.  A unique feature of AIPSview is the \em synchronized \em 
+display of multiple data sets.   Figure~\ref{fig-3} shows an example of the 
+synchronized display of two IRC10216 data sets, one a CN and the other a HCN spectral 
+line data cube.
+One example of the use of this feature is to display a time synchronized, simultaneous
+set of movies of two (or more) data cubes of the same area of sky (for RA-DEC displays, the same 
+velocity of each data cube is displayed as the two movies are run).  Synchronized ``picking'' 
+is also available.  If there are two (or more) images which at least partially overlap in 
+world coordinate (RA-DEC-VELO) space, including them synchs them together for the purpose 
+of interactive display of intensities, profiles and/or for region selection at the same 
+world coordinates.   For example, suppose you have CN and HCN data cubes and an infrared 
+2D image of the same object (they need not be the same size in either RA-DEC-VELO or pixels, 
+since the synchronization is based on world coordinates and not pixel coordinates).  By 
+``including'' all three data sets, when one displays intensity values by using the mouse 
+to point at one image, the intensity value of the other image at the same position will be
+displayed.  When one displays CN line profiles by interactively roaming the mouse pointer 
+around the CN image, the HCN line profile at the same spatial position will also be 
+displayed. If one does a subregion selection on the CN image, the same subregion will be 
+selected on the HCN and infrared image.  In figure~\ref{fig-3} the two data sets have been synched, 
+so intensity values and line profiles are for the same sky position and the subregions which 
+have been defined are the same.
+
+\subsection{Glish}
+
+	Glish is an interprocess communication system used extensively by AIPS++.  AIPSview can
+be controlled by glish events, so that another process can use AIPSview for display.  Also,
+glish will be used to send information obtained from a visualization of a data set (the definition
+of a subregion, for example) to separate image analysis tasks (gaussian line profile fitting, for
+example).
+
+
+\subsection{ColorMap Editor}
+
+	The ColorMap Editor (figure~\ref{fig-4}) 
+\begin{figure}
+\epsscale{0.40}
+\plotone{crutcherr4.eps}
+\caption{ColorMap Editor used to edit and fiddle color palettes.} \label{fig-4}
+\end{figure}
+is used to carry out a wide range of color
+fiddling and editing.  Just below the menu buttons is a display of the color
+look up table that is in use.  The zero point and contrast of the color LUT may be 
+interactively adjusted by placing the mouse pointer within this display and moving the 
+mouse both horizontally and vertically while holding down the left mouse button.
+Colormaps are remembered by AIPSview as ``palettes''; these palettes may be saved to 
+files for reloading later.  The ColorMap Editor allows loading predefined palettes such 
+as greyscale, rainbow, logarithmic, or pseudocolor.  
+
+	Palettes may be created and edited using drawing tools in the ColorMap Editor.  The 
+Editor shows a palette as graphs of the RedGreenBlue (or HueSaturationValue) color values across
+the range of colors available to AIPSview.  One can switch between RGB and HSV representation 
+of the same palette for editing purposes.  At the top of each graph is a series of buttons 
+which are used to select the kind of function to create.  The functions available are, 
+from left to right, Draw (freehand draw the graph with the mouse), Constant, Linear, 
+Log/Exponential, Piece-wise Constant or Stairstep, Piece-wise Linear, Spline, and Repeat.
+Repeat is a function used to repeat a function between the first and last control points to the 
+rest of the graph.  For example, a sawtooth function is created by Repeat-ing the linear function.  
+More complex repeating functions are possible by applying Repeat with other modes.  In all modes 
+expect Draw, control points are moved by ``grabbing'' them with the mouse and dragging them to 
+a new place.  Control points can be added to the StairStep, Piece-wise Linear, or
+Spline modes by pressing the left mouse button far enough (5 pixels or so) away from any 
+existing control points.  In these modes, control points are deleted when they have the same X
+value.  Simply put, the control point being moved absorbs any
+others within its horizontal motion.
+
+\section{Inventor AIPSview}
+
+	The above discussion has been almost entirely about the Xlib/Motif AIPSview which is
+now in beta release to astronomers.  We have also done considerable work on a separate
+visualization tool which depends on the OpenInventor and OpenGL libraries to support
+true 3D visualizations.  Inventor AIPSview (figure~\ref{fig-5} 
+\begin{figure}
+\epsscale{0.65}
+\plotone{crutcherr5.eps}
+\caption{Simultaneous display of isosurface of the IRC10216.CN data cube with a velocity
+slice of the IRC10216.HCN data cube.} \label{fig-5}
+\end{figure}
+shows an examply display) supports the following 3D visualization techniques:
+
+$\bullet$ Slicing, which can show rendered slices along all three dimensions
+simultaneously and allows sweeping of the slice planes through the data cube.
+
+$\bullet$ Contouring of a plane of a data set plotted onto another representation (such as a 
+rendered slice) of itself or onto display of a different data set.
+
+$\bullet$ Surface display, where for example the intensity of a plane of a data cube may
+be shown as the height of a surface.
+
+$\bullet$ Isosurfaces.  This is the 3D analog to the 2D technique
+of contouring.  Throughout the 3D data cube, a surface at a constant value of the intensity
+in the data is generated.  Inventor AIPSview allows one to generate multiple isosurfaces at
+different intensity values of the same data set and display them simultaneously (with different 
+colors and transparencies).
+
+$\bullet$ Volume rendering.  This is the 3D analog to the 2D technique of raster image
+display.  The entire three dimensional data cube is rendered so that all of the data
+may be seen simultaneously.  The transparency of the rendered volume may be varied so that
+(with low transparency) one can focus on low intensity parts of the data cube, or (with
+high transparency) one can look through the low intensity parts of the data cube and see
+the high intensity regions.  An example of a volume rendered display of the IRC10216.CN
+data set is shown in . 
+
+	Labeled axes for data cubes are drawn, as shown in figure~\ref{fig-5}.  Inventor
+provides a number of functions for very flexible simultaneous display of data cubes with any
+of the above techniques and for rotating the 3D displays, changing the illumination,
+zooming, et cetera.  Inventor AIPSview can also be used to produce VRML files for inclusion
+in WWW documents.
+
+\section{Future plans}
+
+	We are currently working on several major enhancements to AIPSview.  One is to add a
+much more extensive vector graphics capability.  This will include the ability to put a
+gridded box around a raster image display with coordinate labels, to overlay contours on
+raster images or to plot them separately, and to provide much more flexible xy line plotting
+capabilities.  A second enhancement will be providing for postscript hard copy output.  We 
+will also significantly enhance glish support.  Finally, in close collaboration with AIPS++
+workers at the Australian Telescope, we will add volume rendering functionality to
+the Xlib/Motif AIPSview.  Additional enhancements will be driven by user requirements.
+
+	Although Inventor AIPSview has not yet been released to the astronomy community,
+we expect to do so within the coming year.  Inventor AIPSview will serve as the software
+for astronomy visualization in the virtual environments being developed at NCSA, including
+the Immersadesk, the PowerWall, and the CAVE.  These hardware and software systems will
+enable astronomers to examine and analyze complicated three dimensional data sets in a
+highly physically immersive, stereoscopic environment.  Useful visualization techniques
+developed in Inventor AIPSview will be migrated to AIPSview as software and hardware
+technologies permit.
+
+\acknowledgments
+
+	We gratefully acknowledge financial support for radio astronomy visualization, 
+high performance computing, and digital library work from the NSF and ARPA under 
+grant NSF ASC 92-17384, from NASA under grant NCC5-106, from the National Center for Supercomputing
+Applications, and from the University of Illinois Astronomy Department through its
+participation in the Berkeley-Illinois-Maryland Array.  The BIMA IRC10216 data sets used
+here to illustrate some of the functions of AIPSview were obtained from the Astronomy Digital
+Image Library at NCSA; we thank A. Dayal and J. H. Bieging for depositing these FITS files
+in the library.
+
+
+\end{document}

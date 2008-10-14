@@ -1,0 +1,235 @@
+## $Id: Makefile.in,v 19.0 2003/07/16 05:14:22 aips2adm Exp $
+##
+##
+##  Autoconf Makefile template for glish clients.
+##
+
+GLISH_LIB_SUFFIX = @GLISH_LIB_SUFFIX@
+CLIENT_LIBS = @CLIENT_LIBS@
+
+CFLAGS = @GLISH_FLAGS@ @CFLAGS@
+CXXFLAGS = @GLISH_FLAGS@ @CXXFLAGS@
+LIB_SUFFIX = @GLISH_LIB_SUFFIX@
+
+CC = @CC@
+CPLUS = @CXX@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ..
+GLISH_SRC = $(SRC)/..
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+BINDIR = @bindir@
+
+MKHIER = $(top)/config/mkhier
+
+INCLUDE = -I$(GLISH_SRC)/$(ARCH) -I$(GLISH_SRC) -I$(GLISH_SRC)/include -I$(INCDIR_P) $(PLUSINC)
+CINCLUDE = -I$(GLISH_SRC)/$(ARCH) -I$(GLISH_SRC) -I$(GLISH_SRC)/include -I$(INCDIR_P)
+
+GLISH_LIBS = @MALLOC@ @CLIENT_LIBS_DEPEND@
+LIBS = @MALLOC@ $(CLIENT_LIBS) @LIBS@ @BIN_LIBS@ @EXTRA_LIBS@
+
+CLIENTS = \
+	$(BINDIR_P)/tproxy \
+	$(BINDIR_P)/echo_client \
+	$(BINDIR_P)/echo_mclient \
+	$(BINDIR_P)/glishd \
+	$(BINDIR_P)/shell_client \
+	$(BINDIR_P)/tell_glishd \
+	$(BINDIR_P)/test_client \
+	$(BINDIR_P)/timer \
+	$(BINDIR_P)/multiplexer
+
+INSTALLED_CLIENTS = \
+	$(BINDIR)/tproxy \
+	$(BINDIR)/echo_client \
+	$(BINDIR)/echo_mclient \
+	$(BINDIR)/glishd \
+	$(BINDIR)/shell_client \
+	$(BINDIR)/tell_glishd \
+	$(BINDIR)/test_client \
+	$(BINDIR)/timer \
+	$(BINDIR)/multiplexer
+
+
+TAR_FILE = glish-clients.tar
+
+all: make-bindir_p $(CLIENTS)
+
+make-bindir_p:
+	$(MKHIER) $(BINDIR_P)
+
+make-bindir:
+	$(MKHIER) $(BINDIR)
+
+install:  make-bindir $(INSTALLED_CLIENTS)
+
+glishd.o: $(SRC)/glishd.cc $(GLISH_SRC)/Executable.h \
+		$(GLISH_SRC)/include/Glish/Client.h $(GLISH_SRC)/Channel.h \
+		$(GLISH_SRC)/ports.h
+	$(CPLUS) -DUSENPD=@USENPD@ $(INCLUDE) $(CXXFLAGS) -c $(SRC)/glishd.cc 
+
+glishd: glishd.o $(GLISH_LIBS)
+	$(CPLUS) -DUSENPD=@USENPD@ $(INCLUDE) $(CXXFLAGS) -o glishd glishd.o $(LIBS)
+
+$(BINDIR_P)/glishd: glishd
+	$(INSTALL_PROGRAM) glishd $(BINDIR_P)
+#	strip $(BINDIR_P)/glishd
+
+$(BINDIR)/glishd: glishd
+	$(INSTALL_PROGRAM) glishd $(BINDIR)
+#	strip $(BINDIR)/glishd
+
+#============================================================
+
+tproxy.o: $(SRC)/tproxy.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tproxy.cc 
+
+tproxy: tproxy.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o tproxy tproxy.o $(LIBS)
+
+$(BINDIR_P)/tproxy: tproxy
+	$(INSTALL_PROGRAM) tproxy $(BINDIR_P)
+#	strip $(BINDIR_P)/tproxy
+
+$(BINDIR)/tproxy: tproxy
+	$(INSTALL_PROGRAM) tproxy $(BINDIR)
+#	strip $(BINDIR)/tproxy
+
+#============================================================
+
+echo_client.o: $(SRC)/echo_client.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/echo_client.cc 
+
+echo_client: echo_client.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o echo_client echo_client.o $(LIBS)
+
+$(BINDIR_P)/echo_client: echo_client
+	$(INSTALL_PROGRAM) echo_client $(BINDIR_P)
+#	strip $(BINDIR_P)/echo_client
+
+$(BINDIR)/echo_client: echo_client
+	$(INSTALL_PROGRAM) echo_client $(BINDIR)
+#	strip $(BINDIR)/echo_client
+
+echo_mclient.o: $(SRC)/echo_mclient.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/echo_mclient.cc 
+
+echo_mclient: echo_mclient.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o echo_mclient echo_mclient.o $(LIBS)
+
+$(BINDIR_P)/echo_mclient: echo_mclient
+	$(INSTALL_PROGRAM) echo_mclient $(BINDIR_P)
+#	strip $(BINDIR_P)/echo_mclient
+
+$(BINDIR)/echo_mclient: echo_mclient
+	$(INSTALL_PROGRAM) echo_mclient $(BINDIR)
+#	strip $(BINDIR)/echo_mclient
+
+shell_client.o: $(SRC)/shell_client.cc $(GLISH_SRC)/include/Glish/Client.h \
+		$(GLISH_SRC)/Channel.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/shell_client.cc 
+
+shell_client: shell_client.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o shell_client shell_client.o $(LIBS)
+
+$(BINDIR_P)/shell_client: shell_client
+	$(INSTALL_PROGRAM) shell_client $(BINDIR_P)
+#	strip $(BINDIR_P)/shell_client
+
+$(BINDIR)/shell_client: shell_client
+	$(INSTALL_PROGRAM) shell_client $(BINDIR)
+#	strip $(BINDIR)/shell_client
+
+tell_glishd.o: $(SRC)/tell_glishd.cc $(GLISH_SRC)/include/Glish/Client.h  \
+		$(GLISH_SRC)/ports.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tell_glishd.cc 
+
+tell_glishd: tell_glishd.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o tell_glishd tell_glishd.o $(LIBS)
+
+$(BINDIR_P)/tell_glishd: tell_glishd
+	$(INSTALL_PROGRAM) tell_glishd $(BINDIR_P)
+#	strip $(BINDIR_P)/tell_glishd
+
+$(BINDIR)/tell_glishd: tell_glishd
+	$(INSTALL_PROGRAM) tell_glishd $(BINDIR)
+#	strip $(BINDIR)/tell_glishd
+
+test_client.o: $(SRC)/test_client.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/test_client.cc 
+
+test_client: test_client.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o test_client test_client.o $(LIBS)
+
+$(BINDIR_P)/test_client: test_client
+	$(INSTALL_PROGRAM) test_client $(BINDIR_P)
+#	strip $(BINDIR_P)/test_client
+
+$(BINDIR)/test_client: test_client
+	$(INSTALL_PROGRAM) test_client $(BINDIR)
+#	strip $(BINDIR)/test_client
+
+timer.o: $(SRC)/timer.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/timer.cc 
+
+timer: timer.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o timer timer.o $(LIBS)
+
+$(BINDIR_P)/timer: timer
+	$(INSTALL_PROGRAM) timer $(BINDIR_P)
+#	strip $(BINDIR_P)/timer
+
+$(BINDIR)/timer: timer
+	$(INSTALL_PROGRAM) timer $(BINDIR)
+#	strip $(BINDIR)/timer
+
+multiplexer.o: $(SRC)/multiplexer.cc $(GLISH_SRC)/include/Glish/Client.h
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/multiplexer.cc 
+
+multiplexer: multiplexer.o $(GLISH_LIBS)
+	$(CPLUS) $(INCLUDE) $(CXXFLAGS) -o multiplexer multiplexer.o $(LIBS)
+
+$(BINDIR_P)/multiplexer: multiplexer
+	$(INSTALL_PROGRAM) multiplexer $(BINDIR_P)
+#	strip $(BINDIR_P)/multiplexer
+
+$(BINDIR)/multiplexer: multiplexer
+	$(INSTALL_PROGRAM) multiplexer $(BINDIR)
+#	strip $(BINDIR)/multiplexer
+
+malloc.o: $(GLISH_SRC)/malloc.c
+	$(CC) $(CINCLUDE) $(CFLAGS) -c $(GLISH_SRC)/malloc.c
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm -f tar-files
+
+tar-list:
+	@ls Makefile.in *.cc
+
+rcsinfo:
+	@echo glish/clients
+	@rlog -L -S RCS/*,v
+
+clean:
+	@rm -f errs *.o *~* $(APPS) core a.out *.a *.so ../$(TAR_FILE).Z
+
+distclean: clean
+	rm -f config.status config.cache config.h Makefile
+

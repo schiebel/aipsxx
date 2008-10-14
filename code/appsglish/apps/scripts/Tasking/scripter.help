@@ -1,0 +1,212 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: scripter.help,v 19.2 2004/08/25 02:04:08 cvsmgr Exp $
+
+\begin{ahtool}{scripter}{scripter tool}
+\begin{ahdescription}
+The scripter is a tool for logging commands to a file to be run at a
+later time.  It is intended to be used for storing commands that can
+then be saved to a file or executed directly.
+
+\begin{description}
+\item[\ahlink{toolmanager}{tasking:toolmanager}] can be
+directed, via its Options menu, to send commands to the scripter.  These
+commands will correspond to any subsequent actions invoked through its gui.
+\item[\ahlink{imagerwizard}{imager:imagerwizard.function}] sends
+glish commands to the scripter. These commands can be saved to a
+file and executed to reproduce exactly the operations performed
+by the wizard.
+\end{description}
+\end{ahdescription}
+\ahcategory{utility}
+\ahkeyword{scripter}{}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{scripter}{Construct scripter tool}
+\begin{ahdescription}
+This constructs a scripter tool. The {\em default} scripter is 
+abbreivated {\tt ds}. Only one scripter is usually needed so
+this constructor is seldom called.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{logfile}{File containing logged commands}{scripter.log\_PID}{String}
+\ahaddarg{run}{Flag to determine whether commands are "eval'ed"}{F}{Boolean}
+\ahaddarg{guititle}{Title for the scripter}{'Scripter gui
+(AIPS++)'}{String}
+\ahaddarg{widgetset}{Widget set to be used}{dws}{Any valid widgetset}
+\end{ahargs}
+\ahreturns{tool}
+\end{ahconstructor}
+%
+\begin{ahfunction}{gui}{Display logged commands in a text pane}
+\begin{ahdescription}
+This will place the current commands in a text window for editing, saving, and
+submission to glish or a batch queue.
+
+
+The scripter gui has an autosave feature which is turned on by default
+\texttt{scripter.autosave}.  You may disable the autosave feature by setting
+the \texttt{.aipsrc} variable \texttt{scripter.autosave} to F or off.  There are two
+additional \texttt{.aipsrc} 
+variables that let you control the autosave feature, \texttt{scripter.autosavetime} and
+\texttt{scripter.autosavefile}.  The default auto-save time is 30s and the default 
+auto-save filename is \texttt{.scripter\_autosave}.  The auto-save file will stick around
+unless the scripter-gui edits are saved explicitly.  If the scripter-gui detects an auto-save
+file it will prompt, whether to load it or not.
+
+\begin{latexonly}
+\medskip
+\begin{figure}[t]
+\epsfig{file=scriptergui.ps, width = 4.0 in}
+\caption{The scripter gui}
+\end{figure}
+\medskip 
+\end{latexonly}
+
+\begin{htmlonly}
+\begin{rawhtml}
+<center>
+<img src="scriptergui.gif"><BR>
+Figure 1:  The scripter gui
+</center>
+\end{rawhtml}
+\end{htmlonly}
+
+The buttons act as follows:
+
+\begin{description}
+\item[Submit] The script is executed using the command shown
+above. The
+default command {\tt unset DISPLAY;glish -l} causes the scripter
+to be run in a separate instance of glish with no graphical 
+output.
+\item[Save] The command is saved to the named file. Use the File->Save 
+As menu to save with a different name.
+\item[Clear] Clears the scripter of all commands.
+\item[Dismiss] Dismisses the scripter. It may be recalled using the
+{\tt gui} function.
+\end{description}
+
+The submit command may be overridden using the {\tt .aipsrc} variable
+{\tt scripter.submitcommand}.
+
+
+\end{ahdescription}
+\ahreturns{Bool}
+\end{ahfunction}
+
+\begin{ahfunction}{log}{Log one or more commands}
+\begin{ahdescription}
+Log one or more command(s).  The commands are stored in the scripter. The
+commands will be executed directly if the flag run is set to T.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{command}{Command(s) to be logged}{}{String}
+\ahaddarg{run}{Flag to determine if command(s) are run immediately}{F}{Boolean}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'scripter.g'
+ds.log('myimager:=imager(\'3C273XC1.ms\')');
+ds.log('myimager.setimage(nx=300,ny=300,cellx=\'0.7arcsec\'',celly=\'0.7arcsec\')')
+ds.log('myimager.clean()');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{save}{Save the logged command(s) to a file.}
+\begin{ahdescription}
+Saves the command(s) in the internal logged commands record to a file.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{File to save commands}{F}{Any valid file name or F}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'scripter.g'
+ds.log('myimager:=imager(\'3C273XC1.ms\')');
+ds.log('myimager.setimage(nx=300,ny=300,cellx=\'0.7arcsec\'',celly=\'0.7arcsec\')')
+ds.log('myimager.clean()');
+ds.save('imager_scripter.g');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{load}{Load command(s) from a file.}
+\begin{ahdescription}
+Load commands from a file to the scripter
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{File from which to load commands}{}{Any valid file name}
+\ahaddarg{append}{Flag to determine whether to append commands to exsisting command list}
+{F}{Boolean}
+\ahaddarg{run}{Flag to determine whether commands are executed}{F}{Boolean}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'scripter.g'
+ds.load('imager_scripter.g', run=T);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{getcommands}{Returns a record containing the commands}
+\begin{ahdescription}
+Return the commands currently in the scripter in a record.
+\end{ahdescription}
+\ahreturns{Record}
+\begin{ahexample}
+\begin{verbatim}
+include 'scripter.g'
+ds.load('imager_scripter.g');
+print ds.getcommands()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+\begin{ahfunction}{reset}{Removes all the logged commands}
+\begin{ahdescription}
+Removes all current commands. The scripter is then empty.
+\end{ahdescription}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+include 'scripter.g'
+ds.load('imager_scripter.g');
+print ds.getcommands()
+ds.reset();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+%
+
+\end{ahtool}
+
+
+\end{document}

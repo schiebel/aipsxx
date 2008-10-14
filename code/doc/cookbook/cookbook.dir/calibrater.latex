@@ -1,0 +1,832 @@
+\newcommand{\tbt}[4]{\left(\begin{array}{cc}#1 & #2\\ #3 & #4 
+   \end{array}\right)}
+\newcommand{\x}{{\bf x}}
+\newcommand{\ur}{\underline{r}}
+\newcommand{\urho}{\underline{\rho}}
+\newcommand{\skyI}{\vec{\cal I}}
+\newcommand{\visantterm}[1]
+   {{#1}_i}
+\newcommand{\skyantterm}[1]
+   {{#1}_i\left(\urho_k\right)}
+\newcommand{\visterm}[1]
+   {\left[{{#1}_i\otimes{#1}^*_j}\right]}
+\newcommand{\visblterm}[1]
+   {{#1}_{ij}}
+\newcommand{\skyterm}[1]
+   {\left[{{#1}_i  {\left(\urho\right)} \otimes
+           {#1}^*_j{\left(\urho\right)}}\right]}
+\newcommand{\skykterm}[1]
+   {\left[{{#1}_i  {\left(\urho_k\right)} \otimes
+           {#1}^*_j{\left(\urho_k\right)}}\right]}
+\newcommand{\fpd}[2]
+   {{\partial #1\over\partial #2}}
+\newcommand{\spd}[3]
+   {{\partial^2 #1\over\partial #2\partial #3}}
+\newcommand{\fg}[2]
+   {{F_{#1}G_{#2}}}
+\newcommand{\ggg}[2]
+   {{G_{i,#1}G^*_{j,#2}}}
+\newcommand{\fgh}[3]
+   {{\fpd{F_{#1}G_{#2}}{H_{#3}}}}
+\newcommand{\vecterm}[1]
+{\left(
+   \begin{array}{c}
+      {#1}_{\rm pp}\\
+      {#1}_{\rm pq}\\
+      {#1}_{\rm qp}\\
+      {#1}_{\rm qq}
+   \end{array}
+\right)_{ij}}
+\newcommand{\Svec}
+{\left(
+   \begin{array}{c}
+   I\\
+   Q\\
+   U\\
+   V\\
+   \end{array}
+\right)}
+\newcommand{\onevec}
+{\left(
+   \begin{array}{c}
+   1\\
+   1\\
+   1\\
+   1\\
+   \end{array}
+\right)}
+
+\chapter{Synthesis Calibration}
+\label{GRcalibration}
+
+{\em Athol Kemball \& George Moellenbrock}
+
+
+\section{Introduction}
+
+This chapter describes how to calibrate synthesis data.  At present,
+this covers data only from connected-element arrays or VLBI data for
+which fringe-fitting has already been performed elsewhere.  The
+discussion currently covers treatment of calibration effects in the
+uv-plane; calibration of image-plane effects will be described in a
+future version of this document. 
+
+The major \aipspp\ \tools\ that one will need to use are:
+
+\begin{description}
+
+\item[\htmlref{Calibrater}{calibrater:calibrater}] is used for applying
+or solving for a range of uv-plane calibration effects, and plotting
+of calibration solutions.
+
+\item[\htmlref{Imager}{imager:imager}] is used for gridding and
+Fourier transformaton of a MeasurementSet, deconvolution via various 
+methods, and prediction of model visibilities from deconvolved
+images.  Calibration of image-plane effects (those that are a function
+of direction in the sky) are handled in this \tool.
+
+\item[\htmlref{Msplot}{ms:msplot}] is used for plotting and
+editing of visibility data, and is useful for investigation and
+editing during calibration cycles.
+
+\item[\htmlref{Componentmodels}{componentmodels}] are used
+to represent the sky brightness by discrete components. Such models
+may be used in imaging and calibration to improve the quality of the
+results.
+
+\end{description}
+
+In addition, you will need to use the \htmlref{Viewer}{viewer} (see also
+the \htmlref{Display}{GRdisplay} section of {\tt Getting Results}) to
+examine your images, and perhaps the MeasurementSet \tool\
+\htmlref{MS}{ms} to load and save MeasurementSets. 
+
+\section{Calibration philosophy}
+
+As a starting point, it is useful to consider the overall calibration
+philosophy used in \aipspp. The calibration system has been designed
+to meet several important goals: i) support for synthesis {\em and} 
+single-dish radio-telescopes in a generic formalism which minimizes
+instrument-specific differences; ii) modeling of all relevant physical
+effects which may corrupt the observed data, in both the uv- and
+image-plane, such as propagation or instrumental response factors, in
+a unified framework; and iii) support for arbitrary parametrization of
+the individual calibration effects.
+
+\subsection{The Measurement Equation}
+
+All radio-astronomical synthesis data reduction packages have an
+implicit calibration formalism, which includes a set of calibration
+effects which may be applied or solved for, and a mathematical
+framework for how these provide a relationship between the observed
+and corrected data. Even if this mathematical relationship is not
+given explicilty, it is, of necessity, enshrined in the infrastructure
+code. 
+
+\aipspp\ has explicitly adopted the measurement equation (ME) formalism
+(Hamaker, Bregman and Sault 1996; Sault, Hamaker and Bregman 1996;
+Hamaker and Bregman 1996, Hamaker 1998, Noordam 1995; and Cornwel 1995)
+as the underlying calibration framework.  It meets the objectives
+described in the preceding paragraph, and is easily extended to full
+coverage of a complete set of image-plane calibration effects (see
+\aipspp\ Note 191).  The generic nature of the ME, and
+its independence on the polarization basis for the data or the
+calibration parametrization are particularly strong advantages.  
+
+A misperception of the measurement equation is that it seeks to describe
+the physical processes or environment affecting the observed data at a
+needless or semi-infinite level of detail.  This is mistaken; the
+arbitrary parametrization of the individual calibration effects allows
+the level of detail to be set at an arbitrary level of coarseness,
+consistent with available data or even expediency. 
+
+It is useful to examine a mathematical representation of the
+calibration formalism, as it has been adopted. Before describing the
+measurement equation in this form we need to consider some preliminary
+definitions for this particular formalism.  A generic interferometer
+is considered to measure a four-vector of cross-correlations $\vec{V}$
+between two recorded polarizations $(p,q)$ for each of two feeds
+$(i,j)$ characterizing an individual baseline. This measured vector
+includes instrumental calibration effects and is denoted by:
+
+\begin{equation}
+\label{eqn:vterm}
+\vec{V}_{\rm ij} = \vecterm{V}
+\end{equation}
+
+The ME relates the measured vector $\vec{V}$ to the true polarized sky
+brightness, $\skyI$, which is expressed in a Stokes basis as:
+
+\begin{equation}
+\label{eqn:skyI}
+% Make this in line because it blows latex2html out the water
+% at some sites otherwise [nebk]
+%\skyI=\Svec
+%
+\skyI=
+\left(
+   \begin{array}{c}
+   I\\
+   Q\\
+   U\\
+   V\\
+   \end{array}
+\right)
+\end{equation}
+
+Different instrumental and propagation effects are modeled in the ME as
+calibration components and take the form of four-by-four matrices,
+acting on four-vectors of the type given above.  The calibration
+components are sub-divided into two general categories based on whether
+they act in the image- or uv-plane, and they are expressed in the
+polarization basis $(p,q)$ of the feed, which may typically be circular
+or linear.  Calibration components which are feed-based are constituted
+as the direct matrix product of separate two-by-two Jones matrices for
+each feed on the baseline under consideration, as:
+
+\begin{equation}
+\label{eqn:Jonesprd}
+J_{ij} = \visterm{J}
+\end{equation}
+
+For a particular calibration component (types listed below), the
+diagonal elements in the two-by-two Jones matrices describe response to
+like polarization, and the off-diagonal describe the response to
+opposite polarization.  The direct matrix product of two matrices is
+defined as:
+
+\begin{equation}
+   {\left(
+     {\begin{array}{cc}
+       a_{00} & a_{01} \\
+       a_{10} & a_{11} \\
+      \end{array}}
+   \right)}
+   \otimes
+   {\left(
+     {\begin{array}{cc}
+       b_{00} & b_{01} \\
+       b_{10} & b_{11} \\
+      \end{array}}
+   \right)}
+   =
+   {\left(
+     {\begin{array}{cccc}
+       a_{00}b_{00} & a_{00}b_{01} & a_{01}b_{00} & a_{01}b_{01} \\
+       a_{00}b_{10} & a_{00}b_{11} & a_{01}b_{10} & a_{01}b_{11} \\
+       a_{10}b_{00} & a_{10}b_{01} & a_{11}b_{00} & a_{11}b_{01} \\
+       a_{10}b_{10} & a_{10}b_{11} & a_{11}b_{10} & a_{11}b_{11} \\
+      \end{array}}
+   \right)}
+\end{equation}
+
+The direct product of two Jones matrices thus describes the calibration
+component's impact on all possible correlation combinations between
+two feeds. 
+
+Provision is also made for multiplicative and additive baseline-based
+calibration components, which are not decomposed into feed-based
+terms.  These take the form of four-by-four and four-by-one matrices,
+respectively.
+
+The full ME including image-plane and uv-plane calibration effects can
+be defined in terms of the quantities described above as:
+
+% Split this  into three lines or latex and latex2html get in trouble
+%\begin{equation}
+%\vec{V}_{ij} = M_{ij}\ \prod\ \visterm{J^{vis}}\ \sum_k\ \prod\ \skykterm{J^{sky}} S\
+%    \skyI_k \ e^{-2\pi i \left({\ur_i-\ur_j}\right)\urho_k}\ + A_{ij}
+%\end{equation}
+
+\begin{eqnarray}  
+\vec{V}_{ij} = && M_{ij}\ \prod\ \visterm{J^{vis}}\ \times \\
+\nonumber
+               && \sum_k\  \prod\ \skykterm{J^{sky}} \times \\
+\nonumber
+               && S\ \skyI_k \ e^{-2\pi i \left({\ur_i-\ur_j}\right)\urho_k} + A_{ij}
+\end{eqnarray}
+
+
+where:
+
+\begin{itemize}
+
+\item $\visterm{J^{vis}}$ and $\skykterm{J^{sky}}$ are individual
+uv-plane and image-plane calibration components respectively.
+
+\item $\urho_k$ denotes direction, subscript $k$ indexes directions,
+and $(\ur_i-\ur_j)$ denotes the interferometer baseline vector.
+
+\item The four-by-four matrix $S$ converts the sky brightness Stokes
+polarization basis to the polarization basis used in the
+interferometer itself.  
+
+\item ${M_{ij}}$ and ${A_{ij}}$ denote multiplicative and
+additive baseline-based instrumental effects respectively.
+
+\item $\prod$ and $\sum$ denote product and summation, respectively.
+
+\end{itemize}
+
+The ME thus reflects the standard Fourier transform relationship between
+the uv- and image-planes, and allows for generic calibration in both
+domains.  Time and frequency averaging are implicit in the ME form given
+here, and are assumed to be over ranges shorter than the timescale for
+variation of any of the terms in the equation. 
+
+In the case of fields-of-view narrow enough that the $\skyantterm{J}$
+are constant with $\urho_k$, these terms may be factored out of the
+summation and treated uv-plane effects $\visantterm{J}$, and the
+measurement equation may be simplified to (ignoring baseline-based
+effects):
+
+\begin{equation}
+\vec{V}_{ij} = \prod\ \visterm{J^{vis}}\ \vec{V}_{ij}^{ideal}
+\end{equation}
+
+$\vec{V}_{ij}^{ideal}$ represents the visibilities measured by an ideal
+interferometer, and implicitly contains the Fourier transform of the
+sky. 
+
+The individual calibration effects (in either the uv- or image-plane)
+are denoted by single letter abbreviations, each representing the
+two-by-two Jones matrix for the $i$th feed.  These include:
+
+\begin{description}
+
+% TBD:  should add form of each Jones type, e.g. G is diagonal, D has off-diagonal,etc.
+
+\item[$\visantterm{G}$] - the composite complex electronic gain of all
+components located after the feed in the signal path, but excluding
+the correlator.  
+
+\item[$\visantterm{T}$] - atmospheric tranmission effects which
+are independent of polarization (i.e., not including Faraday
+rotation).  Useful for modelling tropospheric gain losses.
+
+\item[$\visantterm{F}$] - propagation effects due to Faraday rotation.
+
+\item[$\visantterm{D}$] - instrumental polarization response.
+
+\item[$\skyantterm{E}$] - electric field pattern describing the primary
+beam response, usually normalized with respect to $\visantterm{G}$.
+
+\item[$\visantterm{B}$] - bandpass response, possibly normalized relative
+to $\visantterm{G}$.  
+
+\item[$\visantterm{C}$] - feed configuration matrix. This describes the
+nominal feed configuration, including rotation or conversion of linear
+to circular polarization.  This term is known a priori, and handled
+implicitly.
+
+\item[$\visantterm{P}$] - parallactic angle. This is known analytically.
+
+\end{description}
+
+Since these matrix components may not commute, the order in which they
+appear in the measurement equation is important.  In general, the
+correct order is given by the order in which the terms affect the
+incoming wavefront.  Thus, a spectral line polarization observation
+would be described (ignoring primary beam and direction-dependent
+Faraday rotation) by the measurement equation as (recalling Equation
+\ref{eqn:Jonesprd}):
+
+\begin{equation}
+\label{eqn:visonly}
+\vec{V}_{ij} = \visblterm{B}\visblterm{G}\visblterm{D}\visblterm{P}\visblterm{T} \vec{V}_{ij}^{ideal}
+\end{equation}
+
+The measurement equation is implemented in \aipspp\ by sub-dividing
+the machinery dealing with image-plane and uv-plane calibration
+between \htmlref{imager}{imager} and
+\htmlref{calibrater}{calibrater} respectively.  The remainder of
+this chapter treats the case illustrated in equation \ref{eqn:visonly}, i.e.,
+uv-plane effects which are handled by the calibrater tool.  
+
+
+\subsection{Data representation and \\ the calibration mechanism}
+
+\aipspp\ stores synthesis uv-data in a MeasurementSet (MS), and it is
+important to understand how observed and calibrated data are treated
+in this framework. The observed data are stored in the DATA column in
+the MAIN MS table; additional columns are added during processing for
+CORRECTED\_DATA and MODEL\_DATA. The CORRECTED\_DATA column contains
+the data which result when applying all desired visibility-plane
+calibration corrections, moving from left to right across the uv-plane
+portion of the ME.  This provides corrected data suitable for imaging.
+
+The MODEL\_DATA column, in contrast, is formed by propagating initial
+source models (perhaps for trial imaging) from right to left through the
+ME, applying the supported image-plane corrections, and Fourier
+transforming to the uv-plane.  This realizes a best guess for the
+$\vec{V}_{ij}^{ideal}$ term in equation \ref{eqn:visonly}.  The point at
+which these two columns meet in the ME allows a residual to be computed
+and thus an estimate of $\chi^2$.  The calibration component(s) at the
+intersection point in the ME are solved for by computing gradients of
+$\chi^2$ with respect to the Jones matrices, and performing a standard
+non-linear least-squares minimization\footnote{In practice, the
+CORRECTED\_DATA column isn't used until corrected data intended for
+imaging is desired; the observed data is corrected on-the-fly by the
+uv-plane solver.}. 
+
+As an example of the calibration mechanism, we recast equation
+\ref{eqn:visonly} to the implicit form used when solving for D, given an
+existing solution for G and knowledge of P.  We ignore the B calibration
+component, either because the data is from a continuum observation (only
+one channel), or because we assume that the bandpass shape is
+unimportant, at least for this stage of the calibration.  Since G and P
+appear on either side of D in the ME, they are applied to the observed
+data ($\vec{V}_{ij}$) and model data ($\vec{V}_{ij}^{ideal}$) terms,
+respectively:
+
+
+\begin{equation}
+\label{eqn:Dsolve1}
+\visblterm{G}^{-1} \vec{V}_{ij} =  \left(\visblterm{G}^{-1}\visblterm{G}\right) \visblterm{D} \left(\visblterm{P} \vec{V}_{ij}^{ideal}\right)
+\end{equation}
+
+\begin{equation}
+\label{eqn:Dsolve2}
+\visblterm{D} = \visblterm{G}^{-1} \vec{V}_{ij}\left(\visblterm{P} \vec{V}_{ij}^{ideal}\right)^{-1}
+\end{equation}
+
+\begin{equation}
+\label{eqn:Dsolve3}
+\visterm{D^{vis}} = \visblterm{G}^{-1} \vec{V}_{ij}\left(\visblterm{P} \vec{V}_{ij}^{ideal}\right)^{-1}
+\end{equation}
+
+In equation \ref{eqn:Dsolve3}, the D calibration is realized as the
+feed-based (two-by-two) Jones matrices which are solved for in the
+$\chi^2$ minimization.  It is straightforward to see how this algebraic
+manipulation can be extended to any of the calibration components, and
+the flexible implementation of the calibrater tool is clearly evident. 
+
+
+\subsection{What are the current calibration \\ capabilities in \aipspp?}
+
+At this time, \aipspp\ can solve for a wide range of uv-plane effects,
+including electronic gain ($\visantterm{G}$), mean atmospheric
+tranmission ($\visantterm{T})$, instrumental polarization response
+($\visantterm{D}$), and the bandpass response ($\visantterm{B}$). 
+Parallactic angle effects ($\visantterm{P}$), and feed configuration
+($\visantterm{C}$) corrections are pre-computed.  The primary beam
+voltage and polarization response can be corrected in the image-plane
+($\skyantterm{E}\, \skyantterm{D}$), but not yet solved for. 
+
+Synthesis calibration support is most mature for connected-element 
+observations; fringe-fitting capabilities are currently being developed
+and added.  Both self-calibration and cross-calibration are supported. 
+
+Synthesis calibration is under active development in \aipspp\, with
+new features added on a regular basis.
+
+
+\section{Practical use of the calibrater tool}
+
+\subsection{Setting up the calibrater tool}
+
+A \htmlref{Calibrater}{calibrater:calibrater} \tool\ is initialized by
+specifying an input MS.  This is used throughout subsequent calibration. 
+If another MS is to be calibrated at present, a second tool will be
+required.  Note, however, that the facility to append to existing
+calibration tables allows individual measurement sets to be processed in
+sequence and does not require the the input data be concatenated. 
+
+To construct a Calibrater tool (for a spectral line polarimetry dataset
+called {\sff polspec.ms}):
+
+\begin{verbatim}
+include 'calibrater.g'               
+cal := calibrater('polspec.ms')      # Construct tool
+\end{verbatim}
+
+If the dataset has not previously been used in a
+\htmlref{calibrater}{calibrater} or \htmlref{imager}{imager} tool,
+this step will form the CORRECTED\_DATA, MODEL\_DATA, and
+IMAGING\_WEIGHT columns.  The CORRECTED\_DATA column will be
+initialized as a duplicate of the (observed) DATA column.  The
+MODEL\_DATA column will be initialized with unit total intensity point
+source visibilities.  The IMAGING\_WEIGHT column will be initialized
+with unit weights, and is described in more detail in
+\htmlref{imager}{imager} tool documentation.
+
+% TBD:  Add a subsection here describing the imminent state and reset functions.
+
+
+\subsection{Initial calibrator models}
+
+The \htmlref{Calibrater}{calibrater:calibrater} tool requires an initial
+visibility estimate in the MODEL\_DATA column before visibility-plane
+solvers can be used. This can be specified via a known external source
+model, expressed as a set of images and/or a list of component models,
+which are then transformed to the visibility-plane using the
+\htmlref{Imager.ft}{imager:imager.ft.function} function. This initial
+model can also be derived by imaging the observed data directly, without
+calibration, where this is possible. Please consult the general
+\htmlref{Imaging}{GRimaging} chapter for instructions on forming 
+images.
+
+Alternatively, if the calibrator source is sufficiently compact, it can
+be regarded as a point source in the initial calibration iteration, or
+indeed throughout calibration.  Upon initialization, the MODEL\_DATA
+column already contains unit total intensity point source visibilities. 
+If a subset of calibrators are to be used to set the flux density scale
+for the observation, the models for these should be set to the proper
+flux density.  A facility exists to set standard source flux densities
+on the Baars or Perley-Taylor scales using the function
+\htmlref{Imager.setjy}{imager:imager.setjy.function} in the Imager \tool.
+In this case, if the source is not recognized, it is set to an intial
+flux density of 1.0 Jy.
+
+% TBD: Recognized sources are....
+% Better is a function to provide you that list, icant find it [nebk]
+% TBD: PT 1998 vs PT 1995  FD scales?
+
+\begin{verbatim}
+include 'imager.g'
+imgr:=imager('polspec.ms')
+imgr.setjy()                  # Set MODEL_DATA column to point-source models 
+                              # (of correct flux density, if recognized):
+\end{verbatim}
+
+\subsection{Uv-data selection}
+
+Before using \htmlref{Calibrater}{calibrater:calibrater} to solve for
+any calibration components, selection can be applied to the MS to
+restrict the subset of uv-data to be used in the solution. This is
+specified using the
+\htmlref{Calibrater.setdata}{calibrater:calibrater.setdata.function}
+method and the very general {\gcf msselect} query argument as follows:
+
+\begin{verbatim}
+cal.setdata(msselect='FIELD_ID IN [1,2,3]')  # select data only for calibrators 
+                                             # (fields 1, 2, & 3 in this case):
+\end{verbatim}
+
+Other selection keywords may be included in the msselect parameter,
+including ANTENNA1, ANTENNA2, SPECTRAL\_WINDOW\_ID, etc.  These are
+described fully in the \htmlref{MS}{ms:ms} \tool\ documentation.  Arbitrary
+selection may be achieved by combining the selection keywords
+with the logical \&\& and $||$ operators.
+
+% TBD: Hopefully we'll be able to select data with individual ms params
+%      widgets in the near future.
+
+
+\subsection{Calibration table conventions}
+
+% TBD: move this subsection to previous section?
+% TBD: add link to Note 240 below
+
+The calibration table definition is available in \aipspp\ Note 240.
+Calibration tables are always cumulative for the specific Jones type
+they contain.  Thus they always refer to the observed DATA column as
+corrected by Jones matrices of other types.  Thus, only one calibration
+table of each type may be applied to correct the data. Provision for
+incrementally refining the calibration of a specific Jones type, as in
+self-calibration, is available.  
+
+The calibration tables are not attached to a given MS, but contain
+references to the MS with which they are associated. Thus they can hold
+calibration solutions from a collection of different measurement sets,
+as the capability is provided to append to an existing calibration
+table. The calibration tables are defined by user-specified text names,
+which are entirely under user control.
+
+% TBD: detailed description of use of plotcal (new caltab tool?)
+
+\subsection{Solving for visibility-plane effects}
+
+The \htmlref{Calibrater}{calibrater:calibrater} \tool\ contains all the
+common capabilities required to solve for the calibration components
+enumerated above. At the start of a cycle to solve for calibration
+components, a decision needs to be made as to which known components
+will be applied, which will be solved for, and which will be ignored.
+These choices are specified using the
+\htmlref{Calibrater.setapply}{calibrater:calibrater.setapply.function}
+and
+\htmlref{Calibrater.setsolve}{calibrater:calibrater.setsolve.function}
+functions. These functions may be run multiple times to arrange to apply
+and/or solve for sequences of calibration tables of different types.  A
+particular calibration component type may only be specified once in any
+sequence of setapply {\em or} setsolve executions.  
+
+% TBD: Attach the following when cumulative calibration ready.
+%     Specifying a
+%     single calibration component type in both a setapply {\em and} a
+%     setsolve directs the calibrater to obtain a cumulative calibration
+%     table of that type.  
+% TBD: Also remove extra constructors and done()s, and add reset()s
+%      as needed in examples
+
+The actual solution is done by the
+\htmlref{Calibrater.solve}{calibrater:calibrater.solve.function} function, which
+takes no further input parameters. The resultant solutions can be
+examined using a basic capability in
+\htmlref{Calibrater.plotcal}{calibrater:calibrater.plotcal.function}, or further
+using the PGplotter or Tablebrowser \tools.
+
+To obtain standard G (gain) calibration for selected data, with P 
+(parallactic angle) pre-applied anticipating polarization calibration:
+
+\begin{verbatim}
+cal.setapply(type='P',t=5.0)                # Calculate & apply P on 5-second timescale
+cal.setsolve(type='G',t=300.0, refant=15,   # Solve for G (gain)
+             table='polspec.gcal')
+cal.solve()                                 # Solve
+\end{verbatim}
+
+
+\subsection{Establishing the flux density scale}
+
+Once an electronic gain solution ($\visantterm{G}$) has been performed
+for all calibrator sources, those secondary sources which were assumed
+to be of unit flux density can be scaled to a primary flux density scale
+set by known calibrators included in the run. This is achieved using a
+utility function
+\htmlref{Calibrater.fluxscale}{calibrater:calibrater.fluxscale.function},
+which takes as input the electronic gain calibration table, a list of
+primary and secondary sources, and the name of an optional output
+electronic gain calibration table. The gain factors in the output table
+will be scaled correctly once the function has completed. It will also
+report the estimated point source flux density for the secondary
+sources, based on the ratio of the mean gain modulus between the primary
+and secondary calibrators, as is standard practice in cases when this
+method can be used.
+
+\begin{verbatim}
+cal.fluxscale(tablein='polspec.gcal',         # Transfer flux density scale from 
+              tableout='polspec.fluxscale',   # amplitude calibrator (3C286)
+              reference='3C286', 
+              transfer=['cal1','cal2'])
+#
+cal.done()                                    # Destroy calibrater tool
+\end{verbatim}
+
+
+\subsection{Correcting the observed data}
+
+The observed data, which are stored in the DATA column, are corrected
+by using the
+\htmlref{Calibrater.setapply}{calibrater:calibrater.setapply.function} function
+to specify the calibration tables to be used, the interpolation
+intervals and any selection which is to be applied to the calibration
+tables as they are read into \aipspp. This function, in conjunction
+with the selection which can be applied to the MS itself via the
+\htmlref{Calibrater.setdata}{calibrater:calibrater.setdata.function}, allow
+cross-calibration. The actual application of the corrections is
+performed using the
+\htmlref{Calibrater.correct}{calibrater:calibrater.correct.function} function,
+which takes no further parameters. Note that this function must be
+called explicitly if the corrections are to be applied; this does not
+occur by default after solving for a set of calibration effects.
+
+To apply the scaled 'G' calibration obtained above:
+
+\begin{verbatim}
+cal := calibrater('polspec.ms')          # Construct
+cal.setdata(msselect='FIELD_ID==4')      # Select data to which calibration will be applied:
+#
+cal.setapply(type='P', t=5.0)            # arrange to apply P (unnecessary if cal tool not reset)
+cal.setapply(type='G', t=0.0,            # arrange to apply G table, solutions from source 1:
+             table='polspec.fluxscale',
+             select='FIELD_ID==1')
+#
+cal.correct()                            # apply solutions, writing CORRECTED_DATA column:
+cal.done();
+\end{verbatim} 
+
+Application of solutions from other calibrators to other target
+sources would be done by setting the selection parameters in
+\htmlref{Calibrater.setdata}{calibrater:calibrater.setdata.function} and
+\htmlref{Calibrater.setapply}{calibrater:calibrater.setapply.function}
+appropriately.  Muliple sources may be specified in either selection.
+
+
+\subsection{Extending calibration to bandpass, polarization, etc.}
+
+In general, it is a fairly simple matter to extend calibration to
+additional calibration components like bandpass and polarization.  In
+the following examples, we assume that the corrupting effects of G
+dominate the observed data, and that this calibration component has
+been solved for first, as described above.  This is typical of an
+observation at the VLA using feeds sensitive to RCP and LCP.  For arrays
+using linear feeds (e.g. ATCA), this assumption may be inappropriate for
+strongly polarized calibrators (see the chapter for
+\htmlref{ATCA}{GRatca} processing).  In any case, the general strategy
+for treatment of several calibration components is to solve for the
+dominating effects first, and iterate solutions for components which
+interact significantly.
+
+Extending the examples given above, instrumental polarization (D)
+calibration proceeds in manner similar to that for G. In this case,
+particular attention must be paid to the source {\em polarization}
+model since this is where the leverage for this solution originates.
+For an unpolarized polarization calibrator, the total intensity
+($Q=U=V=0$) model used in the G calibration is sufficient.  However,
+if the calibrator is significantly polarized (compared to the expected
+size of the polarization leakage), then it is important to specify a
+model for Stokes $Q$ and $U$.  If the calibrator is highly polarized
+compared to the net polarization leakage (e.g., 3C286 at cm
+wavelengths observed with the VLA), then the polarization model may be
+obtained by imaging it without polarization calibration.  Consult the
+\htmlref{Imager}{imager:imager} documentation for instructions.  Once the
+polarization model image is obtained, the
+\htmlref{Imager.setjy}{imager:imager.setjy.function} or
+\htmlref{Imager.ft}{imager:imager.ft.function} function can be used to set
+the MODEL\_DATA column accordingly.
+
+% TBD: note complication of multi-spw datasets (models must be different for each spw)!!
+%   (cf position angle calibration?  and extending fluxscale to R-L phase?)
+
+With a polarization model in the MODEL\_DATA column, obtaining this
+calibration is straightforward.  Anticipating D calibration, note that
+the above examples have always included explicit application of the
+parallactic angle (P) correction\footnote{If the dataset has not been
+observed for polarization imaging, or if polarization imaging is not
+desired, the application of P can be omitted and the parallactic angle
+will be implicitly subsumed into the G calibration.  In any case, it is
+important to be consistent with regard to application of P.}.  This
+rotates the parallactic angle variation out of the terms in the ME that
+contain the nominal interferometer response, and into the terms
+containing the leakage response for each polarization combination. Since
+these corrupting terms, which contain the factors being solved for, vary
+according to the parallactic angle over the course of the observation,
+and since it is common practice to solve for a single D calibration
+component per observation (by setting a long solution interval), it is
+important to set the preavg parameter in
+\htmlref{Calibrater.setsolve}{calibrater:calibrater.setsolve.function}
+to a timescale shorter than that for significant variation of the
+parallactic angle.  If preavg is not set appropriately, the data will be
+averaged over the full range of the solution interval, coherence in the
+corrupting terms will be lost, and the D calibration solution will be
+incorrect.
+
+
+\begin{verbatim}
+cal:=calibrater('polspec.ms');
+#
+cal.setdata(msselect='FIELD_ID==1')      # Select polarization calibrator:
+#
+cal.setapply(type='P',t=5.0)             # Arrange to apply existing calibration 
+                                         # before solution is made
+cal.setapply(type='G',t=0.0,
+             table='polspec.fluxscale')
+#
+cal.setsolve(type='D', t=86400.0, preavg=60.0,   # Arrange to solve for D
+             refant=15, table='polspec.dcal')  
+#
+cal.solve()                                      # Determine solutions:
+\end{verbatim}
+
+% TBD: position angle calibration?
+
+
+Given the G and D calibration tables obtained above, bandpass
+calibration proceeds as follows:
+
+\begin{verbatim}
+cal.setdata(msselect='FIELD_ID==1')       # Select data for bandpass calibrator
+#
+cal.setapply(type='P',t=5.0)              # Arrange to apply existing calibration 
+cal.setapply(type='G',t=0.0,              # before solution
+             table='polspec.fluxscale')
+cal.setapply(type='D',t=0.0,
+            table='polspec.dcal')
+#
+cal.setsolve(type='B', t=86400.0,         # Arrange to solve for B
+             refant=15, table='polspec.bcal')  
+#
+cal.solve()                               # Determine solutions
+#
+cal.done()
+\end{verbatim}
+
+
+Finally, we wish to apply all calibrations obtained above.  The example
+below treats the case where no detailed selection of solutions and
+target data is desired.  Use {\gcf msselect} in
+\htmlref{Calibrater.setdata}{calibrater:calibrater.setdata.function} and
+select in
+\htmlref{Calibrater.setapply}{calibrater:calibrater.setapply.function}
+(as needed for the different calibration components) to apply
+calibration to each target source as desired.
+
+\begin{verbatim}
+cal.setdata()                    # Select all data:
+#
+cal.setapply(type='P', t=5.0)    # Arrange to apply all existing calibration
+cal.setapply(type='G',t=0.0,
+             table='polspec.fluxscale');
+cal.setapply(type='D', t=0.0,
+             table='polspec.dcal');
+cal.setapply(type='B', t=0.0,
+             table='polspec.bcal')
+#
+cal.correct()                    # Write corrected data to CORRECTED_DATA column
+\end{verbatim}
+
+
+\subsection{Self-calibration}
+
+Self-calibration is the process by which calibration components are
+incrementally improved by alternatly re-imaging and re-solving for the
+calibration.  It depends on the assumption that each succeeding
+calibration enables generation of an improved image\footnote{The means
+of forming reliable images from marginally calibrated data involves
+careful use of deconvolution mechanisms and is described in the
+\htmlref{Imager}{imager:imager} documenation.}.  The uniform design of the
+calibrater tool with respect to the different calibration components
+results in a very flexible means of self-calibrating any and all of the
+components.  One can imagine cases where, for example, the G and D
+components are each alternately improved along with the image. Depending
+upon the relative importance of these two components (and any others
+that may be relevant), the exact sequence of calibration and imaging
+will vary, but, in principle, the \aipspp\ calibrater tool enables the
+best possible overall calibration for a given dataset.
+
+In practice, self-calibration is achieved exactly as the initial
+calibrations illustrated above, except that the MODEL\_DATA column needs
+to be filled with the improved model before each round of calibration
+using the \htmlref{imager.ft}{imager:imager.ft.function} function.  The
+calibration tables generated in each round of calibration are always
+{\em cumulative}, i.e., they are always to be applied to the (original)
+DATA column.  At this writing, it is necessary to solve for a particular
+component in the same way each round, i.e., a phase-only G solution
+cannot be attempted after the amplitude$+$phase G cross-calibration. 
+This is because it is impossible to apply {\em and} solve for the same
+component at the same time\footnote{Ambitious users may wish to avoid
+this problem in the short term by copying calibrated data from the
+CORRECTED\_DATA column to the DATA column.  This is not recommended, in
+general, since it the original data is lost (unless it is copied to an
+additional column). It will be unnecessary in the near future when
+incremental calibration comes online.}
+
+
+% TBD:  Remove last sentences in above paragraph when incremental calibration is
+%       available, hopefully before the release, and add some words about
+%       how applying and solving for a component at the same time yields
+%       a net calibration.  (In all cases cal tables correspond to CL tables
+%       in aips)
+
+
+
+
+
+
+\section{References}
+
+\noindent Cornwell, T. J., 1995, {\it \aipspp\ Note 183}.
+
+\noindent Hamaker, J.P., Bregman, J.D., and Sault, R.J., 1996, {\it A\&AS},
+{\bf 117}, 137.
+
+\noindent Hamaker, J.P., and Bregman, J.D., 1996, {\it A\&AS}, {\bf 117}, 161.
+
+\noindent Hamaker, J.P., 1998, {\it in press}.
+
+\noindent Noordam, J., 1995, {\it \aipspp\ Note 182}.
+
+\noindent Sault, R.J., Hamaker, J.P., and Bregman, J.D., 1996, {\it A\&AS},
+{\bf 117}, 149.
+

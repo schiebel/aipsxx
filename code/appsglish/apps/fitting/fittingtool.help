@@ -1,0 +1,983 @@
+%% Copyright (C) 1999,2000,2001,2002,2003,2004
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: fittingtool.help,v 1.4 2004/09/24 06:41:19 wbrouw Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+
+\begin{ahobject}{fitter}{fitting tool}
+\ahcategory{utility}
+\ahkeyword{fitting}{}
+
+\ahmethods{}
+
+A fitting \tool\ has properties that can be set at creation; by the {\mf
+init} method, by the {\mf set} method and implicity by the use of
+the {\mf linear} and {\mf functional} methods. Properties are:
+\begin{itemize}
+  \item $n$: the number of unknowns. In some specialized cases this property
+  will be set automatically. All other properties have always to be set by
+  the user.
+  \item $type$: the type of condition equation:
+	\begin{itemize}
+	  \item $real$: $n$ real factors for $n$ real unknowns
+	  \item $complex$: $n$ complex factors for $n$ complex unknowns
+	  \item $conjugate$: $2n$ complex factors $c$, for $n$ complex
+	  unknowns. The condition equations
+	  will be assumed to be: \\
+	$c_{0}.z_{0} + c_{1}.z_{0}^{*} + \ldots$  
+	  \item $asreal$: $n$ complex factors. The condition equations: \\
+	$real(c_{0}).real(z_{0}) + i(imag(c_{0}).imag(z_{0})) + \ldots$  
+	  \item $separable$: $2n$ complex factors. Condition equations: \\
+	$c_{0}.real(z_{0}) + c_{1}.imag(z_{0}) + \ldots$  
+	\end{itemize}
+	The types can be given, in general, as minimum-match strings.
+   \item $colfac$: collinearity factor (used in singular value decomposition to
+  test dependencies)
+   \item $lmfac$: Levenberg-Marquardt factor for non-linear solutions.
+\end{itemize}
+
+\begin{ahexample}
+A few basic examples: averaging a set of real numbers, and a set of
+complex numbers:
+\begin{verbatim}
+- include 'fitting.g'                                           # 1
+T
+- y := 0.1*1:5                                                  # 2
+- f := dfs.compiled('p')                                        # 3
+- dfit.linear(f,[],y);                                          # 4
+T
+- dfit.solution();                                              # 5
+0.3 
+- dfit.getstate()                                               # 6
+[n=1, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+- dfit.rank()                                                   # 7
+1 
+- dfit.sd()
+0.158114 
+- dfit.stddev()
+0.158114 
+- dfit.chi2()
+0.1 
+- dfit.covariance()                                             # 8
+0.2 
+- dfit.error()
+0.0707107
+- dfit.set(type='complex');                                     # 9
+T 
+- dfit.getstate()                
+[n=1, typ=1, colfac=1e-08, lmfac=0.001, type=complex] 
+- dfit.linear(dfs.compiled('p*x'), [1:6]*0 + 1, [1:6] + 1.5i*(1:6)) # 10
+T 
+- dfit.solution()                                               # 11
+3.5+5.25i
+# a one step option:
+- dfit.linear(dfs.poly(), 1:5, 1:5); dfit.solution()            # 12
+T 
+3+0i
+- dfit.set(type='real');                                        # 13
+T 
+- dfit.linear(dfs.poly(), 1:5, 1:5); dfit.solution()            # 14
+T 
+3
+- dfit.set(type='complex')                                      #15
+T
+\end{verbatim}
+
+\begin{enumerate}
+   \item Gives access to the fitting and creates the default {\mf fitting}
+   \tool . It also includes the {\mf functionals} \tool .
+   \item initialize the default fitter for 1 unknown (real by default)
+   \item Create normal equations from 5 (simple) condition equations:\\
+	 $x = i$ 
+   \item Solve the normal equations
+   \item Show the solution
+   \item what is the fitter's state?
+   \item the rank shows the number of dependencies. In this case there is no
+	 missing rank in the set of condition equations (i.e. they can be
+	 solved). The following functions show
+	 the information available after a solution. chi2 is the $\chi^{2}$; sd
+	 the standard deviation per observed point; mu the standard deviation
+   per unit weight.
+   \item the covariance and errors in the solved unknowns can be
+   obtained. The errors are the covariance scaled with the standard deviation
+   \item Make a complex fitter (re-use) with two simultaneous sets of
+	 equations
+   \item Make normal equations (Note the multiple condition equations in
+   call) Effectively the first argument (the coefficients of the parameter to
+   be solved) is a vector of length 5, all elements value 1; the second is a
+   matrix, with for each condition equation two values. The values are:
+\begin{verbatim}
+   - [1:5,2*(1:5)]+1i*(1:10)
+   [1+1i 2+2i 3+3i 4+4i 5+5i 2+6i 4+7i 6+8i 8+9i 10+10i]  
+\end{verbatim}
+	where alternate values belong to the same set of observables
+   \item solve
+   \item show solution (Note the indices)
+   \item do a fit for functional polynomial of zeroth order
+\end{enumerate}
+
+This example shows the general usage of the fitting tool for linear equations:
+\begin{itemize}
+  \item create and/or initialize a fitter
+  \item use one or more make() methods to create the normal equations
+  \item use fit() to solve the equations
+  \item use information methods to get the solution information
+\end{itemize}
+Some specialized fit methods are available to combine the above in one call.
+
+The above, simple, example, it is assumed that the data will fit a zero
+degree polynomial (i.e. just an average). It is just as easy to fit through
+the same data a higher degree polynomial. Let us first make the observed
+values:
+\begin{verbatim}
+- y := [1:10]
+\end{verbatim}
+The simple way to fit an average here is (note we are still in complex type
+mode, but easy to correct):
+\begin{verbatim}
+- dfit.fitavg(y)
+T 
+- dfit.solution()
+5.5+0i 
+- dfit.set(type='real')
+T 
+- dfit.fitavg(y)
+T 
+- dfit.solution()
+5.5 
+\end{verbatim}
+Another way is to make use of a zero degree polynomial, specified as $a=y$:
+\begin{verbatim}
+- x:=array(1,10)
+- dfit.fitpoly(0,x,y) 
+T 
+- dfit.solution()
+5.5 
+\end{verbatim}
+What would a 2-degree polynomial through the data look like ($a+bx+cx^{2} =
+y$): 
+\begin{verbatim}
+- dfit.fitpoly(2,1:10,y)
+T 
+- dfit.solution()     
+[0 1 0]  
+\end{verbatim}
+
+\end{ahexample}
+
+
+
+
+
+Non-linear fitting can be done in the same way; with slightly different
+calls for the full-blown case. For the generic case just replace the
+{\mf linear} with {\mf functional}, and a non-linear method will be
+used, using the Levenberg-Marquardt method.
+
+The major difference is that the functional provided as model should
+have initial parameter estimates set.
+
+Note that, of course, you can write your own non-linear solution by
+providing an initial parameter estimate in the functional to be
+fitted, use the linear method, and upfate the parameters until some
+criterium is met.
+
+
+\ahobjs{}
+\ahfuncs{}
+
+\end{ahdescription}
+ 
+\begin{ahconstructor}{fitter}{Construct fitting tool}
+\begin{ahargs}
+\ahaddarg[in]{n}{number of unknowns}{0}{integer}
+\ahaddarg[in]{type}{type of solution}{'real'}{coded value as
+string. Allowed: real, complex, separable, asreal, conjugate}
+\ahaddarg[in]{colfac}{collinearity factor}{1e-8}{positive float}
+\ahaddarg[in]{lmfac}{Levenberg-Marquardt factor}{1e-3}{positive float}
+\ahaddarg[in]{host}{name of host to run on}{''}{string}
+\ahaddarg[in]{forcenewserver}{is a new process needed}{F}{bool}
+\end{ahargs}
+\ahreturns{fitting \tool\ or fail}
+\begin{ahdescription}
+Create a fitting \tool . The tool can be created without arguments (in which
+case it is assumed to be a real fitter), or with the arguments
+specifying the number of unknowns to be solved
+for (a number not relevant in practice); 
+and the type of solution: real, complex, conjugate (complex with both
+the unknown and its conjugate in the condition equations), separable complex,
+asreal complex with the real and imaginary part seen as independent unknowns.
+All solutions need a model (specified as a 
+\ahlink{functional}{functionals:functionals.functional}.
+All solutions are done using an SVD type method. A collinearity factor can be
+specified, which is in essence the sine squared of the minimum angle between
+two normal equation columns that are still to be considered independent. For
+automatic non-linear solutions, a Levenberg-Marquardt factor (see Note 224)
+is used, which can be specified as well.
+
+In the case of non-linear solutions that have to be handled by the system, an
+initial estimate for the model parameters is necessary.
+
+A default fitter is always created, with an id that does not have to be
+specified. (see \ahlink{fitter method}{fitting:fitter.fitter} for sub
+constructors).
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{id}{identification of tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{object id}
+\begin{ahdescription}
+id will return the object identification. Its use is meant for the
+toolmanager.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- dfit.id()
+[sequence=1, pid=6266, time=1020746908, host=cetus, agentid=4] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%
+\begin{ahfunction}{type}{Obtain the type of the tool}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{string}
+\begin{ahdescription}
+Return the name of the type of the tool
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter()
+- fit.type()
+fitter
+- dfit.type()
+fitter
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{fitter}{Create a sub-tool}
+\begin{ahargs}
+\ahaddarg[in]{n}{number of unknowns}{0}{integer}
+\ahaddarg[in]{type}{type of solution}{'real'}{coded value as
+string. Allowed: real, complex, separable, asreal, conjugate, with
+case-insensitive minimum-match}
+\ahaddarg[in]{colfac}{collinearity factor}{1e-8}{positive float}
+\ahaddarg[in]{lmfac}{Levenberg-Marquardt factor}{1e-3}{positive float}
+\end{ahargs}
+\ahreturns{fitter id}
+\begin{ahdescription}
+Create a sub-tool (which can be used in the same way as a fitter \tool
+). This function returns an identification, which has to be used in the {\em
+id} argument of subsequent calls. The call can specify the standard
+constructor arguments (n, type, colfac, lmfac), or can
+specify them later in a set statement.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- dfit.type()
+fitter 
+- myfit := dfit.fitter(2)  # Create a fitter for 2 real unknowns
+- dfit.fitpoly(1, 1:5, 1:5, id=myfit) # solve x+y=1; x+2y=2; ... x+5y=5
+T
+- print dfit.solution(id=myfit), dfit.error(id=myfit) #  show solution
+[0 1]  [0 0] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{done}{Remove the tool's resources}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{unset}{fitter id}
+\ahaddarg[in]{kill}{force kill of the default tool}{F}{bool}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+Remove the tool's resources. If no id specified the complete tool is removed.
+If the tool is the default tool ({\em dfit}) the done will only be
+executed if the kill argument is true.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter()
+- id1 := fit.fitter()
+- id2 := fit.fitter()
+- fit.getstate(id1)
+[n=0, typ=0, colfac=1e-06, lmfac=0.001, type=real] 
+- fit.getstate(id2)
+[n=0, typ=0, colfac=1e-06, lmfac=0.001, type=real] 
+- fit.getstate()   
+[n=0, typ=0, colfac=1e-06, lmfac=0.001, type=real] 
+- fit.done(id1)
+T 
+- fit.getstate(id2)
+[n=0, typ=0, colfac=1e-06, lmfac=0.001, type=real] 
+- fit.getstate(id1)
+SEVERE: Illegal fitter id in getstate
+<fail>: Illegal fitter id in getstate
+        File:   note.g, Line 58
+        Stack:  throw()
+                .() 
+- fit
+[real=0 ... ] 
+- fit.done()
+T 
+- fit
+F 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{reset}{Reset the tool to its initialized state}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{unset}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+Reset the tool's resources to its initialized state.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter()
+- fit.init(2)
+T 
+- fit.getstate()
+[n=2, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+- fit.reset()
+T 
+- fit.getstate()
+[n=2, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{init}{Initialize a fitting tool for use or re-use}
+\begin{ahargs}
+\ahaddarg[in]{n}{number of unknowns}{unset}{integer}
+\ahaddarg[in]{type}{type of solution}{unset}{coded value as
+string. Allowed: real, complex, separable, asreal, conjugate, with
+case-insensitive minimum-match}
+\ahaddarg[in]{colfac}{collinearity factor}{unset}{positive float}
+\ahaddarg[in]{lmfac}{Levenberg-Marquardt factor}{unset}{positive float}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+Initialize the fitting tool (or the sub-tool if an id is specified). Like in
+the constructor, the number of unknowns to be solved for;
+ the type (as code or as case insensitive
+minimum-match string); and the collinearity and Levenberg-Marquardt factor
+can be specified (see \ahlink{fitter}{fitting:fitter.fitter} for all
+options). Individual values can be overwritten with the
+\ahlink{set}{fitting:fitter.set} function.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter()
+- fit.init(5,'r')
+T
+- fit.getstate()
+[n=5, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{set}{(Re-)initialize selected fitting tool properties}
+\begin{ahargs}
+\ahaddarg[in]{n}{number of unknowns}{unset}{integer}
+\ahaddarg[in]{type}{type of solution}{unset}{coded value as
+string. Allowed: real, complex, separable, asreal, conjugate, with
+case-insensitive minimum-match}
+\ahaddarg[in]{colfac}{collinearity factor}{unset}{positive float}
+\ahaddarg[in]{lmfac}{Levenberg-Marquardt factor}{unset}{positive float}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+Set selected properties of the fitting tool. All $unset$ properties remain
+the same (in the \ahlink{init}{fitting:fitter.init} method all properties are
+(re-)initialized). Like in
+the constructor, the number of unknowns to be solved for; the number of
+simultaneous solutions; the type (as code or as case insensitive
+minimum-match string); and the collinearity and Levenberg-Marquardt factor
+can be specified.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter()
+- fit.init(5,'r')
+T
+- fit.getstate()
+[n=5, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+- fit.set(type='compl')
+T
+- fit.getstate()
+[n=5, typ=1, colfac=1e-08, lmfac=0.001, type=complex] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{getstate}{Obtain the state of the fitter}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{record with state}
+\begin{ahdescription}
+Obtain the state of the fitter \tool\ or a sub-tool.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter();		# a fitter with default properties
+- fit.getstate()		# what is it like
+[n=0, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+- fit.init(5,'r')		# initialize it
+T
+- id := fit.fitter()		# a sub-fitter, initialized
+- fit.set(type='complex',id=id)	# a sub-fitter, initialized
+- fit.getstate()			# state of default fitter
+[n=5, typ=0, colfac=1e-08, lmfac=0.001, type=real] 
+- fit.getstate(id=id)			# state of the sub-fitter
+[n=1, m=1, typ=1, colfac=1e-06, lmfac=0.001, type=complex] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{linear}{Solve a linear fitting problem}
+\begin{ahargs}
+\ahaddarg[in]{fnct}{functional to be fitted}{unset}{a functional}
+\ahaddarg[in]{x}{the x coordinate values}{}{vector}
+\ahaddarg[in]{y}{the ordinate values}{}{vector}
+\ahaddarg[in]{sd}{standard deviation of equations}{unset}{one or
+more values used cyclically} 
+\ahaddarg[in]{wt}{an optional alternate for sd}{1}{one or more values used
+cyclically} 
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool or fail}
+\begin{ahdescription}
+{\mf linear} will make a linear least squares solution for the points
+through the ordinates at the $x$ values, using the specified {\mf
+fnct}. The $x$ can be of any dimension, depending on the number of
+arguments needed in the functional evaluation. The values should be
+given in the order: $x0[1]$, $x0[2]$, ..., $x1[1]$, ..., $xn[m]$ if
+there are $n$ observations, and $m$ arguments. $x$ should be a
+vector of $m*n$ length; $y$ (the observations) a vector of length $n$. 
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'                   # create default fitter
+- x := [1:10];                          # some x values
+- y := 3*x*x;                           # some y values
+- dfit.linear(dfs.poly(2), x, y);       # solve 2nd order polynomial
+T
+- dfit.solution();
+[0 0 3]  
+- include 'functionals.g'               # allow functionals
+- alin := function() {			# encapsulate some code
+z:=dfs.compiled('p0+p1*x0+p2*x1')       # a 2-d functional
+x:=[1,2,3,4,5,6]                        # 3 observations
+z.setparameters([1,2,3])		# set parameters to get ys
+print 'y=', y:=z.f(x)			
+dfit.linear(z,x,y)			# fit
+print 'linear:', dfit.solution()
+z:=dfs.compiled('p0+p1*x0')             # try a 1-d funtional	
+x:=[1,3,5]
+z.setparameters([1,2])
+print 'y=', y:=z.f(x)
+dfit.linear(z,x,y)
+print 'linear:', dfit.solution()
+z:=dfs.compiled('6+p0')			# try a 0-d functional
+x:=[]
+print 'y=', y:=z.f([1:3])-2
+dfit.linear(z,x,y)
+print 'linear:', dfit.solution()
+return T
+}
+- alin()
+y= [9 19 29] 
+linear: [1 2 3] 
+y= [3 7 11] 
+linear: [1 2] 
+y= [4 4 4] 
+linear: -2
+T
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{functional}{Solve a general fitting problem}
+\begin{ahargs}
+\ahaddarg[in]{fnct}{functional to be fitted}{unset}{a functional}
+\ahaddarg[in]{x}{the x coordinate values}{}{vector}
+\ahaddarg[in]{y}{the ordinate values}{}{vector}
+\ahaddarg[in]{sd}{standard deviation of equations}{unset}{one or
+more values used cyclically} 
+\ahaddarg[in]{wt}{an optional alternate for sd}{1}{one or more values used
+cyclically} 
+\ahaddarg[in]{mxiter}{the maximum number of iterations}{50}{integer}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool or fail}
+\begin{ahdescription}
+{\mf functional} will make a non-linear least squares solution for the points
+through the ordinates at the $x$ values, using the specified {\mf
+fnct}.
+Details can be found in the {\mf linear} description.
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'                   # create default fitter
+- x := [1:10];                          # some x values
+- y := 3*x*x;                           # some y values
+- dfit.functional(dfs.poly(2), x, y);   # solve 2nd order polynomial
+T
+- dfit.solution();
+[-1.10049e-15 7.44482e-16 3]  
+- include 'functionals.g'               # allow functionals
+- anonlin := function() {			# encapsulate some code
+z:=dfs.compiled('p0+p1*x0+p2*x1')       # a 2-d functional
+x:=[1,2,3,4,5,6]                        # 3 observations
+z.setparameters([1,2,3])		# set parameters to get ys
+print 'y=', y:=z.f(x)			
+dfit.functional(z,x,y)			# fit
+print 'non-linear:', dfit.solution()
+z:=dfs.compiled('p0+p1*x0')             # try a 1-d funtional	
+x:=[1,3,5]
+z.setparameters([1,2])
+print 'y=', y:=z.f(x)
+dfit.functional(z,x,y)
+print 'non-linear:', dfit.solution()
+z:=dfs.compiled('6+p0')			# try a 0-d functional
+x:=[]
+print 'y=', y:=z.f([1:3])-2
+dfit.functional(z,x,y)
+print 'non-linear:', dfit.solution()
+return T
+}
+- anonlin()
+y= [9 19 29] 
+non-linear [1 2 3] 
+y= [3 7 11] 
+non-linear [1 2] 
+y= [4 4 4] 
+non-linear -2
+T 
+\end{verbatim}
+\end{ahexample}
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{fitavg}{Get an average}
+\begin{ahargs}
+\ahaddarg[in]{y}{observed values of the condition equations}{}{$N \times m$
+values} 
+\ahaddarg[in]{sd}{standard deviation of equations}{unset}{one or more values used
+cyclically} 
+\ahaddarg[in]{wt}{an optional alternate for sd}{1}{one or more values used
+cyclically} 
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+{\mf fitavg} will calculate the average of a set of values.
+
+The method expects that the properties of the fitter to be used have been
+initialized or set (like the number of simultaneous solutions m; the type;
+factors). The main reason is to limit the number of parameters on the
+one hand, and on the other hand not to depend on the actual array structure
+in Glish to get the variables and type. The number of unknowns is by
+definition 1.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter();		# a fitter for complex
+- fit.set(type='com')
+- fit.getstate()		# what is it like
+[n=0, typ=1, colfac=1e-08, lmfac=0.001, type=complex] 
+- fit.fitavg(1:6 + (2:7)*1i)	# equations are x=1+2i; x=2+3i; ... x=6+7i
+T
+- fit.getstate()		# what is it like now: note n=1
+[n=1, typ=1, colfac=1e-08, lmfac=0.001, type=complex] 
+- print fit.solution(), fit.error() #  show solution
+3.5+4.5i 0.763763+0.763763i
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{fitpoly}{Solve polynomial equations}
+\begin{ahargs}
+\ahaddarg[in]{n}{the order of the polynomial to solve for}{}{integer}
+\ahaddarg[in]{x}{the parameter for the polynomial calculations}{}{one or more
+real or complex values}
+\ahaddarg[in]{y}{observed values of the condition equations}{}{$N \times m$
+values} 
+\ahaddarg[in]{sd}{standard deviation of equations}{unset}{one or more values used
+cyclically} 
+\ahaddarg[in]{wt}{an optional alternate for sd}{1}{one or more values used
+cyclically} 
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+{\mf fitpoly} will create normal equations from the specified condition
+equations, and solve the resulting normal equations. In essence a combination
+of \ahlink{makepoly}{fitting:fitter.makepoly} and
+\ahlink{fit}{fitting:fitter.fit}.
+
+The method expects that the properties of the fitter to be used have been
+initialized or set (like the number of simultaneous solutions m; the type;
+factors). The main reason is to limit the number of parameters on the
+one hand, and on the other hand not to depend on the actual array structure
+in Glish to get the variables and type.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter();		# a fitter for real unknowns
+- x:=[1:10]			# we have values at 10 'x' values
+- y:=2+0.5*x-0.1*x^2		# which are 2 +0.5x -0.1x^2
+- fit.fitpoly(3,x,y) 		# fit a 3-degree polynomial
+T 
+- print fit.solution(), fit.error() #  show solution and their errors
+[2 0.5 -0.1 -6.21725e-14]  [0 0 0 0] 
+\end{verbatim}
+
+Note the big problem with polynomial fitting if you have relatively large $x$
+values: the internal precision of computers start to play a role. In general
+it is worth the effort to normalize x between -1 and 1. To aid in
+most standard cases, a function {\em fitspoly} has been provided.
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{fitspoly}{Solve polynomial equationswith large x-range}
+\begin{ahargs}
+\ahaddarg[in]{n}{the order of the polynomial to solve for}{}{integer}
+\ahaddarg[in]{x}{the parameter for the polynomial calculations}{}{one or more
+real or complex values}
+\ahaddarg[in]{y}{observed values of the condition equations}{}{$N \times m$
+values} 
+\ahaddarg[in]{sd}{standard deviation of equations}{unset}{one or more values used
+cyclically} 
+\ahaddarg[in]{wt}{an optional alternate for sd}{1}{one or more values used
+cyclically} 
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+{\mf fitspoly} will create normal equations from the specified condition
+equations, and solve the resulting normal equations. In essence a combination
+of \ahlink{makepoly}{fitting:fitter.makepoly} and
+\ahlink{fit}{fitting:fitter.fit}.
+
+The method expects that the properties of the fitter to be used have been
+initialized or set (like the number of simultaneous solutions m; the type;
+factors). The main reason is to limit the number of parameters on the
+one hand, and on the other hand not to depend on the actual array structure
+in Glish to get the variables and type.
+Before fitting the x-range is normalized to values less than 1 to
+cater for large difference in x raised to large powers. Later a
+shift to make x around zero will be added as well.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter();		# a fitter for real unknowns
+- x:=[1:10]			# we have values at 10 'x' values
+- y:=2+0.5*x-0.1*x^2		# which are 2 +0.5x -0.1x^2
+- fit.fitspoly(3,x,y) 		# fit a 3-degree polynomial
+T 
+- print fit.solution(), fit.error() #  show solution and their errors
+[2 0.5 -0.1 1.05116e-15]  [0 0 0 0] 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{solution}{get solution}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{array of $n$ or $n \times m$ real or complex values}
+\begin{ahdescription}
+Obtain the solution of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1)		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- print fit.solution(), fit.error() #  show solution and error in average
+3.5 0.763763
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{rank}{get solution rank}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{integer}
+\begin{ahdescription}
+Obtain the rank (in SVD sense) of a fit. The {\mf constraint} method
+will show the equations that are orthogonal to the existing ones, and which
+will make the solution possible.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.rank()			# actual rank
+1
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{deficiency}{get missing rank}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{integer}
+\begin{ahdescription}
+Obtain the missing rank (in SVD sense) of a fit. The {\mf constraint} method
+will show the equations that are orthogonal to the existing ones, and which
+will make the solution possible.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.deficiency()		# missing rank
+1
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{constraint}{get missing rank constraint equations}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{integer}
+\begin{ahdescription}
+Obtain the set of orthogonal equations that make the solution of the rank
+deficient normal equations possible.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'		# use the default fitter
+- fit.linear(dfs.functional('hyper',2),0*(1:10)+1,1:5)
+				# equations are: x+y=1; x+y=2; ...
+- fit.rank()			# there is rank deficiency
+1 
+- fit.deficiency()
+1
+- fit.constraint()		# constraint equation used
+[-1 1]  
+- fit.solution()		# the solution (as expected)
+[1.5 1.5]  
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{chi2}{get the chi squared}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{vector of $m$ values}
+\begin{ahdescription}
+Obtain the chi squared of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.chi2()			# chi squared
+17.5 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{sd}{get standard deviation per unit weight}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{$m$ real values}
+\begin{ahdescription}
+Obtain the standard deviation per unit of weight of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+- fit.sd()
+1.87083 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{stddev}{get mean error (standard deviation per observation)}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{$m$ real values}
+\begin{ahdescription}
+Obtain the standard deviation per condition equation of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.stddev()
+1.87083 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{covariance}{get the covariance matrix}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{$n \times n$ matrix}
+\begin{ahdescription}
+Obtain the covariance matrix of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.covariance()
+0.166667 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{error}{get errors in unknowns}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{$m \times n$ matrix}
+\begin{ahdescription}
+Obtain the errors in the unknowns of a fit
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+- include 'fitting.g'
+- fit := fitter(n=1);		# a fitter for one real unknown
+- fit.linear(dfs.functional('hyper',1),1+0*1:6, 1:6)
+			# equations are x=1; x=2; ... x=6 
+T
+- fit.error()
+0.763763 
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{ahfunction}{fitted}{Test Levenberg-Marquardt loop}
+\begin{ahargs}
+\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+\end{ahargs}
+\ahreturns{bool}
+\begin{ahdescription}
+Test if enough Levenberg-Marquardt loops have been done. It returns T (true)
+if no improvement possible.
+\end{ahdescription}
+\begin{ahexample}
+
+\end{ahexample}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%\begin{ahfunction}{a}{a}
+%%\begin{ahargs}
+%%\ahaddarg[in]{id}{the id of a sub-tool}{0}{fitter id}
+%%\end{ahargs}
+%%\ahreturns{a}
+%%\begin{ahdescription}
+%%Obtain the solution of a fit
+%%\end{ahdescription}
+%%\begin{ahexample}
+%%\begin{verbatim}
+%%\end{verbatim}
+%%\end{ahexample}
+%%\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject}
+
+\end{document}

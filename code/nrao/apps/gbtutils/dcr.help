@@ -1,0 +1,414 @@
+%% Copyright (C) 1999,2000,2001,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+\begin{ahobject}{dcr}{A tool for analyzing DCR data from the GBT.}
+
+\ahinclude{dcr.g}
+
+\ahmethods{}
+
+\begin{ahdescription}
+This \texttt{tool} is an in-house suite of functions intended to be used 
+exclusively with digital continuum receiver (DCR) data from the Green Bank
+Telescope (GBT). The \texttt{tool} 
+consists of 2 GUI components: A panel of buttons which offers an interface
+to some of the common functionality, and a plotter window which displays 
+results when applicable.  The complete functionality of the dcr tool is 
+available from the command line interface.  The tool is aimed at satisfying
+the requirements for commissioning the GBT, primarily, but it may
+find use as a general purpose continuum analysis tool as well.
+
+\end{ahdescription}
+
+\begin{ahconstructor}{dcr}{Construct dcr tool}
+\begin{ahdescription}
+This constructs the \texttt{tool} which provides numerous functions for
+analyzing DCR data. The constructor requires the name of 
+a data file which must be an AIPS++ Measurement Set.  To access data from
+a different data file it is necessary to open a new instance of the tool.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{filename}{filename of an AIPS++ Measurement Set which contains the data}{unset}{string}
+\end{ahargs}
+\ahreturns{Tool}
+\end{ahconstructor}
+
+\begin{ahfunction}{getscan}{Return data for the given scan}
+\begin{ahdescription}
+The most fundamental routine in the dcr tool.  This returns a record containing
+information about the selected scan, including header info and the data.
+It also sets up variables which are used internal to the dcr tool by other 
+routines.  The focus values are not included by default in order to improve 
+efficiency.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{getFocus}{flag to determine whether focus values will be retrieved}{F}{Boolean}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{listscans}{List scan numbers}
+\begin{ahdescription}
+Returns an array containing the scan numbers.
+\end{ahdescription}
+\ahreturns{integer array}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Close and exit the DCR tool}
+\begin{ahdescription}
+Closes the DCR tool and removes it from memory.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{getGO}{Return the GO keywords}
+\begin{ahdescription}
+The astronomer's interface to controlling the GBT (the GO program) produces 
+FITS files containing keywords relevant to the observing setup.  This 
+function returns a record containing those keywords.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\end{ahargs}
+\ahreturns{record}
+\end{ahfunction}
+
+\begin{ahfunction}{guessmode}{Guess the switching signal mode}
+\begin{ahdescription}
+By looking at the number and arrangement of phases, this routine makes a guess
+at the switching signal mode.  It has been made redundant by an entry in the
+GO header which conveys the same parameter directly.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\end{ahargs}
+\ahreturns{string}
+\end{ahfunction}
+
+\begin{ahfunction}{baselinefit}{Fit a baseline}
+\begin{ahdescription}
+This function provides a baseline fit to the given data.  The residuals are
+returned.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{xarray}{x values}{}{double}
+\ahaddarg{yarray}{y values}{}{double}
+\ahaddarg{ord}{Order of the polynomial}{}{int}
+\ahaddarg{range}{Channel range to be fit}{}{array}
+\ahaddarg{plotflag}{Plot the fit?}{T}{boolean}
+\end{ahargs}
+\ahreturns{vector of residuals}
+\end{ahfunction}
+
+\begin{ahfunction}{focus}{Fit a parabola to a focus observation}
+\begin{ahargs}
+\ahaddarg{filename}{name of ascii file on disk}{}{string}
+\end{ahargs}
+\ahreturns{boolean}   
+\begin{ahdescription}
+Read an ascii file containing focus values from a sequence of point/focus
+combinations, and fit a parbola to find the peak value on the curve.
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'dcr.g'
+md := dcr('GBTdata.ms')  # suppose we have this data set on disk
+md.focus('focus.data')
+\end{verbatim}
+where in this case the file focus.data might have this form:
+\begin{verbatim}
+1.2   15.5
+1.3   15.7
+1.4   16.0
+1.5   16.1
+1.6   15.9
+1.7   15.6
+1.8   15.4
+\end{verbatim}
+\end{ahexample}
+
+\end{ahfunction}
+
+\begin{ahfunction}{get\_tant}{Returns Antenna Temperature for a given scan}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{1}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K }{1}{float}
+\end{ahargs}
+\ahreturns{boolean}   
+\begin{ahdescription}
+Returns an array of antenna temperatures.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{gauss}{Fit a gaussian function to the data.}
+\begin{ahargs}
+\ahaddarg{xarray}{X values}{}{double}
+\ahaddarg{yarray}{Y values}{}{double}
+\ahaddarg{height}{initial guess for height}{}{float}
+\ahaddarg{width}{initial guess for width}{}{float}
+\ahaddarg{center}{initial guess for center}{}{float}
+\ahaddarg{plotflag}{plot the result?}{T}{boolean}
+\end{ahargs}
+\ahreturns{vector of residuals.}   
+\begin{ahdescription}
+This function fits a gaussian to the data.  The residuals are returned.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_dap\_time}{Plot a data associated parameter (DAP) vs. time}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{colName}{colName from the DAP subtable}{}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_gain\_time}{Plot relative gain (normalized counts/K) vs. time - not yet implemented}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_RA\_Dec}{Plot Dec vs. RA}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}  
+
+\begin{ahfunction}{plot\_phase\_ra}{Plot data counts vs. RA for a given phase}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{phase}{Phase number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}  
+
+\begin{ahfunction}{plot\_phase\_dec}{Plot data counts vs. Dec for a given phase}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{phase}{Phase number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}  
+
+\begin{ahfunction}{plot\_phase\_time}{Plot data counts vs. time for a given phase}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{phase}{Phase number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}  
+
+\begin{ahfunction}{plot\_tsrc\_time}{Plot Tsrc against time}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Plot source temperature against time.  This only works when the switching
+phases are set to switched power with cal.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_focus\_time}{Plot focus against time}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{param}{Focus parameter}{SR\_XP}{string}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Plots a focus value against time.  The focus parameter can be any of
+SR\_XP, SR\_YP, SR\_ZP, SR\_XT, SR\_YT, or SR\_ZT for gregorian focus observing, or
+ANTPOSPF, PF\_FOCUS, or PF\_ROTATION for prime focus observing.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{focusScan}{Reduce a single focus scan.}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{0}{Int}
+\ahaddarg{cal\_value}{Cal value}{1}{float}
+\ahaddarg{param}{Focus parameter}{SR\_XP}{string}
+\ahaddarg{order}{Order of polynomial to fit}{2}{int}
+\ahaddarg{archive}{Archive the result?}{F}{boolean}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Plots a focus value against time.  The focus parameter can be any of
+SR\_XP, SR\_YP, SR\_ZP, SR\_XT, SR\_YT, or SR\_ZT for gregorian focus observing, or
+PF\_X, PF\_FOCUS, or PF\_ROTATION for prime focus observing.
+A polynomial is fit the to data, and the peak value from the fit is reported.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_tant\_time}{Plot Antenna Temperature vs. time}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{1}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_tant\_RA}{Plot Antenna Temperature vs. RA}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{1}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_tant\_Dec}{Plot Antenna Temperature vs. Dec}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{1}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plot\_sidelobe}{Plot sidelobes}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{1}{Int}
+\ahaddarg{basepct}{Percent of scan to use for baseline}{10}{Int}
+\ahaddarg{bottom}{dB level to use for cutoff at bottom of plot}{-70}{Int}
+\end{ahargs}
+\begin{ahdescription}
+Plots the sidelobes on the traditional dB scale.  Best if used on a scan
+intended for this purpose.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{plotscans}{Plot several scans contiguously}
+\begin{ahargs}
+\ahaddarg{bscan}{beginning scan number}{}{Int}
+\ahaddarg{escan}{ending scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{phase}{Phase number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{point1}{Reduce a 1 scan pointing observation}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{xaxis}{1=RA, 2=dec}{}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\ahaddarg{basepct}{percentage of scan to use on the edges for a baseline fit}{10}{Int}
+\ahaddarg{plotflag}{flag for plotting the data}{T}{Boolean}
+\end{ahargs}
+\begin{ahdescription}
+Reduces a pointing observation made with the GBT.  Baselines are fit from the
+two edges of the scan only.  The parameter basepct specifies the percentage of
+the total scan used from each edge.  For example, a basepct of 10 means that
+a tenth of the scan at each of the two edges is used in calculating the
+baseline.  If xaxis=0, the function will
+attempt to determine whether RA or Dec is appropriate for the given scan.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction} 
+
+\begin{ahfunction}{point2}{Reduce a 2 scan pointing observation}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\end{ahargs}
+\begin{ahdescription}
+Automated reduction of 2-scan pointing observations with the GBT.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction} 
+
+\begin{ahfunction}{point4}{Reduce a 4 scan pointing observation}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{cal\_value}{The calibration value for deriving counts/K}{1}{float}
+\ahaddarg{plotflag}{flag for plotting the data}{T}{Boolean}
+\end{ahargs}
+\begin{ahdescription}
+Automated reduction of 4-scan pointing observations with the GBT.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction} 
+
+\begin{ahfunction}{test\_srp}{Test whether a specified scan, receiver, phase exists}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\ahaddarg{phase}{Receiver number}{}{Int}
+\end{ahargs}
+\begin{ahdescription}
+This is used to test whether a given combination of scan, receiver, and phase exist in the opened MeasurementSet.  This returns T(rue) if the combination does NOT exist.
+\end{ahdescription}
+\ahreturns{boolean}
+\end{ahfunction} 
+
+\begin{ahfunction}{scanSummary}{Print a summary of the scans in the GUI message window}
+\ahreturns{boolean}
+\end{ahfunction}  
+
+\begin{ahfunction}{tsys}{Calculate the system temperature}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\end{ahfunction}
+
+\begin{ahfunction}{tip}{Reduce a tipping scan.}
+\begin{ahargs}
+\ahaddarg{scan}{Scan number}{}{Int}
+\ahaddarg{receiver}{Receiver number}{}{Int}
+\end{ahargs}
+\ahreturns{boolean}
+\begin{ahdescription}
+Reduce a tipping scan.  Uses least-squares to derive an opacity.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{type}{Return the type of this tool.}
+\ahreturns{string}
+\begin{ahdescription}
+This is required for the toolmanager to manage this tool.  This
+function always returns "dcr".
+\end{ahdescription}
+\end{ahfunction}
+
+\end{ahobject} 

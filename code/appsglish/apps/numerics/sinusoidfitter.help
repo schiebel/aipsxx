@@ -1,0 +1,270 @@
+%% Copyright (C) 1999,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: sinusoidfitter.help,v 19.2 2004/08/25 01:45:58 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+%%
+%%--------------------------------------------------------------------------
+%%
+%% Tool template
+%%
+%%--------------------------------------------------------------------------
+%%
+
+\begin{ahobject}{sinusoidfitter}{Non-linear least-squares fit sinusoid to data}
+
+\ahinclude{sinusoidfitter.g}
+
+\ahcategory{mathematics}
+
+\ahkeyword{fit}{}
+\ahkeyword{sinusoid}{}
+\ahkeyword{least-squares}{}
+\ahkeyword{non-linear}{}
+
+
+\ahmethods{}
+
+
+\begin{ahdescription}
+
+{\tt sinusoidfitter} is a class that does a non-linear least-squares fit of a
+sinusoid of a specified order to data. An optional estimate of the
+errors in the data may be provided. The state of the fitter, which includes
+the parameters of the sinusoid, estimated errors, the covariance matrix,
+the number of iterations actually done, and whether the fit converged or
+not, is available at any time and is set whenever the fit function
+is invoked..  A function to
+evaluate the fitted sinusoid is also provided.  The controlling values
+of the fitter (initial guesses for the parameters, the maximum number
+of iterations, and the convergence criteria) can be set by the user.
+
+At present, only fits to real data without constraints are supported.
+
+The fits are carried out with double precision.
+
+The form of the sinusoid is: $A\cos{(2\pi(x-x_0)/p)}$
+
+It is best to remove at a mean value from the data before
+the fit since the sinusoid has zero mean.
+
+The fit is not particularly robust against aliasing so care should
+be taken to inspect the result at all times.  The fitter does best
+when the initial period guess is longer than the suspected best
+fit.
+
+The computation is actually performed in a C++ executable, not in Glish.
+Details about the algorithms are available in the documentation of the
+underlying C++ fitting classes.
+
+{\tt sinusoidfitterdemo()} and {\tt sinusoidfittertest()} functions are available.
+
+\end{ahdescription}
+
+\begin{ahexample}
+
+First we need to get access to the sinusoid fitting declarations and
+create a fitting tool:
+\begin{verbatim}
+  include "sinusoidfitter.g"
+  fitter := sinusoidfitter()
+\end{verbatim}
+
+Now lets manufacture some data from the sinusoid 
+\[y = 3\cos{2\pi(x-8)/10}\]
+\begin{verbatim}
+  x := [0:99]/5.0  # 0,0.2,0.4,0.6,0.8,1.0,1.2,...,19.8
+  y := 3*cos(2*pi*(x-8)/10) 
+\end{verbatim}
+
+The fitter needs a reasonable initial guess (this is 
+obviously contrived, since we know what the sinusoid is).
+\begin{verbatim}
+  guess := [=];
+  guess.amplitude := 1.0
+  guess.period := 13.0
+  guess.x0 := 0.0
+  fitter.setstate(guess)
+\end{verbatim}
+
+Now, lets perform the fit:
+\begin{verbatim}
+  ok := fitter.fit(state, x, y)
+  # and examination of the state record shows that the fit
+  # has not yet converged.  However, the current values of
+  # the sinusoid parameters appear to be converging.
+  # So we attempt the fit again.  Since we have not provided
+  # any new initial guess via the setstate member, the fit
+  # will use the most recent values as its starting point.
+  ok := fitter.fit(state, x, y)
+  # the fit has now converged according to the state record.
+\end{verbatim}
+
+The state argument is a record which will contain the state of
+the fitter at the end of the fit (either maxiter will have been
+reached or the fit will have converged).  The other two arguments, {\tt x}
+and {\tt y}, are both input arguments and are not changed
+by using this function.  We did not provide an
+error estimate $\sigma$, so the software assumes the errors are
+identical for each data point and $\sigma = 1$. The
+state record will indicate if the fit converged or not.
+The arguments of the fit function are:
+\begin{description}
+  \item[ok] The return parameter.  It is false only when some severe error has occurred.
+		If a fit has merely failed to converge, the state record
+		will show that and the return value will still be true.
+  \item[state] The state of the fitter after the fit.  See the description of
+		the fit function for a full listing of all of the fields in the
+		state record.
+  \item[x,y] The data - x and y must be vectors having the same number of elements.
+  \item[sigma] An optional argument indicating the errors in the data values, y.
+		When absent, it is assumed that all y values have the same error.
+\end{description}
+
+The other function in this class is one to {\tt eval}uate a
+sinusoid. It is the sinusoid given by the current state of the fitter.
+Usually this will be the sinusoid you have just fit, but 
+it could be any sinusoid you specify. For example, to find out the
+largest deviation of the fit values from the data values we could do
+the following:
+\begin{verbatim}
+  ok := fitter.eval(y2, x)
+  print max(abs(y2 - y))
+\end{verbatim}
+
+\begin{description}
+  \item[ok]    The return value is True if the fit succeeds, False otherwise.
+               (Output)
+  \item[y2] The sinusoid evaluated at {\tt x}. (Output)
+  \item[x] Where to evaluate the sinusoid. (Input)
+\end{description}
+
+\end{ahexample}
+
+\begin{ahseealso}
+\ahlink{sinusoidfitterdemo}{mathematics:sinusoidfitterdemo}
+\ahlink{sinusoidfittertest}{mathematics:sinusoidfittertest}
+\end{ahseealso}
+
+\begin{ahfunction}{fit}{Fit a sinusoid to data}
+\begin{ahargs}
+\ahaddarg{state}{The state of the fitter after the fit. (Output)}{}{}
+\ahaddarg{x}{(Input)}{}{}
+\ahaddarg{y}{Must be the same length as ``x''. (Input)}{}{}
+\ahaddarg{sigma}{Errors in the ``y'' values. (Input) }{1.0}{}
+\end{ahargs}
+\ahreturns{Bool --- did the function call succeed}
+\begin{ahdescription}
+Fit a sinusoid to data.  If sigma does not have the same number of
+elements as x and y (which is the case with the default value for
+this argument) then the fitter assumes that all y values have
+the same sigma.  The state record has the following fields:
+\begin{description}
+  \item[converged] A boolean.  When true, the fit has converged.
+  \item[curriter] The number of iterations actually used in the most recent fit.
+  \item[maxiter] The maximum number of iterations to perform during any 
+		invocation of the fit function.  The default value is $10$
+  \item[criteria] The convergence criteria.  If the change in the value of $\chi^2$
+		between two subsequent iteration is less than this value, then the
+		fit is considered to have converged.  The default value is $0.001$
+  \item[chisq] The $\chi^2$ for this fit.
+  \item[amplitude] The amplitude of the sinusoid.
+  \item[period] The {\tt x} distance between peaks of the sinusoid.
+  \item[x0] The {\tt x} location of one peak of the sinusoid.
+  \item[amplitude\_error] The 1-sigma error in the amplitude, from the covariance matrix.
+  \item[period\_error] The 1-sigma error in the period, from the covariance matrix.
+  \item[x0\_error] The 1-sigma error in x0, from the covariance matrix.
+  \item[covariance] The covariance matrix, the diagonal is used to determine the
+	errors in the parameters.
+\end{description}
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{eval}{Evaluate a sinusoid (usually the result of a fit)}
+\begin{ahargs}
+\ahaddarg{y}{Values of the evaluated sinusoid. (Output)}{}{}
+\ahaddarg{x}{The independent variable. (Input)}{}{}
+\end{ahargs}
+\ahreturns{Bool --- did the evaluation succeed}
+\begin{ahdescription}
+Evaluate the sinusoid indicated by the current state of the fitter.
+Normally this is the most recent result of a use of fit, however you
+may use the setstate function to evaluate any sinusoid.
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{setstate}{Set the state of the fitter}
+\begin{ahargs}
+\ahaddarg{state}{The state record indicated values in the fitter to change (Input).}{}{}
+\end{ahargs}
+\ahreturns{Bool --- did the setstate succeed}
+\begin{ahdescription}
+Change the state of the fitter.  Use this to indicate the initial 
+sinusoid parameters and the convergence criteria and maximum number
+of iteration.  See the description for the fit function for a full list of
+the fields in the state record.  Only the maxiter, criteria, amplitude,
+period, and x0 fields may be used to set the state of the fitter.
+Any other fields are ignored (and the fact that they have been
+ignored is logged).
+\end{ahdescription}
+\end{ahfunction}
+
+
+\end{ahobject}
+
+%%%%%%%%%% Global functions
+
+\begin{ahfunction}{sinusoidfitterdemo}{Demonstrate the use of functions in sinusoidfitter}
+
+\ahinclude{sinusoidfitter.g}
+\begin{ahdescription}
+Demonstrate the use of the functions in sinusoidfitter. Inputs and results
+are sent to the logger.
+\end{ahdescription}
+\begin{ahseealso}
+\ahlink{sinusoidfitter}{mathematics:sinusoidfitter}
+\end{ahseealso}
+\ahreturns{Bool: T for success}
+\end{ahfunction}
+
+\begin{ahfunction}{sinusoidfittertest}{Test the sinusoidfitter class}
+
+\ahinclude{sinusoidfitter.g}
+\begin{ahdescription}
+This class purports to test the sinusoidfitter class. In fact, all it does
+currently is run sinusoidfitterdemo.
+\end{ahdescription}
+\begin{ahseealso}
+\ahlink{sinusoidfitter}{mathematics:sinusoidfitter}
+\ahlink{sinusoidfitterdemo}{mathematics:sinusoidfitterdemo}
+\end{ahseealso}
+\ahreturns{Bool: T for success}
+\end{ahfunction}
+
+
+\end{document}
+
+

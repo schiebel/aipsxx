@@ -1,0 +1,79 @@
+Title:                  Proposal for MeasurementSet units convention
+Person responsible:     Bob Garwood (bgarwood@nrao.edu)
+Originator of proposal: Bob Garwood (bgarwood@nrao.edu)
+Exploders targeted:     aips2-astro-design, aips2-gbt
+Time table:
+        Date of issue:          1996 January 18		Done
+        Comments due:           1996 January 24         Done
+        Revised proposal:       1996 January 26		Done
+        Final comments due:     1996 January 29		Done
+        Decision date:          1996 January 31		Done
+
+Statement of goals:
+
+To adopt a convention so that a Quantum can be easily constructed
+from a value in a MeasurementSet.
+
+Proposed changes:
+
+	- A UNIT keyword will be associated with each column in
+	  a MeasurementSet.  The value of this keyword will be a 	
+	  String.  This String will one of the expected inputs
+	  to the Quantum constructor.  
+	- This UNIT will apply to all values in that column.
+	  For Array columns, this UNIT will apply to all
+	  values within each row.
+	- All columns must have a UNIT keyword (an empty string
+	  will imply a unitless column).
+	- All scalar and array PredefinedColumns will have required
+	  values for UNIT that will be checked by MS::validate()
+	  (validate() is used at construction and destruction of a
+	  MeasurementSet) (i.e. for scalar and array PredefinedColumns
+	  there is no choice on the UNIT for that column).
+	- It is strongly recommended that UNIT be a "simple" unit (no 
+	  scale factors, just the basic SI unit and standard
+	  astronomical units such as Jy).  An empty string is a valid 
+	  value for UNIT.
+	- An optional DISPLAY_UNIT keyword maybe used to indicate
+	  appropriate units display utilities may use when 
+	  displaying these values.  This is keyword is mearly a
+	  hint and an application may choose to ignore this hint.
+
+	To aid the user in constructing a Quantum (the aips++ class
+	that joins the aips++ class encapsulating the SI unit system,
+	the Unit class, with a value), the following member functions
+	will be added to the MeasurementSet class:
+
+	String& MS::unit(MS::PredefinedColumn whichColumn) const;
+	String& MS::unit(const String& whichColumn) const;
+
+	Both of these return the value of the UNIT keyword for
+	the indicated column (either expressed as a predefined column
+	or as a string).  They will return an empty string if
+	the specified column does not exist.
+
+	This enables the following:
+
+	MS ms(...); // normal MeasurementSet construction, many steps not shown
+	// construct the data column
+	ROTableColumn data(tab,MS::columnName(MS::FLOAT_DATA));
+	// construct a Quantum from the first value in the column
+	// I need to verify that Quantum supports empty strings
+	// as the unit.  I think it should.  Alternatively,
+	// the user could check here.
+	Quantum<Float> dataQuantum(data.asFloat(0), 
+                                    ms.unit(MS::FLOAT_DATA));
+	// you could then set the value of dataQuantum using the
+	// value from another row of the same column
+	dataQuantum.setValue(data.asFloat(rownr));
+
+
+Expected Impact:
+
+
+Since we're doing nothing now to indicate units, I think the
+expected impact is rather low.  On the other hand, I don't think
+very many folks have used Quantum yet and so that class might
+conceivably change in a way which would require some change
+to MS.
+

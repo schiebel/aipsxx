@@ -1,0 +1,366 @@
+%% viewercolormapmanager.help: help file for viewercolormapmanager tool
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: viewercolormapmanager.help,v 19.1 2005/06/15 18:10:57 cvsmgr Exp $
+
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{viewercolormapmanager}{Tool for managing colormaps used by the Viewer tool}
+
+\ahinclude{viewercolormapmanager.g}
+
+\ahkeyword{colormap}{}
+\ahkeyword{fiddle}{}
+\ahkeyword{fiddling}{}
+\ahkeyword{brightness}{}
+\ahkeyword{contrast}{}
+\ahkeyword{palette}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This \tool\ provides services to manage and manipulate colormaps for
+use by the \lkVT.  A colormap, or color look-up table, provides a
+set of colors which are normally used to represent varying intensity
+values in false color images (rasters).  The \VcolormapMT\ provides
+sixteen basic colormaps, amongst them two greyscale-type colormaps and
+four rainbow-type colormaps.  Each \VT\ has one and only one
+\VcolormapMT, from which it obtains the names of the available
+colormaps, and also the actual colormaps when they are needed by
+\lkVdisplaydataTs.
+
+Colormaps can be modified in a number of simple ways to achieve quite
+significant effects.  Foremost, colormaps can be "fiddled:" a colormap
+can be stretched and shifted so that only a fraction of the colormap
+is actually used for drawing.  Secondly, the contrast and brightness
+of the colors in the map can be modified.  Thirdly, the individual
+red, green and blue components of the map can be independently
+inverted, leading to completely different colormaps.
+
+\end{ahdescription}
+
+\subsection*{Graphical User Interface}
+The \guilong\ provided by the \VcolormapMT\ is shown in
+Figure~\ref{fig:vcmintro}.  
+
+%%The \VcolormapMT\ \guishort\ makes use of
+%%a cut-down \VdisplaypanelT\ to show the colormaps which are presently
+%%in use.  Presently, this actually means those colormaps which are
+%%registered on any \VdisplaypanelT\ using the system colormap; this
+%%will change in the future.  To the left of \VdisplaypanelT\ in the
+%%\VcolormapMT\ \guishort\ is a listbox showing primary names of the
+%%colormaps known to the \VT\ and therefore to the \VcolormapMT.
+%%Selecting a colormap from this list will register it for display, and
+%%hence it will appear in the \VdisplaypanelT\ which shows the in-use
+%%colormaps.  
+
+The left of \VcolormapMT\ \guishort\ displays a listbox showing
+primary names of the colormaps known to the \VT\ and therefore to the
+\VcolormapMT.  Once a colormap is selected the sliders on the
+right-hand side can be used to modify various ``fiddle'' parameters of
+the selected colormap. The next three fields underneath can be used to
+invert the red, green and/or blue components in the selected colormap.
+
+%%If another colormap is selected, the
+%%presently selected one will be unregistered provided no other
+%%\VdisplaypanelT\ is using that colormap.
+
+\begin{figure}[h]
+\begin{center}
+\epsfig{file=vcmintro.ps,width=4.3in}
+\caption{The \VcolormapMT\ \guilong}
+\label{fig:vcmintro}
+\end{center}
+\end{figure}
+
+%%The \fbox{\tt Reset} button can be used to reset the fiddle and invert 
+%%state of the currently selected colormap to its initial state.  The
+%%\fbox{\tt Reset all} button resets all colormaps to their initial
+%%states.  
+
+Finally, the {\tt Dismiss} button is provided to remove this
+\guishort\ from the screen. 
+
+%%Note that fiddling of colormaps via the
+%%controls on a \VdisplaypanelT\ will be reflected in changes in the
+%%colormap strips shown by the \VcolormapMT, but will not be shown by
+%%the sliders in the \guishort\ until the appropriate map is reselected
+%%from the listbox.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahconstructor}{viewercolormapmanager}{Create a \VcolormapMT}
+\begin{ahargs}
+  \ahaddarg{viewer}{The \VT\ which will use this \VcolormapMT}{}{\VT}
+\end{ahargs}
+\ahreturns{\VcolormapMT\ or fail}
+\begin{ahdescription}
+
+This is the only constructor for \VcolormapMTs.  It constructs
+(creates) a \VcolormapMT\ which can subsequently be used to provide
+colormaps and colormap editing services to a \VT.
+
+{\bf This constructor should not be called by users:} it is called
+during construction of the \lkVT.  The \VcolormapMT\ for a given \VT\
+can be retrieved by calling its \ahlink{colormapmanager}{viewer:viewer.colormapmanager} function.
+
+\end{ahdescription}
+\end{ahconstructor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{type}{Return the type of this \tool}
+\ahreturns{'viewercolormapmanager'}
+\begin{ahdescription}
+
+This function simply returns the string {\tt 'viewercolormapmanager'}, 
+which can be used to identify this \tool\ as a \VcolormapMT.  It is
+generally reserved for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{viewer}{Return the \VT\ which manages this \tool}
+\ahreturns{\VT}
+\begin{ahdescription}
+
+This function simply returns the \VT\ which uses this
+\VcolormapMT, and probably constructed it.  It is generally reserved
+for internal use.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{done}{Close down (destroy) this \VcolormapMT}
+\ahreturns{T}
+\begin{ahdescription}
+
+If you no longer need to use this \VcolormapMT, calling this function
+will free up its resources.  Any \guilongs associated with this \tool\
+will be removed from the screen.
+
+It is unwise to close down a \VcolormapMT\ by an explicit call to this 
+function.  It is generally reserved for internal use by the \VT\
+which uses this \VcolormapMT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{gui}{Create a new \guilong\ for this \tool}
+\begin{ahargs}
+  \ahaddarg{parent}{parent frame for \guishort}{F}{agent or F}
+  \ahaddarg{show}{map the \guishort\ to the screen immediately?}{T}{Boolean}
+  \ahaddarg{hasdismiss}{place a 'Dismiss' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{hasdone}{place a 'Done' button in the \guishort?}{F}{Boolean}
+  \ahaddarg{widgetset}{\widgetserverT\ to use for the \guishort}{dws}{\widgetserverT}
+\end{ahargs}
+\ahreturns{\tool\ having \VstandardGI}
+\begin{ahdescription}
+
+Calling this function will create and return a new \guishort\ which
+can be used to view and edit the colormaps that are provided by this
+\VcolormapMT.  By judicious use of the function arguments, the
+\guilong\ can optionally be placed within existing frames, and left
+off-screen for later use.  The interface of the return value conforms
+to the \VstandardGI.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{colormapnames}{Return the names of the available colormaps}
+\ahreturns{vector of strings}
+\begin{ahdescription}
+
+This function should be used to obtain a list of the colormaps that
+are available for use.  The names can then be used to actually get
+hold of the colormaps themselves.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{colormap}{Return a handle to a named colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of requested colormap}{}{string}
+\end{ahargs}
+\ahreturns{colormap agent or fail}
+\begin{ahdescription}
+
+This function can be used to get hold of a specific colormap agent.
+
+Once again, this is generally only used internally.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{nmaps}{Return the number of colormaps available}
+\ahreturns{integer}
+\begin{ahdescription}
+
+This function simply returns the number of colormaps that it is
+presently managing.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getbrightness}{Return the brightness setting of a named colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to query}{}{string}
+\end{ahargs}
+\ahreturns{float or fail}
+\begin{ahdescription}
+
+This function returns the current brightness setting (in the range 0
+to 1) of the named colormap.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setbrightness}{Set the brightness of a named colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to modify}{}{string}
+  \ahaddarg{value}{new brightness value}{}{float in range 0 to 1}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+This function sets the brightness of the named colormap to the
+specified value.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getcontrast}{Return the contrast setting of a named colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to query}{}{string}
+\end{ahargs}
+\ahreturns{float or fail}
+\begin{ahdescription}
+
+This function returns the current contrast setting (in the range 0
+to 1) of the named colormap.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setcontrast}{Set the contrast of a named colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to modify}{}{string}
+  \ahaddarg{value}{new contrast value}{}{float in range 0 to 1}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+This function sets the contrast of the named colormap to the
+specified value.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{getinvertflags}{Get the current red, green and blue invert state}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to query}{}{string}
+\end{ahargs}
+\ahreturns{vector of booleans or fail}
+\begin{ahdescription}
+
+This function returns a length 3 vector describing whether the red,
+green and blue components of the named colormap are inverted (T) or 
+not (F).
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{setinvertflags}{Set the red, green and blue invert state of a colormap}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to modify}{}{string}
+  \ahaddarg{value}{length 3 vector describing invert state}{}{vector of booleans}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+This function sets the red, green and blue component invert states for
+the named colormap to those specified in the given length 3 vector.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{reset}{reset the named colormap to its default state}
+\begin{ahargs}
+  \ahaddarg{name}{name of colormap to restore to initial state}{}{string}
+\end{ahargs}
+\ahreturns{T or fail}
+\begin{ahdescription}
+
+This function returns the contrast and brightness settings of the named
+colormap to 0.5, and sets each of the invert "flags" to F.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{resetall}{reset all colormaps to initial state}
+\ahreturns{T}
+\begin{ahdescription}
+
+This function simply calls the {\tt reset} function for each colormap
+known to this \VcolormapMT.
+
+\end{ahdescription}
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{ahobject}
+\end{document}

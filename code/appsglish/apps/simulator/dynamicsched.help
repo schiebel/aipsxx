@@ -1,0 +1,582 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: dynamicsched.help,v 19.1 2004/08/25 01:51:48 cvsmgr Exp $
+
+\ahinclude{dynamicsched.g}
+
+
+
+\begin{ahobject}{dynamicsched}{tool for simulating dynamic scheduling}
+\begin{ahdescription} 
+
+{\tt dynamicsched} provides a set of simple tools for exploring
+the efficiency of dynamic and static scheduling.  It requires
+site testing data including phase monitor and opacity data,
+as it available for many sites now (such as the Chajnantor
+site in Chile).
+\end{ahdescription}
+
+
+\begin{ahexample}
+The following example shows how to use the dynamicsched dynamic scheduling
+simulator.
+\begin{verbatim}
+include 'dynamicsched.g'
+mysched := dynamicsched();
+#
+# info about teh site testing data
+#
+mysched.setsitedata(sitedatafile='CH.9506.INT+ALL', headerfile='header.sitedata',
+observatory='ALMA', seeinglambda='26.79mm', seeingel='36deg', seeingbaseline='300m'));
+#
+# theoretical opacity profile
+#
+mysched.settaudata(tautermsfile='CH.LIEBE.TERMS');
+#
+# perform scheduling for 100 hours, starting 1 day after the start of the site data file;
+# schedule increment is 0.5 hours.
+#
+mysched.settimes(dt='0.5h', relativestart='1.00d', duration='100.0h')
+mysched.setschedcriteria();
+mysched.setphasecalinfo();
+mysched.setchangeinfo(  azslewrate='2.0deg/s', elslewrate='1.0deg/s', 
+changeoverhead='60s');
+#
+# define the sensitivity of the instrument
+#
+mysched.setsensitivity(dishdiameter='12m', nantennas=64, npol=2);
+mysched.setbandsensitivity(1, 'band1', '1GHz', '100GHz', '8GHz', '30K', 0.80);
+mysched.setbandsensitivity(2, 'band2', '100GHz', '300GHz', '8GHz',  '50K', 0.75);
+mysched.setbandsensitivity(3, 'band3', '300GHz', '500GHz',  '8GHz', '100K',  0.70);
+mysched.setbandsensitivity(4, 'band4', '500GHz', '700GHz',  '8GHz', '200K', 0.60);
+mysched.setbandsensitivity(5, 'band5', '700GHz', '1000GHz',  '8GHz', '300K',  0.50);
+mysched.viewsensitivity();
+#
+# create many simulated projects; can control distribution of observing time, 
+# frequency, etc
+#
+mysched.generateprojects(nprojects=100, timemode='2h', timesigma='5h', timemax='20h');
+mysched.probview('rating')
+mysched.probview('freq')
+mysched.probview('radec')
+mysched.probview('time')
+mysched.saveprojects(projecttable='PROJECTS.SAVE');
+#
+# actually make a schedule for our simulated projects
+#
+mysched.schedule();
+mysched.saveschedule(scheduletable='SCHEDULE.SAVE');
+mysched.done();
+#
+\end{verbatim}
+\end{ahexample}
+
+
+\ahfuncs{}
+
+\begin{ahconstructor}{dynamicsched}{Construct an dynamic scheduling}
+\begin{ahdescription}
+This is used to construct a {\tt dynamicsched} tool.
+This returns a Glish variable containing the tool functions of
+dynamicsched.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{dynamicsched tool}
+\begin{ahexample}
+\begin{verbatim}
+mysched:=dynamicsched();
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+
+\begin{ahfunction}{setsitedata}{Define a few site related data}
+\begin{ahdescription}
+Set the site position and the file containing the site survey data
+in ALMA standard ASCII format.  Also set the details of the seeing (ie, phase)
+monitor.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{sitedatafile}{ASCII site survey file}{'CH.9506.INT+ALL'}{String}
+\ahaddarg{headerfile}{Header file associated with sitedatafile}{'header.sitedata'}{String}
+\ahaddarg{observatory}{Name of an existing site}{'ALMA'}{String}
+\ahaddarg{seeinglambda}{Observing wavelength of seeing monitor}{'26.79mm'}{Quantity}
+\ahaddarg{seeingel}{Elevation angle of seeing monitor's beam}{'36deg'}{Quantity}
+\ahaddarg{seeingbaseline}{Baseline length of seeing monitor}{'300m'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setsitedata(sitedatafile='CH.9506.INT+ALL', 
+headerfile='header.sitedata', observatory='ALMA', seeinglambda='3cm',
+seeingel='30deg', seeingbaseline='300m');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{settaudata}{Name the file with the model of opacity vs frequency}
+\begin{ahdescription}
+This ASCII file, with built in header, contains columns for frequency (in GHz), and the
+dry, and the wet terms.  Currently, the dynamicsched tool expects the frequencies to range from
+1 to 1000 GHz in increments of 1~GHz.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{tautermsfile}{File containing tau data}{'CH.LIEBE.TERMS'}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.settauterms(tautermsfile='CH.LIEBE.TERMS');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setchangeinfo}{Specify parameters which affect how quickly source changes occur}
+\begin{ahdescription}
+Specify parameters which affect how quickly source changes can occur.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{azslewrate}{Slew rate in azimuth axis}{2deg/s'}{Quantity}
+\ahaddarg{elslewrate}{Slew rate in elevation axis}{1deg/s'}{Quantity}
+\ahaddarg{changeoverhead}{Time lost to setup and calibration when switching projects}{'60s'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setchangeinfo(azslewrate='2deg/s', elslewrate='2deg/s', 
+changeoverhead='60s')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{settimes}{Specify time-related parameters}
+\begin{ahdescription}
+We specify the granularity of the dynamic scheduling (which should not be
+finer than the time between each site survey data point), and the start and
+stop times for which the user wants to make a dynamic schedule.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{dt}{Granularity of scheduling}{'0.25h'}{Quantity}
+\ahaddarg{timeref}{relative or absolute starting time}{'relative'}{'relative'|'absolute'}
+\ahaddarg{absolutestart}{Starting time as an absolute epoch}{dm.epoch('utc', 'today')}{Epoch}
+\ahaddarg{relativestart}{Starting time relative to first site data point}{'0.0d'}{Quantity}
+\ahaddarg{duration}{Duration of scheduling (<0 means till sitedata runs out)}{'1.0d'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.settimes(dt='600s', timeref='relative', relativestart='0.0d', 
+duration='-1');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setphasecalinfo}{Provide parameters which determine how well the phase calibration works}
+\begin{ahdescription}
+The residual phase errors after calibration by the relevant method are a topic
+of debate, especially for radiometric calibration.  For radiometric phase calibration, we
+assume the residual phase errors $\sigma_{\phi}$ are given by
+\begin{equation}
+\sigma_{\phi} = \sqrt{ b^2 + f^2 \cdot D_{\phi}( v t ) },
+\end{equation}
+where $b$ is some base error level related to the radiometer sensitivity, $f$ is the fraction
+of atmospheric phase errors which are not corrected,
+$D_{\phi}$ is the phase structure function, $v$ is the wind velocity, and $t$ is a
+time scale for the atmospheric phase errors.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{phasecalmethod}{Phasecal method to use (only RADIOMETRIC works at the moment}{'RADIOMETRIC'}{'RADIOMETRIC'|'FASTSWITCH'}
+\ahaddarg{baselevel}{Basic accuracy of the phase correction (in pathlength)}{'50um'}{Quantity}
+\ahaddarg{fraclevel}{Fraction of the atmospheric phase errors which are not removed}{0.10}{Float}
+\ahaddarg{windvelocity}{Velocity of winds aloft}{'10m/s'}{Quantity}
+\ahaddarg{timescale}{Timescale of the atmospheric phase errors}{'30s'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setphasecalinfo(phasecalmethod='RADIOMETRIC', 
+baselevel='50um', fraclevel=0.1,  timescale='20s')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+
+\begin{ahfunction}{setsensitivity}{Specifiy coarse telescope parameters which influence sensitivity}
+\begin{ahdescription}
+Specifiy coarse parameters which influence the array sensitivity, ie, 
+the number of antennas, their size, and the number of polarizations.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{dishdiameter}{Size of antennas}{'12m'}{Quantity}
+\ahaddarg{nantennas}{Number of antennas}{64}{Int}
+\ahaddarg{npol}{Number of polarizations}{2}{Int}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setsensitivity(dishdiameter='12m', nantennas=64, npol=2);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{setbandsensitivity}{Specify band-dependent parameters which influence the sensitivity}
+\begin{ahdescription}
+Specify  band-dependent parameters which influence the sensitivity, such as antenna efficiency,
+bandwidth, and system temperature.  Opacity and decorrelation are handled automatically
+through the site testing data.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{whichband}{Give the band number (1 relative)}{1}{Int}
+\ahaddarg{bandname}{Band name (just used as a label}{'band1'}{String}
+\ahaddarg{freqlow}{Low frequency band limit}{'100GHz'}{Quantity}
+\ahaddarg{freqhigh}{High frequency band limit}{'1000GHz'}{Quantity}
+\ahaddarg{bandwidth}{Bandwith for the observations}{'8GHz'}{Quantity}
+\ahaddarg{tsys}{System temperature (below the atmosphere)}{'100K'}{Quantity}
+\ahaddarg{efficiency}{Cumulative efficiency (antenna and correlator)}{0.80}{Float}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setbandsensitivity(1, 'band1', '1GHz', '100GHz', '8GHz', '30K', 
+0.80);
+mysched.setbandsensitivity(2, 'band2', '100GHz', '300GHz', '8GHz',  '50K', 
+0.75);
+mysched.setbandsensitivity(3, 'band3', '300GHz', '500GHz',  '8GHz', '100K',  
+0.70);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{viewsensitivity}{Look at the sensitivity parameters that have been set}
+\begin{ahdescription}
+As you set the band sensitivity, you may forget what you've done.  You can always take a look
+at the status of the sensitivity model at hand by invoking viewsensitivity.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.viewsensitivity();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{generateprojects}{Create many simulated observing projects}
+\begin{ahdescription}
+
+This function generates simulated observing projects which a
+particular frequency distribution, observing time distribution, rating
+distribution, and RA/DEC distribution.
+
+Currently, the model for the observing frequency distribution is
+\begin{equation}
+trans^{transexp} *  ( 1 + freqwt * (freq/freqmax)^{freqexp} ),
+\end{equation}
+where $trans$ is the atmospheric transmission at 1~mm of precipitable water
+vapor.  The first term provides for the basic trend that you observe
+more often where the atmosphere is more transparent.  The  freqwt and
+freqexp permit the simulator to place more weight on higher frequencies,
+where the atmosphere is less transparent but the science may be deemed
+to be more interesting.
+
+The observing time distribution is a Gaussian with peak located at
+timemode, a width of timesigma, a minimum observing time of one hour,
+a maximum observing time of timemax, and quantized in integer numbers
+of hours.
+
+The project rating distribution is flat between ratingmin and
+ratingmax, with only integer values.
+
+The distribution in RA/DEC is assumed to be flat (ie, fewer sources at
+hogh and low declination), more at the equator.  The declination range
+is set by decmin and decmax.
+
+The distributions of ratings, observing frequencies, observing times, and RA/DEC
+are assumed to be independent.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{nprojects}{Number of projects to generate}{100}{Int}
+\ahaddarg{ratingmin}{Minimum rating}{1}{Int}
+\ahaddarg{ratingmax}{Maximum rating}{10}{Int}
+\ahaddarg{timemode}{Peak of distribution of allotted observing times}{'5h'}{Quantity}
+\ahaddarg{timesigma}{Width of distribution of allotted observing times}{'10h'}{Quantity}
+\ahaddarg{timemax}{Extent of tail of distribution of allotted observing times}{'20h'}{Quantity}
+\ahaddarg{freqtransexponent}{Exponent of atmospheric transmission in freq distribution}{2.0}{Quantity}
+\ahaddarg{freqwt}{Multiplier to increase weight of high frequency observations}{2.0}{Quantity}
+\ahaddarg{freqexponent}{Exponent to increase weight of high frequency observations}{1.5}{Quantity}
+\ahaddarg{decmin}{Minimum declination in dec range}{'-90deg'}{Quantity}
+\ahaddarg{decmax}{Maximum declination in dec range}{'52deg'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.generateprojects(nprojects=300, timemean='1h', 
+timesigma='10h', timemax='30h', freqwt=1.0);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{probview}{View the probability distributions for time, freq, rating, RA/DEC}
+\begin{ahdescription}
+View the probability distributions for time, freq, rating, RA/DEC which have been created
+by generateprojects and are reflected in the projects.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{whichone}{Which distribution should we look at?}{'freq'}{'freq'|'rating'|'radec'|'time'}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.probview('freq');
+mysched.probview('time');
+mysched.probview('radec');
+mysched.probview('rating');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{saveprojects}{Save the observing projects to a Table}
+\begin{ahdescription}
+Save the observing projects to a Table.  Information such as the amount of time actually
+observed on each project and the sensitivity of those observations is also saved.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{projecttable}{Name of table to save projects to}{''}{String}
+\ahaddarg{allprojects}{Save all projects}{T}{Bool}
+\ahaddarg{whichprojects}{Projects to save (if allprojects==F)}{[]}{Vector of Ints}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.saveprojects(projecttable='PROJECTS.SAVE')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{recoverprojects}{Recover the observing projects from a Table}
+\begin{ahdescription}
+Recover the observing projects from a Table, including information about how much
+time has been observed and the sensitivity.  This returns F is the table did not contain
+a valid project record.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{projecttable}{Name of table to recover projects from}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.recoverprojects(projecttable='PROJECTS.SAVE')
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\begin{ahfunction}{saveschedule}{Save the current observing schedule to a table}
+\begin{ahdescription}
+Save the current observing schedule to a table.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scheduletable}{Name of table to save the observng schedule to}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.saveschedule(scheduletable='SCHEDULE1.SAVE');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{recoverschedule}{Recover an observing schedule from a table}
+\begin{ahdescription}
+Recover an observing schedule from a table.  This returns F if the table read in
+not not contain a valid schedule record.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{scheduletable}{Name of table to recover the observng schedule from}{''}{String}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.recoverschedule(scheduletable='SCHEDULE1.SAVE');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{defaultinitialize}{Perform a default initialization -- archaic}
+\begin{ahdescription}
+Perform a default initialization.  This initialization has not tracked various
+changes in the system and should be used with cation.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.defaultinitialize();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{done}{Clean up the dynamic scheduling object}
+\begin{ahdescription}
+Be done with it already.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.done();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{getpgplotter}{Get the pgplotter}
+\begin{ahdescription}
+Setup the pgplotter for plotting.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.getpgplotter();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{setschedcriteria}{Set criteria for scheduling observations}
+\begin{ahdescription}
+Set criteria for scheduling observations.  Currently, the algorithm used to schedule
+observations is quite brain-dead, taking sources within some hour angle range of
+transit, and picking the highest frequency observations that still have residual
+phase errors less than the cut-off value.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{hatozenith}{Hour angle approaching zenith}{'2h'}{Quantity}
+\ahaddarg{hafromzenith}{Hour angle passing zenith}{'1.5h'}{Quantity}
+\ahaddarg{phasecutoff}{Maximum residual phase error permitted}{'30deg'}{Quantity}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.setschedcriteria(hatozenith='1.0h', hafromzenith='1.0h', 
+phasecutoff='20deg');
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{schedule}{Go through the site test data and schedule projects}
+\begin{ahdescription}
+Go through the site test data and schedule projects.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.schedule();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{reobserveschedule}{Given a schedule reobserve it for the current conditions}
+\begin{ahdescription}
+A schedule may be obtained through some other method (ie, like recoverschedule), and
+it can then be reobserved and the sensitivity of the observations can be evaluated.
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.reobserveschedule()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+\begin{ahfunction}{evaluateobservations}{Evaluate the observations}
+\begin{ahdescription}
+Evaluate the observations
+\end{ahdescription}
+\begin{ahargs}
+\end{ahargs}
+\ahreturns{Bool}
+\begin{ahexample}
+\begin{verbatim}
+mysched.evaluateobservations();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+
+
+\end{ahmodule}
+
+\end{document}

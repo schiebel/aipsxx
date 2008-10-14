@@ -1,0 +1,426 @@
+\clearpage
+\section{Image.h}
+
+\subsection*{HEADER FILE DESCRIPTION}
+   aips++ header
+
+\subsection*{CLASS DESCRIPTION}
+   Abstract base class which stores an image.
+
+\subsection*{ENVIRONMENT}
+\begin{verbatim}
+#define A_IMAGE_H
+
+#include <assert.h>
+#include <iostream.h>
+#include "K_String.h"
+#include "CoordSys.h"
+#include "ImPixelCoord.h"
+#include "PixelCoord.h"
+#include "ImageUnits.h"
+#include "ImPixStep.h"
+#include "HistFile.h"
+#include "ImageDim.h"
+#include "Pixel.h"
+
+\end{verbatim}
+\subsection*{CLASS SUMMARY}
+\begin{verbatim}
+class Image
+{
+public:
+   Image(int m =0, int n = 0);
+   ImageDim GetDim() const;
+   virtual int GetNumEl() const = 0;
+   K_String GetImageType() const;
+   void SetImageType(K_String s);
+   void SetCenPix(PixelCoord p);
+   PixelCoord GetCenPix() const;
+   void SetImCornPix(ImPixelCoord p);
+   ImPixelCoord GetImCornPix() const;
+   void SetPixStep(ImPixStep r);
+   ImPixStep GetPixStep() const;
+   void SetDataType(ImageUnits iu);
+   ImageUnits GetDataType() const;
+   void SetCoordSys(CoordSys * pcs);
+   CoordSys * GetCoordSys() const;
+   void SetRegBLC(ImPixelCoord blc);
+   ImPixelCoord GetRegBLC() const;
+   void SetRegTRC(ImPixelCoord trc);
+   ImPixelCoord GetRegTRC() const;
+   HistFile * GetHistPointer() const;
+   void CenterImage(ImPixelCoord);
+   int ConformsWith(const Image&) const;
+   ImPixelCoord GetImPixCoord(PixelCoord) const;
+   ImageCoord GetImageCoord(ImPixelCoord) const;
+   ImageCoord GetImageCoord(PixelCoord) const;
+   ImPixelCoord GetImPixCoord(ImageCoord) const;
+   PixelCoord GetPixelCoord(ImPixelCoord) const;
+   PixelCoord GetPixelCoord(ImageCoord) const;
+   void AddHistory(K_String);
+   void AddHistory(const Image&);
+   void ListHistory() const;
+   virtual void Scale(float) = 0;
+   virtual void Fill(float) = 0;
+   virtual int Extrema(Pixel&, Pixel&) const = 0;
+   Pixel Maximum() const;
+   Pixel Minimum() const;
+   virtual void SetPixel(PixelCoord, float) = 0;
+   virtual float GetPixel(PixelCoord) const = 0;
+   virtual int GetImPixelVal(const ImPixelCoord&, float&) const = 0;
+   virtual int UCombine (float, const Image&, float, const Image&, float) = 0;
+   virtual int XCombine (float, const Image&, float, const Image&, float) = 0;
+   virtual int ScaledAdd(float, const Image&) = 0;
+   virtual  ~Image();
+
+protected:
+   ImageDim dim;
+   K_String pImtype;
+   ImPixelCoord regblc, regtrc;
+   PixelCoord cenpix;
+   ImPixelCoord imcornpix;
+   ImPixStep pixstep;
+   ImageUnits  datatype;
+   CoordSys *pCsys;
+   HistFile *pHist;
+
+   int CombTwoImages(int, const Image&, const Image&, float&, float&,
+		float&, float&);
+   int CombOneImage(const Image&, float&, float&, float&, float&);
+   void UpdateCenter();
+};
+\end{verbatim}
+
+\subsection*{MEMBER FUNCTIONS}
+
+      Constructor ("fill with value" version must be in derived class).
+      (Probably need more constructors.)
+\begin{verbatim}
+   Image(int m =0, int n = 0);
+
+   // Accessors.
+\end{verbatim}
+      The following accessor returns the image dimensions. If the
+      dimensions of an image are [m, n], then PixelCoords run from 0 to m-1
+      in the X dimension and from 0 to n-1 in the Y direction. Image
+      dimensions can be set only by the constructor, or modified by adding
+      pixels to a list image, or by an X/UCombine method. The default
+      dimensions from the constructor are [0,0].
+\begin{verbatim}
+   ImageDim GetDim() const;
+
+\end{verbatim}
+
+      Return the number of pixels in the image
+\begin{verbatim}
+   virtual int GetNumEl() const = 0;
+
+\end{verbatim}
+
+      Return/set the image descriptor (a string)
+\begin{verbatim}
+   K_String GetImageType() const;
+   void SetImageType(K_String s);
+
+\end{verbatim}
+
+      Set/return the specification of the "image center" in PixelCoord.
+      N.B. The default "center" position is (m/2, n/2-1) in Pixel
+      coordinates, i.e. displaced to Top Right of geometric image
+      center.
+\begin{verbatim}
+   void SetCenPix(PixelCoord p);
+   PixelCoord GetCenPix() const;
+
+\end{verbatim}
+
+      Set/return the ImPixelCoords of the TLC of the image (the origin
+      (0,0) of PixelCoord).
+\begin{verbatim}
+   void SetImCornPix(ImPixelCoord p);
+   ImPixelCoord GetImCornPix() const;
+
+\end{verbatim}
+
+      Set/return the ImPixStep for the image == the number of ImPixels
+      per Pixel. Since the TLC is the origin for PixelCoords (CIC
+      convention), the Y value of ImPixStep is negative. Step values
+      must be integral.
+\begin{verbatim}
+   void SetPixStep(ImPixStep r);
+   ImPixStep GetPixStep() const;
+
+\end{verbatim}
+
+      Set/return the type of data units for the image
+\begin{verbatim}
+   void SetDataType(ImageUnits iu);
+   ImageUnits GetDataType() const;
+
+\end{verbatim}
+
+      Set/retrieve the "coordinate system" for the image. This defines
+      the relationship between ImPixelCoord and some selected system
+      of ImageCoords. The definition of the precise system of ImageCoords
+      to be used is defined within the CoordSys object. When images are
+      cloned, sub-images are formed, assignments made to new image objects,
+      copied, etc., the same CoordSys object is referenced.
+\begin{verbatim}
+   void SetCoordSys(CoordSys * pcs);
+   CoordSys * GetCoordSys() const;
+
+\end{verbatim}
+
+      Set/retrieve a "region of interest" for the image. This feature
+      is defined by a BLC in ImPixelCoord and a TRC in ImPixelCoord.
+      Implementation of a feature like this is not currently in place.
+      Probably one would need a list of regions of interest.
+\begin{verbatim}
+   void SetRegBLC(ImPixelCoord blc);
+   ImPixelCoord GetRegBLC() const;
+
+   void SetRegTRC(ImPixelCoord trc);
+   ImPixelCoord GetRegTRC() const;
+
+\end{verbatim}
+
+      Get pointer to history file
+\begin{verbatim}
+   HistFile * GetHistPointer() const;
+
+\end{verbatim}
+
+      Method to shift "center" of image to a specified ImPixelCoord. The
+      reference value (imcornpix) of the TLC of the image is modified.
+\begin{verbatim}
+   void CenterImage(ImPixelCoord);
+
+\end{verbatim}
+      Checks whether another Image conforms with the current Image, i.e. can 
+      be used with it in a "combine" or "scaledAdd" operation. The two images  
+      must have the same "pCsys", the same "pixstep", the same "dataunit",
+      and their "imcornpix" must be consistent with"pixstep". Returns TRUE
+      if they are conformant, FALSE otherwise.
+\begin{verbatim}
+   int ConformsWith(const Image&) const;
+
+\end{verbatim}
+
+       Coordinate conversion - forward (various coordinate systems)
+      Note that the first may return non-integral values of ImPixelCoord.
+\begin{verbatim}
+   ImPixelCoord GetImPixCoord(PixelCoord) const;
+   ImageCoord GetImageCoord(ImPixelCoord) const;
+   ImageCoord GetImageCoord(PixelCoord) const;
+
+\end{verbatim}
+
+       Coordinate conversion - reverse (various coordinate systems)
+      Note that these may return non-integral values of ImPixelCoords or
+      PixelCoord (even though the latter must be integral to refer to
+      image data elements). 
+\begin{verbatim}
+   ImPixelCoord GetImPixCoord(ImageCoord) const;
+   PixelCoord GetPixelCoord(ImPixelCoord) const;
+   PixelCoord GetPixelCoord(ImageCoord) const;
+
+\end{verbatim}
+
+      History maintenance. Add comments (string), another Image's history,
+      or print out file
+\begin{verbatim}
+   void AddHistory(K_String);
+   void AddHistory(const Image&);
+   void ListHistory() const;
+
+\end{verbatim}
+
+      Scale all pixel values in the image by a scaling factor.
+\begin{verbatim}
+   virtual void Scale(float) = 0;
+
+\end{verbatim}
+
+      Replace all pixel values in the image by a new value.
+\begin{verbatim}
+   virtual void Fill(float) = 0;
+
+\end{verbatim}
+
+      Return the maximum and minimum Pixel value (by returning Pixels)
+      in the image. Returns FALSE if image is empty, otherwise TRUE.
+\begin{verbatim}
+   virtual int Extrema(Pixel&, Pixel&) const = 0;
+
+\end{verbatim}
+
+      Return the maximum and minimum Pixel values (by returning Pixels)
+      in the image. Exits if image is empty.
+\begin{verbatim}
+   Pixel Maximum() const;
+   Pixel Minimum() const;
+
+\end{verbatim}
+
+      Inserts a pixel value into the image with given PixelCoord.
+\begin{verbatim}
+   virtual void SetPixel(PixelCoord, float) = 0;
+
+\end{verbatim}
+
+      Returns the data value of a pixel having a  given PixelCoord.
+      For a ListImage, it will return the value of the FIRST matching
+      pixel in the list. If no matching pixel exists in the image,
+      the method exits. 
+\begin{verbatim}
+   virtual float GetPixel(PixelCoord) const = 0;
+
+\end{verbatim}
+
+      Returns the data value of a Pixel having a specified ImPixel coordinate. 
+      This function may not always be able to find a matching pixel, in which 
+      case it returns FALSE. (There is no guarantee that an integral ImPixel
+      coordinate will be an integral Pixel coordinate). In the case of a 
+      "ListImage", it will return the FIRST matching pixel found in the list. 
+\begin{verbatim}
+   virtual int GetImPixelVal(const ImPixelCoord&, float&) const = 0;
+ 
+   // Union image operators.
+\end{verbatim}
+
+      General UNION combine: Image C (*this) = factor1*Image A + 
+      factor2*Image B . Image C can be Filled or ListImage type, while
+      Images A and B can be any image type. Images A and B must be 
+      conformant: same ImageUnits, same CoordSys, same ImPixStep and
+      their "imcornpix" reference corners must be separated by an
+      integral number of ImPixSteps. Image C will be made to be conformant
+      with images A and B, and its history file (if any) will be repaced
+      by that of A followed by B. The dimensions of C, and its reference
+      corner, will be set to represent the true UNION of images A and B.
+      Output pixels in C will be set to a "fill" value (only if C is
+      a FilledImage) if there are no corresponding pixels in A or B.
+      Otherwise, the output pixels in C will be = factor1*A (if pixel
+      exists only in A), = factor2*B (if pixel exists only in B), 
+      = factor1*A + factor2*B (if pixel exists in both). The method returns
+      FALSE if the images are non-conformant.
+\begin{verbatim}
+  virtual int UCombine (float, const Image&, float, const Image&, float) = 0;
+
+   // Intersection image operators.
+\end{verbatim}
+
+      General INTERSECTION combine: Image C (*this) = factor1*Image A + 
+      factor2*Image B . Image C can be Filled or ListImage type, while
+      Images A and B can be any image type. Images A and B must be 
+      conformant: same ImageUnits, same CoordSys, same ImPixStep and
+      their "imcornpix" reference corners must be separated by an
+      integral number of ImPixSteps. Image C will be made to be conformant
+      with images A and B, and its history file (if any) will be repaced
+      by that of A followed by B. The dimensions of C, and its reference
+      corner, will be set to represent the true INTERSECTION of images A and B.
+      Output pixels in C will be set to a "fill" value (only if C is
+      a FilledImage) if there is no corresponding pixels in both A and B.
+      (This can only happen if A or B is a ListImage.) Otherwise, the output 
+      pixels in C will be = factor1*A + factor2*B. The method returns
+      FALSE if the images are non-conformant, or if there is no INTERSECTION.
+\begin{verbatim}
+   virtual int XCombine (float, const Image&, float, const Image&, float) = 0;
+
+\end{verbatim}
+
+      General scaled-add: Image A (*this) = Image A + factor*Image B. Image A
+      can be Filled or ListImage type, while B can be any image type. Images A 
+      and B must be conformant: same ImageUnits, same CoordSys, same ImPixStep 
+      and their "imcornpix" reference corners must be separated by an
+      integral number of ImPixSteps. The history file of Image B will be
+      added to that of Image A. The scaled-add operation will take place only
+      for pixels in A that have corresponsding pixels in B. The method returns
+      FALSE if the images are non-conformant.
+\begin{verbatim}
+   virtual int ScaledAdd(float, const Image&) = 0;
+
+
+   // Destructor.
+   virtual  ~Image();
+
+\end{verbatim}
+
+\subsection*{PROTECTED DATA MEMBERS}
+
+      Dimensions of image [x,y]
+\begin{verbatim}
+   ImageDim dim;
+\end{verbatim}
+
+      Image type identifier.
+\begin{verbatim}
+   K_String pImtype;
+\end{verbatim}
+
+      The ImPixel coordinates of the BLC and TLC of a region of interest.
+\begin{verbatim}
+   ImPixelCoord regblc, regtrc;
+\end{verbatim}
+
+      Image "centre", in pixel coordinates.  Whenever the image dimensions are 
+      updated (at construction time or otherwise) this is set to the
+      default value of (m/2, n/2-1) where the dimensions are [m,n]. The 
+      "CenterImage()" method uses this parameter.
+\begin{verbatim}
+   PixelCoord cenpix;
+\end{verbatim}
+
+      ImPixel coordinates of Pixel coordinate (0,0), the top-left corner. This 
+      defines the position of the image with respect to ImPixel (and hence 
+      Image) coordinates. The default value of this is (1,n) when the 
+      dimensions are [m,n], i.e. the BLC is (1,1).
+\begin{verbatim}
+   ImPixelCoord imcornpix;
+\end{verbatim}
+
+      Number of ImPixels per Pixel. This defines the ratio of ImPixel    
+      coordinates to Pixel coordinates, and the default value is (1,-1),
+      corresponding to the CIC convention of having Pixel coordinate (0,0) 
+      at the TLC. When a new image is created by taking a sub-image of an 
+      existing image, this may change.
+\begin{verbatim}
+   ImPixStep pixstep;
+\end{verbatim}
+
+      Data units for the pixel values in the image.
+\begin{verbatim}
+   ImageUnits  datatype;
+\end{verbatim}
+
+      Associated coordinate system. Note that a coordinate system must be 
+      explicitly assigned (currently no constructor does this!) by inserting
+      a pointer to it here.
+\begin{verbatim}
+   CoordSys *pCsys;
+\end{verbatim}
+
+      Associated history (pointer to Hist File object). This is usually
+      assigned automatically by the constructor, and the destructor
+      removes the storage.
+\begin{verbatim}
+   HistFile *pHist;
+\end{verbatim}
+
+\subsection*{PROTECTED MEMBER FUNCTIONS}
+      Methods for combining images. These are solely for the use of the
+      derived classes in implementing dynamically bound combine and
+      scaled add functions. Essentially they compute the ``union'' or
+      ``intersection'' areas in terms of x and y values of ImPixel coordinates.
+\begin{verbatim}
+    int CombTwoImages(int, const Image&, const Image&, float&, float&,
+		float&, float&);
+    int CombOneImage(const Image&, float&, float&, float&, float&);
+
+\end{verbatim}
+
+      Update the "centre pixel". This method is for the use of the base
+      and derived classes, to update the "center" definition whenever the
+      dimensions are changed.
+\begin{verbatim}
+   void UpdateCenter();
+\end{verbatim}

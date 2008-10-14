@@ -1,0 +1,126 @@
+#!/bin/sh
+#-----------------------------------------------------------------------------
+# Usage: livedata
+#-----------------------------------------------------------------------------
+# This utility initiates livedata.
+#
+# Original: 1998/07/14 MRC & GMS
+# $Id: livedata,v 19.15 2005/07/19 07:10:33 mcalabre Exp $
+#-----------------------------------------------------------------------------
+# Check that the DISPLAY environment variable is set.
+  if [ "$DISPLAY" = "" ]
+  then
+    echo "DISPLAY variable is not set, abort!"
+    exit 1
+  fi
+
+# Check that AIPSPATH is defined.
+  if [ "$AIPSPATH" = "" ]
+  then
+    # aips++ initialization.
+    if [ -f /nfs/aips++/aipsinit.sh ]
+    then
+      echo "aips++ initialization..."
+      . /nfs/aips++/aipsinit.sh
+    else
+      echo "ERROR: AIPSPATH is undefined!  Please invoke aipsinit." 1>&2
+      exit 1
+    fi
+
+  elif [ "$USER" = cal103 ]
+  then
+    echo "Adding livedata customization for cal103..."
+    if [ "$LIVEDATA_CLIENT_DIR" = "" ]
+    then
+      # It's undefined, set it to void.
+      LIVEDATA_CLIENT_DIR=
+    fi
+
+    export LIVEDATA_CLIENT_DIR
+
+  else
+    # Make sure that we use the aips++ Glish installation.
+    AIPSBIN=`echo $AIPSPATH | awk '{print $1"/"$2"/bin"}'`
+    hash glish 2>/dev/null
+    hash | grep $AIPSBIN/glish >/dev/null
+    if [ "$?" != 0 ]
+    then
+      PATH=${AIPSBIN}:$PATH
+      export PATH
+    fi
+  fi
+
+# Use local copies of third-party libraries (for pks system)?
+  AIPSROOT=`echo $AIPSPATH | awk '{print $1}'`
+  if [ -d $AIPSROOT/extlibs ]
+  then
+    EXTARCH=`echo $AIPSPATH | awk '{print $2}' | sed 's/_.*//'`
+    EXTLIBS=$AIPSROOT/extlibs/$EXTARCH/lib
+
+    if [ "$LD_LIBRARY_PATH" != "" ]
+    then
+      LD_LIBRARY_PATH=$EXTLIBS:$LD_LIBRARY_PATH
+      export LD_LIBRARY_PATH
+    fi
+
+    TCL_LIBRARY=$EXTLIBS/tcl8.3
+    TK_LIBRARY=$EXTLIBS/tk8.3
+    export TCL_LIBRARY TK_LIBRARY
+  fi
+
+# Check that MultibeamVis is available.
+  AIPSARCH=`echo $AIPSPATH | awk '{print $1"/"$2}'`
+  if [ -x "$AIPSARCH/bin/kvis" ]
+  then
+    EXTARCH=`echo $AIPSPATH | awk '{print $2}' | sed 's/_.*//'`
+    EXTLIBS=$AIPSROOT/extlibs/$EXTARCH/lib
+
+    # This is a sop to keep karma happy.
+    KARMABASE=$AIPSARCH
+    KARMALIBPATH=$EXTLIBS
+    export KARMABASE KARMALIBPATH
+  elif [ "$KARMABASE" = "" ]
+  then
+    echo "WARNING: MultibeamVis does not appear to be available." 1>&2
+  fi
+
+# Check that MultibeamView is available.
+  if [ -x "$AIPSARCH/bin/MultibeamView" ]
+  then
+    # This is a sop to keep karma happy.
+    KARMABASE=$AIPSARCH
+    export KARMABASE
+  elif [ "$KARMABASE" = "" ]
+  then
+    echo "WARNING: MultibeamView does not appear to be available." 1>&2
+  fi
+
+# Delete log files that were last modified in the specified period.
+  case $LIVEDATA_LOG_RMTIME in
+  [0-9]*)
+    MTIME=+$LIVEDATA_LOG_RMTIME
+    ;;
+  [+-][0-9]*)
+    MTIME=$LIVEDATA_LOG_RMTIME
+    ;;
+  "")
+    MTIME=+30
+    ;;
+  *)
+    MTIME=
+    ;;
+  esac
+
+  if [ "$MTIME" != "" ]
+  then
+    find . -maxdepth 1 -name 'livedata-????????.log' -mtime $MTIME \
+      -exec rm -f {} \;
+  fi
+
+# Start livedata.
+  glish $* -l livedata.g -plain
+
+# Clean up.
+  rm -f glish.core
+
+  exit

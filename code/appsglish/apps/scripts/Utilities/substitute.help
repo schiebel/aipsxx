@@ -1,0 +1,276 @@
+%% Copyright (C) 1999,2000
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: substitute.help,v 19.2 2004/08/25 02:10:28 cvsmgr Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+
+\begin{ahobject}{substitute}{Functions to substitute Glish variables and expressions}
+
+\ahinclude{substitute.g}
+
+\ahkeyword{glish}{}
+\ahkeyword{variable}{}
+\ahkeyword{expression}{}
+\ahkeyword{substitute}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+\label{SUBSTITUTE:GENERALDESC}
+The substitute function allows the user to embed Glish variables
+and expressions in a string and have them substituted. It is,
+for instance, used in TaQL (Table Query Language). E.g.
+\begin{verbatim}
+    table.query ("column > $glishvar")
+    table.query ("column > $(var1+var2)")
+\end{verbatim}
+Substitute allows the user also to use a Glish variable representing
+a tool (e.g. a table tool). E.g.
+\begin{verbatim}
+    t1:=table("table1.dat")
+    t2:=table("table2.dat")
+    t1.query ("time in [select time from $t2 where windspeed<10]")
+\end{verbatim}
+
+Further below are some more detailed \htmlref{examples}{SUBSTITUTE:EXAMPLES}.
+\\The following rules apply:
+\begin{enumerate}
+\item Glish variables can be substituted by preceeding their name
+   with a \$ (as shown in the examples above).
+   A variable name must start with an underscore or alphabetic, followed
+   by zero or more alphanumerics and underscores.
+\item Parts enclosed in single or double quotes are left untouched.
+   Furthermore a \$ can be escaped by a backslash, which is useful
+   when an environment variable is used. Note that Glish
+   requires an extra backslash to escape the backslash.
+   The output contains the quotes and backslashes.
+\item When name has a vector value, its substitution is enclosed in
+   square brackets and separated by commas. It means that the
+   result can directly be used in a TaQL command (or in a Glish command).
+\item A string value is enclosed in double quotes. When the value
+   contains a double quote, that quote is enclosed in single quotes.
+   This is in line with the TaQL way of specifying string constants.
+\item When the variable has a record value representing a tool (e.g. table),
+   it is substituted by \texttt{\$n} (n is a sequence number), while
+   the table-id is added to the argument \texttt{idrec}.
+   The first field in \texttt{idrec} is \texttt{nr} containing
+   the number of substituted table-id's. The other fields contain
+   the table-id's at each sequence number. The fields are
+   unnamed, but can be accessed with the index operator such that
+   \texttt{idrec[n+1]} contains the table-id of \texttt{\$n}.
+   \\The argument type tells which tool types are recognized.
+   The default is \texttt{''} meaning that no tools are recognized.
+   \\The argument \texttt{startseqnr} tells the first sequence number to use.
+   \\For a tool to be valid the following have to be met:
+   \begin{description}
+	\item The tool must have a function \texttt{type()}
+              returning a string containing the tool type.
+	\item The tool must have a function \texttt{id()}
+              returning the object-id of the tool.
+   \end{description}
+   The tool types \texttt{table} and \texttt{region} do not meet these
+   requirements. However, they are recognized and handled specifically.
+\item When the name is unknown or has an unknown type, it is left untouched
+   (thus the result is simply \texttt{\$name}).
+\end{enumerate}
+
+Furthermore it substitutes \texttt{\$(expression)} by the expression result.
+It correctly handles parentheses and quotes in the expression.
+E.g.
+\begin{verbatim}
+       $(a+b)
+       $(a)
+       $((a+b)*(a+b))
+       $(len("ab cd( de"))
+\end{verbatim}
+Similar escape rules as above apply.
+
+Substitution is NOT recursive. E.g. if \texttt{a:=1} and \texttt{b:="\$a"},
+the result of \texttt{substitute("\$a")} is \texttt{"\$a"} and not \texttt{1}.
+
+Substitute has one problem due to the rules used by the eval function
+of Glish. Eval searches a variable only in the global scope.
+So if the substitution mechanism is used in a function, one has
+to use global variables if they are to be substituted. At the of the
+function they should be deleted. One has to be sure to use a unique
+name for the variable, e.g. by using the function name a s a suffix.
+E.g.
+\begin{verbatim}
+    myfunc := function() {
+      tab := table('mytable')
+      global coldata_in_myfunc;
+      coldata_in_myfunc := tab.getcol ('col');
+      seltab := tab.query ('col > $(sum(coldata)/len(coldata))')
+      symbol_delete ('coldata_in_myfunc');
+    }
+\end{verbatim}
+\end{ahdescription}
+
+\begin{ahexample}
+\label{SUBSTITUTE:EXAMPLES}
+The following examples shows how variables and expressions are substituted.
+\begin{verbatim}
+- a:=10
+- b:=20
+- substitute("$a+$b")          #substitute both variables
+10+20 
+- substitute("$(a+b)")         #substitute the expression
+30 
+- substitute("$a$b")           #substitute both variables
+1020 
+- substitute("$c")             #c is unknown, thus $c is returned
+$c 
+- substitute("'$a'$b")         #$a is quoted, thus not substituted
+'$a'20 
+- substitute("\\$a$b")         #first $ is escaped, thus $a not substituted
+                               #note that \\ is needed to escape \ in glish
+\$a20 
+- substitute('ab $(len("ab cd ef")) cd')    #substitute the $(len...
+ab 3 cd 
+- substitute('$("ab cd ef")')  #a vector is enclosed in [] and separated by ,
+                               #strings are enclosed in ""
+["ab","cd","ef"]
+- str:='ab"cd'
+- substitute('$str')           #a " in a string is enclosed in ''
+"ab"'"'"cd" 
+\end{verbatim}
+
+The following example shows how substitute is used in TaQL.
+\begin{verbatim}
+#   Open 2 tables.
+- t:=table("/aips++/gvandiep/9800617.MS")
+- t1:=table("/aips++/gvandiep/9800618.MS")
+#   Show their handles
+- t.handle()
+[type=table, id=0, file=/aips++/gvandiep/9800617.MS] 
+- t1.handle()
+[type=table, id=1, file=/aips++/gvandiep/9800618.MS] 
+#   Create a record (substitute clears it if not empty).
+- idrec:=[=]
+#   Substitute the various variables.
+#   The table tools are replaced by sequence numbers (1 is first one).
+- substitute("select from $t1 $t where col>$a+1",'table',1,idrec)
+select from $1 $2 where col>10+1 
+#   idrec contains the number of sequence numbers (2) and the table id
+#   belonging to each sequence number. They are used by the table client
+#   to get the correct table for $1 and $2 in the query command.
+- idrec
+[nr=2, *25=1, *26=0] 
+\end{verbatim}
+
+\end{ahexample}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{substitute}{substitute Glish variables and expressions}
+
+\begin{ahdescription}
+It analyzes a string and substitutes embedded Glish variables and expressions
+by their value as explained in the
+\htmlref{general description}{SUBSTITUTE:GENERALDESC}.
+If \texttt{var} is a valid Glish variable, \texttt{\$var} is
+substituted by its value.
+If \texttt{expr} is a valid Glish expression, \texttt{\$(expr)}
+is substituted by the result of the expression.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{string}{string to be analyzed}{}{}
+\ahaddarg[in]{type}{tool type recognized (default none)}{}{}
+\ahaddarg[in]{startseqnr}{first sequence number to use for substituted tools}{}{}
+\ahaddarg[out]{idrec}{record containing id's of substituted tools}{}{}
+\end{ahargs}
+
+\ahreturns{input string with appropriate parts substituted}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{substitutename}{return the value of a variable name}
+
+\begin{ahdescription}
+If \texttt{name} is the name of a valid Glish variable,
+the value of the variable is returned as a string.
+(string values are enclosed in "", vectors are enclosed in \texttt{[]}).
+\\When \texttt{name} is a recognized tool (i.e. its type matches), a sequence
+number is returned as \texttt{\$n}. The tool id is added to \texttt{idrec}.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{name}{name of variable to be substituted}{}{}
+\ahaddarg[in]{type}{tool type recognized (default none)}{}{}
+\ahaddarg[inout]{idrec}{record containing id's of substituted tools}{}{}
+\end{ahargs}
+
+\ahreturns{string with value of Glish variable}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{substitutevar}{return the value of a variable}
+
+\begin{ahdescription}
+If \texttt{var} has a known value (i.e. numeric ,string, boolean),
+its value is returned as a string.
+(string values are enclosed in "", vectors are enclosed in \texttt{[]}).
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{var}{variable}{}{}
+\end{ahargs}
+
+\ahreturns{string with value of Glish variable}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{ahfunction}{substitutestring}{return the value of a string variable}
+
+\begin{ahdescription}
+Return the value of a string variable. The string is enclosed in "".
+When the string contains a \texttt{"}, it is enclosed in single quotes.
+If the variable is a vector, the strings are enclosed in \texttt{[]} and
+separated by commas.
+\end{ahdescription}
+
+\begin{ahargs}
+\ahaddarg[in]{var}{variable}{}{}
+\end{ahargs}
+
+\ahreturns{string with value of Glish variable}
+
+\end{ahfunction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{ahobject}
+\end{document}
+
+
+

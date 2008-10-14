@@ -1,0 +1,963 @@
+%% Copyright (C) 1999,2000,2001
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: autoflag.help,v 19.17 2006/09/01 16:34:13 jmcmulli Exp $
+\documentclass{article}
+\usepackage{aips2help}
+\begin{document}
+\begin{ahmodule}{autoflag}{Module for automatic flagging of synthesis data}
+\ahinclude{autoflag.g}
+
+\begin{ahdescription}
+
+The {\tt autoflag} module provides automatic synthesis flagging capabilities
+within \aipspp. The primary purpose of this module is to flag data
+inside a MeasurementSet using a number of different algorithms and heuristics.
+
+The facilities of the {\tt autoflag} module are made available in Glish by
+including the following script:
+
+\begin{verbatim}
+- include 'autoflag.g'
+T
+\end{verbatim}
+
+where a hyphen precedes user input. The Glish response is indicated
+without the prompt.
+
+An {\tt autoflag} tool is created and attached to a specified
+measurement set as indicated in the following example:
+
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+\end{verbatim}
+
+A variety of algorithms (called {\em methods} in this context) can be applied
+for any given {\tt autoflag} tool. A setdata method allows a user to apply 
+set\em methods \/\tt to the whole measurement set with default parameters or 
+to a subset of the measurement set by specifying parameters. Individual 
+methods are set up in advance by calling Glish functions of the tool, 
+i.e.: {\tt af.set\em method\/\tt(\em parameters\/\tt)}.  Afterwards, a call 
+to {\tt af.run(\em options\/)} actually applies all the specified methods
+simultaneously. Here is an example:
+
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata()
+- af.settimemed(thr=6,hw=5)
+Added method 1: timemed (TimeMedian)
+   *thr         = 6
+   *hw          = 5
+    rowthr      = 10
+    rowhw       = 6
+    column      = DATA
+    expr        = ABS I
+    debug       = F
+    fignore     = F
+T
+- af.setuvbin(nbins=100,thr=.01)
+Added method 2: uvbin (UVBinner)
+   *thr         = 0.01
+   *nbins       = 100
+    plotchan    = F
+    econoplot   = T
+    column      = DATA
+    expr        = ABS I
+    fignore     = F
+T
+- af.settimemed(thr=5,hw=5,expr="- ABS XX YY")
+Added method 3: timemed (TimeMedian)
+    thr         = 5
+   *hw          = 5
+    rowthr      = 10
+    rowhw       = 6
+    column      = DATA
+   *expr        = - ABS XX YY
+    debug       = F
+    fignore     = F
+T
+- af.run(trial=T)
+   lots of interesting messages
+-
+\end{verbatim}
+
+Here, three methods -- a {\em UV binner} and two {\em time-median filters} --
+ are set up and executed. Note the following crucial points:
+
+\begin{itemize} 
+
+\item The {\tt set{\em method}\/()} functions respond with a summary of the
+parameters with which the method will be run. All parameter have reasonable
+defaults. Parameters for which you have specified an explicit non-default 
+value are marked with an ``{\tt *}'' symbol.
+
+\item You may set up multiple instances of a method, using different 
+parameters for each instance. In the above example, two {\tt timemed} methods
+ are set up.
+The first one is applied to $|I|$ , the second one -- to $|XX|-|YY|$.
+
+\item Most methods perform flagging based on some real value derived from a set
+of complex correlations, e.g. $|I|$, or $|XX|-|YY|$. You can specify how the
+value is derived by using the {\tt expr} parameter. This parameter is either a
+string or an array of strings. A single string will be automatically split at
+whitespace, so {\tt "ABS XX"} and {\tt 'ABS XX'} are fully equivalent.
+Currently, the following types of expressions are recognized: 
+
+\begin{description}
+\item[{\tt\em func CC}]~~--- real function of a complex correlation. E.g. {\tt "ABS XX"} for
+$|XX|$.
+
+\item[{\tt +/-\em\ func C1 C2}]~~--- sum/difference of functions of two correlations. E.g. 
+{\tt "- ABS RR LL"} for $|RR|-|LL|$.
+
+\item[{\tt\em func\tt\ +/-\em\ C1 C2}]~~--- function of a sum/difference of 
+two correlations. E.g.
+{\tt "ARG - XX YY"} for $\arg({XX-YY})$.
+
+\item[{\tt\em func\tt\ I}]~~--- {\tt I} is used to specify Stokes $I$. 
+Depending on polarization frame, it is equivalent to either $XX+YY$ or $RR+LL$.
+$|I|$ ({\tt "ABS I"}) is in fact the default expression for all methods.
+
+\end{description}
+
+The following functions are currently recognized: {\tt ABS}, {\tt ARG}, {\tt
+RE}, {\tt IM}, {\tt NORM}. Any correlations present in the measurement set are
+recognized. 
+
+\item The {\tt column} parameter specifies which measurement set column to use.
+Possible values are {\tt DATA}, {\tt MODEL} or {\tt CORR} for corrected data.
+
+\item All methods by default honor pre-existing flags (as determined by the
+FLAG and FLAGROW columns), in the sense that flagged values are omitted from
+all calculations. Methods may be asked to ignore existing flags via the {\tt
+fignore} parameter. The {\tt reset} option to  {\tt autoflag.run} clears
+all pre-existing flags prior to a flagging run.
+
+\item For each flagging run, {\tt autoflag} will automatically produce a
+graphical  {\em flagging report}, consisting of a summary and several plots
+showing the distribution of flags by baseline, antenna, frequency, time, etc.
+By default, this report is written in PostScript format to a file named {\tt
+flagreport.ps}. However, the {\tt devfile} parameter of {\tt autoflag.run()}
+can be used to redirect this output to a different file or a different PGPlot
+device.
+
+\item If your measurement set contains different fields and/or spectral windows
+(or, more generally, different data description IDs), {\tt autoflag} will
+automatically treat it as a set of disjoint chunks. Flagging is performed
+independently within each chunk (i.e. independently for each spectral window,
+field, etc.)
+
+\item {\tt autoflag} will attempt to manage its memory consumption to stay
+roughly within the meximum physical memory specified in your .aipsrc file. 
+If you find your system swapping to disk when running {\tt autoflag}, you can
+improve performance by using a reduced memory setting. Conversely, if a lot of
+memory remains free during an {\tt autoflag} run, performance may be improced by
+increasing the setting.
+
+\end{itemize}
+
+\end{ahdescription}
+
+\ahobjs{}
+\ahfuncs{}
+
+\begin{ahobject}{autoflag}{Automatic synthesis flagging}
+\begin{ahdescription}
+An {\tt autoflag} tool performs automatic synthesis flagging operations
+within \aipspp. A separate {\tt autoflag} tool  needs to be created
+for each separate measurement set for which processing is to be
+performed.  
+\end{ahdescription}
+
+\ahfuncs{}
+
+\begin{ahconstructor}{autoflag}{Construct an autoflag tool from a
+MeasurementSet}
+\begin{ahdescription}
+Create an {\tt autoflag} tool, and attach it to a specified measurement
+set.
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{msname}{Measurement set to be processed}{none}{Table name}
+\end{ahargs}
+\ahreturns{autoflag tool}
+\begin{ahexample}
+\begin{verbatim}
+af:=autoflag('3C273XC1.MS')      
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+
+\begin{ahfunction}{settimemed}{Sets up the time-median flagging method}
+\begin{ahdescription} 
+
+The {\tt timemed} method uses a median-in-time filter. It works by computing a
+sliding median of some value $d_{cbt}$ (where $c$ is frequency channel, $b$ is
+baseline, and $t$ is time slot), as specified by the {\tt expr} parameter (see 
+the general \htmlref{autoflag module description} {autoflag} for details
+of how {\tt expr} determines $d$.) The sliding median is computed  in time, on
+a per-channel, per-baseline basis: 
+
+\[ 
+m_{cbt} = {\rm median}\lbrace d_{cbt'}, \mbox{~where~} |t'-t| \leq\delta \rbrace 
+\]
+
+(where $\delta$ is given by the {\tt hw} parameter.) Then, a median absolute deviation
+(MAD) of the data with respect to the median is computed on a per-row basis:
+
+\[ 
+M_{bt} = {\rm median}\lbrace |d_{cbt}-m_{cbt}|, \mbox{~for all~} c\rbrace
+\]
+
+(For single-channel data, $M_{bt}\equiv m_{0bt}$.) $M_{bt}$ is then smoothed 
+by applying a sliding median in time:
+
+\[
+\tilde M_{bt} = {\rm median}\lbrace M_{bt'}, \mbox{~where~} |t'-t| \leq 
+\tilde\delta \rbrace 
+\]
+
+(where $\tilde\delta$ is given by the {\tt rowhw} parameter.) All points where
+
+\[
+|d_{cbt}-m_{cbt}|>\theta\tilde M_{bt}
+\] 
+
+are then flagged. The threshold level $\theta$ is given by the {\tt thr}
+parameter.
+
+In addition, {\tt timemed} can also flag entire rows based on their MAD. This
+ is only performed for line data (specifically, when there are at least 10 
+channels per row), and may be explicitly disabled by specifying {\tt norow=T}.
+ To do this, it first computes a per-baseline MAD of the MAD:
+
+\[ 
+\hat M_b = {\rm median}\lbrace |M_{bt}-\tilde M_{bt}|, \mbox{~for all~} 
+t\rbrace
+\]
+
+and flags rows where $|M_{bt}-\tilde M_{bt}|>\hat\theta\hat M_b$, where
+$\hat\theta$ is given by the {\tt rowthr} parameter.
+
+{\tt Timemed} will iterate over the measurement set -- and compute $m_{cbt}$
+--  only once. Existing flags are taken into account at this time (unless {\tt
+fignore} is specified). MADs are then computed and recomputed iteratively,
+dropping flagged points and rows, until convergence is achieved (i.e. no more
+flags are raised). Since $m_{cbt}$ is {\bf not} recomputed as new flags are
+raised, running this method a second time may sometimes be of use.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{thr}{Flagging threshold}{5}{numeric (real)}
+\ahaddarg{hw}{Half-window for the sliding median, if time slots is less than 
+4 times half window, ignoring this chunk}{10}{Int}
+\ahaddarg{rowthr}{Row flagging threshold}{10}{numeric (real)}
+\ahaddarg{rowhw}{Half-window for the sliding median of the MAD}{10}{Int}
+\ahaddarg{norow}{Disable row flagging}{F}{Boolean}
+\ahaddarg{column}{Which column to base flagging on}{"DATA"}{"DATA", "MODEL" or
+"CORR"}
+\ahaddarg{expr}{Expression to use}{"ABS I"}{see text}
+\ahaddarg{fignore}{Ignore existing flags}{F}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata()
+- af.settimemed(thr=5,hw=5,expr="- ABS RR LL")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setnewtimemed}{Sets up the new time-median flagging method}
+\begin{ahdescription} 
+
+The {\tt newtimemed} method uses a median-in-time filter. It follows the 
+procedure of timemed but considering a median value from all time slots in a 
+chunk.
+
+The median is computed on a per-channel, per-baseline basis. The {\tt thr} 
+parameter multiplying the standard deviation of the data in a chunk sets the 
+threshold for flagging. If the {\tt thr} parameter is specified 
+(e.g. {\tt thr} = 3), all points with greater than three standard deviations 
+away from the median are flagged. 
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{thr}{Flagging threshold}{3}{numeric (real)}
+\ahaddarg{column}{Which column to base flagging on}{"DATA"}{"DATA", "MODEL" or
+"CORR"}
+\ahaddarg{expr}{Expression to use}{"ABS I"}{see text}
+\ahaddarg{fignore}{Ignore existing flags}{F}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('H031121.MS')
+- af.setdata()
+- af.setnewtimemed(thr=5, expr="ABS RR")
+- af.run()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setdata}{Set the data parameters selection for subsequent 
+processing}
+\begin{ahdescription}
+This setup function selects which data are to be used 
+subsequently. After invocation of setdata, only the selected subset of data
+are operated on. 
+
+Data can be selected by field ids, spectral window ids, channels, velocities.
+The selection is controlled by the mode argument:
+
+\begin{description}
+\item[fieldids]  Selection in field ids.
+\item[spwids]    Selection in spectral window ids.
+\item[channel]   Selection in channels using the nchan, start and step
+arguments. 
+\item[velocity]  Selection in radio velocity, using the nchan, mstart
+and mstep arguments.
+\end{description}
+
+Spectral window ids must be specified for the channel and velocity modes.
+ 
+For channel mode, the other fields have the following meaning:
+
+\begin{description}
+\item[nchan]   is the number of output channels. It
+defaults to 1, or the number of input channels.
+\item[start] is the first channel from input dataset that is to be used.
+It defaults to 1 (i.e. first channel).
+\item[step] gives the increment between selected input channels. 
+\end{description}
+
+The channels are centered on velocities: start, start+step,
+start+2*step, etc.  
+
+Examples for choosing the parameters for setdata.
+\begin{verbatim}
+af.setdata(mode='fieldids',fieldid=1);
+\end{verbatim}
+\begin{verbatim}
+af.setdata(mode='spwids',spwid=1);
+\end{verbatim}
+\begin{verbatim}
+af.setdata(mode='spwids & fieldids',spwid=1, fieldid=1);
+\end{verbatim}
+\begin{verbatim}
+af.setdata(mode='channel', nchan=64, start=1, step=1, spwid=1)
+\end{verbatim}
+For velocity modes, the mstart and mstep are the start and step velocities 
+as strings.
+\begin{verbatim}
+af.setdata(mode='velocity', nchan=64, mstart='20km/s', mstep='-80m/s', spwid=1)
+\end{verbatim}
+For multi-spectral window selection, the data can be selected as follows
+\begin{verbatim}
+af.setdata(mode='channel', nchan=[20,30], start=[1,1], step=[1,1],
+             spwid=[1,2])
+\end{verbatim}
+The above means that you would make a data selection of 20 channels
+(starting from 1 steping 1) from the first spectral window and 30
+channels (starting from 1 steping 1) from the second spectral window.
+\end{ahdescription}
+
+\begin{description}
+\item[Note:] Current autoflag setdata implementation does not support cumulative set data. For example, instead of doing 
+\begin{verbatim}
+af.setdata(mode='spwids', spwid=1) 
+af.setdata(mode='fieldids', fieldid=1) 
+\end{verbatim}
+The input should be 
+\begin{verbatim}
+af.setdata(mode='spwids & fieldids', spwid=1, fieldid=1)
+\end{verbatim}
+\end{description}
+
+\begin{ahargs}
+\ahaddarg{mode}{Type of processing: fieldids, spwids, channel or velocity}{}
+{'fieldids'|'spwids'|'channel'|'velocity'}
+\ahaddarg{nchan}{Number of channels to select}{1}{Vector of Ints}
+\ahaddarg{start}{Start channels (1-relative)}{}{ Vector of Ints}
+\ahaddarg{step}{Step in channel number}{}{Vector of Int}
+\ahaddarg{mstart}{Start velocity (e.g. '20Km/s')}{}{Quantity}
+\ahaddarg{mstep}{Step in velocity (e.g. '100m/s'}{}{Quantity}
+\ahaddarg{spwid}{Spectral Window Ids (1 relative) to select}{[]}{Vector of Ints}
+\ahaddarg{fieldid}{Field Ids (1 relative) to select}{[]}{Vector of Ints}
+\ahaddarg{msselect}{TQL select string applied as a logical "and" with the other selections}{}{String}
+\ahaddarg{async}{Run asynchronously in the background?}{!dowait}{Bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+af:=autoflag('testdata.ms');
+af.setdata(mode='channel',nchan=64,start=1,step=1,spwid=1,msselect=
+'SCAN_NUMBER < 5')
+af.setselect(quack=[13,2],unflag=T);
+af.run();
+af.resetall();
+af.summary();
+af.setuvbin(thr=.01);
+af.run();
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{setfreqmed}{Sets up the freq-median flagging method}
+\begin{ahdescription}
+
+The {\tt freqmed} method uses a median-in-frequency filter. It is very similar to
+{\tt timemed}, except that it is based on a sliding median in frequency:
+
+\[ 
+m_{cbt} = {\rm median}\lbrace d_{c\prime bt}, \mbox{~where~} |c\prime-c| \leq \delta \rbrace 
+\]
+
+In all other respects this method is identical to {\tt timemed}, hence we refer you
+you to the \htmlref{{\tt settimemed} description}{autoflag:autoflag.settimemed} for 
+all details.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{thr}{Flagging threshold}{5}{numeric (real)}
+\ahaddarg{hw}{Half-window for the sliding median}{10}{Int}
+\ahaddarg{rowthr}{Row flagging threshold}{10}{numeric (real)}
+\ahaddarg{rowhw}{Half-window for the sliding median of the MAD}{10}{Int}
+\ahaddarg{column}{Which column to base flagging on}{DATA}{"DATA", "MODEL" or
+"CORR"}
+\ahaddarg{expr}{Expression to use}{"ABS I"}{see text}
+\ahaddarg{fignore}{Ignore existing flags}{F}{Bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata()
+- af.setfreqmed(thr=5,hw=5,expr="- ABS RR LL")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setsprej}{Sets up the spectral rejection flagging method}
+\begin{ahdescription} 
+
+The {\tt sprej} method works by fitting a user-specified segment of the
+spectrum (presumably, the continuum) by a polynomial. It then flags entire rows
+based on the chi-square statistic of the fit, in a manner similar to {\tt
+timemed}. Please refer to \htmlref{{\tt
+setimemed}}{autoflag:autoflag.settimemed}  for detailed math, substituting
+$\chi^2_{bt}$ for $M_{bt}$. The value that is actually fitted  is specified via
+the {\tt expr} parameter (see  the general \htmlref{autoflag module}{autoflag
+module} description for details).
+
+The segement to be fitted can be specified as a range of channel indices
+(1-based) or frequencies. Frequencies may be given as string measures ({\tt
+"1.4GHz"}) or float values (units of MHz assumed). A vector of two values
+[C1,C2] specifies the segment from C1 to C2, inclusive. Several disjoint
+segments may be specified with a 2N vector or a (2,N) matrix.
+
+For a measurement set containing multiple spectral windows, you can set the
+{\tt region} argument to a record of records, with each sub-record containing
+{\tt spwid} and {\tt fq} and/or {\tt chan} fields, specifying the segments of
+a specific spectral window. See examples below.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{ndeg}{Number of degrees for polynomial}{2}{Int}
+\ahaddarg{rowthr}{Flagging threshold, in MADs of $\chi^2$}{5}{numeric (real)}
+\ahaddarg{rowhw}{Half-window for the sliding median}{6}{Int}
+\ahaddarg{norow}{Disable row flagging}{F}{Boolean}
+\ahaddarg{spwid}{Spectral window number (1-based), or [\/] or F for 
+all windows}{F}{F or [\/] or Int}
+\ahaddarg{fq}{Range of frequencies}{F}{2N or (2,N) array of Strings w/units or
+Floats}
+\ahaddarg{chan}{Range of channels (1-based). Either ``fq'' or ``chan'' must be
+specified.}{F}{2N or (2,N) array of Ints}
+\ahaddarg{region}{A compound spectral segment specification (see
+example)}{F}{Record of records}
+\ahaddarg{column}{Which column to base flagging on}{"DATA"}{"DATA", "MODEL" or
+"CORR"}
+\ahaddarg{expr}{Expression to use}{"ABS I"}{see text}
+\ahaddarg{fignore}{Ignore existing flags}{F}{Bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata()
+# use segments 807-807.5 and 809-809.5 MHz for fitting
+- af.setsprej(fq=[807,807.5,809,809.5)) 
+...
+# use channels 10-20 and 30-40
+- af.setsprej(chan=[[10,20],[30,40]])
+...
+# use different segements in different spectral windows
+- region := [=]
+- region[1] := [ spwid=1,fq="1.4GHz 1.401GHz" ]
+- region[2] := [ spwid=2,chan=[10,20] ]
+- region[3] := [ spwid=4,chan=[50,60] ]
+- af.setsprej(region=region)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setuvbin}{Sets up the UV Binner flagging method}
+\begin{ahdescription}
+
+The {\tt uvbin} method works by binning the data on a {\em value} vs.
+UV-distance plane ({\em value} is determined by the {\tt expr} parameter -- see
+the general \htmlref{autoflag module description}{autoflag} for a description
+of this mechanism.) Data in underpopulated bins is then flagged. 
+
+The cut-off point for flagging may be expressed in one of two ways:
+
+\begin{itemize} 
+
+\item If the {\tt maxpop} parameter is specified (e.g. {\tt maxpop=4}), all
+bins with less than {\tt maxpop} points are flagged. 
+
+\item If the {\tt thr} parameter is specified, a probability cut-off is
+selected. This is done as follows. The cumulative probability $p(N)$, defined
+as the probability for a given point to reside in a bin of a population $\le
+N$, is first computed. All bins of population $N$, where $p(N)<${\tt thr}, 
+are then flagged.
+
+In simpler terms, using {\tt thr=0.01} will flag up to 1\% of your data
+points, beginning with the least populous bins. I.e., first the single-point
+bins are flagged, then the 2-point bins, and so on, up to the $N-1$-point
+bins, where $N$ is such that flagging the $N$-point bins would exceed 1\% of all
+data points. 
+
+\item When both {\tt maxpop} and {\tt thr} are specified, {\tt uvbin} will
+use the higher of the two resulting cut-offs. 
+
+\end{itemize}
+
+{\tt Uvbin} can be asked to produce a value vs. UV-distance plot, and a plot of
+$p(N)$. These plots are attached to the flagging report. Uuse of the {\tt
+econoplot} mode is recommended when dealing with medium-to-large data sets,
+for significant reduction in plot file size and printing time.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{thr}{Population cut-off, as $p(N)$ value.}{0}{Float, 0 for none}
+\ahaddarg{minpop}{Population cut-off, as minimum bin count. Either thr or
+maxpop must be specified, or both.}{0}{Int, 0 for none}
+\ahaddarg{nbins}{Number of bins (one number for both axes, or separate for
+UV, value)}{50}{Int or 2 Ints}
+\ahaddarg{plotchan}{Channel number (1-based) to plot, T for middle channel, or F for no
+plot}{F}{Int or Bool}
+\ahaddarg{econoplot}{Produce an economical plot (crowded bins are not resolved)}{F}{Bool}
+\ahaddarg{column}{Which column to base flagging on}{"DATA"}{"DATA", "MODEL" or
+"CORR"}
+\ahaddarg{expr}{Expression to use}{"ABS I"}{see text}
+\ahaddarg{fignore}{Ignore existing flags}{F}{Bool}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata()
+- af.setuvbin(nbins=[50,100],expr="- ABS RR LL",plotchan=40,econoplot=T)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{setselect}{Sets up the Selector flagging method}
+\begin{ahdescription}
+
+The {\tt select} method allows you to directly flag or unflag a subset of your
+data. Subsets can be specified via any combination of field, spectral window, 
+frequency or channel number, correlations (i.e. polarizations), antennas,
+baselines, time ranges. The method will flag/unflag a whole subset, or,
+optionally, only autocorrelations, or only specific time slots within the
+subset. {\tt Select} also includes the option to flag VLA quacks (specified by
+scan interval and scan start time).
+
+The {\tt spwid, field, fq, chan, corr, ant, baseline, timerng} parameters
+select a subset of the measurement set, on a logical-AND basis.
+
+\begin{itemize} 
+
+\item An empty array ({\tt []}) or a boolean {\tt F} (which is the default for
+any parameter), means ``do not select on this''.
+
+\item {\tt fq} specifies ranges of frequencies. You can use
+strings with units (i.e. "800MHz"), or floats, in which case MHz is assumed.
+
+\item {\tt chan} specifies ranges of channel numbers (1-based). Negative
+numbers can be used to specify channels starting from the end of the window,
+e.g.,  {\tt $\lbrack$-10,-1$\rbrack$} means the last 10 channels.
+
+\item Where ranges are specified, the method expects either a $2N$ vector:
+\[
+\lbrack S_1,E_1,S_2,E_2,...,S_N,E_N \rbrack
+\]
+
+or a (2,N) array of start/end points.
+
+For example, if you want to indicate 7 channels (1,2,3,4,5,6,7), either 
+chan = [1,7] or chan = [[1,2],[2,3],...,[6,7]] does the work. 
+
+NOTE: The usual means of indicating a range with the ":" delimiter does not apply for the channel subexpression.  For example, the equivalent to [1:3] to select channels 1 through 3 would be [1,3]. 
+
+\item Antennas can be specified by name or 1-based number (which is sometimes
+the same thing). Names must correspond to the ANTENNA subtable of the
+measurement set.
+
+\item Baselines may be specified either as an array of strings, using antenna
+names or numbers delimited by ``{\tt -}'' (e.g. {\tt "1-2 4-7"}, or {\tt
+"RT1-RTA"}), or as a (2,N) array of antenna numbers (e.g. $\lbrack\lbrack 1,2\rbrack,
+\lbrack 4,7 \rbrack\rbrack$).
+ 
+\end{itemize}
+ 
+The {\tt autocorr}, {\tt timeslot}+{\tt dtime}, {\tt clip}, {\tt flagrange} and 
+{\tt quack} parameters specify what to flag (or unflag) within the selected
+subset, on a logical-OR basis. If none are specified, then the entire subset is
+flagged (or unflagged).
+
+\paragraph{Clipping.} The {\tt clip} and {\tt flagrange} parameters enable flagging based on the value
+of an expression. {\tt Clip} implies flagging of all values outside a specific
+range, {\tt flagrange} implies flagging within a specific range. Like other
+flagging methods, you can specify values via expressions. Two types of expressions
+are recognized: correlation-derived expresisons (see the general \htmlref{autoflag module description}{autoflag} for details), and UVW expressions (see
+below). To use a single expression and range, set {\tt clip} or {\tt flagrange}
+to a record as folows:
+
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata();
+- af.setselect(clip=[expr='+ ABS XX YY',min=1e-6,max=.5]) 
+# Above the feeds are assumed to be linear; use RR and LL for circular. 
+- af.run();
+\end{verbatim}
+
+The {\tt expr} field specifies the expression to clip on, and {\tt min} and {\tt
+max} specify the range. Either the {\tt min} or {\tt max} field may be omitted,
+in which case $\pm\infty$ is assumed. To flag several ranges and/or
+expressions, set {\tt clip} or {\tt flagrange} to a record of records:
+
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata();
+- cliprec:=[=]
+- cliprec[1] := [expr='+ ABS XX YY',min=1e-6,max=.5]
+- cliprec[3] := [expr='- ABS XX YY',max=.5]
+- cliprec[2] := [expr="UVD",min=1]
+- af.setselect(clip=cliprec)
+\end{verbatim}
+
+A shorthand way is also available: use expression as the field name, and set
+the field to (a) a record of min, max, (b) a 2-element array of (min,max), or
+(c) a single scalar value (assumed to be max). Thus, the record above may be
+equivalently formed as:
+
+\begin{verbatim}
+- cliprec['+ ABS XX YY'] := [1e-6,.5]         # equivalent to [min=1e-6,max=.5]
+- cliprec['- ABS XX YY'] := .5                # equivalent to [max=.5]
+- cliprec['UVD']         := [min=1]            
+- af.setselect(clip=cliprec)
+\end{verbatim}
+
+When specifying several ranges for the same expression, you must naturally use the
+longhand form.
+
+In addition to the regular correlation expressions, {\tt select} also recognizes a
+few UVW-based expressions. The simplest ones are: {\tt U, V, W, ABS U, ABS V, ABS W}.
+{\tt UVD} stands for $uv$-distance, and corresponds to $\sqrt{u^2+v^2}$. Two 
+more expressions represent angles in the $uv$-plane:
+
+\begin{description}
+
+\item[\tt UVA] stands for $uv$ {\em position angle}, specified in degrees
+clockwise from the $v$ axis. 
+
+\item[\tt HA] stands for hour angle (East-West array assumed). It is specified
+in degrees {\em counterclockwise} from the $u$ axis, using the following
+definition: $u=B \cos{\alpha_h},\;\;v=B \sin{\alpha_h}\sin{\delta}$, where $B$
+is baseline, $\alpha_h$ is hour angle, and $\delta$ is declination.
+
+\end{description}
+
+When using the {\tt UVA} and {\tt HA} expressions, you are actually defining
+{\em sectors} in the $uv$-plane, from min. to max. angle, e.g.:
+
+\begin{verbatim}
+- af.setselect(flagrange=[expr="uva",min=47,max=49])
+\end{verbatim}
+
+...flags everything in the sector between 47 and 49 degrees, in terms of
+positional angle.
+
+\paragraph{Quack} is a special option for VLA datasets, to flag the ``quacks'' at the
+beginning of each scan. It is specified by two numbers, $\lbrack
+t_{si},\tau\rbrack$. $t_{si}$ is the scan interval, used to determine the
+beginning of a new scan. $\tau$ is the number of seconds to flag at the start of a
+scan. 
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{spwid}{Spectral window numbers (1-based), or [\/] or F for all}{F}{Array of ints}
+\ahaddarg{field}{Field names or numbers (1-based), or [\/] or F for all}{F}{Array of ints/strings}
+\ahaddarg{fq}{Range(s) of frequencies, or [\/] or F for all}{F}{2N or (2,N) array of Strings w/units or
+floats}
+\ahaddarg{chan}{Range(s) of channels (1-based), or [\/] or F for all}{F}{2N or (2,N) array of ints}
+\ahaddarg{corr}{Correlations (by name, e.g. ``XX YY''), or [\/] or F for all}{F}{array of strings}
+\ahaddarg{ant}{Antennas (by name or number), or [\/] or F for all}{F}{array of strings/ints}
+\ahaddarg{baseline}{Baselines, or [\/] or F for all}{F}{array of strings/ints}
+\ahaddarg{timerng}{Time ranges, as MJDs or date strings, or [\/] or F for all}{F}{array of strings/floats}
+\ahaddarg{autocorr}{Flag autocorrelations}{F}{Boolean}
+\ahaddarg{timeslot}{Flag specific time slots. Specifies center time as MJDs or date strings}{F}{array of strings/floats}
+\ahaddarg{dtime}{Tolerance of timeslot parameter, in seconds}{10}{numeric}
+\ahaddarg{clip}{Flag values outside a specific range}{F}{Record, see above}
+\ahaddarg{flagrange}{Flag values within a specific range}{F}{Record, see above}
+\ahaddarg{quack}{Flag VLA quacks -- scan interval and quack length, in seconds}{F}{2-element numeric array}
+\ahaddarg{unflag}{Clear flags instead of setting them}{F}{Boolean}
+\end{ahargs}
+\begin{ahexample}
+\begin{verbatim}
+- af:=autoflag('3C273XC1.MS')
+- af.setdata();
+# flag all autocorrelations and VLA quacks
+- af.setselect(autocorr=T,quack=[120,60]) 
+# flag some frequencies on specific antennas, during a certain period of time
+- af.setselect(ant=[1,2,4],timerng="1998/01/20/20:00 1998/01/20/22:00",
+               fq=[807.51,807.56])
+# flag RR and RL on a few bad time slots on a specific baseline
+- af.setselect(corr="RR RL",baseline="3-7",
+               timeslot="1998/01/20/20:00:30 1998/01/20/20:20:30")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{attach}{Attaches tool to another measurement set}
+\begin{ahdescription}
+
+This function will detach the tool from a measurement set, and
+attach it to a another one. All flagging methods specified via
+{\tt set{\em method}()} calls are preserved.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{msname}{Measurement set to be processed}{none}{Table name}
+\end{ahargs}
+\ahreturns{Boolean T, or a fail}
+\begin{ahexample}
+\begin{verbatim}
+af.attach('3C273XC1.MS)
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{run}{Executes a flagging run}
+\begin{ahdescription}
+
+This function will perform a flagging run utilizing methods configured by prior
+{\tt set{\em method}()} calls. It has a number of optional parameters affecting
+various aspects of the flagging process:
+
+\begin{itemize}
+
+\item {\tt Run} will optionaly produce a graphical flagging report (plots
+of flag density per baseline, antenna, time, etc.), both on-screen and in a
+file. Either option may be turned on or off. To redirect hardcopy output, 
+the  {\tt devfile} argument may be set to a filename for PostScript output, 
+or  to a full PGPlot device specification (``file/device'').
+
+\item The {\tt globparm} argument allows you to set parameters that are ``global'' to
+all methods. For example, using {\tt globparm=$\lbrack$hw=10,fignore=T$\rbrack$} will cause
+{\bf all} methods to use the given values for the {\tt hw} and {\tt fignore}
+parameters, unless another value was explicitly set in the {\tt set{\em method}()}
+call. In other words, {\tt globparm} takes precedence over default values, 
+but not over {\tt set{\em method}()} arguments.
+
+\item When using {\tt trial}, flagging is performed and flagging reports are
+generated without writing the results back into the measurement set.
+
+\item The {\tt reset} option clears all pre-existing flags from the FLAG and
+FLAGROW columns of the measurement set prior to running the methods. If {\tt
+trial} is specified as well, the MS is not modified, but all methods run as if
+all flags were clear to begin with (in fact, {\tt reset} and {\tt trial} together is
+equivalent to  {\tt globparm=$\lbrack$fignore=T$\rbrack$}.)
+
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{globparm}{Record of global method parameters}{empty}{Record}
+\ahaddarg{plotscr}{Number of plots per window for on-screen flagging
+report, or default for no report}{No report}{$\lbrack nx,ny\rbrack$}
+\ahaddarg{plotdev}{Number of plots per page in hardcopy flagging report, 
+or [\/] or F for no report}{F}{Boolean F or $\lbrack nx,ny\rbrack$}
+\ahaddarg{devfile}{File or PGPlot device for hardcopy report}{flagreport.ps/ps}{String}
+\ahaddarg{reset}{Reset pre-existing flags before running}{F}{Boolean}
+\ahaddarg{trial}{Do a trial run only}{F}{Boolean}
+\end{ahargs}
+\ahreturns{Boolean T, or a fail}
+\begin{ahexample}
+\begin{verbatim}
+af:=autoflag('3C273XC1.MS)
+af.setdata();
+...
+af.setselect(autocorr=T,quack=[240,120])
+...
+af.setuvbin(thr=.01)
+...
+af.run()
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\begin{ahfunction}{summary}{Prints a summary of active methods}
+\begin{ahdescription}
+
+This function prints a summary of the methods that have been
+enabled via {\tt set{\em method}()}, along with their parameters.
+Non-default values are marked with an ``*'' symbol.
+
+\end{ahdescription}
+%\begin{ahargs}
+%\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- af.summary()
+Measurement set: test.MS2
+Methods set up:
+1: uvbin (UVBinner):
+    thr         = 0.001
+    nbins       = 50
+    plotchan    = F
+    econoplot   = T
+    column      = DATA
+    expr        = + ABS XX YY
+    fignore     = F
+...
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{help}{Prints help on available flagging methods}
+\begin{ahdescription}
+
+This function prints a summary of the available flagging methods
+and their parameters. Use {\tt help()} with no arguments to get help
+of all methods, or {\tt help("method  names")} for specific ones.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{names}{Names of methods (all methods, if omitted)}{F}{String}
+\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+af.help()
+af.help("timemed freqmed")
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{reset}{Disables specific flagging methods}
+\begin{ahdescription}
+
+This function disables methods previously set up by calls to
+{\tt set{\em method}()}. You can specify methods by name, in which case all
+instances of that method are disabled, or by number (call {\tt  summary()} first
+to look up numbers).
+
+The function takes any number of arguments. Each argument may be a string, a
+method number, or an array of such. Calling {\tt reset()} with no arguments
+produces a fail; you should use {\tt resetall()} if you want to reset all methods.
+
+\end{ahdescription}
+\begin{ahargs}
+\ahaddarg{methods}{Names or numbers of methods}{none}{String or int}
+\end{ahargs}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- af.reset("timemed freqmed")
+Reset 3 method(s), 3 remaining
+T
+- af.reset(1,3)
+Reset 2 method(s), 3 remaining
+T
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{resetall}{Disables all flagging methods}
+\begin{ahdescription}
+
+This function disables all methods previously set up by calls to
+{\tt set{\em method}()}. 
+
+\end{ahdescription}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- af.resetall()
+All methods reset
+T
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{detach}{Detaches from measurement set}
+\begin{ahdescription}
+
+This function detaches the flagger tool from a measurement set and
+closes the MS. 
+
+\end{ahdescription}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- af.detach()
+T
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{done}{Destroys the autoflag tool}
+\begin{ahdescription}
+
+This function destroys the autoflag tool.
+
+\end{ahdescription}
+\ahreturns{Boolean T}
+\begin{ahexample}
+\begin{verbatim}
+- af.done()
+T
+-
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+
+\end{ahmodule}
+
+\end{document}

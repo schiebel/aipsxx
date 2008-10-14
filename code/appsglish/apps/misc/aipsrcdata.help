@@ -1,0 +1,837 @@
+%% Copyright (C) 1999,2000,2001,2002,2003
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: aipsrcdata.help,v 19.3 2005/09/07 21:17:46 dking Exp $
+\documentclass{book}
+\usepackage{aips2help,html}
+\begin{document}
+\begin{ahmodule}{aipsrcdata}{Aipsrc resource file layout}
+
+\ahkeyword{resources}{}
+
+\begin{ahdescription}
+The aipsrc file contains information for steering the process of 
+an \aipspp\  installation, site dependent variables (like default printer) 
+andthe actual running of programs.\\
+
+A template aipsrc file can be found in {\tt code/install/aipsrc}.\\
+aipsrc files are searched in the order:
+\begin{verbatim}
+    ~/.aipsrc
+    $AIPSROOT/.aipsrc
+    $AIPSHOST/aipsrc
+    $AIPSSITE/aipsrc
+    $AIPSARCH/aipsrc
+\end{verbatim}
+It is not an error for any (or all) of these aipsrc files to be absent or
+empty.\\
+The AIPSROOT etc. are derived from \$AIPSPATH, an environment variable set by
+the \texttt{aipsinit} command (the normal way to define an \aipspp\  session). Its
+settings, and the values in their aipsrc files, is normally done by the site
+manager, and should not worry the normal user.\\ 
+The general format of an aipsrc entry is:
+\begin{verbatim}
+keyword: value
+\end{verbatim}
+where the keyword, which must begin in column 1, consists of a sequence of
+alphanumeric characters separated by asterisks or periods, and terminated by
+a colon.  The value consists of everything after the last whitespace
+character (space or tab) following the colon.  Asterisks may be used in the
+keyword for wildcarding, but note that in reading only the first match found
+is accepted, so that if the following two entries were present:
+\begin{verbatim}
+# Specify printer
+printer*paper:       A4
+printer.dp1.paper:   A3
+\end{verbatim}
+and a match was requested for 'printer.dp1.paper', the value returned would
+be 'A4' rather than 'A3'.  In fact, the second entry would never be
+operative. An '\#' in the first column indicates a comment line.
+
+The following categories the different groups of aipsrc
+variables available. The ones marked \emph{aipsmgr} are of no
+importance to the normal user. Although categories are listed as
+\tools, they aren't.  The \tool\ environemnt is just being used
+as a convenience for documentation.
+
+
+\end{ahdescription}
+
+\ahobjs{}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{initialization}{Startup customization - user/site}
+
+\begin{ahdescription}
+The variables in this group are used to determine which \glish  files are
+loaded at startup. This is determined by the variables system.packages
+and user.initfiles
+
+\begin{ahexample}
+\begin{verbatim}
+system.packages: aips synthesis
+user.initfiles: myfile.g
+\end{verbatim}
+Note that packages do not end in .g, but initfiles do.
+\end{ahexample}
+
+If no system.packages are specified, the aips package is assumed. Note
+that many sites may want to customize which packages are loaded (for
+example, the NFRA site manager may want to add the nfra package), and
+some users may want to customize the list.
+
+Note that the user.initfiles are loaded \emph{after} the standard
+package .g files. If for some reason you want to execute \glish code
+before the standard files, you can put that code in your .glishrc
+file.
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{system.packages}{List of packages}{aips}{any valid packages}
+\ahaddarg{user.initfiles}{List of which .g files to load on startup for the user}{none}{any .g files}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{aipsview}{aipsview resources setup -- user}
+
+\begin{ahdescription}
+These variables determine the available aipsview resources. They should normally
+reside in the user's .aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+aipsview.numcolors:     ALL
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{aipsview.exe}{aipsview executable}{aipsview}{any path pointing to
+an aipsview executable}
+\ahaddarg{aipsview.numcolors}{available number of colours}{BW}{BW ALL number}
+\ahaddarg{aipsview.background}{background colour}{white}{any valid colour string}
+\ahaddarg{aipsview.foreground}{foreground colour}{black}{any valid colour string}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{catalog}{catalog program details -- user}
+
+\begin{ahdescription}
+These variables determine some customised catalog program features.
+They should normally reside in the user's .aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+catalog.default:          screen
+catalog.edit.ascii:       xterm -e vi
+\end{verbatim}
+\end{ahexample}
+
+Note that \glish\ has no tty available, so an editor like vi cannot be used
+directly. An xterm command is also needed as shown in the example above.
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{catalog.default}{output medium to use}{''}{gui or screen}
+\ahaddarg{catalog.confirm}{Confirm operations (always, only for
+directories, never)?}{yes}{yes, directory or no}
+\ahaddarg{catalog.tablesizeoption}{How to show image/table sizes}{no}{no, bytes, or 
+shape}
+\ahaddarg{catalog.alwaysshowdir}{Always show directories when
+selecting specific type?}{T}{T or F}
+\ahaddarg{catalog.sortbytype}{Show in order of type instead of
+name}{F}{T or F}
+\ahaddarg{catalog.vscrollbar}{Where to put the vertical scrollbar}{right}{right or left}
+\ahaddarg{catalog.view.PostScript}{Viewer for PostScript files}{ghostview}{Suitable program e.g. ghostview, pageview}
+\ahaddarg{catalog.view.Graphics}{Viewer for graphics files}{xv}{Suitable program e.g. xv}
+\ahaddarg{catalog.view.image}{Viewer for \aipspp\ images}{viewer}{Suitable program}
+\ahaddarg{catalog.edit.ascii}{Editor for ascii files}{\$EDITOR}
+{Editor not needing a tty e.g. emacs or xterm -e vi}
+\ahaddarg{catalog.edit.Glish}{Editor for \glish\ files}{catalog.edit.ascii}
+{Editor not needing a tty e.g. emacs or xterm -e vi}
+\ahaddarg{catalog.view.ascii}{Viewer for ascii files}{catalog.edit.ascii}
+{Program not needing a tty e.g. emacs or xterm -e vi}
+\ahaddarg{catalog.view.Glish}{Viewer for \glish\ files}{catalog.edit.Glish}
+{Program not needing a tty e.g. emacs or xterm -e vi}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{toolmanager}{toolmanager program details -- user}
+
+\begin{ahdescription}
+These variables determine some customised toolmanager program features.
+They should normally reside in the user's .aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+toolmanager.default:     gui
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{toolmanager.default}{Output medium to use}{gui}{gui or cli}
+\ahaddarg{toolmanager.refresh}{Default refresh interval (s)}{none}{Integer}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{progress}{progress meter details -- user}
+
+\begin{ahdescription}
+These variables determine some customised progress meter details.
+They should normally reside in the user's .aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+progress.show:     F
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{progress.show}{Show progress meters?}{T}{T or F}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{logger}{logger detailing values -- user}
+
+\begin{ahdescription}
+The variables in this group steer where logging information has to go
+and control the size of the logger gui.
+Note that other variables (e.g. in the system/user group) could
+influence the display of data.
+They will normally be set in the users aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+logger.default:         gui
+logger.timewidth:       8
+logger.prioritywidth:   1
+logger.messagewidth:    40
+logger.height:          8
+logger.guishow:         priority,message,time
+logger.showbuttons:     F
+\end{verbatim}
+specifies that logging gui should be started automatically.
+The size of the gui is rather small.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{logger.file}{Log file name}{aips++.log}{any valid file name without a path, which will be written in 'user.aipsdir' ('none' means no logging)}
+\ahaddarg{logger.default}{Where to write log messages}{screen}{gui or screen}
+\ahaddarg{logger.glish}{What to log from \glish}{input}{input, output, both 
+or none}
+\ahaddarg{logger.height}{Initial number of lines in logger gui}{8}{A number}
+\ahaddarg{logger.timewidth}{Initial width of TIME column in logger gui}{20}{A number}
+\ahaddarg{logger.prioritywidth}{Initial width of PRIORITY column in logger gui}{6}{A number}
+\ahaddarg{logger.messagewidth}{Initial width of MESSAGE column in logger gui}{75}{A number}
+\ahaddarg{logger.originwidth}{Initial width of ORIGIN column in logger gui}{25}{A number}
+\ahaddarg{logger.guishow}{Which columns to show in gui}{time,priority,message}{time, priority, message and/or origin}
+\ahaddarg{logger.showbuttons}{Show buttons in logger gui (F makes it smaller)}{T}{T or F}
+\ahaddarg{logger.autoscroll}{Always scroll to the end when a message gets added?}{T}{T or F}
+\ahaddarg{logger.background}{Background color of logger gui}{xing}{String}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{measures}{details for the measures operations -- user}
+
+\begin{ahdescription}
+The variables in this group describe non-standard operation of the measures
+conversion programs. Normal practice is that the nutation, aberration and the
+position of the sun for the purpose of light-bending corrections, are
+calculated with the aid of an analytical series. To limit calculation times
+in loops, the calculations are linearly interpolated over a (defined)
+period. This period can be defined with the {\em d\_interval} variables. The
+nutation calculation can be improved by using the IERS tables; while all
+calculations can be also be done using the JPL DE200 or DE405
+tables. 
+They also steer the selection of the IAU1984 or IAU2000
+precession/nutation model; and the use of high or low precision
+nutation series (uas or mas).
+\begin{ahexample}
+\begin{verbatim}
+measures.default:                   gui
+measures.precession.d_interval:     0
+\end{verbatim}
+specifies that a measures GUI is started up automatically, and do full
+calculations on precession always.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{measures.default}{specify user interface medium}{screen}{gui or
+screen}
+\ahaddarg{measures.iau2000.b\_use}{use the IAU2000
+precession/nutation model}{true}{true or false}
+\ahaddarg{measures.iau2000.b\_use2000a}{if the IAU2000
+precession/nutation model is used, use the high precision
+nutation}{false}
+{true or false}
+\ahaddarg{measures.precession.d\_interval}{interval in days over which linear
+interpolation of precession calculation is appropiate}{0.1}{number of days}
+\ahaddarg{measures.nutation.d\_interval}{interval in days over which linear
+interpolation of nutation calculation is appropiate}{0.04}{number of days}
+\ahaddarg{measures.nutation.b\_useiers}{use the IERS Earth orientation
+parameters tables to calculate nutation}{false}{true or false}
+\ahaddarg{measures.nutation.b\_usejpl}{use the JPL DE database (use
+measures.jpl.ephemeris to specify which one) to calculate nutation}
+{false}{true or false}
+\ahaddarg{measures.aberration.d\_interval}{interval in days over which linear
+interpolation of aberration calculation is appropiate}{0.04}{number of days}
+\ahaddarg{measures.aberration.b\_usejpl}{use the JPL DE database (use
+measures.jpl.ephemeris to specify which one) to calculate aberration}
+{false}{true or false}
+\ahaddarg{measures.solarpos.d\_interval}{interval in days over which linear
+interpolation of solar position calculation is appropiate}{0.04}{number of days}
+\ahaddarg{measures.solarpos.b\_usejpl}{use the JPL DE database (use
+measures.jpl.ephemeris to specify which one) to calculate solar position}
+{false}{true or false}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{measures.directory}{details for the measures data 
+handling -- user}
+
+\begin{ahdescription}
+The variables in this group describe the non-standard directory lookup for
+the various tables with e.g. observatories, spectral lines, sources.
+Default lookup for directories is
+\begin{verbatim}
+  - ./name
+  - ./data/name
+  - $AIPSHOME/data/ephemerides/name ($AIPSHOME is normally ~/aips++)
+  - $AIPSROOT/data/ephemerides/name ($AIPSROOT is first field of $AIPSPATH)
+  - $AIPSHOME/data/geodetic/name
+  - $AIPSROOT/data/geodetic/name
+  and till at least 1 Jan 2001:
+  - $AIPSHOME/data/aips/Measures/name
+  - $AIPSROOT/data/aips/Measures/name
+  - $AIPSHOME/code/trial/apps/measures
+  - $AIPSROOT/code/trial/apps/measures
+\end{verbatim}
+\begin{ahexample}
+\begin{verbatim}
+measures.line.directory:     ~/aips++
+\end{verbatim}
+Use the Lines spectral line table as given in the indicated directory.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{measures.line.directory}{directory for the Lines spectral line 
+table}{see description}{valid directory}
+\ahaddarg{measures.observatory.directory}{directory for the Observatories 
+table}{see description}{valid directory}
+\ahaddarg{measures.source.directory}{directory for the Sources  
+table}{see description}{valid directory}
+\ahaddarg{measures.igrf.directory}{directory for the IGRF Earth magnetic
+field model table}{see description}{valid directory}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{measures.comet}{details for the comet data 
+handling -- user}
+
+\begin{ahdescription}
+The variables in this group describe the non-standard directory lookup for
+the various tables with, in principle, comet orbits. However, any solar
+system body's data maybe described. Directory lookup is as described in the
+measures.directory data.
+\begin{ahexample}
+\begin{verbatim}
+measures.comet.file:     VGEO
+\end{verbatim}
+Use the comet table as given by the file name.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{measures.comet.directory}{directory for the comet direction 
+table}{see description}{valid directory}
+\ahaddarg{measures.comet.file}{table name for the comet table to be used in
+the default constructor}{}{valid relative or absolute path}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{measures.iers}{details for the IERS data handling -- user}
+
+\begin{ahdescription}
+The variables in this group describe non-standard operation of the use of the
+IERS Earth Orientation parameters. Default lookup for directories is
+\begin{verbatim}
+  - ./name
+  - ./data/name
+  - $AIPSHOME/data/ephemerides/name ($AIPSHOME is normally ~/aips++)
+  - $AIPSROOT/data/ephemerides/name ($AIPSROOT is first field of $AIPSPATH)
+  - $AIPSHOME/data/geodetic/name
+  - $AIPSROOT/data/geodetic/name
+  and at least till 1 Jan 2001:
+  - $AIPSHOME/data/aips/Measures/name
+  - $AIPSROOT/data/aips/Measures/name
+  - $AIPSHOME/code/trial/apps/measures
+  - $AIPSROOT/code/trial/apps/measures
+\end{verbatim}
+\begin{ahexample}
+\begin{verbatim}
+measures.ierspredict.directory:    ~/aips++
+\end{verbatim}
+Use the IERS prediction tables from the indicated directory
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{measures.ierseop97.directory}{directory for the IERSeop97
+table}{see description}{valid directory}
+\ahaddarg{measures.ierspredict.directory}{directory for the IERSpredict
+table}{see description}{valid directory}
+\ahaddarg{measures.tai\_utc.directory}{directory for the TAI\_UTC leap second
+table}{see description}{valid directory}
+\ahaddarg{measures.measiers.b\_notable}{do not use the IERSeop97 or
+IERSpredict tables}{false}{true or false}
+\ahaddarg{measures.measiers.b\_forcepredict}{use always the 
+IERSpredict table}{false}{true or false}
+\ahaddarg{measures.measiers.d\_predicttime}{use always the IERSpredict table
+if coordinate conversion time is less than given number of days ago}
+{5}{number of days}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{measures.jpl}{details for the JPL ephemeris operations -- user}
+
+\begin{ahdescription}
+The variables in this group describe non-standard operation of the use of the
+JPL solar system ephemerides. Default lookup for directories is
+\begin{verbatim}
+  - ./name
+  - ./data/name
+  - $AIPSHOME/data/ephemerides/name ($AIPSHOME is normally ~/aips++)
+  - $AIPSROOT/data/ephemerides/name ($AIPSROOT is first field of $AIPSPATH)
+  - $AIPSHOME/data/geodetic/name
+  - $AIPSROOT/data/geodetic/name
+  and at least till 1 Jan 2001:
+  - $AIPSHOME/data/aips/Measures/name
+  - $AIPSROOT/data/aips/Measures/name
+  - $AIPSHOME/code/trial/apps/measures
+  - $AIPSROOT/code/trial/apps/measures
+\end{verbatim}
+\begin{ahexample}
+\begin{verbatim}
+measures.jpl.ephemeris:     DE405
+\end{verbatim}
+Use the DE405 ephemeris rather than DE200
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{measures.jpl.ephemeris}{specify JPL ephemeris}{DE200}{DE200 or DE405}
+\ahaddarg{measures.DE200.directory}{directory for the DE200 table}{see description}{valid directory}
+\ahaddarg{measures.DE405.directory}{directory for the DE405 table}{see description}{valid directory}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{help.popup}{Popup help system setup -- user}
+
+\begin{ahdescription}
+The variables in this group determine the default action of the popup help
+system at the startup of \aipspp .
+They are normally set in the user's .aipsrc. 
+\begin{ahexample}
+\begin{verbatim}
+help.popup.type:  mb3long
+\end{verbatim}
+Use the mouse-button-3 long popup action, rather than the default popup action.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg[in]{help.popup.type}{the default action for the popup help
+ system}{both}{coded value: 'none' 'both' 'mb3long' or 'hoverlong'}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{user}{Detail user environment -- user}
+
+\begin{ahdescription}
+The variables in this group define the user working environment.
+They will normally be defined in the user's .aipsrc. 
+
+The \texttt{user.directories.work} variable is used to determine which
+directories scratch files are written into. It can consist of 1 or
+more directories. If more than one directory is specified, \aipspp\
+attempts to spread the scratch files over the various listed
+directories. If this variable is not set, then "." (the current
+working directory) is used if it is writable, otherwise "/tmp" is
+used.
+\begin{ahexample}
+\begin{verbatim}
+user.aipsdir:            /my_data/aips++
+user.directories.work:   ~/scr ~/aips++/work
+user.display.memory: true
+\end{verbatim}
+\end{ahexample}
+
+The \texttt{user.prestart} variable can be ignored by most users. It
+defines which clients are started asynchronously on start of
+\aipspp. This saves time but risks too many clients being run. The
+default choice is misc, timer, quanta. These clients are typically
+needed whenever the \texttt{aips++} script is used to start
+\aipspp. If you often start using {\em e.g.}:
+
+\begin{verbatim}
+glish -l imager.g
+\end{verbatim}
+
+then you may wish to prevent quanta from starting:
+
+\begin{verbatim}
+user.prestart:            timer quanta
+\end{verbatim}
+
+To prevent any asynchronous starting:
+\begin{verbatim}
+user.prestart:            none
+\end{verbatim}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{user.aipsdir}{default user's \aipspp\  base directory}{~/aips++}{valid
+directory name}
+\ahaddarg{user.directories.work}{list of directories to put scratch files}{"." or "/tmp"}{string}
+\ahaddarg{user.dowait}{Wait for asynchronous functions to finish?}{false}{falsor true}
+\ahaddarg{user.aipsrc.edit.keep}{the number of edits of an aipsrc keyword
+that are kept as history when saving automatically to the users
+.aipsrc}{5}{integer}
+\ahaddarg{user.display.memory}{display memory usage in a GUI barchart?}{false}{false or true}
+\ahaddarg{user.prestart}{Pre-start these clients}{misc timer quanta}{String}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{table}{Table System setup -- aipsmgr/user}
+
+\begin{ahdescription}
+These variables determine the format of the data in the table files.
+They also control the behaviour of unlocking in glish clients when
+AutoLocking mode is used on a table. They determine how often an
+autolock on a table is automatically released.
+\begin{ahexample}
+\begin{verbatim}
+table.endianformat:                         local
+table.relinquish.reqautolocks.interval:     2
+table.relinquish.allautolocks.interval:     120
+\end{verbatim}
+specifies that table data are stored in the local endian format.
+Autolocks on tables needed by another process are released every 2
+seconds. Every 120 seconds all autolocks are released.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{table.relinquish.reqautolocks.interval}{nr of seconds to wait before relinquishing autolocks requested in another process}{5}{float}
+\ahaddarg{table.relinquish.allautolocks.interval}{nr of seconds to wait before relinquishing all autolocks}{60}{float}
+\ahaddarg{table.endianformat}{endian format to be used for storing data in new tables}{big}{big,little,local}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{system}{System resources setup -- aipsmgr/user}
+
+\begin{ahdescription}
+These variables determine the available system resources. They should normally
+reside in the \$AIPSHOST/aipsrc (resources) or in the \$AIPSSITE/aipsrc (time).
+\begin{ahexample}
+\begin{verbatim}
+system.resources.numcpu:     2
+system.resources.memory:     16
+system.time.tzoffset:        +10:30
+\end{verbatim}
+specifies that the local time zone is ten and a half hours ahead of UTC.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{system.resources.numcpu}{number of cpu's on machine}{1}{number}
+\ahaddarg{system.resources.memory}{amount of memory on machine in Mb}{64}{number}
+\ahaddarg{system.time.tzoffset}{time zone offset}{00:00 (soon system defined)}{$\pm$hh\[\:mm\]}
+\ahaddarg{system.aipscenter}{Where to send problems/questions, same as system.aipscentre}{namerica}{namerica, australia, or europe}
+\ahaddarg{system.aipscentre}{Where to send problems/questions, same as system.aipscenter}{namerica}{namerica, australia, or europe}
+\ahaddarg{system.local.contact}{Whom to send local questions/problems}{aips2-help}{any valid email address for an \aipspp\ expert}
+\ahaddarg{system.local.registered}{Which versions of \aipspp\ have been registered}{none}{linux\_egcs, sun4sol\_egcs, sgi\_ntv, etc...}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{printer}{Postscript printer definitions -- aipsmgr/user}
+
+\begin{ahdescription}
+The variables in this group define the \aipspp\ printer definition variables.
+They will normally be defined in \$AIPSSITE/aipsrc. 
+\begin{ahexample}
+\begin{verbatim}
+printer*default:         EPP001
+printer.EPP003.paper:    letter
+printer*paper:           A4
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{printer.default}{Print queue}{DEFINE\_ME}{name of a printer queue}
+\ahaddarg{printer.\it $<printqueue>$ \rm .paper}{paper size on print queue}{A4}{A3, A4 or letter}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{help}{Help system setup -- aipsmgr/(user)}
+
+\begin{ahdescription}
+These variables determine the setup of the help file system. Normally set by
+the \aipspp\ system manager in \$AIPSROOT/.aipsrc. The browser and server could
+be of interest to user.
+\begin{ahexample}
+\begin{verbatim}
+help.directory:    /aips++/sun4sol_gnu/doc/help
+help.systemfile:   aips2HelpTable
+help.keywordfile:  aips2HelpKeywords
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{help.directory}{directory for the Refman help
+system}{none}{valid directory name}
+\ahaddarg{help.systemfile}{name of the Table directory with the help
+system}{none}{valid directory name in help.directory}
+\ahaddarg{help.keywordfile}{name of the help system keyword
+Table}{none}{valid directory name in help.directory}
+\ahaddarg{help.browser}{browser to use for help display}{netscape}{valid
+browser command}
+\ahaddarg{help.server}{server to obtain help information
+from}{file://localhost}{valid server, e.g. http://www.atnf.csiro.au, but due
+to probably mixing of local file names with external server may not work}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{unused}{details for unused program -- aipsmgr/programmer}
+
+\begin{ahdescription}
+These variables determine alternatives for some system programs used. The
+specify a path to the gnm (or nm) program and the path or name of the gcc
+name demangler.
+\begin{ahexample}
+\begin{verbatim}
+unused.file.nm:     nm
+\end{verbatim}
+use the nm program to find global names.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{unused.file.nm}{path to gnm or nm program}{gnm}{path to a valid nm
+program} 
+\ahaddarg{unused.file.gfilt}{path of gcc name demangler}{g++filt}{path name
+to gcc name demangler}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{inhale/sneeze}{Code distribution system -- aipsmgr}
+
+\begin{ahdescription}
+These variables determine the behaviour of the code distribution system. They
+should only be set by the \aipspp\  system manager, and are normally defined in \$AIPSROOT/.aipsrc.
+
+\begin{ahexample}
+\begin{verbatim}
+inhale.sneeze.hosts:          cetus:gnu raptor:ntv
+sneeze.cetus.ntv.logfile:     /aips++/sun4sol_gnu/sneeze.log
+inhale.sneeze.*.rcmd:         rsh
+\end{verbatim}
+Determine the machines (and compilers) on which to generate new system.
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{inhale.base.code.preserve}{Preserve old code when new base base
+release installed}{true}{true or false}
+\ahaddarg{inhale.base.slave.preserve}{Preserve code in slave after base
+release}{false}{false or true}
+\ahaddarg{inhale.sneeze.hosts}{hosts on which to inhaled system. Each host
+can have colon separated list of extensions (\_ for no extension)}{none}{valid
+host name with :ext\[:ext..\]}
+\ahaddarg{inhale.sneeze.\it $<host>$\rm .rcmd}{Remote command to start sneeze on
+host}{rsh}{rsh or commands like ssh}
+\ahaddarg{sneeze.host.aipsext.logfile}{name of sneeze log
+file (replace host.aipsext with your host and aipsext)}{none}{valid file name}
+\ahaddarg{sneeze.host.aipsext.logmail}{address to mail the sneeze
+logfile to (replace host.aipsext with your host and aipsext)}{\aipspp\-inhale\@nrao.edu}{valid mail address}
+\ahaddarg{sneeze.base.docs.preserve}{Preserve old documentation when new base
+release installed}{true}{true or false}
+\ahaddarg{sneeze.base.\it $<arch>$\rm .preserve}{Preserve old system when new base release installed}{true}{true or false}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{account}{\aipspp\  account definitions -- aipsmgr}
+
+\begin{ahdescription}
+The variables in this group have to be defined; they have no defaults. The
+values are given in the order 'user.group'. They will normally be defined in
+\$AIPSARCH/aipsrc.
+\begin{ahexample}
+\begin{verbatim}
+account.user: aips2usr.aips2usr
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{account.manager}{\aipspp\ account manager}{none}{e.g. aips2mgr.aipsmgr} 
+\ahaddarg{account.programmer}{\aipspp\ programmer}{none}{e.g. aips2prg.aips2pgr}
+\ahaddarg{account.user}{\aipspp\ user}{none}{e.g. aips2usr.aips2usr}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{dish}{dish startup options - user}
+
+\begin{ahdescription}
+These variables determine how the dish tool behaves on startup.
+\begin{ahexample}
+\begin{verbatim}
+dish.statefile: $HOME/aips++/dishstate/mystatefile
+dish.restorestate: T
+\end{verbatim}
+\end{ahexample}
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{dish.restorestate}{Restore state on startup?}{T}{T or F} 
+\ahaddarg{dish.statefile}{DISH state file to use on startup}{\$HOME/dishstate/default}{any valid file name}
+\end{ahaipsrc}
+
+\end{ahobject}
+
+%---------------------------------------------------------------------------
+\begin{ahobject}{viewer}{viewer definitions}
+
+\begin{ahdescription}
+Set up various defaults for the \htmlref{viewer tool}{viewer}.  This
+can be used to define the color of tools such as the Rectangle Zoomer,
+so that they are drawn in a color visible on your default colormap,
+e.g.
+\begin{ahexample}
+\begin{verbatim}
+display.controls.color: yellow
+display.colormaps.defaultcolormap: RGB 1
+\end{verbatim}
+\end{ahexample}
+Note that some are dependent on others. You can't select a
+defaultcolormap from a usertable if the usertable isn't defined.
+
+\end{ahdescription}
+
+\begin{ahaipsrc}
+\ahaddarg{display.axislabels}{Turn on display of axes and
+labels?}{off for images, on for ms}{on or off}
+\ahaddarg{display.axislabels.charsize}{Character size for axis
+labels (pgplot units)}{1.2}{0.1 -- 4.0}
+\ahaddarg{display.axislabels.linewidth}{Line width for axis
+labels (pgplot units)}{1.4}{0.0 -- 5.0}
+\ahaddarg{display.axislabels.world}{Show world (on) or pixel (off)
+  coordinates}{on}{on or off}
+\ahaddarg{display.controls.color}{The outline color of the drawing tools
+(e.g. zoom rectangle)}{green}{an X color name (string)} 
+\ahaddarg{display.controls.linewidth}{The width in pixel of the
+drawing tools}{1}{integer}
+\ahaddarg{display.controls.doubleclickinterval}{maximum time delay in
+seconds between two clicks (double click)}{0.5}{float}
+\ahaddarg{display.colormaps.defaultcolormap}{The default colormap for
+raster display}{Greyscale 1}{a colormap name (string)}
+\ahaddarg{display.colormaps.usertable}{the full path to an aips++
+table containing colormap definitions}{}{any valid file name (full path)}
+\ahaddarg{display.colormaps.usedefault}{Use the default definitions as
+well as the user table?}{no}{yes or no}
+\ahaddarg{display.contour.color}{The dafult color for contours}{foreground}{an X color name (string)}
+
+\ahaddarg{display.cachesize}{maximum number of views which should be
+cached per Viewerdisplaydata}{256}{integer}
+\ahaddarg{viewer.colorscheme}{The backgound color of
+viewerdisplaypanel tools}{screen}{screen or paper}
+
+\end{ahaipsrc}
+
+\end{ahobject}
+
+\end{ahmodule}
+\end{document}

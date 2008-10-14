@@ -1,0 +1,142 @@
+## $Id: Makefile.in,v 19.2 2005/10/19 14:44:07 dschieb Exp $
+## Copyright (c) 1998 Associated Universities Inc.
+##
+## Makefile for glishtk
+##
+
+SUFFIX = @SLIB_SUFFIX@
+MK_LIB = @MAKE_SLIB@
+TK_LIB = @TK_LIB@
+CLIENT_LIBS = @TK_LD_RPATH@ @TKCLIENT_LIBS@
+
+LDOBJ_LIBS = @LDOBJ_LIBS@
+
+CXXFLAGS = @SLIB_CFLAGS@ @TK_FLAGS@ @CXXFLAGS@
+
+CPLUS = @CXX@
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_LIBRARY = $(INSTALL_PROGRAM)
+
+SHELL = /bin/sh
+SH = $(SHELL)
+
+SRC = ..
+
+top = @top_srcdir@@top_off@
+INCDIR_P = $(top)/include
+LIBDIR_P = $(top)/lib/$(ARCH)
+BINDIR_P = $(top)/bin/$(ARCH)
+SCRIPTDIR_P = $(top)/share/glish
+GLISHTK_SRC = $(SRC)/..
+GLISHTK_INC = $(GLISHTK_SRC)/include
+GLISH_INC = $(GLISHTK_SRC)/../../include
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+INCDIR = @includedir@
+LIBDIR = @libdir@
+LOADDIR = @loaddir@
+BINDIR = @bindir@
+SCRIPTDIR = @SCRIPTDIR@
+
+MKHIER = $(top)/config/mkhier
+
+LIBS = $(CLIENT_LIBS) $(TK_LIB) @LIBS@
+
+DL_LIBS = @DL_LIBS@
+XLIB = @XLIBSW@
+XINC = @XINCLUDES@
+PGINC = @PGPLOTINCLUDES@
+
+INCLUDE = -I. -I$(SRC) -I$(GLISHTK_INC) -I$(GLISH_INC) -I$(INCDIR_P) @TK_INCL@ $(XINC) $(PGINC) $(PLUSINC)
+
+OBJS = tkPgplot.o
+
+SCRIPTS = $(SCRIPTDIR_P)/pgplot.g
+
+INSTALLED_SCRIPTS = $(SCRIPTDIR)/pgplot.g
+
+LOADABLES = $(LIBDIR_P)/gPgplot$(SUFFIX)
+
+INSTALLED_LOADABLES = $(LOADDIR)/gPgplot$(SUFFIX)
+
+all: make-libdir_p $(LOADABLES) make-scriptdir_p $(SCRIPTS)
+
+make-libdir_p:
+	$(MKHIER) $(LIBDIR_P)
+
+make-libdir:
+	$(MKHIER) $(LIBDIR)
+
+make-scriptdir_p:
+	$(MKHIER) $(SCRIPTDIR_P)
+
+make-scriptdir:
+	$(MKHIER) $(SCRIPTDIR)
+
+install:  make-libdir $(INSTALLED_LOADABLES) make-scriptdir $(INSTALLED_SCRIPTS)
+
+tkPgplot.o: $(SRC)/tkPgplot.cc $(SRC)/tkPgplot.h
+	@if test -d $(SRC)/tkpgplot; then						\
+	    echo $(CPLUS) $(INCLUDE) $(CXXFLAGS) @TK_DRIVER_PATH@ -c $(SRC)/tkPgplot.cc; \
+	    $(CPLUS) $(INCLUDE) $(CXXFLAGS) @TK_DRIVER_PATH@ -c $(SRC)/tkPgplot.cc;	\
+	else										\
+	    echo $(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkPgplot.cc;			\
+	    $(CPLUS) $(INCLUDE) $(CXXFLAGS) -c $(SRC)/tkPgplot.cc;			\
+	fi
+
+gPgplot$(SUFFIX): $(OBJS)
+	@if test -d $(SRC)/tkpgplot; then						\
+	    echo $(MK_LIB) gPgplot$(SUFFIX) $(OBJS) -L$(LIBDIR_P) @TK_DRIVER_LIB@ $(LDOBJ_LIBS) $(DL_LIBS); \
+	    $(MK_LIB) gPgplot$(SUFFIX) $(OBJS) -L$(LIBDIR_P) @TK_DRIVER_LIB@ $(LDOBJ_LIBS) $(DL_LIBS) 2>&1 | head -100; \
+	else										\
+	    echo $(MK_LIB) gPgplot$(SUFFIX) $(OBJS) $(LDOBJ_LIBS) $(DL_LIBS);		\
+	    $(MK_LIB) gPgplot$(SUFFIX) $(OBJS) $(LDOBJ_LIBS) $(DL_LIBS) 2>&1 | head -100; \
+	fi
+
+$(SCRIPTDIR_P)/pgplot.g: pgplot.g
+	$(INSTALL_DATA) pgplot.g $(SCRIPTDIR_P)
+
+$(SCRIPTDIR)/pgplot.g: pgplot.g
+	$(INSTALL_DATA) pgplot.g $(SCRIPTDIR)
+
+$(LIBDIR_P)/gPgplot$(SUFFIX): gPgplot$(SUFFIX)
+	$(MKHIER) $(LIBDIR_P)
+	$(INSTALL_LIBRARY) gPgplot$(SUFFIX) $(LIBDIR_P)
+
+$(LOADDIR)/gPgplot$(SUFFIX): gPgplot$(SUFFIX)
+	$(MKHIER) $(LOADDIR)
+	$(INSTALL_LIBRARY) gPgplot$(SUFFIX) $(LOADDIR)
+
+tar:
+	@rm -f $(TAR_FILE).Z tar-files
+	@$(MAKE) $(MFLAGS) tar-list >tar-files
+	tar cf $(TAR_FILE) -I tar-files
+	compress $(TAR_FILE)
+	@rm tar-files
+
+tar-list:
+	@echo glish >&2
+	@ls Makefile.in config.h.in \
+		COPYING glish.init mkinit.sh *.c *.cc *.h *.l *.y \
+		*.sed doc/*.ps demos/*.g demos/*.cc demos/*.c \
+		demos/README* include/Glish/*.h | grep -v '^config.h$$'
+	@cd clients; $(MAKE) $(MFLAGS) tar-list | sed 's,^,clients/,'
+
+rcsinfo:
+	@echo glish
+	@rlog -L -S RCS/*,v
+	@echo glish/include/Glish
+	@cd include/Glish; rlog -L -S RCS/*,v
+	@cd clients; $(MAKE) $(MFLAGS) rcsinfo
+
+clean:
+	@rm -f $(OBJS) gPgplot$(SUFFIX)
+
+distclean: clean
+	rm -f config.status config.cache config.h config_p.h Makefile
+
+INSTALL_:
+

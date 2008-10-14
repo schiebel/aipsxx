@@ -1,0 +1,940 @@
+%% Copyright (C) 1999,2000,2001,2002
+%% Associated Universities, Inc. Washington DC, USA.
+%%
+%% This library is free software; you can redistribute it and/or modify it
+%% under the terms of the GNU Library General Public License as published by
+%% the Free Software Foundation; either version 2 of the License, or (at your
+%% option) any later version.
+%%
+%% This library is distributed in the hope that it will be useful, but WITHOUT
+%% ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+%% FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+%% License for more details.
+%%
+%% You should have received a copy of the GNU Library General Public License
+%% along with this library; if not, write to the Free Software Foundation,
+%% Inc., 675 Massachusetts Ave, Cambridge, MA 02139, USA.
+%%
+%% Correspondence concerning AIPS++ should be addressed as follows:
+%%        Internet email: aips2-request@nrao.edu.
+%%        Postal address: AIPS++ Project Office
+%%                        National Radio Astronomy Observatory
+%%                        520 Edgemont Road
+%%                        Charlottesville, VA 22903-2475 USA
+%%
+%% $Id: guientry.help,v 19.2 2004/08/25 02:14:40 cvsmgr Exp $
+\begin{ahobject}{guientry}{Tool for generating widgets for type-in of a GUI}
+
+\ahinclude{guientry.g}
+
+\ahcategory{widgets}
+
+\ahkeyword{widgets}{}
+\ahkeyword{Tk}{}
+
+\ahmethods{}
+
+\begin{ahdescription}
+
+This tool generates Tk widgets for the entry of various types of Glish
+variables. This tool is used in the \ahlink{autogui}{widgets:autogui}. Note
+that guientry is served by the \ahlink{widgetserver}{widgets:widgetserver}
+and so that should be used to get access to a guientry.
+
+The exact behavior of the generated widget depends upon the type of
+entry but in general:
+
+\begin{itemize}
+\item The user may type in a value or a variable. 
+\item A value can entered as a number in the entry field.
+\item A variable is entered by name only.
+\item A value may also be {\em unset} by using the unset button under a
+popupmenu menu.
+\item Either original or default values may be restored using the
+buttons under the popupmenu menu.
+\item Values may also be inserted via the \ahlink{insert}{insert}
+function. Either a value ({\em e.g.} 0.7), a string ({\em e.g.}
+'0.7'),  or a variable ({\em e.g.} {\tt x} or {\tt sqrt(y)}) may be
+entered.
+\item Once initialized, a given widget can be used only for one
+type of argument ({\em i.e.} integer, double, complex). An
+attempt to enter a value of another type will generate an error.
+\item The widget always returns a a variable of the appropriate
+type via the get function. If the value of the widget is illegal
+then an illegal value is returned. This may be check for using
+the {\tt is\_illegal()} function.
+\item Entry of a valid value by any means generates a
+\ahlink{value}{value} event that has as an argument the value
+entered.
+\item The widget can be constructed so that the user cannot
+enter values directly ({\tt editable=F}). This is used in the
+\ahlink{autogui}{widgets:autogui} for output-only values.
+\end{itemize}
+
+The various functions of guientry generate a subsequence that can be used
+to interact with the widget. The function and events supported by
+the subsequence are:
+
+\begin{description}
+\item[{\tt .get()}] Function to get the current value. WYSIWYG applies.
+\item[{\tt.insert(entry)}] Function to insert a value into the widget.
+\item[{\tt ->insert(entry)}] Event to insert a value into the widget.
+\item[{\tt ->value(entry)}] Event to designate that a user entered a
+new value.
+\item[{\tt.insertandemit(entry)}] Function to insert a value into the
+widget and emit a value event if the value is valid.
+\item[{\tt .setwidth(width)}] Function to set the total width in characters
+of the entry field(s).
+\item[{\tt .clear()}] Function to clear the current value.
+\item[{\tt .addtowrench}] Function to add a callback function to the
+wrench.
+\item[{\tt hlp}] Argument to specify popup help
+\end{description}
+
+Parsing of entries is performed using the \ahlink{entryparser}{entryparser} 
+tool.
+
+Most widgets have a popup menu that allows any of a number of
+operations. The standard ones are:
+
+\begin{description}
+\item[Original] Revert the entry to the original value that was first
+displayed.
+\item[Default] Revert the entry to the default value for this actual
+widget.
+\item[Unset] Toggle unset value. If the current value is not unset
+then it is changed to be so, if it already is unset then the original
+value is set.
+\item[Copy] Copy the current entry to the
+\ahlink{clipboard}{tasking:clipboard} whence it may be retrieved using
+{\tt dcb.paste()}.
+\item[Paste] Paste the current entry from the
+\ahlink{clipboard}{tasking:clipboard}. An entry can be inserted in the
+clipboard using {\tt dcb.copy(value)}.
+\end{description}
+
+In addition, other operations may be present, as appropiate. For
+example, those widgets for accessing files of various types
+can bring up an interactive file chooser.
+
+One may add functions to the wrench, using addtowrench. The
+signature of the function is as in the following example.
+Note the use of the function insertandemit to insert the
+value and emit a value event if the value is valid. This
+is obviously required if a value is to be inserted into the
+widget.
+\begin{verbatim}
+#
+# Addition to the wrench
+#
+  private.buttons.antennas := private.guientry.array();
+  private.getantennas := function(ref self, ref its) {
+    include 'gopher.g';
+    wider private;
+    self.insertandemit(dgo.getantennas(private.ms.name()));
+  }
+  private.buttons.antennas.addtowrench('Interactive', private.getantennas);
+\end{verbatim}
+
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'guientry.g'   
+f := dws.frame();
+ge := dws.guientry()
+s := ge.scalar(f, value=30.0);
+whenever s->value do {
+  print 'Gui selected a scalar ', s.get();
+}
+q := ge.quantity(f, value='100Hz');
+whenever q->value do {
+  print 'Gui selected a quantity ', q.get();
+}
+m := ge.measure(f, value='dm.direction(\'b1950\', \'0deg\', \'0deg\')')
+whenever q->value do {
+  print 'Gui selected a measure ', m.get();
+}
+\end{verbatim}
+\end{ahexample}
+
+\begin{ahconstructor}{guientry}{Make a guientry tool}
+\begin{ahargs}
+  \ahaddarg{width}{Initial width of entry field (characters)}{30}{Integer}
+  \ahaddarg{relief}{Edge relief}{'flat'}{String from `flat', `ridge', 
+  `raised', `sunken', `groove'} 
+  \ahaddarg{font}{Font of text }{''}{X font} 
+  \ahaddarg{background}{Background color}{`lightgrey'}{X color}
+  \ahaddarg{foreground}{Color of text}{`black'}{X color}
+  \ahaddarg{editablecolor}{Color for editable values}{`white'}{X color}
+  \ahaddarg{uneditablecolor}{Color for uneditabe values}{`lightgray'}{X color}
+  \ahaddarg{unsetcolor}{Color for unset values}{`yellow'}{X color}
+  \ahaddarg{illegalcolor}{Color for illegal values}{`red'}{X color}
+  \ahaddarg{borderwidth}{Borderwidth}{1}{Integer}
+  \ahaddarg{expand}{Expand policy}{'none'}{'x'|'y'|'both'|'none'}
+  \ahaddarg{widgetset}{Widget server to use}{dws}{A widgetserver tool}
+\end{ahargs}
+\ahreturns{guientry widget}
+\begin{ahdescription}
+Constructs a guientry according to the specified construction
+arguments, and returns a ref to the tool. 
+\end{ahdescription}
+\begin{ahexample}
+\begin{verbatim}
+include 'guientry.g'   
+f := dws.frame();
+ge := dws.guientry()
+r := ge.scalar(f, value=30.0);
+whenever r->value do {
+  print 'Gui selected is ', r.get();
+}
+\end{verbatim}
+\end{ahexample}
+\end{ahconstructor}
+ 
+\begin{ahfunction}{scalar}{Make a widget for a scalar entry}
+\begin{ahdescription}
+Constructs a widget for the entry of scalar values. The widget can
+determine the type of the first entry (integer, double or complex) and
+ensure that the type doesn't change. If neither the value nor the
+default are set AND allowunset is false then the options argument
+can be used to set the value that will actually be used as the initial
+value.
+\end{ahdescription}
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A scalar ({\em e.g.} {\tt 1.3245})
+\item The name of Glish variable or function that evaluates to a
+scalar.
+\end{itemize}
+
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{String or unset}
+  \ahaddarg{default}{Default value used to determine type of GUI}{}{String}
+  \ahaddarg{options}{options}{''}{Glish value}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\begin{ahexample}
+\begin{verbatim}
+include 'guientry.g'   
+f := dws.frame();
+ge := dws.guientry()
+sangle := ge.scalar(f, value=pi/2);
+sfloat := ge.scalar(f, options=0.0);
+sint := ge.scalar(f, options=0);
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{array}{Make a widget for an array entry}
+\begin{ahdescription}
+Constructs a widget for the entry of array values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A vector of numbers ({\em e.g.} {\tt [1.3, 4.5, 900.32]})
+\item The name of Glish variable or function that evaluates to a
+vector of numbers.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{maxdisplay}{Maximum number of elements that will be displayed}{100}{Positive integer}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{booleanarray}{Make a widget for a boolean array entry}
+\begin{ahdescription}
+Constructs a widget for the entry of array values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A vector of booleans ({\em e.g.} {\tt [T, F, F, T]})
+\item The name of Glish variable or function that evaluates to a
+vector of booleans.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{T}{T or F}
+  \ahaddarg{default}{Default value}{T}{T or F}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{maxdisplay}{Maximum number of elements that will be displayed}{100}{Positive integer}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{boolean}{Make a widget for a boolean entry}
+\begin{ahdescription}
+Constructs a widget for the entry of boolean values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item Interactively by selecting the desired value
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{choice}{Make a widget for a choice entry}
+\begin{ahdescription}
+Constructs a widget for the choice of one string from many.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item Interactively by selecting the desired value
+\end{itemize}
+
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{Possible choices}{}{Vector of strings}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\begin{ahexample}
+\begin{verbatim}
+include 'guientry.g'   
+f := dws.frame();
+ge := dws.guientry();
+ch := ge.choice(f, value='a', options="a b c");
+whenever ch->value do {
+  print 'Choice selected is ', ch.get();
+}
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+
+\begin{ahfunction}{check}{Make a widget for a check entry}
+\begin{ahdescription}
+Constructs a widget for the choice of many strings from many.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item Interactively by selecting the desired values
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{Possible choices}{}{Vector of strings}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{nperline}{Number of items per line}{4}{Positive integer}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{file}{Make a widget for a file entry}
+\begin{ahdescription}
+The {\bf allowed format for user input} is simply a file name, relative
+or absolute.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{types}{File types to show (catalog)}{}{String}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\begin{ahdescription}
+
+Constructs a widget for the entry of files.  The {\stfaf types}
+argument is the same as the types available in the Catalog
+GUI.  They can be recovered by the Catalog function
+{availabletypes}{utility:catalog.availabletypes}.
+
+\end{ahdescription}
+\end{ahfunction}
+
+\begin{ahfunction}{measurecodes}{Make a widget for entry of measures codes}
+\begin{ahdescription}
+
+Constructs a widget for the entry of measures reference codes. For each
+type of measure there is a corresponding list of reference codes. For
+example, {\tt dm.listcodes(dm.frequency())} gives the list for
+a 'frequency' measure.
+
+The {\bf allowed formats for user input} (i.e. for {\tt value}
+and {\tt default}) are:
+
+\begin{itemize}
+
+\item A measure code as drawn from the list of possible codes
+returned by the measures tool (see above).
+
+\item The name of Glish variable or function that evaluates to a
+measure code.
+
+\end{itemize}
+
+Use {\tt options} to specify the measure type (see \ahlink{Measures}{measures:measures})
+for the current known list (e.g. 'frequency', 'doppler', 'direction' etc).
+
+
+\end{ahdescription}
+
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{type of measure: any valid measure}{''}{string}
+  \ahaddarg{type}{Type of argument: unset means to evaluate}{unset}{Variable}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+
+\begin{ahfunction}{scalarmeasure}{Make a widget for a scalar measure entry}
+\begin{ahdescription}
+Constructs a widget for the entry of scalar measure values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A measure as returned by the measures tool ({\em e.g.}
+{\tt dm.frequency('LSR', '10GHz')})
+\item The name of Glish variable or function that evaluates to a measure.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{type}{Type of argument: unset means to evaluate}{unset}{Variable}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{frequency}{Make a widget for a frequency measure entry}
+\begin{ahdescription}
+Constructs a widget for the entry of frequency measure value. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A measure as returned by the measures tool ({\em e.g.}
+{\tt dm.frequency('LSR', '10GHz')})
+\item The name of Glish variable or function that evaluates to a 
+frequency measure.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{radialvelocity}{Make a widget for a radialvelocity measure entry}
+\begin{ahdescription}
+Constructs a widget for the entry of radialvelocity measure value. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A measure as returned by the measures tool ({\em e.g.}
+{\tt dm.radialvelocity('LSR', '-100km/s')})
+\item The name of Glish variable or function that evaluates to a 
+radialvelocity measure.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{doppler}{Make a widget for a doppler measure entry}
+\begin{ahdescription}
+Constructs a widget for the entry of doppler measure value. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A measure as returned by the measures tool ({\em e.g.}
+{\tt dm.doppler('RADIO', 0.001)})
+\item The name of Glish variable or function that evaluates to a 
+doppler measure.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{position}{Make a widget for a position entry}
+\begin{ahdescription}
+Constructs a widget for the entry of measures position values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item The position reference frame may be chosen using the
+left hand button. The two formats are WGS84 and ITRF (World Geodetic
+System and International Terrestrial Reference Frame). The position
+quantity values should be either longitude (angle), latitude(angle)
+and height(length); or x,y,z (length).  The allowed formats for
+lengths and angles are described in the
+\ahlink{quanta}{quanta:quanta} tool.
+\item An observatory location may be selected using the
+ObservatoryList button under the spanner/wrench.
+\item The name of Glish variable or function that evaluates to a
+position measure.
+\end{itemize}
+
+Note that changing the reference frame {\bf does not} change the
+values in the entry boxes. Instead, it defines the frame with the
+currently specified values. If you wish to make a conversion, use the
+\ahlink{measures position gui}{measures:measures.positiongui}.
+
+The options string can be used to specify vertically aligned
+entries.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options 'vertical'|''}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{epoch}{Make a widget for a epoch entry}
+\begin{ahdescription}
+Constructs a widget for the entry of measures epoch values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item The current epoch may be selected using the
+Today button under the spanner/wrench.
+\item The name of Glish variable or function that evaluates to a measure.
+\end{itemize}
+
+The default initial reference code is 'UTC'. This may be changed
+using the options argument.
+
+Note that changing the reference frame {\bf does not} change the
+value in the entry box. Instead, it defines the frame with the
+currently specified value. If you wish to make a conversion, use the
+\ahlink{measures epoch gui}{measures:measures.epochgui}.
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{Initial reference code}{'UTC'}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{direction}{Make a widget for a direction entry}
+\begin{ahdescription}
+Constructs a widget for the entry of measures direction values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item The direction reference frame may be chosen using the
+left hand button, and the latitude and longitude entered
+in the next two entry boxes. The allowed formats for
+times and angles are described in the \ahlink{quanta}{quanta:quanta}
+tool.
+\item A planet may be selected using the left hand button
+\item One of a list of bright radio sources may be selected using the
+SourceList button under the spanner/wrench.
+\item The name of Glish variable or function that evaluates to a 
+direction measure.
+\end{itemize}
+
+Note that changing the reference frame {\bf does not} change the
+values in the entry boxes. Instead, it defines the frame with the
+currently specified values. If you wish to make a conversion, use the
+\ahlink{measures direction gui}{measures:measures.directiongui}.
+
+The options string can be used to specify vertically aligned
+entries.
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options: 'vertical'|''}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{quantity}{Make a widget for a quantity entry}
+\begin{ahdescription}
+Constructs a widget for the entry of quantity values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A quantity as returned by the quanta tool ({\em e.g.}
+{\tt dq.quantity('10GHz')})
+\item The name of Glish variable or function that evaluates to a quantity.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{type}{Type of argument: unset means to evaluate}{unset}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{range}{Make a widget for a range entry}
+\begin{ahdescription}
+Constructs a widget for the entry of range values.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item Interactively by moving the slider
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{0}{Value or unset}
+  \ahaddarg{default}{Default value}{0}{Value}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{rmin}{Minimum value}{0.0}{Number}
+  \ahaddarg{rmax}{Maximum value}{1.0}{Number}
+  \ahaddarg{rresolution}{Resolution of selection}{0.1}{Number}
+  \ahaddarg{provideentry}{Include a type-in entry box as well}{F}{Bool}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{record}{Make a widget for a Record entry}
+\begin{ahdescription}
+Constructs a widget for the entry of record values.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A record ({\em e.g.} {\tt [height=640, width=480]})
+\item The name of Glish variable of function that evaluates to is a record.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{region}{Make a widget for a region entry}
+\begin{ahdescription}
+Constructs a widget for the entry of region values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A region as returned by the regionmanager tool ({\em e.g.}
+{\tt drm.box()})
+\item The name of Glish variable or function that evaluates to a region.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{string}{Make a widget for a string entry}
+\begin{ahdescription}
+Constructs a widget for the entry of string values. 
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item A string
+\item A set of strings, separated by newlines.
+\end{itemize}
+
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+\begin{ahfunction}{untyped}{Make a widget for a untyped entry}
+\begin{ahdescription}
+Constructs a widget for the entry of untyped values. The behavior
+requires some explanation:
+\begin{itemize}
+\item In determining the type of a given input string or
+insert argument, various conversions are tried, and the first
+successful one retained.
+\item The search list of conversions can be set using the setsearch
+function and retrieved using the search function.
+\item The default search list is "measure array coordinates region record string untyped"
+\item Valid search list items are the entry types that the
+\ahlink{Entryparser}{tasking:entryparser} \tool\ recognizes.
+
+\end{itemize}
+
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item Any valid glish expression
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{}{Variable or unset}
+  \ahaddarg{default}{Default value}{}{Variable}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+ 
+\begin{ahfunction}{list}{Make a widget for an extensible list of entry 
+widget}
+\begin{ahdescription}
+Constructs a widget for a list of guienty widgets. This allows
+one to construct a list of made up of elements each
+containing one or more widgets. One may insert and get the
+contents as usual.
+
+The type of each widget is specified in the types argument.  The
+corresponding names are given in the names argument. These names
+determine the names of the fields in the record returned by get.  The
+arguments for each widget are passed as records with the elements
+taken in sequence ({\em i.e.} the names are immaterial.  allowunset
+and editable apply to all widgets.
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the menu}{}{Tk frame}
+  \ahaddarg{types}{Types of widgets}{}{String of valid widget names}
+  \ahaddarg{names}{Name to be attached to each widget}{}{Vector String}
+  \ahaddarg{values}{Values to insert on start}{}{Record of variables or unset}
+  \ahaddarg{values}{Values to insert on start}{}{Record of variables or unset}
+  \ahaddarg{defaults}{Default values}{}{Record of Variables or unset}
+  \ahaddarg{options}{options}{''}{Record of vector strings}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{hlp}{Popup help string}{Unset}{String}
+\end{ahargs}
+\ahreturns{guientry widget}
+\begin{ahexample}
+\begin{verbatim}
+s := dge.list(f, types="string direction",
+  names="Source Direction", name='Source',
+  defaults=unset, values=[Source='No name', Direction=dm.direction()],
+  allowunset=T, editable=T);
+print s.get();
+[Source1=[Source=M87, Direction=[m0=[value=187.705929, unit=deg], m1=[value=12.3
+91125, unit=deg], type=direction, refer=J2000]], Source2=[Source=OJ287, Directio
+n=[m0=[value=133.703646, unit=deg], m1=[value=20.1085119, unit=deg], type=direct
+ion, refer=J2000]], Source3=[Source=3C273B, Direction=[m0=[value=187.277917, uni
+\end{verbatim}
+\end{ahexample}
+\end{ahfunction}
+ 
+\begin{ahfunction}{done}{Destroy this tool}
+\ahreturns{T}
+\begin{ahdescription}
+Destroys this Guientry tool.
+\end{ahdescription}
+\end{ahfunction}
+ 
+\begin{ahfunction}{type}{Return the type of this tool}
+\ahreturns{String}
+\begin{ahdescription}
+Returns 'guientry'
+\end{ahdescription}
+\end{ahfunction}
+
+%% lei050
+\begin{ahfunction}{twoentry}{Make a widget for a range entry,
+providing two entry boxes next to each other labelled 'min' and
+'max'. This is used by minmaxhist, and is not intended for independant
+use.}
+\begin{ahdescription}
+Constructs a widget for the entry of a range.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item The user enters numbers into the two entry boxes.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the widget}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{unset}{Array}
+  \ahaddarg{default}{Default value}{0}{Array}
+  \ahaddarg{options}{options}{''}{string}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{min}{Minimum value}{-1.0}{Number}
+  \ahaddarg{max}{Maximum value}{1.0}{Number}
+  \ahaddarg{widths}{Width of the two boxes}{0.1}{Number}
+  \ahaddarg{hlp}{Help message}{F}{string}
+\end{ahargs}
+\ahreturns{guientry widget}
+\end{ahfunction}
+
+
+\begin{ahfunction}{minmaxhist}{Constructs a widget for the entry of a range.}
+\begin{ahdescription}
+Make a widget for selection of a range with the ability to allow the
+user to choose the range from a histogram (using
+\ahlink{histogramgui}{widgets:histogramgui}). The histogram is
+displayed and the user can drag, move and resize a region
+corresponding to the data min and max.
+
+The {\bf allowed formats for user input} are:
+\begin{itemize}
+\item The user enters numbers into the two entry boxes. The user can
+open the histogram window, and select min and max using the mouse.
+\end{itemize}
+
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{parent}{Parent of the widget}{}{Tk frame}
+  \ahaddarg{value}{Value to insert on start}{unset}{Array}
+  \ahaddarg{default}{Default value}{0}{Array}
+  \ahaddarg{allowunset}{Allow unset values}{T}{Boolean}
+  \ahaddarg{editable}{Is the entry editable by the user}{T}{Boolean}
+  \ahaddarg{minvalue}{Minimum value}{-1.0}{Number}
+  \ahaddarg{maxvalue}{Maximum value}{1.0}{Number}
+  \ahaddarg{hlp}{Help message}{''}{string}
+  \ahaddarg{histarray}{Record containing info to use for histogram (in
+  .values and .counts)}{unset}{Record}
+  \ahaddarg{imageunits}{Brightness units of image (for labels)}{unset}{string}
+  \ahaddarg{options}{Options}{''}{string}
+
+
+\end{ahargs}
+\ahreturns{T}
+
+\end{ahfunction}
+
+
+\end{ahobject}
+
+\begin{ahfunction}{guientrytest}{Test the construction of
+guientry widgets}
+\ahreturns{Boolean}
+\begin{ahdescription}
+This function makes a frame and constructs a number of 
+entry widgets inside the frame.
+\end{ahdescription}
+\begin{ahargs}
+  \ahaddarg{autodestruct}{Destroy the frame immediately?}{T}{Boolean}
+  \ahaddarg{editable}{Make the entries editable?}{T}{Boolean}
+  \ahaddarg{allowunset}{Allow unset values?}{T}{Boolean}
+  \ahaddarg{expand}{Expand policy}{'none'}{'x'|'y'|'both'|'none'}
+\end{ahargs}
+
+
+
+

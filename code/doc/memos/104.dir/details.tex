@@ -1,0 +1,84 @@
+\chapter{Details}
+This chapter is just a bag of tricks. The items may not belong in this report,
+but their inclusion at least ensures that they do not get lost.
+
+\section{Object-state checking}
+{\it Brian Glendenning}
+
+It is useful, especially when the code is being debugged, to be able
+to check the ``state'' of an object (in Eiffel this is called checking
+the invariants). It is useful to write a member function {\tt int Ok()} that
+performs such a check and returns {\tt 0} if not successful, {\tt 1} otherwise
+(or boolean values). This function should be virtual for obvious reasons,
+and a subclass that redefines {\tt Ok()} should probably within it also
+refer to its parent classes {\tt Ok()}, e.g., refer to {\tt Parent::Ok()} to
+ensure that the parent class is also consistent.
+
+Conceptually you want to check the state of the object after
+construction, and at entry to every member function. However this
+state checking could be computationally expensive (e.g., checking all
+the pointers in a complicated data structure) so it must be possible
+to compile it out, preferably on a class by class basis, for the
+production system. A way of doing this is to use the macro {\tt OK} rather
+than the function {\tt Ok()} (obviously the latter is still available). Then
+the macro {\tt OK} can be defined to be nothing, or can be defined to be
+something like {\tt assert(Ok())} (the assert should be replaced with the
+exception handling mechanism when available). Every {\tt .h} file for
+classes which use the {\tt Ok()} mechanism should have OK default to
+something, e.g. if you wanted to check state by default:
+
+\begin{verbatim}
+#ifndef OK
+#define OK assert(Ok())    // Use exceptions when available
+#endif /* OK */
+\end{verbatim}
+
+This can be overridden at compile time (probably in the makefile).
+
+
+\section{Efficient indexing in vectors}
+{\it Bob Sault}
+
+The three vector classes RVector, DVector and CVector (for real, double
+precision and complex) have methods defined on them to do all the normal
+arithmetic operations (addition, subtraction, multiplcation, division),
+and functions (sin, cos, etc), as well as interconversion. They use a 
+reference counting scheme, and a copy-on-modify policy to reduce the
+about of copying. 
+
+The implementation of the indexing operator which returns a data element
+of the array (i.e operator {\tt []}) is noteworthy. Convention dictates
+that this should act as either an lvalue or an rvalue. 
+Having this operator always return a reference to a data-element would have
+disadvantages. As the operator would not know whether it is being used as an
+lvalue or an rvalue, it would have to assume the worse -- an lvalue -- which
+would significantly reduce the effectiveness of the reference counting and
+copy-on-modify policy. The way used to avoid this loss is to have two
+overloaded versions of the indexing operator, defined (for the real vector
+class) as
+
+\begin{verbatim}
+  float operator[](int) const;
+
+and
+
+  float& operator[](int);
+\end{verbatim}
+
+The first version can only appear as an rvalue, and the compiler will
+use this in preference whenever the vector is of const type. The second
+version can appear as both an lvalue and an rvalue, and the compiler will
+use this for non-const vectors. Provided the programmer uses the const
+declaration wherever possible, the effectiveness of the reference
+counting, etc is maintained. For a multiply-referenced, non-const vector,
+then a copy will have to be made sooner or later anyway, so it does not
+matter what this is initiated by the indexing operator (even in instances
+where it is used as an rvalue).
+
+Coplien discusses an alternate scheme (pp. 50-52) which would be applicable
+here. Coplien's scheme is quite a bit more expensive -- a very undesirable
+characteristic in such a common operation as indexing. It also has the
+disadvantage that the indexing operator would always be a non-const method.
+
+
+
