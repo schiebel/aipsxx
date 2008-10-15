@@ -1093,7 +1093,7 @@ void GTkPixelCanvas::HandleWidgetEvent(ClientData data, XEvent *ev) {
       // hence could not generate a keysym to trigger this numlock test.
       if ((state & 0x0010) && (keysym >= XK_KP_Home) && 
 	  (keysym <= XK_KP_Delete)) {
-	keysym = XKeycodeToKeysym(display_, keycode, 1);
+	keysym = XKeycodeToKeysym(v->display_, keycode, 1);
       }
 #endif
 #endif
