@@ -24,7 +24,7 @@
 #                          520 Edgemont Road
 #                          Charlottesville, VA 22903-2475 USA
 #
-#    $Id: dishwrite.g,v 19.2 2006/06/28 19:37:14 bgarwood Exp $
+#    $Id: dishwrite.g,v 19.2.6.1 2006/11/28 18:45:11 bgarwood Exp $
 #
 #------------------------------------------------------------------------------
 pragma include once;
@@ -106,28 +106,34 @@ const dishwrite := function(ref itsdish)
 	myx:=private.dish.plotter.ips.getcurrentabcissa();
 	# write out info on the type and units
 	# construct format strings appropriatly for nstokes
-	# first column is 16 characters wide
-	typefmt := '%14s \t';
-	unitfmt := '%14s \t';
-	datafmt := '%14e \t';
+	# first column is 20 characters wide, others are 16
+	ftypefmt := '%18s  \t';
+        stypefmt := '%14s  ';
+	funitfmt := '%18s  \t';
+        sunitfmt := '%14s  ';
+	datafmt := '%18.8e \t';
 	stokesAxes := nominee.data.desc.corr_type;
+	if (len(stokesAxes) != nstokes) stokesAxes := array('',nstokes);
 	abcunits   := private.dish.plotter.ips.getabcissaunit();
 	abcunits   := spaste(abcunits,'-',private.dish.plotter.ips.getdoppler());
 	ordunits   := nominee.data.desc.units;
-	type       := ['ABSCISSA',stokesAxes];
-	units      := [abcunits,ordunits];
+        ftype      := 'ABSCISSA'
+	stype      := stokesAxes;
+        funits     := abcunits
+	sunits      := array(ordunits,nstokes);
 	# just to be sure, possibly a warning should be emitted
-	if (len(stokesAxes) != nstokes) stokesAxes := array('',nstokes);
 	fnan := 0.0/0.0; 
 	for (i in 1:nstokes) {
 	    datafmt := paste(datafmt,'%14e');
-	    thisdata[i,][flagmask[i,]] := fnan;
+            if (sum(flagmask[i,]) > 0) thisdata[i,][flagmask[i,]] := fnan;
 	}
 	# we need to do this before the newlines are added
 	datafmt := spaste(datafmt,'\n');
-	fprintf(fp,typefmt,type);
+        fprintf(fp,ftypefmt,ftype);
+	fprintf(fp,stypefmt,stype);
 	fprintf(fp,'\n');
-	fprintf(fp,unitfmt,units);
+	fprintf(fp,funitfmt,funits);
+	fprintf(fp,sunitfmt,sunits);
 	fprintf(fp,'\n');
 	# I don't see a better way to do this.eval might be an option but that
 	# would require making some of these symbols global.  Still, there shouldn't

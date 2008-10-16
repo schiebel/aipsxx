@@ -24,7 +24,7 @@
 #                          520 Edgemont Road
 #                          Charlottesville, VA 22903-2475 USA
 #
-#   $Id: gbtmsfiller_meta.g,v 19.3 2006/03/09 22:01:34 bgarwood Exp $
+#   $Id: gbtmsfiller_meta.g,v 19.3.10.1 2006/11/28 19:03:56 bgarwood Exp $
 
 pragma include once
 
@@ -199,10 +199,10 @@ types.method('setminbiasfactor').
 types.method('minbiasfactor').
     integer('return');
 
-types.method('setfixlags').
-    boolean('fixlags',default=F).
+types.method('setfixbadlags').
+    boolean('fixbadlags',default=F).
     boolean('return');
 
-types.method('fixlags').
+types.method('fixbadlags').
     boolean('return');
 

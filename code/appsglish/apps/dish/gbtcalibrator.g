@@ -23,7 +23,7 @@
 #                        520 Edgemont Road
 #                        Charlottesville, VA 22903-2475 USA
 #
-# $Id: gbtcalibrator.g,v 19.15 2006/07/21 15:25:58 bgarwood Exp $
+# $Id: gbtcalibrator.g,v 19.15.6.1 2006/11/28 18:46:44 bgarwood Exp $
 
 # include guard
 pragma include once
@@ -242,7 +242,6 @@ gbtcalibrator := function()
 	result.uddid := private.firstSpwin(private.ddid[result.scanMask], 
 					   result.swstate, 
 					   private.sig[result.scanMask]);
-
 	return result;
     }
 
@@ -947,6 +946,9 @@ gbtcalibrator := function()
     private.calNod := function(scanSum1, scanSum2, baseline, range, order, units, calceffs, flipsr, ddid=unset)
     {
 	wider private;
+        # ddid is only used internally when some of the NOD data is missing
+	# it is always a scalar index into the uddid field of scanSum1 and scanSum2
+
 	# NOD requires 4 copies
 	scan1DDID := unset;
 	scan2DDID := unset;
@@ -1003,7 +1005,7 @@ gbtcalibrator := function()
 
 	isTP := scanSum1.swtchsig == "TPWCAL";
 
-	allIDDs := scanSum1.uddid;
+	allIDDs := ind(scanSum1.uddid);
 	if (!is_unset(ddid)) allIDDs := ddid;
 
 	while (T) {
@@ -1013,7 +1015,6 @@ gbtcalibrator := function()
 		scan2ddid := scanSum2.uddid[idd];
 		sddids1 := as_string(scan1ddid);
 		sddids2 := as_string(scan2ddid);
-		
 		thisInfo1 := ref private.syscalInfo[sfeed1][sddids1];
 		thisInfo2 := ref private.syscalInfo[sfeed2][sddids2];
 		
@@ -1792,6 +1793,9 @@ gbtcalibrator := function()
 	val public := F;
 	return T;
     }
+
+    public.dbg := private;
+	
 
     return ref public;
 }

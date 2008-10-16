@@ -2490,6 +2490,12 @@ GlishValue GlishTableProxy::valueToGlish (const ValueHolder& val)
   case TpBool:
     retval = val.asBool();
     break;
+  case TpUChar:
+    retval = val.asuChar();
+    break;
+  case TpShort:
+    retval = val.asShort();
+    break;
   case TpInt:
     retval = val.asInt();
     break;
@@ -2510,6 +2516,12 @@ GlishValue GlishTableProxy::valueToGlish (const ValueHolder& val)
     break;
   case TpArrayBool:
     retval = val.asArrayBool();
+    break;
+  case TpArrayUChar:
+    retval = val.asArrayuChar();
+    break;
+  case TpArrayShort:
+    retval = val.asArrayShort();
     break;
   case TpArrayInt:
     retval = val.asArrayInt();

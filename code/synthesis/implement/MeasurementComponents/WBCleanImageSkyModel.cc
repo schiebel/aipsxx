@@ -23,7 +23,7 @@
 //#                        520 Edgemont Road
 //#                        Charlottesville, VA 22903-2475 USA
 //#
-//# $Id: WBCleanImageSkyModel.cc,v 1.2 2006/10/06 23:14:06 rurvashi Exp $
+//# $Id: WBCleanImageSkyModel.cc,v 1.2.2.1 2006/10/16 20:45:13 wyoung Exp $
 
 
 #include <casa/Arrays/ArrayMath.h>
@@ -363,15 +363,14 @@ Bool WBCleanImageSkyModel::solve(SkyEquation& se)
 			   is picked. Until then, pick components that minimize chi-sq. After switching, 
 			   pick components that correspond to the peak I0 residual */
 
-			/*
 			if(fabs(rmaxval) < thresh*1.5 && !choosespec){converged=True; break;}
 			if(fabs(rmaxval) < thresh && choosespec)
 			{converged=False; choosespec=False; if(ddbg)os << "Switching stopping criterion" << LogIO::POST; break;}
 			else if(fabs(rmaxval) < fluxlimit){converged=False;break;}
-			*/
 			
-			if(fabs(rmaxval) < thresh){converged=True; break;}
-			else if(fabs(rmaxval) < fluxlimit){converged=False;break;}
+			
+			//if(fabs(rmaxval) < thresh){converged=True; break;}
+			//else if(fabs(rmaxval) < fluxlimit){converged=False;break;}
 
 			/* Stop, if there are negatives on the largest scale in the Io image */
 			//if(nscales_p>1 && maxscaleindex == nscales_p-2)

@@ -24,7 +24,7 @@
 #                          520 Edgemont Road
 #                          Charlottesville, VA 22903-2475 USA
 #
-#    $Id: mydish_standard.gp,v 19.8 2006/09/06 19:22:50 bgarwood Exp $
+#    $Id: mydish_standard.gp,v 19.8.2.1 2006/11/28 18:48:45 bgarwood Exp $
 #
 #------------------------------------------------------------------------------
 #test case
@@ -390,7 +390,7 @@ public.sclear := function() {
     return result;
 }
 
-public.ave := function(sclear=T) {
+public.ave := function(sclear=T, quiet=F) {
     wider public,private;
     result := T;
     if (public.uniget('numaccum')>0) {
@@ -401,12 +401,12 @@ public.ave := function(sclear=T) {
 		   priority='SEVERE',postcli=T);
 	} else {
 	    public.uniput('globalscan1',ac);
-	    dl.log(message=spaste('Averaged ',public.uniget('numaccum'),' records'),
-		   priority='NORMAL',postcli=T);
+	    if (!quiet) dl.log(message=spaste('Averaged ',public.uniget('numaccum'),' records'),
+			       priority='NORMAL',postcli=T);
 	    if (sclear) public.sclear();
 	}
     } else {
-        dl.log(message='Nothing to average',priority='SEVERE',postcli=T);
+        if (!quiet) dl.log(message='Nothing to average',priority='SEVERE',postcli=T);
     }
     return result;
 }

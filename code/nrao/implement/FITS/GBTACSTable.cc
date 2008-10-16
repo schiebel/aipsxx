@@ -23,7 +23,7 @@
 //#                        520 Edgemont Road
 //#                        Charlottesville, VA 22903-2475 USA
 //#
-//# $Id: GBTACSTable.cc,v 19.11 2006/08/02 23:43:59 bgarwood Exp $
+//# $Id: GBTACSTable.cc,v 19.11.4.2 2007/06/27 20:44:21 bgarwood Exp $
 
 //# Includes
 
@@ -68,7 +68,7 @@ GBTACSTable::GBTACSTable(const String &fileName,
       itsSigmaFactor(sigmaFactor), itsTimestamp(""), itsScan(-1),
       itsCachedDataRow(-1), itsCachedLagRow(-1), itsSpacing(0.0),
       itsCachedDataMatrix(0), itsCachedZeroVector(0),
-      itsCachedBadDataVector(0),
+      itsCachedBadDataVector(0), itsProcessedColumn(0),
       itsCachedLevel(-1), itsNlagWeight(0.0),
       itsHasBadData(False), itsErrorEmitted(False), 
       itsHasDiscontinuities(False), itsDiscErrorEmitted(False),
@@ -123,6 +123,8 @@ Array<Float> GBTACSTable::data(uInt whichSampler)
 	itsCachedZeroVector =
 	    new Vector<Float>(itsCachedZeroChannel.reform(IPosition(1,nspectra)));
 	AlwaysAssert(itsCachedZeroVector, AipsError);
+	itsProcessedColumn.resize(nspectra);
+	itsProcessedColumn = False;
 
 	// this may not be the complete picture, this may be
 	// reset in vanVleck.  Delay printing any warning until later.
@@ -227,11 +229,31 @@ Bool GBTACSTable::init()
 	itsPortA.resize(portACol.nrow());
 	itsBankB.resize(bankBCol.nrow());
 	itsPortB.resize(portBCol.nrow());
+	itsPortBankMatch.resize(portACol.nrow());
+	itsPortBankMatch = -1;
 	for (uInt i=0;i<bankACol.nrow();i++) {
 	    itsBankA[i] = bankACol.asString(i);
 	    itsPortA[i] = portACol.asInt(i);
 	    itsBankB[i] = bankBCol.asString(i);
 	    itsPortB[i] = portBCol.asInt(i);
+	}
+
+	for (uInt i=0;i<bankACol.nrow();i++) {
+	    if (itsPortBankMatch[i] < 0) {
+		if (itsBankA[i] == itsBankB[i] && itsPortA[i] == itsPortB[i]) {
+		    // matches itself, autocorrelation
+		    itsPortBankMatch[i] = i;
+		} else {
+		    for (uInt j=(i+1);j<bankACol.nrow();j++) {
+			if (itsBankA[i] == itsBankB[j] && itsPortA[i] == itsPortB[j] &&
+			    itsBankB[i] == itsBankA[j] && itsPortB[i] == itsPortA[j]) {
+			    // found a match - it goes both ways
+			    itsPortBankMatch[i] = j;
+			    itsPortBankMatch[j] = i;
+			}
+		    }
+		}
+	    }
 	}
 	ROTableColumn bankCol(port(),"BANK");
 	ROTableColumn portCol(port(),"PORT");
@@ -453,7 +475,7 @@ void GBTACSTable::vanVleck()
 	    Int thisSamp = i % nsamp();
 	    if (itsPortA[thisSamp] != itsPortB[thisSamp] || 
 		itsBankA[thisSamp] != itsBankB[thisSamp]) {
-		Int thisPhase = i % nstate();
+		Int thisPhase = i / nsamp();
 		String keyA = bankPortPhase(itsBankA[thisSamp],
 					    itsPortA[thisSamp],thisPhase);
 		String keyB = bankPortPhase(itsBankB[thisSamp],
@@ -906,45 +928,77 @@ void GBTACSTable::applyFFT()
 {
     uInt nlags = itsCachedDataMatrix->nrow();
     for (uInt i=0;i<itsCachedDataMatrix->ncolumn();i++) {
+
+	if (itsProcessedColumn[i]) continue;
+
+	// one way or another this column is processed
+	itsProcessedColumn[i] = True;
+
+	// note, this assumes DATA(LAGS,SAMPLERS,PHASES) in the FITS file.
+	Int thisSamp = i % nsamp();
+
+	Int matchSamp = itsPortBankMatch[thisSamp];
+	// skip if it has no match - mark it as bad
+	if (matchSamp < 0) {
+	    itsCachedBadZeroLags[i] = True;
+	    itsCachedBadDataVector[i] = True;
+	    itsHasBadData = True;
+	    continue;
+	}
+	Int matchSpec = i - thisSamp + matchSamp;
+	
+	// check for bad data, both are marked bad if either is bad
 	// skip this if this lag-zero is bad
-	if (itsHasBadData && itsCachedBadZeroLags[i]) continue;
+	if (itsHasBadData && (itsCachedBadZeroLags[i] || itsCachedBadZeroLags[matchSpec])) {
+	    if (Int(i) != matchSpec) {
+		// else it's already bad
+		itsCachedBadZeroLags[i] = itsCachedBadZeroLags[matchSpec] = True;
+	    }
+	    continue;
+	}
 
 	// fill itsFTTemp - place the origin at the pixel 0
 	// put the (possibly) smoothed data in the first half
 	Vector<Float> itsFirstHalf(itsFTTemp(Slice(0,nlags,1)));
 	itsFirstHalf = itsCachedDataMatrix->column(i);
 
-	// duplicate and reverse this 
+	// second spectra, reversed, is in second half
+	Vector<Float> otherData(itsCachedDataMatrix->column(matchSpec));
 	// I can't see any easy way to do this.  Slice requires positive 
 	// increments.
-	Float *ftdata, *inptr, *outptr;
-	Bool deleteIt;
-	ftdata = itsFTTemp.getStorage(deleteIt);
-	// inptr comes from what we already set, starting at pixel 1
-	inptr = ftdata + 1;
-	// outptr is what we are going to set, starting at 1 pixel from the end
-	outptr = ftdata + itsFTTemp.nelements() - 1;
-	for (uInt j=1;j<nlags;j++) {
-	    *outptr = *inptr;
-	    outptr--;
-	    inptr++;
+	uInt j, k;
+	for (j=1, k=(2*nlags-1);j<nlags;j++,k--) {
+	    itsFTTemp[k] = otherData[j];
 	}
-	itsFTTemp.putStorage(ftdata, deleteIt);
-	// and set the nlags point
+	// and set the nlags (nyquist) point - simple average
+	itsFTTemp[nlags] = (itsFirstHalf[nlags-1] + otherData[nlags-1])/2.0;
 
-	// The first term is non-zero only for Hamming smoothing
-	// the second term is non-zero because there may be a DC
-	// bias in the sampler
-	itsFTTemp[nlags] = itsNlagWeight * itsFTTemp[nlags-2] +
-	    itsFTTemp[nlags-1];
+	// And the zero lag as another averag
+	itsFTTemp[0] += otherData[0];
+	itsFTTemp[0] /= 2.0;
 	
 	// do the transform
 	itsFFTServer.fft0(itsFFTResult, itsFTTemp);
+
+	// different behavior for cross and auto-correlation
+	// this first part is always true
+
 	// only half (+1) of the result is returned, which is what we want
 	// The first element is the zero (DC) channel
-	(*itsCachedZeroVector)[i] = fabs(itsFFTResult[0]);
+	(*itsCachedZeroVector)[i] = fabs(real(itsFFTResult[0]));
+	// other elements are multiplied by 2 to preserve the appropriate
+	// power relationship - see the Robishaw and Heiles GBT memo
 	itsCachedDataMatrix->column(i) = 
-	    Vector<Float>(real(itsFFTResult))(Slice(1,nlags,1));
+	    Vector<Float>(real(itsFFTResult)*Float(2.0))(Slice(1,nlags,1));
+
+	if (matchSpec != Int(i)) {
+	    // cross-correlation, imaginary parts to matchSpec
+	    (*itsCachedZeroVector)[matchSpec] = fabs(imag(itsFFTResult[0]));
+	    // this gets the same power of 2 for the same reason
+	    itsCachedDataMatrix->column(matchSpec) =
+		Vector<Float>(imag(itsFFTResult)*Float(2.0))(Slice(1,nlags,1));
+	    itsProcessedColumn[matchSpec] = True;
+	}
     }
 }
 
@@ -1044,9 +1098,12 @@ Bool GBTACSTable::checkForBadData(Int nspectra)
     Bool badData = False;
     for (uInt spec=0;spec<itsCachedDataMatrix->ncolumn();spec++) {
 	if (!(*itsCachedBadDataVector)[spec]) {
+	    Int thisSamp = spec % nsamp();
+	    Bool isXCorr = (itsPortA[thisSamp] != itsPortB[thisSamp]) || 
+		(itsBankA[thisSamp] != itsBankB[thisSamp]);
 	    itsCachedDiscontinuities[spec] = 
 		checkForDiscontinuities(itsCachedDataMatrix->column(spec), 
-					badData, spec);
+					badData, spec, isXCorr);
 	    (*itsCachedBadDataVector)[spec] = badData;
 	} 
     }
@@ -1054,7 +1111,7 @@ Bool GBTACSTable::checkForBadData(Int nspectra)
 }
 
 
-Bool GBTACSTable::checkForDiscontinuities(Vector<Float> lags, Bool &badData, uInt spec)
+Bool GBTACSTable::checkForDiscontinuities(Vector<Float> lags, Bool &badData, uInt spec, Bool isXcorr)
 {
     // The goal is to do this with as few uses of the lags[i] method 
     // as possible for speed reasons.
@@ -1151,6 +1208,40 @@ Bool GBTACSTable::checkForDiscontinuities(Vector<Float> lags, Bool &badData, uIn
 	// The 1024-lag discontinuity values
 	Double goodSum, goodSumSq, testSum, testSumSq, nGood;
 	goodSum = goodSumSq = testSum = testSumSq = nGood = 0.0;
+	Double thisLag, testLag;
+
+	if (isXcorr && lags.nelements() >= 1535) {
+	    // need to check and possibly adjust the first 1024 lags
+	    for (uInt i=512;i<1024;i++) {
+		thisLag = lags[i];
+		testSum += thisLag;
+		testSumSq += thisLag*thisLag;
+	    }
+	    for (uInt i=1024;i<1536;i++) {
+		thisLag = lags[i];
+		goodSum += thisLag;
+		goodSumSq += thisLag*thisLag;
+	    }
+	    Double testMean = testSum/512.0;
+	    Double goodMean = goodSum/512.0;
+	    Double testSigma = sqrt((testSumSq - testSum*testSum/512.0)/511.0);
+	    Double goodSigma = sqrt((goodSumSq - goodSum*goodSum/512.0)/511.0);
+
+	    if ((abs(testMean-goodMean) > itsSigmaFactor*goodSigma) && (abs(testMean) > abs(goodMean))) {
+		// first 1024 lags appear to be bad - adjust
+		Double scale = goodSigma/testSigma;
+		for (uInt i=0;i<1024;i++) {
+		    lags[i] = (lags[i]-testMean)*scale + goodMean;
+		}
+		result = True;
+		// nothing else has been bad so far
+		badChanStream << "0:1023";
+		badCount++;
+	    }
+
+	    // reset the sums and count
+	    goodSum = goodSumSq = testSum = testSumSq = nGood = 0.0;
+	}
 	// These are the next starting points for this test
 	// These are updated once a test has been used
 	uInt leftStart, rightStart, testStart;
@@ -1158,7 +1249,6 @@ Bool GBTACSTable::checkForDiscontinuities(Vector<Float> lags, Bool &badData, uIn
 	testStart = 1024;
 	rightStart = 2048;
 
-	Double thisLag, testLag;
 	thisLag = testLag = 0.0;
 
 	Bool allBad = False;

@@ -23,7 +23,7 @@
 #                        520 Edgemont Road
 #                        Charlottesville, VA 22903-2475 USA
 #
-# $Id: gbtmsfiller.g,v 19.2 2006/03/09 22:01:34 bgarwood Exp $
+# $Id: gbtmsfiller.g,v 19.2.10.1 2006/11/28 19:03:56 bgarwood Exp $
 
 # include guard
 pragma include once
@@ -367,18 +367,18 @@ const gbtmsfiller := function(host='', forcenewserver = F) {
 	return defaultservers.run(private.agent, private.minbiasfactorRec);
     }
 
-    private.setfixlagsRec := 
-	[_method="setfixlags", _sequence=private.id._sequence];
-    public.setfixlags := function(fixlags) {
+    private.setfixbadlagsRec := 
+	[_method="setfixbadlags", _sequence=private.id._sequence];
+    public.setfixbadlags := function(fixbadlags) {
        wider private;
-       private.setfixlagsRec["fixlags"] := fixlags;
-       return defaultservers.run(private.agent, private.setfixlagsRec);
+       private.setfixbadlagsRec["fixbadlags"] := fixbadlags;
+       return defaultservers.run(private.agent, private.setfixbadlagsRec);
     }
 
-    private.fixlagsRec := [_method="fixlags", _sequence=private.id._sequence];
-    public.fixlags := function() {
+    private.fixbadlagsRec := [_method="fixbadlags", _sequence=private.id._sequence];
+    public.fixbadlags := function() {
        wider private;
-       return defaultservers.run(private.agent, private.fixlagsRec);
+       return defaultservers.run(private.agent, private.fixbadlagsRec);
     }
 
     private.newmsRec := [_method="newms", _sequence=private.id._sequence];

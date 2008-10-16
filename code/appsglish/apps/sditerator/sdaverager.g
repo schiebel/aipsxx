@@ -23,7 +23,7 @@
 #                        520 Edgemont Road
 #                        Charlottesville, VA 22903-2475 USA
 #
-# $Id: sdaverager.g,v 19.1 2004/08/25 01:50:38 cvsmgr Exp $
+# $Id: sdaverager.g,v 19.1.36.1 2006/11/28 19:00:24 bgarwood Exp $
 
 pragma include once;
 
@@ -36,6 +36,8 @@ include 'sditerator.g';
 const sdaverager := function(host='', forcenewserver = F) {
     private := [=];
     public := [=];
+    
+    private.coercer := sdrecord_coercer();
 
     private.agent := defaultservers.activate("sditerator", host,
 					  forcenewserver);
@@ -96,6 +98,7 @@ const sdaverager := function(host='', forcenewserver = F) {
     private.accumulateRec := [_method="accumulate", _sequence=private.id._sequence];
     public.accumulate := function(sdrecord) {
 	wider private;
+	private.coercer.coerce(sdrecord);
 	private.accumulateRec.sdrecord := sdrecord;
 	return defaultservers.run(private.agent, private.accumulateRec);
     }
@@ -110,6 +113,7 @@ const sdaverager := function(host='', forcenewserver = F) {
     private.averageRec := [_method="average", _sequence=private.id._sequence];
     public.average := function(ref sdrecord) {
 	wider private;
+	private.coercer.coerce(sdrecord);
 	private.averageRec.sdrecord := sdrecord;
 	returnval :=  defaultservers.run(private.agent, private.averageRec);
 	if (returnval) {

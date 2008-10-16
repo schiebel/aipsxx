@@ -1584,7 +1584,7 @@ ImageInterface<Complex>& WideBandFT::getImage(Matrix<Float>& weights, Bool norma
 //// WIDEBAND
 // Finalize the FFT to the Sky. Here we actually do the FFT and
 // return the resulting image
-ImageInterface<Complex>& WideBandFT::wbgetImage(PtrBlock<ImageInterface<Complex>* > & inpimagespec, Matrix<Float>& weights, const Bool normalize, Int &model, Int ntaylor) 
+ImageInterface<Complex>& WideBandFT::wbgetImage(PtrBlock<ImageInterface<Complex>* > & inpimagespec, Matrix<Float>& weights, const Bool normalize, Int model, Int ntaylor) 
 {
   AlwaysAssert(lattice, AipsError);
   //AlwaysAssert(lattice1, AipsError);

@@ -23,7 +23,7 @@
 #                        520 Edgemont Road
 #                        Charlottesville, VA 22903-2475 USA
 #
-# $Id: sditerator.g,v 19.1 2004/08/25 01:51:03 cvsmgr Exp $
+# $Id: sditerator.g,v 19.1.36.1 2006/11/28 19:00:11 bgarwood Exp $
 
 pragma include once;
 
@@ -91,6 +91,8 @@ const _define_sditerator := function(ref agent, id)
     private.id := id;
 
     private.hist := F;
+
+    private.coercer := sdrecord_coercer();
 
      # I'm begining to think that the caller is responsible for keeping the 
     # history up to date and accurate
@@ -189,107 +191,6 @@ const _define_sditerator := function(ref agent, id)
 
     # the point here is that its simpler to change the type of a field in
     # the sdrecord here than it is in C++ if necessary.
-    # the trick, though is that any changed to the SDRecord expected types
-    # need to be reflected here.  These are the field which currently matter.
-    # Try and reduce these.  The most difficult ones to eliminate are the
-    # array types.  Don't bother with string types, if they are not a
-    # string already, its a serious problem.
-    private.sdtypes := [=];
-    private.sdtypes.data.float := "arr weight sigma";
-    private.sdtypes.data.bool := "flag";
-    private.sdtypes.header.int := "scan_number";
-    private.sdtypes.header.float := "tcal trx tsys";
-    private.sdtypes.header.double := "exposure duration";
-    private.sdtypes.other.sdfits := [=];
-    private.sdtypes.other.sdfits.float := "subscan";
-    # these are fields which should have a shape attribute.  That is only
-    # important if the field being saved has only one elements (most likely
-    # for the fields in header when there is only one polarization present).
-    # if the sdshapes is "vector" then there is one axis and if the sdshapes
-    # is matrix then there should be two axes.
-    private.sdshapes := [=];
-    private.sdshapes.data := [=];
-    private.sdshapes.data.matrix := "arr flag weight sigma";
-    private.sdshapes.data.desc := [=];
-    private.sdshapes.data.desc.vector := "corr_type";
-    private.sdshapes.header := [=];
-    private.sdshapes.header.vector := "tcal trx tsys";
-    # helper function
-    private.coerceToType := function(ref arecord, fields, checker, coercer) {
-	for (field in fields) {
-	    if (has_field(arecord,field) && !checker(arecord[field])) {
-		arecord[field] := coercer(arecord[field]);
-	    }
-	}
-    }
-    # the one to do it with
-    private.coercetypes := function(ref arecord, types=private.sdtypes) {
-	wider private;
-	for (type in field_names(types)) {
-	    if (has_field(arecord, type) && is_record(arecord[type]) && is_record(types[type])) {
-		# decend down a level
-		private.coercetypes(arecord[type], types[type]);
-	    } else {
-		coercer := F;
-		checker := F;
-		if (type == "double") {
-		    coercer := as_double;
-		    checker := is_double;
-		} else {
-		    if (type == "float") {
-			coercer := as_float;
-			checker := is_float;
-		    } else { 
-			if (type == "int") {
-			    coercer := as_integer;
-			    checker := is_integer;
-			} else {
-			    if (type == "bool") {
-				coercer := as_boolean;
-				checker := is_boolean;
-			    }
-			}
-		    }
-		}
-		if (is_function(checker) && is_function(coercer)) {
-		    private.coerceToType(arecord, types[type], checker, coercer);
-		}
-	    }
-	}
-    }
-
-    private.setshapes := function(ref arecord, fields, ashape) {
-	for (field in fields) {
-	    if (has_field(arecord,field) &&
-		len(arecord[field]) == 1 && !has_field(arecord[field]::,"shape")) {
-		# this field is missing an expected shape attribute and it has 1 element
-		arecord[field]::shape := ashape;
-	    }
-	}
-    }
-
-    private.coerceshapes := function(ref arecord, shapes=private.sdshapes) {
-	wider private;
-	for (ashape in field_names(shapes)) {
-	    if (has_field(arecord, ashape) && 
-		is_record(arecord[ashape]) && is_record(shapes[ashape])) {
-		# decend down a level
-		private.coerceshapes(arecord[ashape], shapes[ashape]);
-	    } else {
-		if (ashape == "vector") {
-		    private.setshapes(arecord, shapes[ashape], [1]);
-		} else {
-		    # it must be a matrix
-		    private.setshapes(arecord, shapes[ashape], [1,1]);
-		}
-	    }
-	}
-	# this is a kludge - the hist record has a shape, which
-	# apparently it is easy to get wrong
-	if (has_field(arecord,'hist') &&
-	    is_string(arecord.hist)) arecord.hist::shape := len(arecord.hist);
-    }
-
     private.selectRec := [_method="select", _sequence=private.id._sequence];
     public.select := function(selection = __emptyRecord) {
         wider private;
@@ -432,8 +333,7 @@ const _define_sditerator := function(ref agent, id)
     private.putRec := [_method="put", _sequence=private.id._sequence]
     public.put := function(rec) {
 	wider private;
-	private.coercetypes(rec);
-	private.coerceshapes(rec);
+	private.coercer.coerce(rec);
 	private.putRec["rec"] := rec;
 	return defaultservers.run(private.agent, private.putRec);
     }
@@ -441,8 +341,7 @@ const _define_sditerator := function(ref agent, id)
     private.appendRec := [_method="appendrec", _sequence=private.id._sequence];
     public.appendrec := function(rec) {
 	wider private;
-	private.coercetypes(rec);
-	private.coerceshapes(rec);
+	private.coercer.coerce(rec);
 	private.appendRec["rec"] := rec;
 	return defaultservers.run(private.agent, private.appendRec);
     }
@@ -1028,6 +927,137 @@ const is_sdrecord := function (candidate)
     return T;
   else
     return F;
+}
+
+# combines functions to coerce types and shapes in one place so that 
+# it can be used by the interator here and the sdaverager.
+# The idea is that on the c++ side, it's very picky about the data 
+# types and shapes and it's easy in glish to screw those up slightly 
+# (double instead of float, missing shape instead of single element vector).  
+# These functions attempt to fix that.  They are used prior to sending any
+# record off to the c++ server (iterator or averager).
+# The trick, though is that any changed to the SDRecord expected types
+# needs to be reflected here. 
+const sdrecord_coercer := function()
+{
+    private := [=];
+    public := [=];
+
+    # These are the field which currently matter.
+    # Try and reduce these.  The most difficult ones to eliminate are the
+    # array types.  Don't bother with string types, if they are not a
+    # string already, its a serious problem.  Also, don't worry about
+    # most things in other.  Chances are good that the user never
+    # touches those.
+    private.sdtypes := [=];
+    private.sdtypes.data.float := "arr weight sigma";
+    private.sdtypes.data.bool := "flag";
+    private.sdtypes.header.int := "scan_number";
+    private.sdtypes.header.float := "tcal trx tsys";
+    private.sdtypes.header.double := "exposure duration";
+    private.sdtypes.other.sdfits := [=];
+    private.sdtypes.other.sdfits.float := "subscan";
+
+    # These are fields which should have a shape attribute.  That is only
+    # important if the field being saved has only one element (most likely
+    # for the fields in header when there is only one polarization present).
+    # If the sdshapes is "vector" then there is one axis and if the sdshapes
+    # is matrix then there should be two axes.
+    private.sdshapes := [=];
+    private.sdshapes.data := [=];
+    private.sdshapes.data.matrix := "arr flag weight sigma";
+    private.sdshapes.data.desc := [=];
+    private.sdshapes.data.desc.vector := "corr_type";
+    private.sdshapes.header := [=];
+    private.sdshapes.header.vector := "tcal trx tsys";
+
+    # helper function
+    private.coerceToType := function(ref arecord, fields, checker, coercer) {
+	for (field in fields) {
+	    if (has_field(arecord,field) && !checker(arecord[field])) {
+		arecord[field] := coercer(arecord[field]);
+	    }
+	}
+    }
+    # Coerce the types
+    public.coercetypes := function(ref arecord, types=private.sdtypes) {
+	wider private;
+	wider public;
+	for (type in field_names(types)) {
+	    if (has_field(arecord, type) && is_record(arecord[type]) && is_record(types[type])) {
+		# decend down a level
+		public.coercetypes(arecord[type], types[type]);
+	    } else {
+		coercer := F;
+		checker := F;
+		if (type == "double") {
+		    coercer := as_double;
+		    checker := is_double;
+		} else {
+		    if (type == "float") {
+			coercer := as_float;
+			checker := is_float;
+		    } else { 
+			if (type == "int") {
+			    coercer := as_integer;
+			    checker := is_integer;
+			} else {
+			    if (type == "bool") {
+				coercer := as_boolean;
+				checker := is_boolean;
+			    }
+			}
+		    }
+		}
+		if (is_function(checker) && is_function(coercer)) {
+		    private.coerceToType(arecord, types[type], checker, coercer);
+		}
+	    }
+	}
+    }
+
+    private.setshapes := function(ref arecord, fields, ashape) {
+	for (field in fields) {
+	    if (has_field(arecord,field) &&
+		len(arecord[field]) == 1 && !has_field(arecord[field]::,"shape")) {
+		# this field is missing an expected shape attribute and it has 1 element
+		arecord[field]::shape := ashape;
+	    }
+	}
+    }
+
+    public.coerceshapes := function(ref arecord, shapes=private.sdshapes) {
+	wider private;
+	wider public;
+	for (ashape in field_names(shapes)) {
+	    if (has_field(arecord, ashape) && 
+		is_record(arecord[ashape]) && is_record(shapes[ashape])) {
+		# decend down a level
+		public.coerceshapes(arecord[ashape], shapes[ashape]);
+	    } else {
+		if (ashape == "vector") {
+		    private.setshapes(arecord, shapes[ashape], [1]);
+		} else {
+		    # it must be a matrix
+		    private.setshapes(arecord, shapes[ashape], [1,1]);
+		}
+	    }
+	}
+	# this is a kludge - the hist record has a shape, which
+	# apparently it is easy to get wrong
+	if (has_field(arecord,'hist') &&
+	    is_string(arecord.hist)) arecord.hist::shape := len(arecord.hist);
+    }
+
+    # do both at once
+    public.coerce := function(ref arecord)
+    {
+	wider public;
+	public.coercetypes(arecord);
+	public.coerceshapes(arecord);
+    }
+
+    return ref public;
 }
 
 tsditerator := function(it, repeat = 1)

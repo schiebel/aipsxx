@@ -24,7 +24,7 @@
 #                          520 Edgemont Road
 #                          Charlottesville, VA 22903-2475 USA
 #
-#    $Id: mydish_gbtuts.gp,v 19.4 2006/03/09 22:01:54 bgarwood Exp $
+#    $Id: mydish_gbtuts.gp,v 19.4.10.1 2006/11/28 18:48:00 bgarwood Exp $
 #
 #------------------------------------------------------------------------------
 
@@ -172,7 +172,7 @@ mydish_gbtuts.attach := function(ref public) {
   };
 
    public.import := function(projdir,outms=F,outmsdir=F,startscan=F,stopscan=F,backend=F,
-			     calflag=F,vv=F,window=F,oneacsms=T,fixlags=F) {
+			     calflag=F,vv=F,window=F,oneacsms=T,fixbadlags=F) {
        wider public,private;
 
        if (!dos.fileexists(projdir)) {
@@ -184,7 +184,7 @@ mydish_gbtuts.attach := function(ref public) {
 	   !(is_boolean(outmsdir) || is_string(outmsdir)) ||
 	   !(is_boolean(startscan) || is_integer(startscan)) ||
 	   !(is_boolean(stopscan) || is_integer(stopscan)) ||
-	   !is_boolean(oneacsms) || !is_boolean(fixlags)) {
+	   !is_boolean(oneacsms) || !is_boolean(fixbadlags)) {
 	   dl.log(message='Inputs are invalid',priority='SEVERE',postcli=T);
 	   return F;
        }
@@ -226,7 +226,7 @@ mydish_gbtuts.attach := function(ref public) {
        if (!is_boolean(startscan)) ok:=gmf.setminscan(startscan);
        if (!is_boolean(stopscan))  ok:=gmf.setmaxscan(stopscan);
        ok:=gmf.setoneacsms(oneacsms);
-       ok:=gmf.setfixlags(fixlags);
+       ok:=gmf.setfixbadlags(fixbadlags);
        #vv options: "schwab", "old", "none"
        if (!is_boolean(vv)) ok:=gmf.setvv(vv);
        #window options: "hanning", "hamming", "none"

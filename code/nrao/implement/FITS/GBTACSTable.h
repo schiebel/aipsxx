@@ -24,7 +24,7 @@
 //#                        Charlottesville, VA 22903-2475 USA
 //#
 //#
-//# $Id: GBTACSTable.h,v 19.11 2006/07/21 18:18:11 bgarwood Exp $
+//# $Id: GBTACSTable.h,v 19.11.6.2 2007/06/27 20:44:21 bgarwood Exp $
 
 #ifndef NRAO_GBTACSTABLE_H
 #define NRAO_GBTACSTABLE_H
@@ -202,7 +202,7 @@ private:
     // lag sequences are bad - one per sampler
     Array<Bool> itsCachedBadData;
     Vector<Bool> *itsCachedBadDataVector;
-    Vector<Bool> itsCachedBadZeroLags, itsCachedDiscontinuities;
+    Vector<Bool> itsCachedBadZeroLags, itsCachedDiscontinuities, itsProcessedColumn;
 
     Array<Float> itsCachedLag;
 
@@ -251,7 +251,7 @@ private:
 
     // The BANK_{A,B} and  PORT_{A,B} column values from sampler()
     Vector<String> itsBankA, itsBankB;
-    Vector<Int> itsPortA, itsPortB;
+    Vector<Int> itsPortA, itsPortB, itsPortBankMatch;
 
     String itsFixLagsLog;
 
@@ -295,7 +295,7 @@ private:
     // not checked here.  If that is offset then it should get flagged
     // elsewhere because the zero lag will be unphysical.  The first
     // 1024 segement can not be fixed.
-    Bool checkForDiscontinuities(Vector<Float> lags, Bool &badData, uInt spec);
+    Bool checkForDiscontinuities(Vector<Float> lags, Bool &badData, uInt spec, Bool isXcorr);
 
     // Generates a report for a given bad lag 
     void reportBadLags(uInt spec, String badChanStr, String comment="");

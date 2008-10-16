@@ -226,7 +226,7 @@ public:
   // Get the final image: do the Fourier transform and
   // grid-correct, then optionally normalize by the summed weights
   ////ImageInterface<Complex>& wbgetImage(PtrBlock<ImageInterface<Complex>* > & inpimagespec, Matrix<Float>&, const Bool normalize=True);
-  ImageInterface<Complex>& wbgetImage(PtrBlock<ImageInterface<Complex>* > & inpimagespec, Matrix<Float>&, const Bool normalize=True, Int &model=0, Int ntaylor=1);
+  ImageInterface<Complex>& wbgetImage(PtrBlock<ImageInterface<Complex>* > & inpimagespec, Matrix<Float>&, const Bool normalize=True, Int model=0, Int ntaylor=1);
 
   ImageInterface<Complex>& getImage(Matrix<Float>&, const Bool normalize=True);
  
