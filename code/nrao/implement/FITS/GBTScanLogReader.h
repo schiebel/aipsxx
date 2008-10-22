@@ -96,7 +96,7 @@ public:
 
     // construct this using the indicated ScanLog FITS file
     GBTScanLogReader(const File& scanlog, Int minscan=-1,
-		     Int maxscan=LONG_MAX);
+		     Int maxscan=INT_MAX);
 
     ~GBTScanLogReader();
 
@@ -238,7 +238,7 @@ public:
 
     // set the maximum scan number
     void setMaxscan(Int maxscan)
-    { maxScan_p = maxscan; if (maxScan_p<0) maxScan_p = LONG_MAX; doScanCheck();}
+    { maxScan_p = maxscan; if (maxScan_p<0) maxScan_p = INT_MAX; doScanCheck();}
 
     // recheck and possible reset the current scan to ensure it lies between minscan
     // and maxscan.  Necessary because setting minscan and maxscan involves two calls.
